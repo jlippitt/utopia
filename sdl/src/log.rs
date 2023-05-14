@@ -1,22 +1,24 @@
 use std::fmt;
+use std::fs::{self, File};
+use std::io::{self, BufWriter};
+use std::sync::Mutex;
 use tracing::event::Event;
-use tracing::subscriber::Subscriber as TracingSubscriber;
+use tracing::subscriber::{DefaultGuard, Subscriber};
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
 use tracing_subscriber::fmt::{
-    format::{DefaultFields, FormatEvent, FormatFields, Writer},
+    format::{FormatEvent, FormatFields, Writer},
     FmtContext,
     MakeWriter,
-    Subscriber as FmtSubscriber,
 };
 use tracing_subscriber::registry::LookupSpan;
 
-pub type Subscriber<W> = FmtSubscriber<DefaultFields, Formatter, EnvFilter, W>; 
+const LOG_BUFFER_SIZE: usize = 262144;
 
 pub struct Formatter;
 
 impl<S, N> FormatEvent<S, N> for Formatter
 where
-    S: TracingSubscriber + for<'a> LookupSpan<'a>,
+    S: Subscriber + for<'a> LookupSpan<'a>,
     N: for<'a> FormatFields<'a> + 'static,
 {
     fn format_event(&self, ctx: &FmtContext<'_, S, N>, mut writer: Writer<'_>, event: &Event<'_>) -> fmt::Result {
@@ -25,7 +27,16 @@ where
     }
 }
 
-pub fn create_subscriber<W>(writer: W) -> Subscriber<W>
+pub type DebugWriter = Mutex<BufWriter<File>>;
+
+pub fn create_debug_writer(name: &str) -> io::Result<DebugWriter> {
+    fs::create_dir_all("./log")?;
+    let file = File::create(format!("./log/{}.log", name))?;
+    let buf_writer = BufWriter::with_capacity(LOG_BUFFER_SIZE, file);
+    Ok(Mutex::new(buf_writer))
+}
+
+pub fn set_subscriber<W>(writer: W) -> DefaultGuard
 where
     W: for<'writer> MakeWriter<'writer> + 'static + Send + Sync
 {
@@ -33,9 +44,11 @@ where
         .with_default_directive(LevelFilter::DEBUG.into())
         .from_env_lossy();
 
-    tracing_subscriber::fmt()
+    let subscriber = tracing_subscriber::fmt()
         .event_format(Formatter)
         .with_env_filter(env_filter)
         .with_writer(writer)
-        .finish()
+        .finish();
+
+    tracing::subscriber::set_default(subscriber)
 }

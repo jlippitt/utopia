@@ -1,6 +1,6 @@
 use clap::Parser;
 use std::error::Error;
-use std::{fs, io};
+use std::{fs, io, thread};
 use tracing::debug;
 
 mod log;
@@ -14,13 +14,19 @@ struct Args {
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
-    let rom_data = fs::read(args.rom_path)?;
+    let _rom_data = fs::read(args.rom_path)?;
 
-    let subscriber = log::create_subscriber(io::stdout);
+    let _guard = log::set_subscriber(io::stdout);
 
-    let _guard = tracing::subscriber::set_default(subscriber);
+    debug!("UI thread");
 
-    debug!("{:?}", rom_data);
+    let inner_thread = thread::spawn(move || {
+        let _guard = log::set_subscriber(log::create_debug_writer("main").unwrap());
+
+        debug!("Inner thread");
+    });
+
+    inner_thread.join().unwrap();
 
     Ok(())
 }
