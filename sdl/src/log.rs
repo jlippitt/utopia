@@ -7,8 +7,7 @@ use tracing::subscriber::{DefaultGuard, Subscriber};
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
 use tracing_subscriber::fmt::{
     format::{FormatEvent, FormatFields, Writer},
-    FmtContext,
-    MakeWriter,
+    FmtContext, MakeWriter,
 };
 use tracing_subscriber::registry::LookupSpan;
 
@@ -21,7 +20,12 @@ where
     S: Subscriber + for<'a> LookupSpan<'a>,
     N: for<'a> FormatFields<'a> + 'static,
 {
-    fn format_event(&self, ctx: &FmtContext<'_, S, N>, mut writer: Writer<'_>, event: &Event<'_>) -> fmt::Result {
+    fn format_event(
+        &self,
+        ctx: &FmtContext<'_, S, N>,
+        mut writer: Writer<'_>,
+        event: &Event<'_>,
+    ) -> fmt::Result {
         ctx.format_fields(writer.by_ref(), event)?;
         writeln!(writer)
     }
@@ -38,7 +42,7 @@ pub fn create_debug_writer(name: &str) -> io::Result<DebugWriter> {
 
 pub fn set_subscriber<W>(writer: W) -> DefaultGuard
 where
-    W: for<'writer> MakeWriter<'writer> + 'static + Send + Sync
+    W: for<'writer> MakeWriter<'writer> + 'static + Send + Sync,
 {
     let env_filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::DEBUG.into())
