@@ -17,7 +17,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let _guard = log::set_subscriber(io::stdout);
 
-    utopia::create(&args.rom_path, rom_data);
+    let mut system = utopia::create(&args.rom_path, rom_data)?;
+
+    system.run();
 
     Ok(())
 }

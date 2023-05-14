@@ -1,22 +1,24 @@
 use super::System;
-use bus::Bus;
+use crate::core::mos6502::Core;
+use hardware::Hardware;
 use std::error::Error;
 
-mod bus;
+mod hardware;
 mod rom;
 
-pub struct NES {
-    bus: Bus,
+pub fn create(rom_data: Vec<u8>) -> Result<Box<dyn System>, Box<dyn Error>> {
+    let hw = Hardware::new(rom_data);
+    let core = Core::new(hw);
+
+    Ok(Box::new(NES { core }))
 }
 
-pub fn create(rom_data: Vec<u8>) -> Result<Box<dyn System>, Box<dyn Error>> {
-    let bus = Bus::new(rom_data);
-
-    Ok(Box::new(NES { bus }))
+pub struct NES {
+    core: Core<Hardware>,
 }
 
 impl System for NES {
     fn run(&mut self) {
-        println!("Here");
+        self.core.step();
     }
 }
