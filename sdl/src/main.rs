@@ -1,6 +1,9 @@
 use clap::Parser;
 use std::error::Error;
-use std::fs;
+use std::{fs, io};
+use tracing::debug;
+
+mod log;
 
 #[derive(Parser, Debug)]
 #[command(author, version)]
@@ -13,7 +16,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let rom_data = fs::read(args.rom_path)?;
 
-    println!("{:?}", rom_data);
+    let subscriber = log::create_subscriber(io::stdout);
+
+    let _guard = tracing::subscriber::set_default(subscriber);
+
+    debug!("{:?}", rom_data);
 
     Ok(())
 }
