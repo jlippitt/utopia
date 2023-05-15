@@ -1,8 +1,9 @@
-use instruction as instr;
 use std::fmt;
 use tracing::debug;
 
+mod address_mode;
 mod instruction;
+mod operator;
 
 pub const STACK_PAGE: u16 = 0x0100;
 
@@ -64,6 +65,10 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn step(&mut self) {
+        use address_mode as addr;
+        use instruction as instr;
+        use operator as op;
+
         if self.interrupt != 0 {
             self.read(self.pc);
 
@@ -88,6 +93,14 @@ impl<T: Bus> Core<T> {
             0xd8 => instr::cld(self),
             0xf8 => instr::sed(self),
 
+            //0x09 => instr::read::<addr::Immediate, op::Ora>(self),
+            //0x29 => instr::read::<addr::Immediate, op::And>(self),
+            //0x49 => instr::read::<addr::Immediate, op::Eor>(self),
+            //0x69 => instr::read::<addr::Immediate, op::Adc>(self),
+            //0x89 => instr::read::<addr::Immediate, op::Nop>(self),
+            0xa9 => instr::read::<addr::Immediate, op::Lda>(self),
+            //0xc9 => instr::read::<addr::Immediate, op::Cmp>(self),
+            //0xe9 => instr::read::<addr::Immediate, op::Sbc>(self),
             opcode @ _ => panic!("Opcode {:02X} not yet implemented", opcode),
         }
     }
@@ -106,6 +119,11 @@ impl<T: Bus> Core<T> {
         let value = self.read(self.pc);
         self.pc = self.pc.wrapping_add(1);
         value
+    }
+
+    fn set_nz(&mut self, value: u8) {
+        self.flags.n = value;
+        self.flags.z = value;
     }
 }
 
