@@ -1,6 +1,6 @@
 use super::ppu::Ppu;
 use super::rom::{self, ParsedRom};
-use crate::core::mos6502::Bus;
+use crate::core::mos6502::{Bus, Interrupt, INT_NMI};
 use crate::util::MirrorVec;
 use std::fmt;
 use tracing::warn;
@@ -9,6 +9,7 @@ const WRAM_SIZE: usize = 2048;
 
 pub struct Hardware {
     cycles: u64,
+    interrupt: Interrupt,
     prg_rom: MirrorVec<u8>,
     wram: MirrorVec<u8>,
     ppu: Ppu,
@@ -21,6 +22,7 @@ impl Hardware {
 
         Hardware {
             cycles: 0,
+            interrupt: 0,
             prg_rom: prg_rom.into(),
             wram: MirrorVec::new(WRAM_SIZE),
             ppu: Ppu::new(),
@@ -32,13 +34,13 @@ impl Hardware {
 impl Bus for Hardware {
     fn read(&mut self, address: u16) -> u8 {
         self.cycles += 12;
-        self.ppu.step();
-        self.ppu.step();
-        self.ppu.step();
+        self.ppu.step(&mut self.interrupt);
+        self.ppu.step(&mut self.interrupt);
+        self.ppu.step(&mut self.interrupt);
 
         match address >> 13 {
             0 => self.wram[address as usize],
-            1 => self.ppu.read(address),
+            1 => self.ppu.read(&mut self.interrupt, address),
             2 => panic!("2A03 register reads not yet implemented"),
             3 => panic!("PRG RAM reads not yet implemented"),
             _ => self.prg_rom[address as usize],
@@ -47,19 +49,27 @@ impl Bus for Hardware {
 
     fn write(&mut self, address: u16, value: u8) {
         self.cycles += 4;
-        self.ppu.step();
+        self.ppu.step(&mut self.interrupt);
 
         match address >> 13 {
             0 => self.wram[address as usize] = value,
-            1 => self.ppu.write(address, value),
+            1 => self.ppu.write(&mut self.interrupt, address, value),
             2 => warn!("2A03 register writes not yet implemented"),
             3 => panic!("PRG RAM writes not yet implemented"),
             _ => panic!("Mapper register writes not yet implemented"),
         };
 
         self.cycles += 8;
-        self.ppu.step();
-        self.ppu.step();
+        self.ppu.step(&mut self.interrupt);
+        self.ppu.step(&mut self.interrupt);
+    }
+
+    fn poll(&mut self) -> Interrupt {
+        self.interrupt
+    }
+
+    fn acknowledge(&mut self, interrupt: Interrupt) {
+        self.interrupt &= !interrupt;
     }
 }
 

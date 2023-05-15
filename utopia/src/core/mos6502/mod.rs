@@ -15,6 +15,8 @@ pub const INT_NMI: Interrupt = 0x0000_0002;
 pub trait Bus: fmt::Display {
     fn read(&mut self, address: u16) -> u8;
     fn write(&mut self, address: u16, value: u8);
+    fn poll(&mut self) -> Interrupt;
+    fn acknowledge(&mut self, interrupt: Interrupt);
 }
 
 #[repr(u32)]
@@ -74,7 +76,11 @@ impl<T: Bus> Core<T> {
             self.read(self.pc);
 
             if (self.interrupt & INT_RESET) != 0 {
+                self.bus.acknowledge(INT_RESET);
                 instr::reset(self);
+            } else if (self.interrupt & INT_NMI) != 0 {
+                self.bus.acknowledge(INT_NMI);
+                instr::nmi(self);
             } else {
                 panic!("Interrupt type not yet supported");
             }
@@ -251,7 +257,7 @@ impl<T: Bus> Core<T> {
     }
 
     fn poll(&mut self) {
-        // TODO
+        self.interrupt = self.bus.poll() & (self.flags.i as Interrupt);
     }
 
     fn read(&mut self, address: u16) -> u8 {
@@ -285,6 +291,22 @@ impl<T: Bus> Core<T> {
         let low = self.next_byte();
         let high = self.next_byte();
         u16::from_le_bytes([low, high])
+    }
+
+    fn flags_to_u8(&self, break_flag: bool) -> u8 {
+        let mut result = 0x20;
+        result |= self.flags.n & 0x80;
+        result |= (self.flags.v & 0x80) >> 1;
+        result |= if break_flag { 0x10 } else { 0 };
+        result |= if self.flags.d { 0x08 } else { 0 };
+        result |= if self.flags.i == IrqDisable::Set {
+            0x04
+        } else {
+            0
+        };
+        result |= if self.flags.z == 0 { 0x02 } else { 0 };
+        result |= self.flags.c as u8;
+        result
     }
 
     fn set_nz(&mut self, value: u8) {
