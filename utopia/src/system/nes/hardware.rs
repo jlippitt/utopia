@@ -15,5 +15,8 @@ impl Hardware {
 }
 
 impl Bus for Hardware {
-    //
+    fn read(&mut self, _address: u16) -> u8 {
+        // TODO
+        0
+    }
 }
