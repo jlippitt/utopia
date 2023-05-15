@@ -120,6 +120,8 @@ impl<T: Bus> Core<T> {
             // Page 2: Read-Modify-Write Ops
             0xa2 => instr::read::<addr::Immediate, op::Ldx>(self),
 
+            0x9a => instr::txs(self),
+
             opcode @ _ => panic!("Opcode {:02X} not yet implemented", opcode),
         }
     }
