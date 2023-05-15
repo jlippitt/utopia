@@ -101,6 +101,12 @@ impl<T: Bus> Core<T> {
             0xd0 => instr::branch::<op::Bne>(self),
             0xf0 => instr::branch::<op::Beq>(self),
 
+            // +0x08
+            0x88 => instr::dey(self),
+            //0xa8 => instr::tay(self),
+            0xc8 => instr::iny(self),
+            0xe8 => instr::inx(self),
+
             // +0x18
             0x18 => instr::clc(self),
             0x38 => instr::sec(self),
@@ -157,6 +163,9 @@ impl<T: Bus> Core<T> {
 
             // +0x02
             0xa2 => instr::read::<addr::Immediate, op::Ldx>(self),
+
+            // +0x0a
+            0xca => instr::dex(self),
 
             // +0x1a
             0x9a => instr::txs(self),
