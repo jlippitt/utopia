@@ -58,3 +58,13 @@ impl AddressMode for AbsoluteY {
         add_index(core, base, core.y, write)
     }
 }
+
+pub struct ZeroPage;
+
+impl AddressMode for ZeroPage {
+    const NAME: &'static str = "zp";
+
+    fn resolve(core: &mut Core<impl Bus>, _write: bool) -> u16 {
+        core.next_byte() as u16
+    }
+}

@@ -88,6 +88,7 @@ impl<T: Bus> Core<T> {
 
             // +0x00
             0x20 => instr::jsr(self),
+            //0x80 => instr::read::<addr::Immediate, op::Nop>(self),
             0xa0 => instr::read::<addr::Immediate, op::Ldy>(self),
             0xc0 => instr::read::<addr::Immediate, op::Cpy>(self),
             0xe0 => instr::read::<addr::Immediate, op::Cpx>(self),
@@ -101,6 +102,12 @@ impl<T: Bus> Core<T> {
             0xb0 => instr::branch::<op::Bcs>(self),
             0xd0 => instr::branch::<op::Bne>(self),
             0xf0 => instr::branch::<op::Beq>(self),
+
+            // +0x04
+            0x84 => instr::write::<addr::ZeroPage, op::Sty>(self),
+            0xa4 => instr::read::<addr::ZeroPage, op::Ldy>(self),
+            0xc4 => instr::read::<addr::ZeroPage, op::Cpy>(self),
+            0xe4 => instr::read::<addr::ZeroPage, op::Cpx>(self),
 
             // +0x08
             0x88 => instr::dey(self),
@@ -118,7 +125,23 @@ impl<T: Bus> Core<T> {
             0xd8 => instr::cld(self),
             0xf8 => instr::sed(self),
 
+            // +0x0c
+            0x8c => instr::write::<addr::Absolute, op::Sty>(self),
+            0xac => instr::read::<addr::Absolute, op::Ldy>(self),
+            0xcc => instr::read::<addr::Absolute, op::Cpy>(self),
+            0xec => instr::read::<addr::Absolute, op::Cpx>(self),
+
             // Page 1: Accumulator Ops
+
+            // +0x05
+            //0x05 => instr::read::<addr::ZeroPage, op::Ora>(self),
+            //0x25 => instr::read::<addr::ZeroPage, op::And>(self),
+            //0x45 => instr::read::<addr::ZeroPage, op::Eor>(self),
+            //0x65 => instr::read::<addr::ZeroPage, op::Adc>(self),
+            0x85 => instr::write::<addr::ZeroPage, op::Sta>(self),
+            0xa5 => instr::read::<addr::ZeroPage, op::Lda>(self),
+            0xc5 => instr::read::<addr::ZeroPage, op::Cmp>(self),
+            //0xe5 => instr::read::<addr::ZeroPage, op::Sbc>(self),
 
             // +0x09
             //0x09 => instr::read::<addr::Immediate, op::Ora>(self),
@@ -165,11 +188,19 @@ impl<T: Bus> Core<T> {
             // +0x02
             0xa2 => instr::read::<addr::Immediate, op::Ldx>(self),
 
+            // +0x06
+            0x86 => instr::write::<addr::ZeroPage, op::Stx>(self),
+            0xa6 => instr::read::<addr::ZeroPage, op::Ldx>(self),
+
             // +0x0a
             0xca => instr::dex(self),
 
             // +0x1a
             0x9a => instr::txs(self),
+
+            // +0x0e
+            0x8e => instr::write::<addr::Absolute, op::Stx>(self),
+            0xae => instr::read::<addr::Absolute, op::Ldx>(self),
 
             opcode @ _ => panic!("Opcode {:02X} not yet implemented", opcode),
         }
