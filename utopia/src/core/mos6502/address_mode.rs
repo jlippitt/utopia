@@ -16,3 +16,13 @@ impl AddressMode for Immediate {
         address
     }
 }
+
+pub struct Absolute;
+
+impl AddressMode for Absolute {
+    const NAME: &'static str = "a";
+
+    fn resolve(core: &mut Core<impl Bus>, _write: bool) -> u16 {
+        core.next_word()
+    }
+}

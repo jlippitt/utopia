@@ -1,6 +1,7 @@
 use super::rom::{self, ParsedRom};
 use crate::core::mos6502::Bus;
 use crate::util::MirrorVec;
+use tracing::warn;
 
 const WRAM_SIZE: usize = 2048;
 
@@ -26,10 +27,20 @@ impl Bus for Hardware {
     fn read(&mut self, address: u16) -> u8 {
         match address >> 13 {
             0 => self.wram[address as usize],
-            1 => panic!("PPU registers not yet implemented"),
-            2 => panic!("2A03 registers not yet implemented"),
-            3 => panic!("PRG RAM not yet implemented"),
+            1 => panic!("PPU register reads not yet implemented"),
+            2 => panic!("2A03 register reads not yet implemented"),
+            3 => panic!("PRG RAM reads not yet implemented"),
             _ => self.prg_rom[address as usize],
+        }
+    }
+
+    fn write(&mut self, address: u16, value: u8) {
+        match address >> 13 {
+            0 => self.wram[address as usize] = value,
+            1 => warn!("PPU register writes not yet implemented"),
+            2 => warn!("2A03 register writes not yet implemented"),
+            3 => panic!("PRG RAM writes not yet implemented"),
+            _ => panic!("Mapper register writes not yet implemented"),
         }
     }
 }

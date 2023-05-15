@@ -14,6 +14,7 @@ pub const INT_NMI: Interrupt = 0x0000_0002;
 
 pub trait Bus {
     fn read(&mut self, address: u16) -> u8;
+    fn write(&mut self, address: u16, value: u8);
 }
 
 #[repr(u32)]
@@ -83,6 +84,8 @@ impl<T: Bus> Core<T> {
         }
 
         match self.next_byte() {
+            // Page 0: Control Ops
+
             // +0x18
             0x18 => instr::clc(self),
             0x38 => instr::sec(self),
@@ -93,6 +96,8 @@ impl<T: Bus> Core<T> {
             0xd8 => instr::cld(self),
             0xf8 => instr::sed(self),
 
+            // Page 1: Accumulator Ops
+
             //0x09 => instr::read::<addr::Immediate, op::Ora>(self),
             //0x29 => instr::read::<addr::Immediate, op::And>(self),
             //0x49 => instr::read::<addr::Immediate, op::Eor>(self),
@@ -101,6 +106,15 @@ impl<T: Bus> Core<T> {
             0xa9 => instr::read::<addr::Immediate, op::Lda>(self),
             //0xc9 => instr::read::<addr::Immediate, op::Cmp>(self),
             //0xe9 => instr::read::<addr::Immediate, op::Sbc>(self),
+
+            //0x0d => instr::read::<addr::Absolute, op::Ora>(self),
+            //0x2d => instr::read::<addr::Absolute, op::And>(self),
+            //0x4d => instr::read::<addr::Absolute, op::Eor>(self),
+            //0x6d => instr::read::<addr::Absolute, op::Adc>(self),
+            0x8d => instr::write::<addr::Absolute, op::Sta>(self),
+            0xad => instr::read::<addr::Absolute, op::Lda>(self),
+            //0xcd => instr::read::<addr::Absolute, op::Cmp>(self),
+            //0xed => instr::read::<addr::Absolute, op::Sbc>(self),
             opcode @ _ => panic!("Opcode {:02X} not yet implemented", opcode),
         }
     }
@@ -115,10 +129,21 @@ impl<T: Bus> Core<T> {
         value
     }
 
+    fn write(&mut self, address: u16, value: u8) {
+        debug!("  {:04X} <=> {:02X}", address, value);
+        self.bus.write(address, value);
+    }
+
     fn next_byte(&mut self) -> u8 {
         let value = self.read(self.pc);
         self.pc = self.pc.wrapping_add(1);
         value
+    }
+
+    fn next_word(&mut self) -> u16 {
+        let low = self.next_byte();
+        let high = self.next_byte();
+        u16::from_le_bytes([low, high])
     }
 
     fn set_nz(&mut self, value: u8) {
