@@ -12,7 +12,7 @@ pub type Interrupt = u32;
 pub const INT_RESET: Interrupt = 0x0000_0001;
 pub const INT_NMI: Interrupt = 0x0000_0002;
 
-pub trait Bus {
+pub trait Bus: fmt::Display {
     fn read(&mut self, address: u16) -> u8;
     fn write(&mut self, address: u16, value: u8);
 }
@@ -297,7 +297,7 @@ impl<T: Bus> fmt::Display for Core<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "A={:02X} X={:02X} Y={:02X} S={:02X} PC={:04X} P={}{}--{}{}{}{}",
+            "A={:02X} X={:02X} Y={:02X} S={:02X} PC={:04X} P={}{}--{}{}{}{} {}",
             self.a,
             self.x,
             self.y,
@@ -313,6 +313,7 @@ impl<T: Bus> fmt::Display for Core<T> {
             },
             if self.flags.z == 0 { 'Z' } else { '-' },
             if self.flags.c { 'C' } else { '-' },
+            self.bus,
         )
     }
 }

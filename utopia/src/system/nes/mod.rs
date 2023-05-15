@@ -5,6 +5,7 @@ use std::error::Error;
 use tracing::debug;
 
 mod hardware;
+mod ppu;
 mod rom;
 
 pub fn create(rom_data: Vec<u8>) -> Result<Box<dyn System>, Box<dyn Error>> {
