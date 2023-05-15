@@ -73,3 +73,15 @@ impl ReadOperator for Cpy {
         compare(core, core.y, value);
     }
 }
+
+pub struct Bit;
+
+impl ReadOperator for Bit {
+    const NAME: &'static str = "BIT";
+
+    fn apply(core: &mut Core<impl Bus>, value: u8) {
+        core.flags.n = value;
+        core.flags.v = value << 1;
+        core.flags.z = value & core.a;
+    }
+}

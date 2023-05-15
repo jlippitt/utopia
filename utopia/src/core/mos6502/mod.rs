@@ -105,6 +105,10 @@ impl<T: Bus> Core<T> {
             0xf0 => instr::branch::<op::Beq>(self),
 
             // +0x04
+            //0x04 => instr::read::<addr::ZeroPage, op::Nop>(self),
+            0x24 => instr::read::<addr::ZeroPage, op::Bit>(self),
+            //0x44 => instr::read::<addr::ZeroPage, op::Nop>(self),
+            //0x64 => instr::read::<addr::ZeroPage, op::Nop>(self),
             0x84 => instr::write::<addr::ZeroPage, op::Sty>(self),
             0xa4 => instr::read::<addr::ZeroPage, op::Ldy>(self),
             0xc4 => instr::read::<addr::ZeroPage, op::Cpy>(self),
@@ -127,6 +131,10 @@ impl<T: Bus> Core<T> {
             0xf8 => instr::sed(self),
 
             // +0x0c
+            //0x0c => instr::read::<addr::Absolute, op::Nop>(self),
+            0x2c => instr::read::<addr::Absolute, op::Bit>(self),
+            //0x4c => instr::jmp(self),
+            //0x6c => instr::jmp_indirect(self),
             0x8c => instr::write::<addr::Absolute, op::Sty>(self),
             0xac => instr::read::<addr::Absolute, op::Ldy>(self),
             0xcc => instr::read::<addr::Absolute, op::Cpy>(self),
