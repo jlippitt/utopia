@@ -121,6 +121,16 @@ impl<T: Bus> Core<T> {
             //0xc9 => instr::read::<addr::Immediate, op::Cmp>(self),
             //0xe9 => instr::read::<addr::Immediate, op::Sbc>(self),
 
+            // +0x19
+            //0x19 => instr::read::<addr::AbsoluteY, op::Ora>(self),
+            //0x39 => instr::read::<addr::AbsoluteY, op::And>(self),
+            //0x59 => instr::read::<addr::AbsoluteY, op::Eor>(self),
+            //0x79 => instr::read::<addr::AbsoluteY, op::Adc>(self),
+            0x99 => instr::write::<addr::AbsoluteY, op::Sta>(self),
+            0xb9 => instr::read::<addr::AbsoluteY, op::Lda>(self),
+            //0xd9 => instr::read::<addr::AbsoluteY, op::Cmp>(self),
+            //0xf9 => instr::read::<addr::AbsoluteY, op::Sbc>(self),
+
             // +0x0d
             //0x0d => instr::read::<addr::Absolute, op::Ora>(self),
             //0x2d => instr::read::<addr::Absolute, op::And>(self),
@@ -130,6 +140,16 @@ impl<T: Bus> Core<T> {
             0xad => instr::read::<addr::Absolute, op::Lda>(self),
             //0xcd => instr::read::<addr::Absolute, op::Cmp>(self),
             //0xed => instr::read::<addr::Absolute, op::Sbc>(self),
+
+            // +0x1d
+            //0x1d => instr::read::<addr::AbsoluteX, op::Ora>(self),
+            //0x3d => instr::read::<addr::AbsoluteX, op::And>(self),
+            //0x5d => instr::read::<addr::AbsoluteX, op::Eor>(self),
+            //0x7d => instr::read::<addr::AbsoluteX, op::Adc>(self),
+            0x9d => instr::write::<addr::AbsoluteX, op::Sta>(self),
+            0xbd => instr::read::<addr::AbsoluteX, op::Lda>(self),
+            //0xdd => instr::read::<addr::AbsoluteX, op::Cmp>(self),
+            //0xfd => instr::read::<addr::AbsoluteX, op::Sbc>(self),
 
             // Page 2: Read-Modify-Write Ops
 

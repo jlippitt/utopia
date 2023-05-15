@@ -20,7 +20,7 @@ pub fn write<Addr: AddressMode, Op: WriteOperator>(core: &mut Core<impl Bus>) {
 }
 
 pub fn branch<Op: BranchOperator>(core: &mut Core<impl Bus>) {
-    debug!("{} *+d", Op::NAME);
+    debug!("{} nearlabel", Op::NAME);
     core.poll();
     let offset = core.next_byte() as i8;
 
