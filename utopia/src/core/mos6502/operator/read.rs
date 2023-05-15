@@ -85,3 +85,36 @@ impl ReadOperator for Bit {
         core.flags.z = value & core.a;
     }
 }
+
+pub struct Ora;
+
+impl ReadOperator for Ora {
+    const NAME: &'static str = "ORA";
+
+    fn apply(core: &mut Core<impl Bus>, value: u8) {
+        core.a |= value;
+        core.set_nz(core.a);
+    }
+}
+
+pub struct And;
+
+impl ReadOperator for And {
+    const NAME: &'static str = "AND";
+
+    fn apply(core: &mut Core<impl Bus>, value: u8) {
+        core.a &= value;
+        core.set_nz(core.a);
+    }
+}
+
+pub struct Eor;
+
+impl ReadOperator for Eor {
+    const NAME: &'static str = "EOR";
+
+    fn apply(core: &mut Core<impl Bus>, value: u8) {
+        core.a ^= value;
+        core.set_nz(core.a);
+    }
+}
