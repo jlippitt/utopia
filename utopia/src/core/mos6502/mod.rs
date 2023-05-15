@@ -88,6 +88,7 @@ impl<T: Bus> Core<T> {
 
             // +0x00
             0x20 => instr::jsr(self),
+            0x60 => instr::rts(self),
             //0x80 => instr::read::<addr::Immediate, op::Nop>(self),
             0xa0 => instr::read::<addr::Immediate, op::Ldy>(self),
             0xc0 => instr::read::<addr::Immediate, op::Cpy>(self),
@@ -229,6 +230,11 @@ impl<T: Bus> Core<T> {
     fn write(&mut self, address: u16, value: u8) {
         debug!("  {:04X} <= {:02X}", address, value);
         self.bus.write(address, value);
+    }
+
+    fn pull(&mut self) -> u8 {
+        self.s = self.s.wrapping_add(1);
+        self.read(STACK_PAGE | (self.s as u16))
     }
 
     fn push(&mut self, value: u8) {
