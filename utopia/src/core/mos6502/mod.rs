@@ -133,6 +133,16 @@ impl<T: Bus> Core<T> {
 
             // Page 1: Accumulator Ops
 
+            // +0x11
+            //0x11 => instr::read::<addr::ZeroPageIndirectY, op::Ora>(self),
+            //0x31 => instr::read::<addr::ZeroPageIndirectY, op::And>(self),
+            //0x51 => instr::read::<addr::ZeroPageIndirectY, op::Eor>(self),
+            //0x71 => instr::read::<addr::ZeroPageIndirectY, op::Adc>(self),
+            0x91 => instr::write::<addr::ZeroPageIndirectY, op::Sta>(self),
+            0xb1 => instr::read::<addr::ZeroPageIndirectY, op::Lda>(self),
+            0xd1 => instr::read::<addr::ZeroPageIndirectY, op::Cmp>(self),
+            //0xf1 => instr::read::<addr::ZeroPageIndirectY, op::Sbc>(self),
+
             // +0x05
             //0x05 => instr::read::<addr::ZeroPage, op::Ora>(self),
             //0x25 => instr::read::<addr::ZeroPage, op::And>(self),

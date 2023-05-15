@@ -15,6 +15,12 @@ fn add_index(core: &mut Core<impl Bus>, base: u16, index: u8, write: bool) -> u1
     indexed
 }
 
+fn get_indirect(core: &mut Core<impl Bus>, direct: u8) -> u16 {
+    let low = core.read(direct as u16);
+    let high = core.read(direct.wrapping_add(1) as u16);
+    u16::from_le_bytes([low, high])
+}
+
 pub struct Immediate;
 
 impl AddressMode for Immediate {
@@ -66,5 +72,17 @@ impl AddressMode for ZeroPage {
 
     fn resolve(core: &mut Core<impl Bus>, _write: bool) -> u16 {
         core.next_byte() as u16
+    }
+}
+
+pub struct ZeroPageIndirectY;
+
+impl AddressMode for ZeroPageIndirectY {
+    const NAME: &'static str = "(zp),Y";
+
+    fn resolve(core: &mut Core<impl Bus>, write: bool) -> u16 {
+        let direct = core.next_byte();
+        let indirect = get_indirect(core, direct);
+        add_index(core, indirect, core.y, write)
     }
 }
