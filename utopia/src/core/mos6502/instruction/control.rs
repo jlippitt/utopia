@@ -1,6 +1,14 @@
 use super::super::{Bus, Core, STACK_PAGE};
 use tracing::debug;
 
+pub fn jmp(core: &mut Core<impl Bus>) {
+    debug!("JMP addr");
+    let low = core.next_byte();
+    core.poll();
+    let high = core.next_byte();
+    core.pc = u16::from_le_bytes([low, high]);
+}
+
 pub fn jsr(core: &mut Core<impl Bus>) {
     debug!("JSR addr");
     let low = core.next_byte();
