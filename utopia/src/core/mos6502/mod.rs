@@ -116,7 +116,7 @@ impl<T: Bus> Core<T> {
 
             // +0x08
             0x88 => instr::dey(self),
-            //0xa8 => instr::tay(self),
+            0xa8 => instr::tay(self),
             0xc8 => instr::iny(self),
             0xe8 => instr::inx(self),
 
@@ -125,7 +125,7 @@ impl<T: Bus> Core<T> {
             0x38 => instr::sec(self),
             0x58 => instr::cli(self),
             0x78 => instr::sei(self),
-            //0x98 => instr::tya(self),
+            0x98 => instr::tya(self),
             0xb8 => instr::clv(self),
             0xd8 => instr::cld(self),
             0xf8 => instr::sed(self),
@@ -212,10 +212,13 @@ impl<T: Bus> Core<T> {
             0xa6 => instr::read::<addr::ZeroPage, op::Ldx>(self),
 
             // +0x0a
+            0x8a => instr::txa(self),
+            0xaa => instr::tax(self),
             0xca => instr::dex(self),
 
             // +0x1a
             0x9a => instr::txs(self),
+            0xaa => instr::tsx(self),
 
             // +0x0e
             0x8e => instr::write::<addr::Absolute, op::Stx>(self),
