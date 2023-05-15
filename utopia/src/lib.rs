@@ -4,6 +4,7 @@ use system::System;
 
 mod core;
 mod system;
+mod util;
 
 pub fn create(rom_path: &str, rom_data: Vec<u8>) -> Result<Box<dyn System>, Box<dyn Error>> {
     let extension = Path::new(rom_path)
