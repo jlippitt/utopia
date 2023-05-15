@@ -27,7 +27,14 @@ impl Bus for Hardware {
     fn read(&mut self, address: u16) -> u8 {
         match address >> 13 {
             0 => self.wram[address as usize],
-            1 => panic!("PPU register reads not yet implemented"),
+            1 => {
+                if address == 0x2002 {
+                    // Always set VBlank flag for now
+                    0x80
+                } else {
+                    panic!("PPU register reads not yet implemented")
+                }
+            }
             2 => panic!("2A03 register reads not yet implemented"),
             3 => panic!("PRG RAM reads not yet implemented"),
             _ => self.prg_rom[address as usize],

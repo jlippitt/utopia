@@ -85,7 +85,19 @@ impl<T: Bus> Core<T> {
 
         match self.next_byte() {
             // Page 0: Control Ops
+
+            // +0x00
             0xa0 => instr::read::<addr::Immediate, op::Ldy>(self),
+
+            // +0x10
+            0x10 => instr::branch::<op::Bpl>(self),
+            0x30 => instr::branch::<op::Bmi>(self),
+            0x50 => instr::branch::<op::Bvc>(self),
+            0x70 => instr::branch::<op::Bvs>(self),
+            0x90 => instr::branch::<op::Bcc>(self),
+            0xb0 => instr::branch::<op::Bcs>(self),
+            0xd0 => instr::branch::<op::Bne>(self),
+            0xf0 => instr::branch::<op::Beq>(self),
 
             // +0x18
             0x18 => instr::clc(self),
@@ -99,6 +111,7 @@ impl<T: Bus> Core<T> {
 
             // Page 1: Accumulator Ops
 
+            // +0x09
             //0x09 => instr::read::<addr::Immediate, op::Ora>(self),
             //0x29 => instr::read::<addr::Immediate, op::And>(self),
             //0x49 => instr::read::<addr::Immediate, op::Eor>(self),
@@ -108,6 +121,7 @@ impl<T: Bus> Core<T> {
             //0xc9 => instr::read::<addr::Immediate, op::Cmp>(self),
             //0xe9 => instr::read::<addr::Immediate, op::Sbc>(self),
 
+            // +0x0d
             //0x0d => instr::read::<addr::Absolute, op::Ora>(self),
             //0x2d => instr::read::<addr::Absolute, op::And>(self),
             //0x4d => instr::read::<addr::Absolute, op::Eor>(self),
@@ -118,8 +132,11 @@ impl<T: Bus> Core<T> {
             //0xed => instr::read::<addr::Absolute, op::Sbc>(self),
 
             // Page 2: Read-Modify-Write Ops
+
+            // +0x02
             0xa2 => instr::read::<addr::Immediate, op::Ldx>(self),
 
+            // +0x1a
             0x9a => instr::txs(self),
 
             opcode @ _ => panic!("Opcode {:02X} not yet implemented", opcode),
