@@ -65,6 +65,8 @@ impl<T: Bus> Core<T> {
 
     pub fn step(&mut self) {
         if self.interrupt != 0 {
+            self.read(self.pc);
+
             if (self.interrupt & INT_RESET) != 0 {
                 instr::reset(self);
             } else {
@@ -75,12 +77,34 @@ impl<T: Bus> Core<T> {
             return;
         }
 
-        panic!("Instructions not yet implemented");
+        match self.next_byte() {
+            // +0x18
+            0x18 => instr::clc(self),
+            0x38 => instr::sec(self),
+            0x58 => instr::cli(self),
+            0x78 => instr::sei(self),
+            //0x98 => instr::tya(self),
+            0xb8 => instr::clv(self),
+            0xd8 => instr::cld(self),
+            0xf8 => instr::sed(self),
+
+            opcode @ _ => panic!("Opcode {:02X} not yet implemented", opcode),
+        }
+    }
+
+    fn poll(&mut self) {
+        // TODO
     }
 
     fn read(&mut self, address: u16) -> u8 {
         let value = self.bus.read(address);
         debug!("  {:04X} => {:02X}", address, value);
+        value
+    }
+
+    fn next_byte(&mut self) -> u8 {
+        let value = self.read(self.pc);
+        self.pc = self.pc.wrapping_add(1);
         value
     }
 }
