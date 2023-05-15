@@ -1,6 +1,6 @@
 use clap::Parser;
 use std::error::Error;
-use std::{fs, io};
+use std::fs;
 
 mod log;
 
@@ -15,7 +15,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let rom_data = fs::read(&args.rom_path)?;
 
-    let _guard = log::set_subscriber(io::stdout);
+    #[cfg(debug_assertions)]
+    let subscriber = log::create_debug_writer("main")?;
+
+    #[cfg(not(debug_assertions))]
+    let subscriber = std::io::stdout;
+
+    let _guard = log::set_subscriber(subscriber);
 
     let mut system = utopia::create(&args.rom_path, rom_data)?;
 
