@@ -208,8 +208,14 @@ impl<T: Bus> Core<T> {
             0xa2 => instr::read::<addr::Immediate, op::Ldx>(self),
 
             // +0x06
+            //0x06 => instr::modify::<addr::ZeroPage, op::Asl>(self),
+            //0x26 => instr::modify::<addr::ZeroPage, op::Rol>(self),
+            //0x46 => instr::modify::<addr::ZeroPage, op::Lsr>(self),
+            //0x66 => instr::modify::<addr::ZeroPage, op::Ror>(self),
             0x86 => instr::write::<addr::ZeroPage, op::Stx>(self),
             0xa6 => instr::read::<addr::ZeroPage, op::Ldx>(self),
+            0xc6 => instr::modify::<addr::ZeroPage, op::Dec>(self),
+            0xe6 => instr::modify::<addr::ZeroPage, op::Inc>(self),
 
             // +0x0a
             0x8a => instr::txa(self),
@@ -221,8 +227,24 @@ impl<T: Bus> Core<T> {
             0xba => instr::tsx(self),
 
             // +0x0e
+            //0x0e => instr::modify::<addr::Absolute, op::Asl>(self),
+            //0x2e => instr::modify::<addr::Absolute, op::Rol>(self),
+            //0x4e => instr::modify::<addr::Absolute, op::Lsr>(self),
+            //0x6e => instr::modify::<addr::Absolute, op::Ror>(self),
             0x8e => instr::write::<addr::Absolute, op::Stx>(self),
             0xae => instr::read::<addr::Absolute, op::Ldx>(self),
+            0xce => instr::modify::<addr::Absolute, op::Dec>(self),
+            0xee => instr::modify::<addr::Absolute, op::Inc>(self),
+
+            // +0x1e
+            //0x1e => instr::modify::<addr::AbsoluteX, op::Asl>(self),
+            //0x3e => instr::modify::<addr::AbsoluteX, op::Rol>(self),
+            //0x5e => instr::modify::<addr::AbsoluteX, op::Lsr>(self),
+            //0x7e => instr::modify::<addr::AbsoluteX, op::Ror>(self),
+            //0x9e => instr::write::<addr::AbsoluteY, op::Shx>(self),
+            0xbe => instr::read::<addr::AbsoluteY, op::Ldx>(self),
+            0xde => instr::modify::<addr::AbsoluteX, op::Dec>(self),
+            0xfe => instr::modify::<addr::AbsoluteX, op::Inc>(self),
 
             opcode @ _ => panic!("Opcode {:02X} not yet implemented", opcode),
         }

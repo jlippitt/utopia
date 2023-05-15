@@ -1,5 +1,5 @@
 use super::super::address_mode::AddressMode;
-use super::super::operator::{BranchOperator, ReadOperator, WriteOperator};
+use super::super::operator::{BranchOperator, ModifyOperator, ReadOperator, WriteOperator};
 use super::super::{Bus, Core};
 use tracing::debug;
 
@@ -17,6 +17,16 @@ pub fn write<Addr: AddressMode, Op: WriteOperator>(core: &mut Core<impl Bus>) {
     core.poll();
     let value = Op::apply(core);
     core.write(address, value);
+}
+
+pub fn modify<Addr: AddressMode, Op: ModifyOperator>(core: &mut Core<impl Bus>) {
+    debug!("{} {}", Op::NAME, Addr::NAME);
+    let address = Addr::resolve(core, true);
+    let input = core.read(address);
+    core.write(address, input);
+    core.poll();
+    let result = Op::apply(core, input);
+    core.write(address, result);
 }
 
 pub fn branch<Op: BranchOperator>(core: &mut Core<impl Bus>) {
