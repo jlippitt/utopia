@@ -85,6 +85,7 @@ impl<T: Bus> Core<T> {
 
         match self.next_byte() {
             // Page 0: Control Ops
+            0xa0 => instr::read::<addr::Immediate, op::Ldy>(self),
 
             // +0x18
             0x18 => instr::clc(self),
@@ -115,6 +116,10 @@ impl<T: Bus> Core<T> {
             0xad => instr::read::<addr::Absolute, op::Lda>(self),
             //0xcd => instr::read::<addr::Absolute, op::Cmp>(self),
             //0xed => instr::read::<addr::Absolute, op::Sbc>(self),
+
+            // Page 2: Read-Modify-Write Ops
+            0xa2 => instr::read::<addr::Immediate, op::Ldx>(self),
+
             opcode @ _ => panic!("Opcode {:02X} not yet implemented", opcode),
         }
     }
