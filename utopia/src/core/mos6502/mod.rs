@@ -1,4 +1,5 @@
 use instruction as instr;
+use std::fmt;
 use tracing::debug;
 
 mod instruction;
@@ -15,6 +16,7 @@ pub trait Bus {
 }
 
 #[repr(u32)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 enum IrqDisable {
     Clear = 0xffff_ffff,
     Set = INT_RESET | INT_NMI,
@@ -68,6 +70,9 @@ impl<T: Bus> Core<T> {
             } else {
                 panic!("Interrupt type not yet supported");
             }
+
+            self.interrupt = 0;
+            return;
         }
 
         panic!("Instructions not yet implemented");
@@ -77,5 +82,29 @@ impl<T: Bus> Core<T> {
         let value = self.bus.read(address);
         debug!("  {:04X} => {:02X}", address, value);
         value
+    }
+}
+
+impl<T: Bus> fmt::Display for Core<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "A={:02X} X={:02X} Y={:02X} S={:02X} PC={:04X} P={}{}--{}{}{}{}",
+            self.a,
+            self.x,
+            self.y,
+            self.s,
+            self.pc,
+            if (self.flags.n & 0x80) != 0 { 'N' } else { '-' },
+            if (self.flags.v & 0x80) != 0 { 'V' } else { '-' },
+            if self.flags.d { 'D' } else { '-' },
+            if self.flags.i == IrqDisable::Set {
+                'I'
+            } else {
+                '-'
+            },
+            if self.flags.z == 0 { 'Z' } else { '-' },
+            if self.flags.c { 'C' } else { '-' },
+        )
     }
 }

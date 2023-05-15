@@ -2,6 +2,7 @@ use super::System;
 use crate::core::mos6502::Core;
 use hardware::Hardware;
 use std::error::Error;
+use tracing::debug;
 
 mod hardware;
 mod rom;
@@ -19,6 +20,9 @@ pub struct NES {
 
 impl System for NES {
     fn run(&mut self) {
-        self.core.step();
+        loop {
+            self.core.step();
+            debug!("{}", self.core);
+        }
     }
 }
