@@ -75,6 +75,18 @@ impl AddressMode for ZeroPage {
     }
 }
 
+pub struct ZeroPageX;
+
+impl AddressMode for ZeroPageX {
+    const NAME: &'static str = "zp,X";
+
+    fn resolve(core: &mut Core<impl Bus>, _write: bool) -> u16 {
+        let base = core.next_byte();
+        core.read(base as u16);
+        base.wrapping_add(core.x) as u16
+    }
+}
+
 pub struct ZeroPageIndirectY;
 
 impl AddressMode for ZeroPageIndirectY {

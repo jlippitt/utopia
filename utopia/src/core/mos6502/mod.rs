@@ -173,6 +173,16 @@ impl<T: Bus> Core<T> {
             0xc5 => instr::read::<addr::ZeroPage, op::Cmp>(self),
             0xe5 => instr::read::<addr::ZeroPage, op::Sbc>(self),
 
+            // +0x15
+            0x15 => instr::read::<addr::ZeroPageX, op::Ora>(self),
+            0x35 => instr::read::<addr::ZeroPageX, op::And>(self),
+            0x55 => instr::read::<addr::ZeroPageX, op::Eor>(self),
+            0x75 => instr::read::<addr::ZeroPageX, op::Adc>(self),
+            0x95 => instr::write::<addr::ZeroPageX, op::Sta>(self),
+            0xb5 => instr::read::<addr::ZeroPageX, op::Lda>(self),
+            0xd5 => instr::read::<addr::ZeroPageX, op::Cmp>(self),
+            0xf5 => instr::read::<addr::ZeroPageX, op::Sbc>(self),
+
             // +0x09
             0x09 => instr::read::<addr::Immediate, op::Ora>(self),
             0x29 => instr::read::<addr::Immediate, op::And>(self),
