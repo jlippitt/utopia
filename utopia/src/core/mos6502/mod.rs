@@ -121,6 +121,16 @@ impl<T: Bus> Core<T> {
             0xc4 => instr::read::<addr::ZeroPage, op::Cpy>(self),
             0xe4 => instr::read::<addr::ZeroPage, op::Cpx>(self),
 
+            // +0x14
+            //0x14 => instr::read::<addr::ZeroPageX, op::Nop>(self),
+            //0x34 => instr::read::<addr::ZeroPageX, op::Nop>(self),
+            //0x54 => instr::read::<addr::ZeroPageX, op::Nop>(self),
+            //0x74 => instr::read::<addr::ZeroPageX, op::Nop>(self),
+            0x94 => instr::write::<addr::ZeroPageX, op::Sty>(self),
+            0xb4 => instr::read::<addr::ZeroPageX, op::Ldy>(self),
+            //0xd4 => instr::read::<addr::ZeroPageX, op::Nop>(self),
+            //0xf4 => instr::read::<addr::ZeroPageX, op::Nop>(self),
+
             // +0x08
             0x08 => instr::php(self),
             0x28 => instr::plp(self),
@@ -237,6 +247,16 @@ impl<T: Bus> Core<T> {
             0xa6 => instr::read::<addr::ZeroPage, op::Ldx>(self),
             0xc6 => instr::modify::<addr::ZeroPage, op::Dec>(self),
             0xe6 => instr::modify::<addr::ZeroPage, op::Inc>(self),
+
+            // +0x16
+            0x16 => instr::modify::<addr::ZeroPageX, op::Asl>(self),
+            0x36 => instr::modify::<addr::ZeroPageX, op::Rol>(self),
+            0x56 => instr::modify::<addr::ZeroPageX, op::Lsr>(self),
+            0x76 => instr::modify::<addr::ZeroPageX, op::Ror>(self),
+            0x96 => instr::write::<addr::ZeroPageY, op::Stx>(self),
+            0xb6 => instr::read::<addr::ZeroPageY, op::Ldx>(self),
+            0xd6 => instr::modify::<addr::ZeroPageX, op::Dec>(self),
+            0xf6 => instr::modify::<addr::ZeroPageX, op::Inc>(self),
 
             // +0x0a
             0x0a => instr::accumulator::<op::Asl>(self),
