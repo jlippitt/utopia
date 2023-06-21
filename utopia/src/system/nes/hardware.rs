@@ -1,6 +1,6 @@
 use super::ppu::Ppu;
 use super::rom::{self, ParsedRom};
-use crate::core::mos6502::{Bus, Interrupt, INT_NMI};
+use crate::core::mos6502::{Bus, Interrupt};
 use crate::util::MirrorVec;
 use std::fmt;
 use tracing::warn;
