@@ -3,6 +3,7 @@ use tracing::debug;
 
 const NMI_VECTOR: u16 = 0xfffa;
 const RESET_VECTOR: u16 = 0xfffc;
+const IRQ_VECTOR: u16 = 0xfffe;
 
 fn push_state(core: &mut Core<impl Bus>, break_flag: bool) {
     core.push((core.pc >> 8) as u8);
@@ -34,4 +35,11 @@ pub fn reset(core: &mut Core<impl Bus>) {
     }
 
     jump_to_vector(core, RESET_VECTOR);
+}
+
+pub fn brk(core: &mut Core<impl Bus>) {
+    debug!("BRK #const");
+    core.next_byte();
+    push_state(core, true);
+    jump_to_vector(core, IRQ_VECTOR);
 }

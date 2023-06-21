@@ -93,6 +93,7 @@ impl<T: Bus> Core<T> {
             // Page 0: Control Ops
 
             // +0x00
+            0x00 => instr::brk(self),
             0x20 => instr::jsr(self),
             0x40 => instr::rti(self),
             0x60 => instr::rts(self),
