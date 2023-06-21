@@ -25,3 +25,8 @@ pub fn pla(core: &mut Core<impl Bus>) {
     core.a = core.pull();
     core.set_nz(core.a);
 }
+
+pub fn nop(core: &mut Core<impl Bus>) {
+    debug!("NOP");
+    core.read(core.pc);
+}

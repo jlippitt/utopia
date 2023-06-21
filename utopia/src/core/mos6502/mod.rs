@@ -246,6 +246,7 @@ impl<T: Bus> Core<T> {
             0x8a => instr::txa(self),
             0xaa => instr::tax(self),
             0xca => instr::dex(self),
+            0xea => instr::nop(self),
 
             // +0x1a
             0x9a => instr::txs(self),
