@@ -124,7 +124,7 @@ impl<T: Bus> Core<T> {
             //0x08 => instr::php(self),
             //0x28 => instr::plp(self),
             0x48 => instr::pha(self),
-            //0x68 => instr::pla(self),
+            0x68 => instr::pla(self),
             0x88 => instr::dey(self),
             0xa8 => instr::tay(self),
             0xc8 => instr::iny(self),
