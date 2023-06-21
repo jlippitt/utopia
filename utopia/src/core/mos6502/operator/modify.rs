@@ -5,6 +5,20 @@ pub trait ModifyOperator {
     fn apply(core: &mut Core<impl Bus>, value: u8) -> u8;
 }
 
+pub struct Rol;
+
+impl ModifyOperator for Rol {
+    const NAME: &'static str = "ROL";
+
+    fn apply(core: &mut Core<impl Bus>, value: u8) -> u8 {
+        let carry = core.flags.c;
+        core.flags.c = (value & 0x80) != 0;
+        let result = (value << 1) | (carry as u8);
+        core.set_nz(result);
+        result
+    }
+}
+
 pub struct Lsr;
 
 impl ModifyOperator for Lsr {
