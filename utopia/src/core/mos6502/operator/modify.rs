@@ -5,6 +5,19 @@ pub trait ModifyOperator {
     fn apply(core: &mut Core<impl Bus>, value: u8) -> u8;
 }
 
+pub struct Asl;
+
+impl ModifyOperator for Asl {
+    const NAME: &'static str = "ASL";
+
+    fn apply(core: &mut Core<impl Bus>, value: u8) -> u8 {
+        core.flags.c = (value & 0x80) != 0;
+        let result = value << 1;
+        core.set_nz(result);
+        result
+    }
+}
+
 pub struct Rol;
 
 impl ModifyOperator for Rol {
