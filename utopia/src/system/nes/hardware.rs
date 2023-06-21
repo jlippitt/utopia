@@ -43,7 +43,8 @@ impl Bus for Hardware {
             1 => self.ppu.read(&mut self.interrupt, address),
             2 => match address {
                 0x4016..=0x4017 => 0, // TODO: Joypad ports
-                _ => panic!("2A03 register read not yet implemented"),
+                0x4000..=0x401f => 0, // TODO: APU ports
+                _ => panic!("Read from unmapped address"),
             },
             3 => panic!("PRG RAM reads not yet implemented"),
             _ => self.prg_rom[address as usize],
