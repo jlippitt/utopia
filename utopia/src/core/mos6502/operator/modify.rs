@@ -11,9 +11,9 @@ impl ModifyOperator for Rol {
     const NAME: &'static str = "ROL";
 
     fn apply(core: &mut Core<impl Bus>, value: u8) -> u8 {
-        let carry = core.flags.c;
+        let carry = core.flags.c as u8;
         core.flags.c = (value & 0x80) != 0;
-        let result = (value << 1) | (carry as u8);
+        let result = (value << 1) | carry;
         core.set_nz(result);
         result
     }
@@ -27,6 +27,20 @@ impl ModifyOperator for Lsr {
     fn apply(core: &mut Core<impl Bus>, value: u8) -> u8 {
         core.flags.c = (value & 0x01) != 0;
         let result = value >> 1;
+        core.set_nz(result);
+        result
+    }
+}
+
+pub struct Ror;
+
+impl ModifyOperator for Ror {
+    const NAME: &'static str = "ROR";
+
+    fn apply(core: &mut Core<impl Bus>, value: u8) -> u8 {
+        let carry = core.flags.c as u8;
+        core.flags.c = (value & 0x01) != 0;
+        let result = (value >> 1) | (carry << 7);
         core.set_nz(result);
         result
     }
