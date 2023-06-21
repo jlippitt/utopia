@@ -1,6 +1,13 @@
 use super::super::{Bus, Core, STACK_PAGE};
 use tracing::debug;
 
+pub fn php(core: &mut Core<impl Bus>) {
+    debug!("PHP");
+    core.read(core.pc);
+    core.poll();
+    core.push(core.flags_to_u8(true));
+}
+
 pub fn plp(core: &mut Core<impl Bus>) {
     debug!("PLP");
     core.read(core.pc);

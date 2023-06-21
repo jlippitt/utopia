@@ -122,7 +122,7 @@ impl<T: Bus> Core<T> {
             0xe4 => instr::read::<addr::ZeroPage, op::Cpx>(self),
 
             // +0x08
-            //0x08 => instr::php(self),
+            0x08 => instr::php(self),
             0x28 => instr::plp(self),
             0x48 => instr::pha(self),
             0x68 => instr::pla(self),
