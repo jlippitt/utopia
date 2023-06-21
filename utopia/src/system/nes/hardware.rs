@@ -58,7 +58,10 @@ impl Bus for Hardware {
             0 => self.wram[address as usize] = value,
             1 => self.ppu.write(&mut self.interrupt, address, value),
             2 => warn!("2A03 register writes not yet implemented"),
-            3 => panic!("PRG RAM writes not yet implemented"),
+            3 => {
+                //panic!("PRG RAM writes not yet implemented"),
+                print!("{}", value as char);
+            },
             _ => panic!("Mapper register writes not yet implemented"),
         };
 
