@@ -46,7 +46,10 @@ impl Bus for Hardware {
                 0x4000..=0x401f => 0, // TODO: APU ports
                 _ => panic!("Read from unmapped address"),
             },
-            3 => panic!("PRG RAM reads not yet implemented"),
+            3 => {
+                //panic!("PRG RAM reads not yet implemented"),
+                0
+            },
             _ => self.prg_rom[address as usize],
         }
     }
