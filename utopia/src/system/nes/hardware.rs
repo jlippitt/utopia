@@ -64,7 +64,9 @@ impl Bus for Hardware {
             2 => warn!("2A03 register writes not yet implemented"),
             3 => {
                 //panic!("PRG RAM writes not yet implemented"),
-                print!("{}", value as char);
+                if address >= 0x6004 {
+                    print!("{}", value as char);
+                }
             },
             _ => panic!("Mapper register writes not yet implemented"),
         };
