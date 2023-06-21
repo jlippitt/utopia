@@ -99,6 +99,19 @@ impl AddressMode for ZeroPageY {
     }
 }
 
+pub struct ZeroPageXIndirect;
+
+impl AddressMode for ZeroPageXIndirect {
+    const NAME: &'static str = "(zp,X)";
+
+    fn resolve(core: &mut Core<impl Bus>, _write: bool) -> u16 {
+        let base = core.next_byte();
+        core.read(base as u16);
+        let direct = base.wrapping_add(core.x);
+        get_indirect(core, direct)
+    }
+}
+
 pub struct ZeroPageIndirectY;
 
 impl AddressMode for ZeroPageIndirectY {
