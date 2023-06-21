@@ -19,6 +19,13 @@ pub fn write<Addr: AddressMode, Op: WriteOperator>(core: &mut Core<impl Bus>) {
     core.write(address, value);
 }
 
+pub fn accumulator<Op: ModifyOperator>(core: &mut Core<impl Bus>) {
+    debug!("{} A", Op::NAME);
+    core.poll();
+    core.read(core.pc);
+    core.a = Op::apply(core, core.a);
+}
+
 pub fn modify<Addr: AddressMode, Op: ModifyOperator>(core: &mut Core<impl Bus>) {
     debug!("{} {}", Op::NAME, Addr::NAME);
     let address = Addr::resolve(core, true);
