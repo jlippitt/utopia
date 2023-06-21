@@ -9,6 +9,16 @@ pub fn jmp(core: &mut Core<impl Bus>) {
     core.pc = u16::from_le_bytes([low, high]);
 }
 
+pub fn jmp_indirect(core: &mut Core<impl Bus>) {
+    debug!("JMP (addr)");
+    let address = core.next_word();
+    let low = core.read(address);
+    core.poll();
+    // 6502 JMP bug:
+    let high = core.read((address & 0xff00) | (address.wrapping_add(1) & 0xff));
+    core.pc = u16::from_le_bytes([low, high]);
+}
+
 pub fn jsr(core: &mut Core<impl Bus>) {
     debug!("JSR addr");
     let low = core.next_byte();
