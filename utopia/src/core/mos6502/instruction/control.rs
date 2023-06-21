@@ -41,3 +41,16 @@ pub fn rts(core: &mut Core<impl Bus>) {
     core.read(core.pc);
     core.pc = core.pc.wrapping_add(1);
 }
+
+pub fn rti(core: &mut Core<impl Bus>) {
+    debug!("RTI");
+    core.read(core.pc);
+    core.read(STACK_PAGE | (core.s as u16));
+    let flags = core.pull();
+    core.flags_from_u8(flags);
+    let low = core.pull();
+    core.poll();
+    let high = core.pull();
+    core.pc = u16::from_le_bytes([low, high]);
+}
+

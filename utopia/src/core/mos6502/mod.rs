@@ -94,6 +94,7 @@ impl<T: Bus> Core<T> {
 
             // +0x00
             0x20 => instr::jsr(self),
+            0x40 => instr::rti(self),
             0x60 => instr::rts(self),
             //0x80 => instr::read::<addr::Immediate, op::Nop>(self),
             0xa0 => instr::read::<addr::Immediate, op::Ldy>(self),
@@ -315,6 +316,19 @@ impl<T: Bus> Core<T> {
         result |= if self.flags.z == 0 { 0x02 } else { 0 };
         result |= self.flags.c as u8;
         result
+    }
+
+    fn flags_from_u8(&mut self, value: u8) {
+        self.flags.n = value;
+        self.flags.v = value << 1;
+        self.flags.d = (value & 0x08) != 0;
+        self.flags.i = if (value & 0x04) != 0 {
+            IrqDisable::Set
+        } else {
+            IrqDisable::Clear
+        };
+        self.flags.z = !value & 0x02;
+        self.flags.c = (value & 0x01) != 0;
     }
 
     fn set_nz(&mut self, value: u8) {
