@@ -161,6 +161,16 @@ impl<T: Bus> Core<T> {
             0xcc => instr::read::<addr::Absolute, op::Cpy>(self),
             0xec => instr::read::<addr::Absolute, op::Cpx>(self),
 
+            // +0x1c
+            //0x1c => instr::read::<addr::AbsoluteX, op::Nop>(self),
+            //0x3c => instr::read::<addr::AbsoluteX, op::Nop>(self),
+            //0x5c => instr::read::<addr::AbsoluteX, op::Nop>(self),
+            //0x7c => instr::read::<addr::AbsoluteX, op::Nop>(self),
+            //0x9c => instr::write::<addr::AbsoluteX, op::Shy>(self),
+            0xbc => instr::read::<addr::AbsoluteX, op::Ldy>(self),
+            //0xdc => instr::read::<addr::AbsoluteX, op::Nop>(self),
+            //0xfc => instr::read::<addr::AbsoluteX, op::Nop>(self),
+
             // Page 1: Accumulator Ops
 
             // +0x11
