@@ -1,5 +1,8 @@
 use crate::core::mos6502::{Interrupt, INT_NMI};
 use tracing::{debug, warn};
+use palette::Palette;
+
+mod palette;
 
 const VBLANK_LINE: u32 = 241;
 const PRE_RENDER_LINE: u32 = 241;
@@ -20,6 +23,8 @@ pub struct Ppu {
     nmi_occurred: bool,
     nmi_active: bool,
     regs: Registers,
+    vram_increment: u16,
+    palette: Palette,
 }
 
 impl Ppu {
@@ -29,12 +34,14 @@ impl Ppu {
             dot: 0,
             nmi_occurred: false,
             nmi_active: false,
+            vram_increment: 1,
             regs: Registers {
                 v: 0,
                 t: 0,
                 x: 0,
                 w: false,
-            }
+            },
+            palette: Palette::new(),
         }
     }
 
@@ -75,9 +82,10 @@ impl Ppu {
                 }
 
                 self.nmi_active = nmi_active;
-                debug!("NMI Active: {}", self.nmi_active);
-
+                self.vram_increment = if (value & 0x04) != 0 { 32 } else { 1 };
                 self.regs.t = (self.regs.t & 0x73ff) | ((value as u16 & 0x03) << 10);
+                debug!("PPU NMI Active: {}", self.nmi_active);
+                debug!("PPU VRAM Increment: {}", self.vram_increment);
                 debug!("PPU TMP Address: {:04X}", self.regs.t);
             }
             5 => {
@@ -106,6 +114,21 @@ impl Ppu {
 
                 self.regs.w = !self.regs.w;
             }
+            7 => {
+                let address = self.regs.v & 0x3fff;
+
+                debug!("VRAM Write: {:04X} = {:02X}", address, value);
+
+                if address >= 0x3f00 {
+                    self.palette.write(address, value);
+                } else if address >= 0x2000 {
+                    // TODO: Name Tables
+                } else {
+                    // TODO: CHR RAM
+                }
+
+                self.regs.v = (self.regs.v + self.vram_increment) & 0x7fff;
+            }
             _ => warn!("PPU write {:04X} not yet implemented", address),
         }
     }
@@ -120,7 +143,7 @@ impl Ppu {
 
             if self.line == VBLANK_LINE {
                 self.nmi_occurred = true;
-                debug!("NMI Occurred: {}", self.nmi_occurred);
+                debug!("PPU NMI Occurred: {}", self.nmi_occurred);
 
                 if self.nmi_active {
                     *interrupt |= INT_NMI;
@@ -128,7 +151,7 @@ impl Ppu {
             } else if self.line == PRE_RENDER_LINE {
                 self.nmi_occurred = false;
                 *interrupt &= !INT_NMI;
-                debug!("NMI Occurred: {}", self.nmi_occurred);
+                debug!("PPU NMI Occurred: {}", self.nmi_occurred);
             } else if self.line == TOTAL_LINES {
                 self.line = 0;
             }
