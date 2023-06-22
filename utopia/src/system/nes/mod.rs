@@ -55,13 +55,13 @@ impl Hardware {
 impl Bus for Hardware {
     fn read(&mut self, address: u16) -> u8 {
         self.cycles += 12;
-        self.ppu.step(&mut self.interrupt);
-        self.ppu.step(&mut self.interrupt);
-        self.ppu.step(&mut self.interrupt);
+        self.ppu.step(&mut self.cartridge, &mut self.interrupt);
+        self.ppu.step(&mut self.cartridge, &mut self.interrupt);
+        self.ppu.step(&mut self.cartridge, &mut self.interrupt);
 
         match address >> 13 {
             0 => self.wram[address as usize],
-            1 => self.ppu.read(&mut self.interrupt, address),
+            1 => self.ppu.read(&mut self.cartridge, &mut self.interrupt, address),
             2 => match address {
                 0x4016..=0x4017 => 0, // TODO: Joypad ports
                 0x4000..=0x401f => 0, // TODO: APU ports
@@ -77,11 +77,11 @@ impl Bus for Hardware {
 
     fn write(&mut self, address: u16, value: u8) {
         self.cycles += 4;
-        self.ppu.step(&mut self.interrupt);
+        self.ppu.step(&mut self.cartridge, &mut self.interrupt);
 
         match address >> 13 {
             0 => self.wram[address as usize] = value,
-            1 => self.ppu.write(&mut self.interrupt, address, value),
+            1 => self.ppu.write(&mut self.cartridge, &mut self.interrupt, address, value),
             2 => warn!("2A03 register writes not yet implemented"),
             3 => {
                 //panic!("PRG RAM writes not yet implemented"),
@@ -93,8 +93,8 @@ impl Bus for Hardware {
         };
 
         self.cycles += 8;
-        self.ppu.step(&mut self.interrupt);
-        self.ppu.step(&mut self.interrupt);
+        self.ppu.step(&mut self.cartridge, &mut self.interrupt);
+        self.ppu.step(&mut self.cartridge, &mut self.interrupt);
     }
 
     fn poll(&mut self) -> Interrupt {

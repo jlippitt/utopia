@@ -1,4 +1,5 @@
 use crate::core::mos6502::{Interrupt, INT_NMI};
+use super::cartridge::Cartridge;
 use tracing::{debug, warn};
 use palette::Palette;
 
@@ -49,7 +50,7 @@ impl Ppu {
         self.line
     }
 
-    pub fn read(&mut self, interrupt: &mut Interrupt, address: u16) -> u8 {
+    pub fn read(&mut self, _cartridge: &mut Cartridge, interrupt: &mut Interrupt, address: u16) -> u8 {
         match address & 7 {
             2 => {
                 // TODO: Open bus
@@ -70,7 +71,7 @@ impl Ppu {
         }
     }
 
-    pub fn write(&mut self, interrupt: &mut Interrupt, address: u16, value: u8) {
+    pub fn write(&mut self, cartridge: &mut Cartridge, interrupt: &mut Interrupt, address: u16, value: u8) {
         match address & 7 {
             0 => {
                 let nmi_active = (value & 0x80) != 0;
@@ -121,10 +122,8 @@ impl Ppu {
 
                 if address >= 0x3f00 {
                     self.palette.write(address, value);
-                } else if address >= 0x2000 {
-                    // TODO: Name Tables
                 } else {
-                    // TODO: CHR RAM
+                    cartridge.write_vram(address, value);
                 }
 
                 self.regs.v = (self.regs.v + self.vram_increment) & 0x7fff;
@@ -133,7 +132,7 @@ impl Ppu {
         }
     }
 
-    pub fn step(&mut self, interrupt: &mut Interrupt) {
+    pub fn step(&mut self, _cartridge: &mut Cartridge, interrupt: &mut Interrupt) {
         // Extremely simple state machine for now
         self.dot += 1;
 
