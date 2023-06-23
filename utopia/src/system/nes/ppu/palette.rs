@@ -11,6 +11,10 @@ impl Palette {
         }
     }
 
+    pub fn color(&self, index: usize) -> u8 {
+        self.data[index]
+    }
+
     pub fn write(&mut self, address: u16, value: u8) {
         let mask = if (address & 0x03) == 0 { 0x0f } else { 0x1f };
         let index = address as usize & mask;

@@ -1,6 +1,5 @@
 use clap::Parser;
 use sdl2::event::Event;
-use sdl2::pixels::PixelFormatEnum;
 use std::error::Error;
 use std::fs;
 use video::Video;

@@ -154,7 +154,7 @@ impl Ppu {
 
     pub fn step(&mut self, _cartridge: &mut Cartridge, interrupt: &mut Interrupt) {
         if self.line < 240 && self.dot < 256 {
-            self.screen.draw();
+            self.screen.draw(self.palette.color(0));
         }
 
         self.dot += 1;
