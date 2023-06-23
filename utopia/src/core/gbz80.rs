@@ -81,6 +81,16 @@ impl<T: Bus> Core<T> {
             0x32 => instr::ld::<addr::HLDecrement, addr::A>(self),
             0x3a => instr::ld::<addr::A, addr::HLDecrement>(self),
 
+            // +0x06 / 0x0e
+            0x06 => instr::ld::<addr::B, addr::Immediate>(self),
+            0x0e => instr::ld::<addr::C, addr::Immediate>(self),
+            0x16 => instr::ld::<addr::D, addr::Immediate>(self),
+            0x1e => instr::ld::<addr::E, addr::Immediate>(self),
+            0x26 => instr::ld::<addr::H, addr::Immediate>(self),
+            0x2e => instr::ld::<addr::L, addr::Immediate>(self),
+            0x36 => instr::ld::<addr::HLIndirect, addr::Immediate>(self),
+            0x3e => instr::ld::<addr::A, addr::Immediate>(self),
+
             // Page 1: 8-bit Loads
 
             // Page 2: 8-bit Arithmetic & Logic

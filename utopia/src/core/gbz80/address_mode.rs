@@ -159,3 +159,13 @@ impl WriteAddress<u8> for HLDecrement {
         core.hl = core.hl.wrapping_sub(1);
     }
 }
+
+pub struct Immediate;
+
+impl ReadAddress<u8> for Immediate {
+    const NAME: &'static str = "u8";
+
+    fn read(core: &mut Core<impl Bus>) -> u8 {
+        core.next_byte()
+    }
+}
