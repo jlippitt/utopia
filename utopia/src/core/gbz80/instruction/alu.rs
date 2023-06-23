@@ -27,3 +27,17 @@ pub fn dec<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
     core.flags.n = true;
     core.flags.h = (result & 0x0f) == 0x0f;
 }
+
+pub fn inc16<Addr: WriteAddress<u16>>(core: &mut Core<impl Bus>) {
+    debug!("INC {}", Addr::NAME);
+    core.idle();
+    let result = Addr::read(core).wrapping_add(1);
+    Addr::write(core, result);
+}
+
+pub fn dec16<Addr: WriteAddress<u16>>(core: &mut Core<impl Bus>) {
+    debug!("DEC {}", Addr::NAME);
+    core.idle();
+    let result = Addr::read(core).wrapping_sub(1);
+    Addr::write(core, result);
+}
