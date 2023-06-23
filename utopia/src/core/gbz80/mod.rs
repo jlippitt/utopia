@@ -1,7 +1,8 @@
 use std::fmt;
+use tracing::debug;
 
 pub trait Bus : fmt::Display {
-    //
+    fn read(&mut self, address: u16) -> u8;
 }
 
 struct Flags {
@@ -39,6 +40,24 @@ impl<T: Bus> Core<T> {
             },
             bus,
         }
+    }
+
+    pub fn step(&mut self) {
+        match self.next_byte() {
+            opcode @ _ => panic!("Opcode {:02X} not yet implemented", opcode)
+        }
+    }
+
+    fn read(&mut self, address: u16) -> u8 {
+        let value = self.bus.read(address);
+        debug!("  {:04X} => {:02X}", address, value);
+        value
+    }
+
+    fn next_byte(&mut self) -> u8 {
+        let value = self.read(self.pc);
+        self.pc = self.pc.wrapping_add(1);
+        value
     }
 }
 
