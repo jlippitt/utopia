@@ -1,6 +1,6 @@
 [workspace]
 
 members = [
-    "sdl",
     "utopia",
+    "utopia-sdl",
 ]
