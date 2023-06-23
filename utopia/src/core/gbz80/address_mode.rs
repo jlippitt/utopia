@@ -170,6 +170,24 @@ impl ReadAddress<u8> for Immediate {
     }
 }
 
+pub struct High;
+
+impl ReadAddress<u8> for High {
+    const NAME: &'static str = "($FF00+u8)";
+
+    fn read(core: &mut Core<impl Bus>) -> u8 {
+        let address = core.next_byte();
+        core.read_high(address)
+    }
+}
+
+impl WriteAddress<u8> for High {
+    fn write(core: &mut Core<impl Bus>, value: u8) {
+        let address = core.next_byte();
+        core.write_high(address, value);
+    }
+}
+
 pub struct CIndirect;
 
 impl ReadAddress<u8> for CIndirect {

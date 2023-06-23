@@ -199,6 +199,10 @@ impl<T: Bus> Core<T> {
 
             // Page 3: Misc Ops 2
 
+            // +0x00 / 0x08
+            0xe0 => instr::ld::<addr::High, addr::A>(self),
+            0xf0 => instr::ld::<addr::A, addr::High>(self),
+
             // +0x02 / 0x0a
             0xe2 => instr::ld::<addr::CIndirect, addr::A>(self),
             0xf2 => instr::ld::<addr::A, addr::CIndirect>(self),
