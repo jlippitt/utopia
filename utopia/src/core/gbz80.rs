@@ -73,7 +73,7 @@ impl<T: Bus> Core<T> {
             0x21 => instr::ld16::<addr::HL>(self),
             0x31 => instr::ld16::<addr::SP>(self),
 
-            // +0x02 / 0x0a
+            // +0x02 / +0x0a
             0x02 => instr::ld::<addr::BCIndirect, addr::A>(self),
             0x0a => instr::ld::<addr::A, addr::BCIndirect>(self),
             0x12 => instr::ld::<addr::DEIndirect, addr::A>(self),
@@ -83,7 +83,17 @@ impl<T: Bus> Core<T> {
             0x32 => instr::ld::<addr::HLDecrement, addr::A>(self),
             0x3a => instr::ld::<addr::A, addr::HLDecrement>(self),
 
-            // +0x06 / 0x0e
+            // +0x04 / +0x0c
+            0x04 => instr::inc::<addr::B>(self),
+            0x0c => instr::inc::<addr::C>(self),
+            0x14 => instr::inc::<addr::D>(self),
+            0x1c => instr::inc::<addr::E>(self),
+            0x24 => instr::inc::<addr::H>(self),
+            0x2c => instr::inc::<addr::L>(self),
+            0x34 => instr::inc::<addr::HLIndirect>(self),
+            0x3c => instr::inc::<addr::A>(self),
+
+            // +0x06 / +0x0e
             0x06 => instr::ld::<addr::B, addr::Immediate>(self),
             0x0e => instr::ld::<addr::C, addr::Immediate>(self),
             0x16 => instr::ld::<addr::D, addr::Immediate>(self),
