@@ -93,6 +93,16 @@ impl<T: Bus> Core<T> {
             0x34 => instr::inc::<addr::HLIndirect>(self),
             0x3c => instr::inc::<addr::A>(self),
 
+            // +0x05 / +0x0d
+            0x05 => instr::dec::<addr::B>(self),
+            0x0d => instr::dec::<addr::C>(self),
+            0x15 => instr::dec::<addr::D>(self),
+            0x1d => instr::dec::<addr::E>(self),
+            0x25 => instr::dec::<addr::H>(self),
+            0x2d => instr::dec::<addr::L>(self),
+            0x35 => instr::dec::<addr::HLIndirect>(self),
+            0x3d => instr::dec::<addr::A>(self),
+
             // +0x06 / +0x0e
             0x06 => instr::ld::<addr::B, addr::Immediate>(self),
             0x0e => instr::ld::<addr::C, addr::Immediate>(self),
