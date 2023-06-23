@@ -211,7 +211,11 @@ impl<T: Bus> Core<T> {
             0xcb => self.prefix_cb(),
 
             // +0x05 / 0x0d
+            0xc5 => instr::push::<addr::BC>(self),
             0xcd => instr::call(self),
+            0xd5 => instr::push::<addr::DE>(self),
+            0xe5 => instr::push::<addr::HL>(self),
+            //0xf5 => instr::push::<addr::AF>(self),
 
             opcode @ _ => panic!("Opcode {:02X} not yet implemented", opcode)
         }

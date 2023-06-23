@@ -12,3 +12,10 @@ pub fn ld16<Lhs: WriteAddress<u16>>(core: &mut Core<impl Bus>) {
     let value = core.next_word();
     Lhs::write(core, value);
 }
+
+pub fn push<Addr: WriteAddress<u16>>(core: &mut Core<impl Bus>) {
+    debug!("PUSH {}", Addr::NAME);
+    core.idle();
+    let value = Addr::read(core);
+    core.push(value);
+}
