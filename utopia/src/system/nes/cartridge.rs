@@ -19,7 +19,7 @@ struct Mappings {
 
 pub struct Cartridge {
     prg_rom: MirrorVec<u8>,
-    chr_data: MirrorVec<u8>,
+    _chr_data: MirrorVec<u8>,
     ci_ram: MirrorVec<u8>,
     mappings: Mappings,
 }
@@ -50,7 +50,7 @@ impl Cartridge {
 
         Self {
             prg_rom: prg_rom.into(),
-            chr_data: chr_data.into(),
+            _chr_data: chr_data.into(),
             ci_ram: MirrorVec::new(CI_RAM_SIZE),
             mappings: Mappings {
                 name_tables,
