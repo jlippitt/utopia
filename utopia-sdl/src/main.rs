@@ -2,8 +2,10 @@ use clap::Parser;
 use sdl2::event::Event;
 use std::error::Error;
 use std::fs;
+use bios::BiosLoader;
 use video::Video;
 
+mod bios;
 mod log;
 mod video;
 
@@ -26,7 +28,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let _guard = log::set_subscriber(subscriber);
 
-    let mut system = utopia::create(&args.rom_path, rom_data)?;
+    let mut system = utopia::create(&args.rom_path, rom_data, &BiosLoader::new())?;
 
     let sdl_context = sdl2::init()?;
     
