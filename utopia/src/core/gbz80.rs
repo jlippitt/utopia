@@ -86,7 +86,37 @@ impl<T: Bus> Core<T> {
 
             // Page 3: Misc Ops 2
 
+            // +0x03 / 0x0b
+            0xcb => self.prefix_cb(),
+
             opcode @ _ => panic!("Opcode {:02X} not yet implemented", opcode)
+        }
+    }
+
+    fn prefix_cb(&mut self) {
+        use address_mode as addr;
+        use instruction as instr;
+
+        let opcode = self.next_byte();
+
+        match opcode {
+            // Page 0: Shifts and Rotates
+
+            // Page 1: BIT
+            0x40 | 0x48 | 0x50 | 0x58 | 0x60 | 0x68 | 0x70 | 0x78 => instr::bit::<addr::B>(self, opcode),
+            0x41 | 0x49 | 0x51 | 0x59 | 0x61 | 0x69 | 0x71 | 0x79 => instr::bit::<addr::C>(self, opcode),
+            0x42 | 0x4a | 0x52 | 0x5a | 0x62 | 0x6a | 0x72 | 0x7a => instr::bit::<addr::D>(self, opcode),
+            0x43 | 0x4b | 0x53 | 0x5b | 0x63 | 0x6b | 0x73 | 0x7b => instr::bit::<addr::E>(self, opcode),
+            0x44 | 0x4c | 0x54 | 0x5c | 0x64 | 0x6c | 0x74 | 0x7c => instr::bit::<addr::H>(self, opcode),
+            0x45 | 0x4d | 0x55 | 0x5d | 0x65 | 0x6d | 0x75 | 0x7d => instr::bit::<addr::L>(self, opcode),
+            0x46 | 0x4e | 0x56 | 0x5e | 0x66 | 0x6e | 0x76 | 0x7e => instr::bit::<addr::HLIndirect>(self, opcode),
+            0x47 | 0x4f | 0x57 | 0x5f | 0x67 | 0x6f | 0x77 | 0x7f => instr::bit::<addr::A>(self, opcode),
+
+            // Page 2: RES
+
+            // Page 3: SET
+
+            _ => panic!("Opcode CB{:02X} not yet implemented", opcode)
         }
     }
 
