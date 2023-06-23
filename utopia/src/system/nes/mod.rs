@@ -24,14 +24,20 @@ pub struct NES {
 }
 
 impl System for NES {
-    fn width(&self) -> u32 { 240 }
+    fn width(&self) -> usize { ppu::WIDTH }
 
-    fn height(&self) -> u32 { 224 }
+    fn height(&self) -> usize { ppu::HEIGHT }
 
-    fn run(&mut self) {
-        loop {
-            self.core.step();
-            debug!("{}", self.core);
+    fn pixels(&self) -> &[u8] { self.core.bus().ppu.pixels() }
+
+    fn run_frame(&mut self) {
+        let core = &mut self.core;
+
+        core.bus_mut().ppu.start_frame();
+
+        while !core.bus().ppu.ready() {
+            core.step();
+            debug!("{}", core);
         }
     }
 }

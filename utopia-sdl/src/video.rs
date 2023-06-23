@@ -38,7 +38,7 @@ impl Video {
     }
 
     pub fn create_texture<'a>(&mut self, texture_creator: &'a TextureCreator<WindowContext>) -> Result<Texture<'a>, TextureValueError> {
-        texture_creator.create_texture_streaming(PixelFormatEnum::RGB888, self.width, self.height)
+        texture_creator.create_texture_streaming(PixelFormatEnum::BGR888, self.width, self.height)
     }
 
     pub fn update(&mut self, texture: &mut Texture<'_>, pixels: &[u8]) -> Result<(), Box<dyn Error>> {

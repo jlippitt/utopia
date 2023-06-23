@@ -29,13 +29,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut system = utopia::create(&args.rom_path, rom_data)?;
 
-    let pixels = vec![0u8; system.width() as usize * system.height() as usize * 4];
-
-    //system.run();
-
     let sdl_context = sdl2::init()?;
     
-    let mut video = Video::new(&sdl_context, system.width(), system.height())?;
+    let mut video = Video::new(&sdl_context, system.width().try_into()?, system.height().try_into()?)?;
 
     let texture_creator = video.texture_creator();
 
@@ -51,7 +47,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-        video.update(&mut texture, &pixels)?;
+        system.run_frame();
+
+        video.update(&mut texture, system.pixels())?;
     }
 
     Ok(())

@@ -3,9 +3,10 @@ use std::error::Error;
 mod nes;
 
 pub trait System {
-    fn width(&self) -> u32;
-    fn height(&self) -> u32;
-    fn run(&mut self);
+    fn width(&self) -> usize;
+    fn height(&self) -> usize;
+    fn pixels(&self) -> &[u8];
+    fn run_frame(&mut self);
 }
 
 pub fn create(extension: &str, rom_data: Vec<u8>) -> Result<Box<dyn System>, Box<dyn Error>> {

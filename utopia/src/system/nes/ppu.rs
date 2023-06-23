@@ -1,9 +1,13 @@
+pub use screen::{WIDTH, HEIGHT};
+
 use crate::core::mos6502::{Interrupt, INT_NMI};
 use super::cartridge::Cartridge;
 use tracing::{debug, warn};
 use palette::Palette;
+use screen::Screen;
 
 mod palette;
+mod screen;
 
 const VBLANK_LINE: u32 = 241;
 const PRE_RENDER_LINE: u32 = 241;
@@ -19,6 +23,7 @@ struct Registers {
 }
 
 pub struct Ppu {
+    ready: bool,
     line: u32,
     dot: u32,
     nmi_occurred: bool,
@@ -26,11 +31,13 @@ pub struct Ppu {
     regs: Registers,
     vram_increment: u16,
     palette: Palette,
+    screen: Screen,
 }
 
 impl Ppu {
     pub fn new() -> Self {
         Self {
+            ready: false,
             line: 0,
             dot: 0,
             nmi_occurred: false,
@@ -43,11 +50,24 @@ impl Ppu {
                 w: false,
             },
             palette: Palette::new(),
+            screen: Screen::new(),
         }
+    }
+
+    pub fn ready(&self) -> bool {
+        return self.ready;
+    }
+
+    pub fn start_frame(&mut self) {
+        self.ready = false;
     }
 
     pub fn v_counter(&self) -> u32 {
         self.line
+    }
+
+    pub fn pixels(&self) -> &[u8] {
+        self.screen.pixels()
     }
 
     pub fn read(&mut self, _cartridge: &mut Cartridge, interrupt: &mut Interrupt, address: u16) -> u8 {
@@ -133,7 +153,10 @@ impl Ppu {
     }
 
     pub fn step(&mut self, _cartridge: &mut Cartridge, interrupt: &mut Interrupt) {
-        // Extremely simple state machine for now
+        if self.line < 240 && self.dot < 256 {
+            self.screen.draw();
+        }
+
         self.dot += 1;
 
         if self.dot == DOTS_PER_LINE {
@@ -141,6 +164,9 @@ impl Ppu {
             self.line += 1;
 
             if self.line == VBLANK_LINE {
+                self.screen.reset();
+                self.ready = true;
+
                 self.nmi_occurred = true;
                 debug!("PPU NMI Occurred: {}", self.nmi_occurred);
 

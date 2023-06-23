@@ -66,6 +66,14 @@ impl<T: Bus> Core<T> {
             },
         }
     }
+    
+    pub fn bus(&self) -> &T {
+        &self.bus
+    }
+    
+    pub fn bus_mut(&mut self) -> &mut T {
+        &mut self.bus
+    }
 
     pub fn step(&mut self) {
         use address_mode as addr;
