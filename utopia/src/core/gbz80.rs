@@ -206,6 +206,12 @@ impl<T: Bus> Core<T> {
             0xe0 => instr::ld::<addr::High, addr::A>(self),
             0xf0 => instr::ld::<addr::A, addr::High>(self),
 
+            // +0x01 / 0x09
+            0xc1 => instr::pop::<addr::BC>(self),
+            0xd1 => instr::pop::<addr::DE>(self),
+            0xe1 => instr::pop::<addr::HL>(self),
+            //0xf1 => instr::pop::<addr::AF>(self),
+
             // +0x02 / 0x0a
             0xe2 => instr::ld::<addr::CIndirect, addr::A>(self),
             0xf2 => instr::ld::<addr::A, addr::CIndirect>(self),
@@ -297,6 +303,14 @@ impl<T: Bus> Core<T> {
     fn next_word(&mut self) -> u16 {
         let low = self.next_byte();
         let high = self.next_byte();
+        u16::from_le_bytes([low, high])
+    }
+
+    fn pop(&mut self) -> u16 {
+        let low = self.read(self.sp);
+        self.sp = self.sp.wrapping_add(1);
+        let high = self.read(self.sp);
+        self.sp = self.sp.wrapping_add(1);
         u16::from_le_bytes([low, high])
     }
 

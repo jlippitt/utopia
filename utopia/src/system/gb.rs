@@ -9,6 +9,8 @@ const WIDTH: usize = 160;
 const HEIGHT: usize = 144;
 const PIXELS: [u8; 0] = [];
 
+const HRAM_SIZE: usize = 128;
+
 pub fn create(rom_data: Vec<u8>, bios_loader: &impl BiosLoader) -> Result<Box<dyn System>, Box<dyn Error>> {
     let bios_data = Some(bios_loader.load("dmg")?);
 
@@ -42,6 +44,7 @@ impl System for GameBoy {
 struct Hardware {
     rom_data: MirrorVec<u8>,
     bios_data: Option<MirrorVec<u8>>,
+    hram: MirrorVec<u8>,
 }
 
 impl Hardware {
@@ -49,6 +52,7 @@ impl Hardware {
         Self {
             rom_data: rom_data.into(),
             bios_data: bios_data.map(MirrorVec::from),
+            hram: MirrorVec::new(HRAM_SIZE),
         }
     }
 }
@@ -105,18 +109,18 @@ impl Bus for Hardware {
             0x10..=0x3f => panic!("APU register reads not yet implemented"),
             0x40..=0x4f => panic!("PPU register reads not yet implemented"),
             0x50..=0x7f => panic!("Misc register reads not yet implemented"),
-            0x80..=0xfe => panic!("HRAM reads not yet implemented"),
+            0x80..=0xfe => self.hram[address as usize],
             0xff => panic!("Interrupt register reads not yet implemented"),
         }
     }
 
-    fn write_high(&mut self, address: u8, _value: u8) {
+    fn write_high(&mut self, address: u8, value: u8) {
         match address {
             0x00..=0x0f => warn!("System register writes not yet implemented"),
             0x10..=0x3f => warn!("APU register writes not yet implemented"),
             0x40..=0x4f => warn!("PPU register writes not yet implemented"),
             0x50..=0x7f => warn!("Misc register writes not yet implemented"),
-            0x80..=0xfe => warn!("HRAM writes not yet implemented"),
+            0x80..=0xfe => self.hram[address as usize] = value,
             0xff => warn!("Interrupt register writes not yet implemented"),
         }
     }

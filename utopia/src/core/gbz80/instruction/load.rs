@@ -13,7 +13,13 @@ pub fn ld16<Lhs: WriteAddress<u16>>(core: &mut Core<impl Bus>) {
     Lhs::write(core, value);
 }
 
-pub fn push<Addr: WriteAddress<u16>>(core: &mut Core<impl Bus>) {
+pub fn pop<Addr: WriteAddress<u16>>(core: &mut Core<impl Bus>) {
+    debug!("POP {}", Addr::NAME);
+    let value = core.pop();
+    Addr::write(core, value);
+}
+
+pub fn push<Addr: ReadAddress<u16>>(core: &mut Core<impl Bus>) {
     debug!("PUSH {}", Addr::NAME);
     core.idle();
     let value = Addr::read(core);
