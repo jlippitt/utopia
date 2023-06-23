@@ -16,5 +16,5 @@ pub fn inc<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
     Addr::write(core, result);
     core.flags.z = result;
     core.flags.n = false;
-    core.flags.h = result == 0x10;
+    core.flags.h = (result & 0x0f) == 0;
 }
