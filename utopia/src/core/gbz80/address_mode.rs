@@ -169,3 +169,19 @@ impl ReadAddress<u8> for Immediate {
         core.next_byte()
     }
 }
+
+pub struct CIndirect;
+
+impl ReadAddress<u8> for CIndirect {
+    const NAME: &'static str = "($FF00+C)";
+
+    fn read(core: &mut Core<impl Bus>) -> u8 {
+        core.read_high(core.bc as u8)
+    }
+}
+
+impl WriteAddress<u8> for CIndirect {
+    fn write(core: &mut Core<impl Bus>, value: u8) {
+        core.write_high(core.bc as u8, value);
+    }
+}

@@ -11,6 +11,8 @@ pub trait Bus : fmt::Display {
     fn idle(&mut self);
     fn read(&mut self, address: u16) -> u8;
     fn write(&mut self, address: u16, value: u8);
+    fn read_high(&mut self, address: u8) -> u8;
+    fn write_high(&mut self, address: u8, value: u8);
 }
 
 pub struct Flags {
@@ -107,6 +109,10 @@ impl<T: Bus> Core<T> {
 
             // Page 3: Misc Ops 2
 
+            // +0x02 / 0x0a
+            0xe2 => instr::ld::<addr::CIndirect, addr::A>(self),
+            0xf2 => instr::ld::<addr::A, addr::CIndirect>(self),
+
             // +0x03 / 0x0b
             0xcb => self.prefix_cb(),
 
@@ -155,6 +161,17 @@ impl<T: Bus> Core<T> {
     fn write(&mut self, address: u16, value: u8) {
         debug!("  {:04X} <= {:02X}", address, value);
         self.bus.write(address, value);
+    }
+
+    fn read_high(&mut self, address: u8) -> u8 {
+        let value = self.bus.read_high(address);
+        debug!("  FF{:02X} => {:02X}", address, value);
+        value
+    }
+
+    fn write_high(&mut self, address: u8, value: u8) {
+        debug!("  FF{:02X} <= {:02X}", address, value);
+        self.bus.write_high(address, value);
     }
 
     fn next_byte(&mut self) -> u8 {
