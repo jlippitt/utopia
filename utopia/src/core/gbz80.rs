@@ -1,6 +1,6 @@
 use std::fmt;
 use tracing::debug;
-use address_mode::WriteAddress;
+use address_mode::{ReadAddress, WriteAddress};
 
 mod address_mode;
 mod instruction;
@@ -62,6 +62,16 @@ impl<T: Bus> Core<T> {
             // Page 1: 8-bit Loads
 
             // Page 2: 8-bit Arithmetic & Logic
+
+            // 0xA8
+            0xa8 => instr::xor::<addr::B>(self),
+            0xa9 => instr::xor::<addr::C>(self),
+            0xaa => instr::xor::<addr::D>(self),
+            0xab => instr::xor::<addr::E>(self),
+            0xac => instr::xor::<addr::H>(self),
+            0xad => instr::xor::<addr::L>(self),
+            //0xae => instr::xor::<addr::HLIndirect>(self),
+            0xaf => instr::xor::<addr::A>(self),
 
             // Page 3: Misc Ops 2
 
