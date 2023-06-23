@@ -103,6 +103,9 @@ impl<T: Bus> Core<T> {
             0x36 => instr::ld::<addr::HLIndirect, addr::Immediate>(self),
             0x3e => instr::ld::<addr::A, addr::Immediate>(self),
 
+            // +0x07 / 0x0f
+            0x17 => instr::rla(self),
+
             // Page 1: 8-bit Loads
 
             // 0x40
