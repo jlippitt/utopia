@@ -228,6 +228,7 @@ impl<T: Bus> Core<T> {
 
             // +0x01 / 0x09
             0xc1 => instr::pop::<addr::BC>(self),
+            0xc9 => instr::ret(self),
             0xd1 => instr::pop::<addr::DE>(self),
             0xe1 => instr::pop::<addr::HL>(self),
             //0xf1 => instr::pop::<addr::AF>(self),

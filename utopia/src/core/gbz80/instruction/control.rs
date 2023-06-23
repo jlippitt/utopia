@@ -22,6 +22,12 @@ pub fn call(core: &mut Core<impl Bus>) {
     debug!("CALL u16");
     let target = core.next_word();
     core.idle();
-    core.push(core.sp);
+    core.push(core.pc);
     core.pc = target;
+}
+
+pub fn ret(core: &mut Core<impl Bus>) {
+    debug!("RET");
+    core.pc = core.pop();
+    core.idle();
 }
