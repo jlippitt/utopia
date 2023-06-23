@@ -24,6 +24,10 @@ pub struct NES {
 }
 
 impl System for NES {
+    fn width(&self) -> u32 { 240 }
+
+    fn height(&self) -> u32 { 224 }
+
     fn run(&mut self) {
         loop {
             self.core.step();

@@ -3,6 +3,8 @@ use std::error::Error;
 mod nes;
 
 pub trait System {
+    fn width(&self) -> u32;
+    fn height(&self) -> u32;
     fn run(&mut self);
 }
 
