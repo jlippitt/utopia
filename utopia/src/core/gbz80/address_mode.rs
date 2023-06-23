@@ -97,3 +97,65 @@ reg16!(BC, bc);
 reg16!(DE, de);
 reg16!(HL, hl);
 reg16!(SP, sp);
+
+macro_rules! reg16_indirect {
+    ($name:ident, $display_name:expr, $field:ident) => {
+        pub struct $name;
+
+        impl ReadAddress<u8> for $name {
+            const NAME: &'static str = $display_name;
+
+            fn read(core: &mut Core<impl Bus>) -> u8 {
+                core.read(core.$field)
+            }
+        }
+
+        impl WriteAddress<u8> for $name {
+            fn write(core: &mut Core<impl Bus>, value: u8) {
+                core.write(core.$field, value)
+            }
+        }
+    }
+}
+
+reg16_indirect!(BCIndirect, "(BC)", bc);
+reg16_indirect!(DEIndirect, "(DE)", de);
+reg16_indirect!(HLIndirect, "(HL)", hl);
+
+pub struct HLIncrement;
+
+impl ReadAddress<u8> for HLIncrement {
+    const NAME: &'static str = "(HL+)";
+
+    fn read(core: &mut Core<impl Bus>) -> u8 {
+        let value = core.read(core.hl);
+        core.hl = core.hl.wrapping_add(1);
+        value
+    }
+}
+
+impl WriteAddress<u8> for HLIncrement {
+    fn write(core: &mut Core<impl Bus>, value: u8) {
+        core.write(core.hl, value);
+        core.hl = core.hl.wrapping_add(1);
+    }
+}
+
+pub struct HLDecrement;
+
+impl ReadAddress<u8> for HLDecrement {
+    const NAME: &'static str = "(HL-)";
+
+    fn read(core: &mut Core<impl Bus>) -> u8 {
+        let value = core.read(core.hl);
+        core.hl = core.hl.wrapping_sub(1);
+        value
+    }
+}
+
+impl WriteAddress<u8> for HLDecrement {
+    fn write(core: &mut Core<impl Bus>, value: u8) {
+        core.write(core.hl, value);
+        core.hl = core.hl.wrapping_sub(1);
+    }
+}

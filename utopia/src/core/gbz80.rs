@@ -7,6 +7,7 @@ mod instruction;
 
 pub trait Bus : fmt::Display {
     fn read(&mut self, address: u16) -> u8;
+    fn write(&mut self, address: u16, value: u8);
 }
 
 struct Flags {
@@ -59,6 +60,16 @@ impl<T: Bus> Core<T> {
             0x21 => instr::ld16::<addr::HL>(self),
             0x31 => instr::ld16::<addr::SP>(self),
 
+            // +0x02 / 0x0a
+            0x02 => instr::ld::<addr::BCIndirect, addr::A>(self),
+            0x0a => instr::ld::<addr::A, addr::BCIndirect>(self),
+            0x12 => instr::ld::<addr::DEIndirect, addr::A>(self),
+            0x1a => instr::ld::<addr::A, addr::DEIndirect>(self),
+            0x22 => instr::ld::<addr::HLIncrement, addr::A>(self),
+            0x2a => instr::ld::<addr::A, addr::HLIncrement>(self),
+            0x32 => instr::ld::<addr::HLDecrement, addr::A>(self),
+            0x3a => instr::ld::<addr::A, addr::HLDecrement>(self),
+
             // Page 1: 8-bit Loads
 
             // Page 2: 8-bit Arithmetic & Logic
@@ -70,7 +81,7 @@ impl<T: Bus> Core<T> {
             0xab => instr::xor::<addr::E>(self),
             0xac => instr::xor::<addr::H>(self),
             0xad => instr::xor::<addr::L>(self),
-            //0xae => instr::xor::<addr::HLIndirect>(self),
+            0xae => instr::xor::<addr::HLIndirect>(self),
             0xaf => instr::xor::<addr::A>(self),
 
             // Page 3: Misc Ops 2
@@ -83,6 +94,11 @@ impl<T: Bus> Core<T> {
         let value = self.bus.read(address);
         debug!("  {:04X} => {:02X}", address, value);
         value
+    }
+
+    fn write(&mut self, address: u16, value: u8) {
+        debug!("  {:04X} <= {:02X}", address, value);
+        self.bus.write(address, value);
     }
 
     fn next_byte(&mut self) -> u8 {

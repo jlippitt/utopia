@@ -3,7 +3,7 @@ use crate::util::MirrorVec;
 use super::{System, BiosLoader};
 use std::error::Error;
 use std::fmt;
-use tracing::debug;
+use tracing::{debug, warn};
 
 const WIDTH: usize = 160;
 const HEIGHT: usize = 144;
@@ -72,6 +72,17 @@ impl Bus for Hardware {
             5 => panic!("ERAM reads not yet implemented"),
             6 => panic!("WRAM reads not yet implemented"),
             7 => panic!("High reads not yet implemented"),
+            _ => unreachable!(),
+        }
+    }
+
+    fn write(&mut self, address: u16, _value: u8) {
+        match address >> 13 {
+            0 | 1 | 2 | 3 => panic!("Mapper writes not yet implemented"),
+            4 => warn!("VRAM writes not yet implemented"),
+            5 => warn!("ERAM writes not yet implemented"),
+            6 => warn!("WRAM writes not yet implemented"),
+            7 => warn!("High writes not yet implemented"),
             _ => unreachable!(),
         }
     }
