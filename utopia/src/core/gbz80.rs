@@ -105,6 +105,86 @@ impl<T: Bus> Core<T> {
 
             // Page 1: 8-bit Loads
 
+            // 0x40
+            0x40 => instr::ld::<addr::B, addr::B>(self),
+            0x41 => instr::ld::<addr::B, addr::C>(self),
+            0x42 => instr::ld::<addr::B, addr::D>(self),
+            0x43 => instr::ld::<addr::B, addr::E>(self),
+            0x44 => instr::ld::<addr::B, addr::H>(self),
+            0x45 => instr::ld::<addr::B, addr::L>(self),
+            0x46 => instr::ld::<addr::B, addr::HLIndirect>(self),
+            0x47 => instr::ld::<addr::B, addr::A>(self),
+
+            // 0x48
+            0x48 => instr::ld::<addr::C, addr::B>(self),
+            0x49 => instr::ld::<addr::C, addr::C>(self),
+            0x4a => instr::ld::<addr::C, addr::D>(self),
+            0x4b => instr::ld::<addr::C, addr::E>(self),
+            0x4c => instr::ld::<addr::C, addr::H>(self),
+            0x4d => instr::ld::<addr::C, addr::L>(self),
+            0x4e => instr::ld::<addr::C, addr::HLIndirect>(self),
+            0x4f => instr::ld::<addr::C, addr::A>(self),
+
+            // 0x50
+            0x50 => instr::ld::<addr::D, addr::B>(self),
+            0x51 => instr::ld::<addr::D, addr::C>(self),
+            0x52 => instr::ld::<addr::D, addr::D>(self),
+            0x53 => instr::ld::<addr::D, addr::E>(self),
+            0x54 => instr::ld::<addr::D, addr::H>(self),
+            0x55 => instr::ld::<addr::D, addr::L>(self),
+            0x56 => instr::ld::<addr::D, addr::HLIndirect>(self),
+            0x57 => instr::ld::<addr::D, addr::A>(self),
+
+            // 0x58
+            0x58 => instr::ld::<addr::E, addr::B>(self),
+            0x59 => instr::ld::<addr::E, addr::C>(self),
+            0x5a => instr::ld::<addr::E, addr::D>(self),
+            0x5b => instr::ld::<addr::E, addr::E>(self),
+            0x5c => instr::ld::<addr::E, addr::H>(self),
+            0x5d => instr::ld::<addr::E, addr::L>(self),
+            0x5e => instr::ld::<addr::E, addr::HLIndirect>(self),
+            0x5f => instr::ld::<addr::E, addr::A>(self),
+
+            // 0x60
+            0x60 => instr::ld::<addr::H, addr::B>(self),
+            0x61 => instr::ld::<addr::H, addr::C>(self),
+            0x62 => instr::ld::<addr::H, addr::D>(self),
+            0x63 => instr::ld::<addr::H, addr::E>(self),
+            0x64 => instr::ld::<addr::H, addr::H>(self),
+            0x65 => instr::ld::<addr::H, addr::L>(self),
+            0x66 => instr::ld::<addr::H, addr::HLIndirect>(self),
+            0x67 => instr::ld::<addr::H, addr::A>(self),
+
+            // 0x68
+            0x68 => instr::ld::<addr::L, addr::B>(self),
+            0x69 => instr::ld::<addr::L, addr::C>(self),
+            0x6a => instr::ld::<addr::L, addr::D>(self),
+            0x6b => instr::ld::<addr::L, addr::E>(self),
+            0x6c => instr::ld::<addr::L, addr::H>(self),
+            0x6d => instr::ld::<addr::L, addr::L>(self),
+            0x6e => instr::ld::<addr::L, addr::HLIndirect>(self),
+            0x6f => instr::ld::<addr::L, addr::A>(self),
+
+            // 0x70
+            0x70 => instr::ld::<addr::HLIndirect, addr::B>(self),
+            0x71 => instr::ld::<addr::HLIndirect, addr::C>(self),
+            0x72 => instr::ld::<addr::HLIndirect, addr::D>(self),
+            0x73 => instr::ld::<addr::HLIndirect, addr::E>(self),
+            0x74 => instr::ld::<addr::HLIndirect, addr::H>(self),
+            0x75 => instr::ld::<addr::HLIndirect, addr::L>(self),
+            //0x76 => instr::halt(self);
+            0x77 => instr::ld::<addr::HLIndirect, addr::A>(self),
+
+            // 0x78
+            0x78 => instr::ld::<addr::A, addr::B>(self),
+            0x79 => instr::ld::<addr::A, addr::C>(self),
+            0x7a => instr::ld::<addr::A, addr::D>(self),
+            0x7b => instr::ld::<addr::A, addr::E>(self),
+            0x7c => instr::ld::<addr::A, addr::H>(self),
+            0x7d => instr::ld::<addr::A, addr::L>(self),
+            0x7e => instr::ld::<addr::A, addr::HLIndirect>(self),
+            0x7f => instr::ld::<addr::A, addr::A>(self),
+
             // Page 2: 8-bit Arithmetic & Logic
 
             // 0xA8
