@@ -19,10 +19,12 @@ impl<T: Clone + Default> MirrorVec<T> {
 }
 
 impl<T: Clone + Default> From<Vec<T>> for MirrorVec<T> {
-    fn from(mut vec: Vec<T>) -> Self {
-        let size = vec.len().next_power_of_two();
+    fn from(vec: Vec<T>) -> Self {
+        let size = vec.len();
 
-        vec.resize(size, Default::default());
+        if !size.is_power_of_two() {
+            panic!("MirrorVec size must be a power of two");
+        }
 
         Self {
             vec,
