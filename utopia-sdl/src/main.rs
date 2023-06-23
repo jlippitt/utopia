@@ -3,8 +3,10 @@ use sdl2::event::Event;
 use sdl2::pixels::PixelFormatEnum;
 use std::error::Error;
 use std::fs;
+use video::Video;
 
 mod log;
+mod video;
 
 #[derive(Parser, Debug)]
 #[command(author, version)]
@@ -27,27 +29,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut system = utopia::create(&args.rom_path, rom_data)?;
 
+    let pixels = vec![0u8; system.width() as usize * system.height() as usize * 4];
+
     //system.run();
 
     let sdl_context = sdl2::init()?;
-    let video = sdl_context.video()?;
-    let width = system.width();
-    let height = system.height();
-    let pitch = width as usize * 4;
+    
+    let mut video = Video::new(&sdl_context, system.width(), system.height())?;
 
-    let pixels = vec![0u8; pitch * height as usize];
+    let texture_creator = video.texture_creator();
 
-    let window = video.window("Utopia", width, height)
-        .position_centered()
-        .build()?;
-
-    let mut canvas = window.into_canvas()
-        .present_vsync()
-        .build()?;
-
-    let texture_creator = canvas.texture_creator();
-
-    let mut texture = texture_creator.create_texture_streaming(PixelFormatEnum::RGB888, width, height)?;
+    let mut texture = video.create_texture(&texture_creator)?;
 
     let mut event_pump = sdl_context.event_pump()?;
 
@@ -59,11 +51,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-        texture.update(None, &pixels, pitch)?;
-
-        canvas.clear();
-        canvas.copy(&texture, None, None)?;
-        canvas.present();
+        video.update(&mut texture, &pixels)?;
     }
 
     Ok(())
