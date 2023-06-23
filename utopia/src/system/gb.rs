@@ -54,6 +54,10 @@ impl Hardware {
 }
 
 impl Bus for Hardware {
+    fn idle(&mut self) {
+        //
+    }
+
     fn read(&mut self, address: u16) -> u8 {
         match address >> 13 {
             0 => {

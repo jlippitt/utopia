@@ -8,7 +8,7 @@ pub fn ld<Lhs: WriteAddress<u8>, Rhs: ReadAddress<u8>>(core: &mut Core<impl Bus>
 }
 
 pub fn ld16<Lhs: WriteAddress<u16>>(core: &mut Core<impl Bus>) {
-    debug!("LD {}, nn", Lhs::NAME);
+    debug!("LD {}, u16", Lhs::NAME);
     let value = core.next_word();
     Lhs::write(core, value);
 }

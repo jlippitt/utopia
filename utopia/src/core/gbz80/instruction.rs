@@ -1,7 +1,9 @@
 pub use alu::*;
 pub use bit::*;
+pub use control::*;
 pub use load::*;
 
 mod alu;
+mod control;
 mod load;
 mod bit;

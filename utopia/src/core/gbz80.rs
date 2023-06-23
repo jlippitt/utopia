@@ -1,16 +1,19 @@
 use std::fmt;
 use tracing::debug;
 use address_mode::{ReadAddress, WriteAddress};
+use condition::Condition;
 
 mod address_mode;
+mod condition;
 mod instruction;
 
 pub trait Bus : fmt::Display {
+    fn idle(&mut self);
     fn read(&mut self, address: u16) -> u8;
     fn write(&mut self, address: u16, value: u8);
 }
 
-struct Flags {
+pub struct Flags {
     z: u8,
     n: bool,
     h: bool,
@@ -49,10 +52,18 @@ impl<T: Bus> Core<T> {
 
     pub fn step(&mut self) {
         use address_mode as addr;
+        use condition as cond;
         use instruction as instr;
 
         match self.next_byte() {
             // Page 0: Misc Ops
+
+            // +0x00 / +0x08
+            0x18 => instr::jr(self),
+            0x20 => instr::jr_conditional::<cond::NZ>(self),
+            0x28 => instr::jr_conditional::<cond::Z>(self),
+            0x30 => instr::jr_conditional::<cond::NC>(self),
+            0x38 => instr::jr_conditional::<cond::C>(self),
 
             // +0x01 / +0x09
             0x01 => instr::ld16::<addr::BC>(self),
@@ -118,6 +129,11 @@ impl<T: Bus> Core<T> {
 
             _ => panic!("Opcode CB{:02X} not yet implemented", opcode)
         }
+    }
+
+    fn idle(&mut self) {
+        debug!("  IO");
+        self.bus.idle();
     }
 
     fn read(&mut self, address: u16) -> u8 {
