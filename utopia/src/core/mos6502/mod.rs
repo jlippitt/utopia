@@ -5,25 +5,25 @@ mod address_mode;
 mod instruction;
 mod operator;
 
-pub const STACK_PAGE: u16 = 0x0100;
+const STACK_PAGE: u16 = 0x0100;
 
 pub type Interrupt = u32;
 
 pub const INT_RESET: Interrupt = 0x0000_0001;
 pub const INT_NMI: Interrupt = 0x0000_0002;
 
-pub trait Bus: fmt::Display {
-    fn read(&mut self, address: u16) -> u8;
-    fn write(&mut self, address: u16, value: u8);
-    fn poll(&mut self) -> Interrupt;
-    fn acknowledge(&mut self, interrupt: Interrupt);
-}
-
 #[repr(u32)]
 #[derive(Copy, Clone, Eq, PartialEq)]
 enum IrqDisable {
     Clear = 0xffff_ffff,
     Set = INT_RESET | INT_NMI,
+}
+
+pub trait Bus: fmt::Display {
+    fn read(&mut self, address: u16) -> u8;
+    fn write(&mut self, address: u16, value: u8);
+    fn poll(&mut self) -> Interrupt;
+    fn acknowledge(&mut self, interrupt: Interrupt);
 }
 
 pub struct Flags {
@@ -36,21 +36,19 @@ pub struct Flags {
 }
 
 pub struct Core<T: Bus> {
-    bus: T,
-    interrupt: Interrupt,
     a: u8,
     x: u8,
     y: u8,
     s: u8,
     pc: u16,
     flags: Flags,
+    interrupt: Interrupt,
+    bus: T,
 }
 
 impl<T: Bus> Core<T> {
     pub fn new(bus: T) -> Self {
         Self {
-            bus,
-            interrupt: INT_RESET,
             a: 0,
             x: 0,
             y: 0,
@@ -64,6 +62,8 @@ impl<T: Bus> Core<T> {
                 z: 0xff,
                 c: false,
             },
+            interrupt: INT_RESET,
+            bus,
         }
     }
     

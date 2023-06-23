@@ -1,6 +1,8 @@
 use crate::core::gbz80::{Bus, Core};
 use super::{System, BiosLoader};
 use std::error::Error;
+use std::fmt;
+use tracing::debug;
 
 const WIDTH: usize = 160;
 const HEIGHT: usize = 144;
@@ -12,11 +14,11 @@ pub fn create(rom_data: Vec<u8>, bios_loader: &impl BiosLoader) -> Result<Box<dy
     let hw = Hardware::new(rom_data, bios_data);
     let core = Core::new(hw);
 
-    Ok(Box::new(GameBoy { _core: core }))
+    Ok(Box::new(GameBoy { core }))
 }
 
 pub struct GameBoy {
-    _core: Core<Hardware>,
+    core: Core<Hardware>,
 }
 
 impl System for GameBoy {
@@ -27,14 +29,12 @@ impl System for GameBoy {
     fn pixels(&self) -> &[u8] { &PIXELS }
 
     fn run_frame(&mut self) {
-        panic!("Game Boy not yet implemented");
+        let core = &mut self.core;
 
-        // let core = &mut self.core;
-        //
-        // loop {
-        //     core.step();
-        //     debug!("{}", core);
-        // }
+        loop {
+            debug!("{}", core);
+            panic!("Game Boy not yet implemented");
+        }
     }
 }
 
@@ -54,4 +54,10 @@ impl Hardware {
 
 impl Bus for Hardware {
     //
+}
+
+impl fmt::Display for Hardware {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "")
+    }
 }
