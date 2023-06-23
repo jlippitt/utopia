@@ -229,6 +229,16 @@ impl<T: Bus> Core<T> {
 
         match opcode {
             // Page 0: Shifts and Rotates
+            
+            // 0x10
+            0x10 => instr::rl::<addr::B>(self),
+            0x11 => instr::rl::<addr::C>(self),
+            0x12 => instr::rl::<addr::D>(self),
+            0x13 => instr::rl::<addr::E>(self),
+            0x14 => instr::rl::<addr::H>(self),
+            0x15 => instr::rl::<addr::L>(self),
+            0x16 => instr::rl::<addr::HLIndirect>(self),
+            0x17 => instr::rl::<addr::A>(self),
 
             // Page 1: BIT
             0x40 | 0x48 | 0x50 | 0x58 | 0x60 | 0x68 | 0x70 | 0x78 => instr::bit::<addr::B>(self, opcode),
