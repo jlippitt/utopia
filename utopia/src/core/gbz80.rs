@@ -210,6 +210,9 @@ impl<T: Bus> Core<T> {
             // +0x03 / 0x0b
             0xcb => self.prefix_cb(),
 
+            // +0x05 / 0x0d
+            0xcd => instr::call(self),
+
             opcode @ _ => panic!("Opcode {:02X} not yet implemented", opcode)
         }
     }
@@ -278,6 +281,13 @@ impl<T: Bus> Core<T> {
         let low = self.next_byte();
         let high = self.next_byte();
         u16::from_le_bytes([low, high])
+    }
+
+    fn push(&mut self, value: u16) {
+        self.sp = self.sp.wrapping_sub(1);
+        self.write(self.sp, (value >> 8) as u8);
+        self.sp = self.sp.wrapping_sub(1);
+        self.write(self.sp, value as u8);
     }
 }
 

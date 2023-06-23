@@ -17,3 +17,11 @@ pub fn jr_conditional<Cond: Condition>(core: &mut Core<impl Bus>) {
         core.pc = (core.pc as i16).wrapping_add(offset as i16) as u16;
     }
 }
+
+pub fn call(core: &mut Core<impl Bus>) {
+    debug!("CALL u16");
+    let target = core.next_word();
+    core.idle();
+    core.push(core.sp);
+    core.pc = target;
+}
