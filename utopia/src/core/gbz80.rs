@@ -1,5 +1,9 @@
 use std::fmt;
 use tracing::debug;
+use address_mode::WriteAddress;
+
+mod address_mode;
+mod instruction;
 
 pub trait Bus : fmt::Display {
     fn read(&mut self, address: u16) -> u8;
@@ -43,7 +47,24 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn step(&mut self) {
+        use address_mode as addr;
+        use instruction as instr;
+
         match self.next_byte() {
+            // Page 0: Misc Ops
+
+            // +0x01 / +0x09
+            0x01 => instr::ld16::<addr::BC>(self),
+            0x11 => instr::ld16::<addr::DE>(self),
+            0x21 => instr::ld16::<addr::HL>(self),
+            0x31 => instr::ld16::<addr::SP>(self),
+
+            // Page 1: 8-bit Loads
+
+            // Page 2: 8-bit Arithmetic & Logic
+
+            // Page 3: Misc Ops 2
+
             opcode @ _ => panic!("Opcode {:02X} not yet implemented", opcode)
         }
     }
@@ -58,6 +79,12 @@ impl<T: Bus> Core<T> {
         let value = self.read(self.pc);
         self.pc = self.pc.wrapping_add(1);
         value
+    }
+
+    fn next_word(&mut self) -> u16 {
+        let low = self.next_byte();
+        let high = self.next_byte();
+        u16::from_le_bytes([low, high])
     }
 }
 
