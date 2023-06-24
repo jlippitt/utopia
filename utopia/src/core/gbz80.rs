@@ -329,7 +329,7 @@ impl<T: Bus> Core<T> {
             0xf6 => instr::or::<addr::Immediate>(self),
             0xfe => instr::cp::<addr::Immediate>(self),
 
-            opcode @ _ => panic!("Opcode {:02X} not yet implemented", opcode),
+            opcode => panic!("Opcode {:02X} not yet implemented", opcode),
         }
     }
 

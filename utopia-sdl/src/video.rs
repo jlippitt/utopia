@@ -48,10 +48,10 @@ impl Video {
         texture: &mut Texture<'_>,
         pixels: &[u8],
     ) -> Result<(), Box<dyn Error>> {
-        texture.update(None, &pixels, self.pitch)?;
+        texture.update(None, pixels, self.pitch)?;
 
         self.canvas.clear();
-        self.canvas.copy(&texture, None, None)?;
+        self.canvas.copy(texture, None, None)?;
         self.canvas.present();
 
         Ok(())

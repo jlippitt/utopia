@@ -321,7 +321,7 @@ impl<T: Bus> Core<T> {
             0xde => instr::modify::<addr::AbsoluteX, op::Dec>(self),
             0xfe => instr::modify::<addr::AbsoluteX, op::Inc>(self),
 
-            opcode @ _ => panic!("Opcode {:02X} not yet implemented", opcode),
+            opcode => panic!("Opcode {:02X} not yet implemented", opcode),
         }
     }
 

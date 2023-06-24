@@ -16,14 +16,14 @@ pub fn create(rom_data: Vec<u8>) -> Result<Box<dyn System>, Box<dyn Error>> {
     let hw = Hardware::new(rom_data);
     let core = Core::new(hw);
 
-    Ok(Box::new(NES { core }))
+    Ok(Box::new(Nes { core }))
 }
 
-pub struct NES {
+pub struct Nes {
     core: Core<Hardware>,
 }
 
-impl System for NES {
+impl System for Nes {
     fn width(&self) -> usize {
         ppu::WIDTH
     }

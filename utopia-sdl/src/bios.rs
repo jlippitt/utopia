@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fs;
 
-const BIOS_PATH: &'static str = "./bios";
+const BIOS_PATH: &str = "./bios";
 
 pub struct BiosLoader;
 

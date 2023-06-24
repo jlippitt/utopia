@@ -55,7 +55,7 @@ impl Ppu {
     }
 
     pub fn ready(&self) -> bool {
-        return self.ready;
+        self.ready
     }
 
     pub fn start_frame(&mut self) {
