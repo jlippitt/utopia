@@ -210,6 +210,56 @@ impl<T: Bus> Core<T> {
 
             // Page 2: 8-bit Arithmetic & Logic
 
+            // 0x80
+            0x80 => instr::add::<addr::B>(self),
+            0x81 => instr::add::<addr::C>(self),
+            0x82 => instr::add::<addr::D>(self),
+            0x83 => instr::add::<addr::E>(self),
+            0x84 => instr::add::<addr::H>(self),
+            0x85 => instr::add::<addr::L>(self),
+            0x86 => instr::add::<addr::HLIndirect>(self),
+            0x87 => instr::add::<addr::A>(self),
+
+            // 0x88
+            0x88 => instr::adc::<addr::B>(self),
+            0x89 => instr::adc::<addr::C>(self),
+            0x8a => instr::adc::<addr::D>(self),
+            0x8b => instr::adc::<addr::E>(self),
+            0x8c => instr::adc::<addr::H>(self),
+            0x8d => instr::adc::<addr::L>(self),
+            0x8e => instr::adc::<addr::HLIndirect>(self),
+            0x8f => instr::adc::<addr::A>(self),
+
+            // 0x90
+            0x90 => instr::sub::<addr::B>(self),
+            0x91 => instr::sub::<addr::C>(self),
+            0x92 => instr::sub::<addr::D>(self),
+            0x93 => instr::sub::<addr::E>(self),
+            0x94 => instr::sub::<addr::H>(self),
+            0x95 => instr::sub::<addr::L>(self),
+            0x96 => instr::sub::<addr::HLIndirect>(self),
+            0x97 => instr::sub::<addr::A>(self),
+
+            // 0x98
+            0x98 => instr::sbc::<addr::B>(self),
+            0x99 => instr::sbc::<addr::C>(self),
+            0x9a => instr::sbc::<addr::D>(self),
+            0x9b => instr::sbc::<addr::E>(self),
+            0x9c => instr::sbc::<addr::H>(self),
+            0x9d => instr::sbc::<addr::L>(self),
+            0x9e => instr::sbc::<addr::HLIndirect>(self),
+            0x9f => instr::sbc::<addr::A>(self),
+
+            // 0xA0
+            0xa0 => instr::and::<addr::B>(self),
+            0xa1 => instr::and::<addr::C>(self),
+            0xa2 => instr::and::<addr::D>(self),
+            0xa3 => instr::and::<addr::E>(self),
+            0xa4 => instr::and::<addr::H>(self),
+            0xa5 => instr::and::<addr::L>(self),
+            0xa6 => instr::and::<addr::HLIndirect>(self),
+            0xa7 => instr::and::<addr::A>(self),
+
             // 0xA8
             0xa8 => instr::xor::<addr::B>(self),
             0xa9 => instr::xor::<addr::C>(self),
@@ -219,6 +269,26 @@ impl<T: Bus> Core<T> {
             0xad => instr::xor::<addr::L>(self),
             0xae => instr::xor::<addr::HLIndirect>(self),
             0xaf => instr::xor::<addr::A>(self),
+
+            // 0xB0
+            0xb0 => instr::or::<addr::B>(self),
+            0xb1 => instr::or::<addr::C>(self),
+            0xb2 => instr::or::<addr::D>(self),
+            0xb3 => instr::or::<addr::E>(self),
+            0xb4 => instr::or::<addr::H>(self),
+            0xb5 => instr::or::<addr::L>(self),
+            0xb6 => instr::or::<addr::HLIndirect>(self),
+            0xb7 => instr::or::<addr::A>(self),
+
+            // 0xB8
+            0xb8 => instr::cp::<addr::B>(self),
+            0xb9 => instr::cp::<addr::C>(self),
+            0xba => instr::cp::<addr::D>(self),
+            0xbb => instr::cp::<addr::E>(self),
+            0xbc => instr::cp::<addr::H>(self),
+            0xbd => instr::cp::<addr::L>(self),
+            0xbe => instr::cp::<addr::HLIndirect>(self),
+            0xbf => instr::cp::<addr::A>(self),
 
             // Page 3: Misc Ops 2
 
@@ -246,6 +316,17 @@ impl<T: Bus> Core<T> {
             0xd5 => instr::push::<addr::DE>(self),
             0xe5 => instr::push::<addr::HL>(self),
             //0xf5 => instr::push::<addr::AF>(self),
+
+            // +0x06 / 0x0e
+            0xc6 => instr::add::<addr::Immediate>(self),
+            0xce => instr::adc::<addr::Immediate>(self),
+            0xd6 => instr::sub::<addr::Immediate>(self),
+            0xde => instr::sbc::<addr::Immediate>(self),
+            0xe6 => instr::and::<addr::Immediate>(self),
+            0xee => instr::xor::<addr::Immediate>(self),
+            0xf6 => instr::or::<addr::Immediate>(self),
+            0xfe => instr::cp::<addr::Immediate>(self),
+
             opcode @ _ => panic!("Opcode {:02X} not yet implemented", opcode),
         }
     }
