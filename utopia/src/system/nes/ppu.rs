@@ -1,10 +1,10 @@
-pub use screen::{WIDTH, HEIGHT};
+pub use screen::{HEIGHT, WIDTH};
 
-use crate::core::mos6502::{Interrupt, INT_NMI};
 use super::cartridge::Cartridge;
-use tracing::{debug, warn};
+use crate::core::mos6502::{Interrupt, INT_NMI};
 use palette::Palette;
 use screen::Screen;
+use tracing::{debug, warn};
 
 mod palette;
 mod screen;
@@ -70,7 +70,12 @@ impl Ppu {
         self.screen.pixels()
     }
 
-    pub fn read(&mut self, _cartridge: &mut Cartridge, interrupt: &mut Interrupt, address: u16) -> u8 {
+    pub fn read(
+        &mut self,
+        _cartridge: &mut Cartridge,
+        interrupt: &mut Interrupt,
+        address: u16,
+    ) -> u8 {
         match address & 7 {
             2 => {
                 // TODO: Open bus
@@ -91,7 +96,13 @@ impl Ppu {
         }
     }
 
-    pub fn write(&mut self, cartridge: &mut Cartridge, interrupt: &mut Interrupt, address: u16, value: u8) {
+    pub fn write(
+        &mut self,
+        cartridge: &mut Cartridge,
+        interrupt: &mut Interrupt,
+        address: u16,
+        value: u8,
+    ) {
         match address & 7 {
             0 => {
                 let nmi_active = (value & 0x80) != 0;
@@ -111,7 +122,9 @@ impl Ppu {
             }
             5 => {
                 if self.regs.w {
-                    self.regs.t = (self.regs.t & 0x0c1f) | ((value as u16 & 0xf8) << 2) | ((value as u16 & 0x07) << 12);
+                    self.regs.t = (self.regs.t & 0x0c1f)
+                        | ((value as u16 & 0xf8) << 2)
+                        | ((value as u16 & 0x07) << 12);
                     debug!("PPU TMP Address: {:04X}", self.regs.t);
                 } else {
                     self.regs.t = (self.regs.t & 0x7fe0) | ((value >> 3) as u16);
@@ -121,7 +134,7 @@ impl Ppu {
                 }
 
                 self.regs.w = !self.regs.w;
-            },
+            }
             6 => {
                 if self.regs.w {
                     self.regs.t = (self.regs.t & 0xff00) | value as u16;

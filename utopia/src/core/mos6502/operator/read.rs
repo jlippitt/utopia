@@ -144,4 +144,3 @@ impl ReadOperator for Sbc {
         Adc::apply(core, !value);
     }
 }
-

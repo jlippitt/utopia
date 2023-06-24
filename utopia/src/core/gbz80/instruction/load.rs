@@ -1,4 +1,4 @@
-use super::super::{Core, Bus, ReadAddress, WriteAddress};
+use super::super::{Bus, Core, ReadAddress, WriteAddress};
 use tracing::debug;
 
 pub fn ld<Lhs: WriteAddress<u8>, Rhs: ReadAddress<u8>>(core: &mut Core<impl Bus>) {

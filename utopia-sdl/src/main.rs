@@ -1,8 +1,8 @@
+use bios::BiosLoader;
 use clap::Parser;
 use sdl2::event::Event;
 use std::error::Error;
 use std::fs;
-use bios::BiosLoader;
 use video::Video;
 
 mod bios;
@@ -31,8 +31,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut system = utopia::create(&args.rom_path, rom_data, &BiosLoader::new())?;
 
     let sdl_context = sdl2::init()?;
-    
-    let mut video = Video::new(&sdl_context, system.width().try_into()?, system.height().try_into()?)?;
+
+    let mut video = Video::new(
+        &sdl_context,
+        system.width().try_into()?,
+        system.height().try_into()?,
+    )?;
 
     let texture_creator = video.texture_creator();
 

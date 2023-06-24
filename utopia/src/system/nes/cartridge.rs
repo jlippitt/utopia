@@ -42,19 +42,27 @@ impl Cartridge {
 
         let name_tables = if (data[6] & 0x01) != 0 {
             debug!("Mirror Mode: Vertical");
-            [NameTable::Low, NameTable::High, NameTable::Low, NameTable::High]
+            [
+                NameTable::Low,
+                NameTable::High,
+                NameTable::Low,
+                NameTable::High,
+            ]
         } else {
             debug!("Mirror Mode: Horizontal");
-            [NameTable::Low, NameTable::Low, NameTable::High, NameTable::High]
+            [
+                NameTable::Low,
+                NameTable::Low,
+                NameTable::High,
+                NameTable::High,
+            ]
         };
 
         Self {
             prg_rom: prg_rom.into(),
             _chr_data: chr_data.into(),
             ci_ram: MirrorVec::new(CI_RAM_SIZE),
-            mappings: Mappings {
-                name_tables,
-            }
+            mappings: Mappings { name_tables },
         }
     }
 

@@ -1,11 +1,11 @@
+use super::System;
 use crate::core::mos6502::{Bus, Core, Interrupt};
 use crate::util::MirrorVec;
-use super::System;
+use cartridge::Cartridge;
+use ppu::Ppu;
 use std::error::Error;
 use std::fmt;
 use tracing::{debug, warn};
-use cartridge::Cartridge;
-use ppu::Ppu;
 
 const WRAM_SIZE: usize = 2048;
 
@@ -24,11 +24,17 @@ pub struct NES {
 }
 
 impl System for NES {
-    fn width(&self) -> usize { ppu::WIDTH }
+    fn width(&self) -> usize {
+        ppu::WIDTH
+    }
 
-    fn height(&self) -> usize { ppu::HEIGHT }
+    fn height(&self) -> usize {
+        ppu::HEIGHT
+    }
 
-    fn pixels(&self) -> &[u8] { self.core.bus().ppu.pixels() }
+    fn pixels(&self) -> &[u8] {
+        self.core.bus().ppu.pixels()
+    }
 
     fn run_frame(&mut self) {
         let core = &mut self.core;
@@ -71,7 +77,9 @@ impl Bus for Hardware {
 
         match address >> 13 {
             0 => self.wram[address as usize],
-            1 => self.ppu.read(&mut self.cartridge, &mut self.interrupt, address),
+            1 => self
+                .ppu
+                .read(&mut self.cartridge, &mut self.interrupt, address),
             2 => match address {
                 0x4016..=0x4017 => 0, // TODO: Joypad ports
                 0x4000..=0x401f => 0, // TODO: APU ports
@@ -80,7 +88,7 @@ impl Bus for Hardware {
             3 => {
                 //panic!("PRG RAM reads not yet implemented"),
                 0
-            },
+            }
             _ => self.cartridge.read_prg_rom(address),
         }
     }
@@ -91,14 +99,16 @@ impl Bus for Hardware {
 
         match address >> 13 {
             0 => self.wram[address as usize] = value,
-            1 => self.ppu.write(&mut self.cartridge, &mut self.interrupt, address, value),
+            1 => self
+                .ppu
+                .write(&mut self.cartridge, &mut self.interrupt, address, value),
             2 => warn!("2A03 register writes not yet implemented"),
             3 => {
                 //panic!("PRG RAM writes not yet implemented"),
                 if address >= 0x6004 {
                     print!("{}", value as char);
                 }
-            },
+            }
             _ => panic!("Mapper register writes not yet implemented"),
         };
 

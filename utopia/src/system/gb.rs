@@ -1,6 +1,6 @@
+use super::{BiosLoader, System};
 use crate::core::gbz80::{Bus, Core};
 use crate::util::MirrorVec;
-use super::{System, BiosLoader};
 use std::error::Error;
 use std::fmt;
 use tracing::{debug, warn};
@@ -11,7 +11,10 @@ const PIXELS: [u8; 0] = [];
 
 const HRAM_SIZE: usize = 128;
 
-pub fn create(rom_data: Vec<u8>, bios_loader: &impl BiosLoader) -> Result<Box<dyn System>, Box<dyn Error>> {
+pub fn create(
+    rom_data: Vec<u8>,
+    bios_loader: &impl BiosLoader,
+) -> Result<Box<dyn System>, Box<dyn Error>> {
     let bios_data = Some(bios_loader.load("dmg")?);
 
     let hw = Hardware::new(rom_data, bios_data);
@@ -25,11 +28,17 @@ pub struct GameBoy {
 }
 
 impl System for GameBoy {
-    fn width(&self) -> usize { WIDTH }
+    fn width(&self) -> usize {
+        WIDTH
+    }
 
-    fn height(&self) -> usize { HEIGHT }
+    fn height(&self) -> usize {
+        HEIGHT
+    }
 
-    fn pixels(&self) -> &[u8] { &PIXELS }
+    fn pixels(&self) -> &[u8] {
+        &PIXELS
+    }
 
     fn run_frame(&mut self) {
         let core = &mut self.core;
@@ -74,7 +83,7 @@ impl Bus for Hardware {
                 } else {
                     self.rom_data[address as usize]
                 }
-            },
+            }
             1 | 2 | 3 => self.rom_data[address as usize],
             4 => panic!("VRAM reads not yet implemented"),
             5 => panic!("ERAM reads not yet implemented"),

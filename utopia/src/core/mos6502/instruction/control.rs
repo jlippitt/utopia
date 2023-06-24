@@ -53,4 +53,3 @@ pub fn rti(core: &mut Core<impl Bus>) {
     let high = core.pull();
     core.pc = u16::from_le_bytes([low, high]);
 }
-

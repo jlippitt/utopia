@@ -6,9 +6,7 @@ pub struct Palette {
 
 impl Palette {
     pub fn new() -> Self {
-        Self {
-            data: [0; 32],
-        }
+        Self { data: [0; 32] }
     }
 
     pub fn color(&self, index: usize) -> u8 {

@@ -1,4 +1,4 @@
-pub use system::{BiosLoader, create};
+pub use system::{create, BiosLoader};
 
 mod core;
 mod system;

@@ -15,7 +15,11 @@ pub trait BiosLoader {
     fn load(&self, name: &str) -> Result<Vec<u8>, Box<dyn Error>>;
 }
 
-pub fn create(rom_path: &str, rom_data: Vec<u8>, bios_loader: &impl BiosLoader) -> Result<Box<dyn System>, Box<dyn Error>> {
+pub fn create(
+    rom_path: &str,
+    rom_data: Vec<u8>,
+    bios_loader: &impl BiosLoader,
+) -> Result<Box<dyn System>, Box<dyn Error>> {
     let extension = Path::new(rom_path)
         .extension()
         .and_then(|e| e.to_str())

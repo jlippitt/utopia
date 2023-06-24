@@ -1,8 +1,8 @@
-use super::super::{Core, Bus, ReadAddress, WriteAddress};
+use super::super::{Bus, Core, ReadAddress, WriteAddress};
 use tracing::debug;
 
 fn bit_from_opcode(opcode: u8) -> u8 {
-   (opcode >> 3) & 7
+    (opcode >> 3) & 7
 }
 
 pub fn rla(core: &mut Core<impl Bus>) {

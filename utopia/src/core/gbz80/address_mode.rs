@@ -5,7 +5,7 @@ pub trait ReadAddress<T> {
     fn read(core: &mut Core<impl Bus>) -> T;
 }
 
-pub trait WriteAddress<T> : ReadAddress<T> {
+pub trait WriteAddress<T>: ReadAddress<T> {
     fn write(core: &mut Core<impl Bus>, value: T);
 }
 
@@ -42,7 +42,7 @@ macro_rules! reg8_high {
                 core.$field = (core.$field & 0xff) | ((value as u16) << 8);
             }
         }
-    }
+    };
 }
 
 reg8_high!(B, bc);
@@ -66,7 +66,7 @@ macro_rules! reg8_low {
                 core.$field = (core.$field & 0xff00) | value as u16;
             }
         }
-    }
+    };
 }
 
 reg8_low!(C, bc);
@@ -90,7 +90,7 @@ macro_rules! reg16 {
                 core.$field = value;
             }
         }
-    }
+    };
 }
 
 reg16!(BC, bc);
@@ -115,7 +115,7 @@ macro_rules! reg16_indirect {
                 core.write(core.$field, value)
             }
         }
-    }
+    };
 }
 
 reg16_indirect!(BCIndirect, "(BC)", bc);

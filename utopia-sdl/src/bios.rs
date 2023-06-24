@@ -4,7 +4,7 @@ use std::fs;
 const BIOS_PATH: &'static str = "./bios";
 
 pub struct BiosLoader;
-    
+
 impl BiosLoader {
     pub fn new() -> Self {
         Self

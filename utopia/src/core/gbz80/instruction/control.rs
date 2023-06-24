@@ -1,4 +1,4 @@
-use super::super::{Core, Bus, Condition};
+use super::super::{Bus, Condition, Core};
 use tracing::debug;
 
 pub fn jr(core: &mut Core<impl Bus>) {
