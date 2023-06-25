@@ -1,6 +1,12 @@
 use super::super::{Bus, Condition, Core};
 use tracing::debug;
 
+pub fn jp(core: &mut Core<impl Bus>) {
+    debug!("JP u16");
+    core.pc = core.next_word();
+    core.idle();
+}
+
 pub fn jr(core: &mut Core<impl Bus>) {
     debug!("JR PC+i8");
     let offset = core.next_byte() as i8;

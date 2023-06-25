@@ -327,6 +327,7 @@ impl<T: Bus> Core<T> {
             0xfa => instr::ld::<addr::A, addr::Absolute>(self),
 
             // +0x03 / 0x0b
+            0xc3 => instr::jp(self),
             0xcb => self.prefix_cb(),
 
             // +0x05 / 0x0d
