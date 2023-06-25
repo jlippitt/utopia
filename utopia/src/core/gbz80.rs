@@ -150,6 +150,7 @@ impl<T: Bus> Core<T> {
 
             // +0x07 / 0x0f
             0x17 => instr::rla(self),
+            0x1f => instr::rra(self),
 
             // Page 1: 8-bit Loads
 
