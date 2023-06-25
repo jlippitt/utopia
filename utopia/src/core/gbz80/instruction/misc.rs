@@ -16,6 +16,20 @@ pub fn ei(core: &mut Core<impl Bus>) {
     core.ime_delayed = true;
 }
 
+pub fn scf(core: &mut Core<impl Bus>) {
+    debug!("SCF");
+    core.flags.n = false;
+    core.flags.h = false;
+    core.flags.c = true;
+}
+
+pub fn ccf(core: &mut Core<impl Bus>) {
+    debug!("CCF");
+    core.flags.n = false;
+    core.flags.h = false;
+    core.flags.c = !core.flags.c;
+}
+
 pub fn cpl(core: &mut Core<impl Bus>) {
     debug!("CPL");
     core.a = !core.a;
