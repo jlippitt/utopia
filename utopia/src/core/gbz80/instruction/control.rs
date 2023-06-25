@@ -85,3 +85,11 @@ pub fn ret_conditional<Cond: Condition>(core: &mut Core<impl Bus>) {
         debug!("Branch not taken");
     }
 }
+
+pub fn reti(core: &mut Core<impl Bus>) {
+    debug!("RETI");
+    core.pc = core.pop();
+    core.idle();
+    core.ime = true;
+    core.ime_delayed = true;
+}

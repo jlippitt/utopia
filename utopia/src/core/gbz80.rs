@@ -343,6 +343,7 @@ impl<T: Bus> Core<T> {
             0xc1 => instr::pop::<addr::BC>(self),
             0xc9 => instr::ret(self),
             0xd1 => instr::pop::<addr::DE>(self),
+            0xd9 => instr::reti(self),
             0xe1 => instr::pop::<addr::HL>(self),
             0xe9 => instr::jp_hl(self),
             0xf1 => instr::pop::<addr::AF>(self),
