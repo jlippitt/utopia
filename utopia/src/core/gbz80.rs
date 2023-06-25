@@ -59,7 +59,7 @@ impl<T: Bus> Core<T> {
             sp: state.sp,
             pc: state.pc,
             flags: Flags {
-                z: state.f & 0x80,
+                z: !state.f & 0x80,
                 n: (state.f & 0x40) != 0,
                 h: (state.f & 0x20) != 0,
                 c: (state.f & 0x10) != 0,
