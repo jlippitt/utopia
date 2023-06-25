@@ -476,6 +476,16 @@ impl<T: Bus> Core<T> {
             0x2e => instr::sra::<addr::HLIndirect>(self),
             0x2f => instr::sra::<addr::A>(self),
 
+            // 0x30
+            0x30 => instr::swap::<addr::B>(self),
+            0x31 => instr::swap::<addr::C>(self),
+            0x32 => instr::swap::<addr::D>(self),
+            0x33 => instr::swap::<addr::E>(self),
+            0x34 => instr::swap::<addr::H>(self),
+            0x35 => instr::swap::<addr::L>(self),
+            0x36 => instr::swap::<addr::HLIndirect>(self),
+            0x37 => instr::swap::<addr::A>(self),
+
             // 0x38
             0x38 => instr::srl::<addr::B>(self),
             0x39 => instr::srl::<addr::C>(self),

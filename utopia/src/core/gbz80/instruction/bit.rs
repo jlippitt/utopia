@@ -111,6 +111,17 @@ pub fn sra<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
     core.flags.h = false;
 }
 
+pub fn swap<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
+    debug!("SWAP {}", Addr::NAME);
+    let value = Addr::read(core);
+    let result = (value << 4) | (value >> 4);
+    Addr::write(core, result);
+    core.flags.z = result;
+    core.flags.n = false;
+    core.flags.h = false;
+    core.flags.c = false;
+}
+
 pub fn srl<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
     debug!("SRL {}", Addr::NAME);
     let value = Addr::read(core);
