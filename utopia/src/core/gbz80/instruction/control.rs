@@ -7,6 +7,11 @@ pub fn jp(core: &mut Core<impl Bus>) {
     core.idle();
 }
 
+pub fn jp_hl(core: &mut Core<impl Bus>) {
+    debug!("JP HL");
+    core.pc = core.hl;
+}
+
 pub fn jr(core: &mut Core<impl Bus>) {
     debug!("JR PC+i8");
     let offset = core.next_byte() as i8;
