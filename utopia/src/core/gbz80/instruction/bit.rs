@@ -27,6 +27,17 @@ pub fn rl<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
     core.flags.h = false;
 }
 
+pub fn srl<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
+    debug!("SRL {}", Addr::NAME);
+    let value = Addr::read(core);
+    core.flags.c = (value & 0x01) != 0;
+    let result = value >> 1;
+    Addr::write(core, result);
+    core.flags.z = result;
+    core.flags.n = false;
+    core.flags.h = false;
+}
+
 pub fn bit<Addr: ReadAddress<u8>>(core: &mut Core<impl Bus>, opcode: u8) {
     let bit = bit_from_opcode(opcode);
     debug!("BIT {}, {}", bit, Addr::NAME);

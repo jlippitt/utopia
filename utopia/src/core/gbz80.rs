@@ -386,6 +386,16 @@ impl<T: Bus> Core<T> {
             0x16 => instr::rl::<addr::HLIndirect>(self),
             0x17 => instr::rl::<addr::A>(self),
 
+            // 0x38
+            0x38 => instr::srl::<addr::B>(self),
+            0x39 => instr::srl::<addr::C>(self),
+            0x3a => instr::srl::<addr::D>(self),
+            0x3b => instr::srl::<addr::E>(self),
+            0x3c => instr::srl::<addr::H>(self),
+            0x3d => instr::srl::<addr::L>(self),
+            0x3e => instr::srl::<addr::HLIndirect>(self),
+            0x3f => instr::srl::<addr::A>(self),
+
             // Page 1: BIT
             0x40 | 0x48 | 0x50 | 0x58 | 0x60 | 0x68 | 0x70 | 0x78 => {
                 instr::bit::<addr::B>(self, opcode)
