@@ -4,3 +4,6 @@ members = [
     "utopia",
     "utopia-sdl",
 ]
+
+[profile.dev]
+opt-level = 1
