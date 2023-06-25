@@ -51,6 +51,7 @@ impl System for GameBoy {
 }
 
 struct Hardware {
+    cycles: u64,
     rom_data: MirrorVec<u8>,
     bios_data: Option<MirrorVec<u8>>,
     hram: MirrorVec<u8>,
@@ -59,9 +60,32 @@ struct Hardware {
 impl Hardware {
     pub fn new(rom_data: Vec<u8>, bios_data: Option<Vec<u8>>) -> Self {
         Self {
+            cycles: 0,
             rom_data: rom_data.into(),
             bios_data: bios_data.map(MirrorVec::from),
             hram: MirrorVec::new(HRAM_SIZE),
+        }
+    }
+
+    fn read_high_impl(&mut self, address: u8) -> u8 {
+        match address {
+            0x00..=0x0f => panic!("System register reads not yet implemented"),
+            0x10..=0x3f => panic!("APU register reads not yet implemented"),
+            0x40..=0x4f => panic!("PPU register reads not yet implemented"),
+            0x50..=0x7f => panic!("Misc register reads not yet implemented"),
+            0x80..=0xfe => self.hram[address as usize],
+            0xff => panic!("Interrupt register reads not yet implemented"),
+        }
+    }
+
+    fn write_high_impl(&mut self, address: u8, value: u8) {
+        match address {
+            0x00..=0x0f => warn!("System register writes not yet implemented"),
+            0x10..=0x3f => warn!("APU register writes not yet implemented"),
+            0x40..=0x4f => warn!("PPU register writes not yet implemented"),
+            0x50..=0x7f => warn!("Misc register writes not yet implemented"),
+            0x80..=0xfe => self.hram[address as usize] = value,
+            0xff => warn!("Interrupt register writes not yet implemented"),
         }
     }
 }
@@ -72,7 +96,9 @@ impl Bus for Hardware {
     }
 
     fn read(&mut self, address: u16) -> u8 {
-        match address >> 13 {
+        self.cycles += 2;
+
+        let value = match address >> 13 {
             0 => {
                 if address < 0x0100 {
                     if let Some(bios_data) = &self.bios_data {
@@ -89,54 +115,53 @@ impl Bus for Hardware {
             5 => panic!("ERAM reads not yet implemented"),
             6 => panic!("WRAM reads not yet implemented"),
             7 => match address {
-                0xff00..=0xffff => self.read_high(address as u8),
+                0xff00..=0xffff => self.read_high_impl(address as u8),
                 0xfe00..=0xfea0 => panic!("OAM reads not yet implemented"),
                 _ => panic!("Read from unmapped location"),
             },
             _ => unreachable!(),
-        }
+        };
+
+        self.cycles += 2;
+
+        value
     }
 
     fn write(&mut self, address: u16, value: u8) {
+        self.cycles += 2;
+
         match address >> 13 {
             0 | 1 | 2 | 3 => panic!("Mapper writes not yet implemented"),
             4 => warn!("VRAM writes not yet implemented"),
             5 => warn!("ERAM writes not yet implemented"),
             6 => warn!("WRAM writes not yet implemented"),
             7 => match address {
-                0xff00..=0xffff => self.write_high(address as u8, value),
+                0xff00..=0xffff => self.write_high_impl(address as u8, value),
                 0xfe00..=0xfea0 => warn!("OAM writes not yet implemented"),
                 _ => panic!("Write from unmapped location"),
             },
             _ => unreachable!(),
         }
+
+        self.cycles += 2;
     }
 
     fn read_high(&mut self, address: u8) -> u8 {
-        match address {
-            0x00..=0x0f => panic!("System register reads not yet implemented"),
-            0x10..=0x3f => panic!("APU register reads not yet implemented"),
-            0x40..=0x4f => panic!("PPU register reads not yet implemented"),
-            0x50..=0x7f => panic!("Misc register reads not yet implemented"),
-            0x80..=0xfe => self.hram[address as usize],
-            0xff => panic!("Interrupt register reads not yet implemented"),
-        }
+        self.cycles += 2;
+        let value = self.read_high_impl(address);
+        self.cycles += 2;
+        value
     }
 
     fn write_high(&mut self, address: u8, value: u8) {
-        match address {
-            0x00..=0x0f => warn!("System register writes not yet implemented"),
-            0x10..=0x3f => warn!("APU register writes not yet implemented"),
-            0x40..=0x4f => warn!("PPU register writes not yet implemented"),
-            0x50..=0x7f => warn!("Misc register writes not yet implemented"),
-            0x80..=0xfe => self.hram[address as usize] = value,
-            0xff => warn!("Interrupt register writes not yet implemented"),
-        }
+        self.cycles += 2;
+        self.write_high_impl(address, value);
+        self.cycles += 2;
     }
 }
 
 impl fmt::Display for Hardware {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "")
+        write!(f, "T={}", self.cycles)
     }
 }
