@@ -1,9 +1,12 @@
 use tracing::{debug, warn};
 
+const VBLANK_LINE: u32 = 144;
 const TOTAL_LINES: u32 = 154;
+
 const DOTS_PER_LINE: u64 = 456;
 
 pub struct Ppu {
+    ready: bool,
     line: u32,
     dot: u64,
     scroll_y: u8,
@@ -13,11 +16,20 @@ pub struct Ppu {
 impl Ppu {
     pub fn new() -> Self {
         Self {
+            ready: false,
             line: 0,
             dot: 0,
             scroll_y: 0,
             scroll_x: 0,
         }
+    }
+
+    pub fn ready(&self) -> bool {
+        self.ready
+    }
+
+    pub fn start_frame(&mut self) {
+        self.ready = false;
     }
 
     pub fn line(&self) -> u32 {
@@ -60,6 +72,8 @@ impl Ppu {
 
             if self.line == TOTAL_LINES {
                 self.line = 0;
+            } else if self.line == VBLANK_LINE {
+                self.ready = true;
             }
         }
     }

@@ -10,7 +10,7 @@ mod ppu;
 
 const WIDTH: usize = 160;
 const HEIGHT: usize = 144;
-const PIXELS: [u8; 0] = [];
+const PIXELS: [u8; WIDTH * HEIGHT * 4] = [0; WIDTH * HEIGHT * 4];
 
 const WRAM_SIZE: usize = 8192;
 const HRAM_SIZE: usize = 128;
@@ -70,7 +70,9 @@ impl System for GameBoy {
     fn run_frame(&mut self) {
         let core = &mut self.core;
 
-        loop {
+        core.bus_mut().ppu.start_frame();
+
+        while !core.bus().ppu.ready() {
             debug!("{}", core);
             core.step();
         }
