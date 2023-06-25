@@ -15,10 +15,15 @@ pub trait BiosLoader {
     fn load(&self, name: &str) -> Result<Vec<u8>, Box<dyn Error>>;
 }
 
+pub struct Options {
+    pub skip_boot: bool,
+}
+
 pub fn create(
     rom_path: &str,
     rom_data: Vec<u8>,
     bios_loader: &impl BiosLoader,
+    options: &Options,
 ) -> Result<Box<dyn System>, Box<dyn Error>> {
     let extension = Path::new(rom_path)
         .extension()
@@ -26,7 +31,7 @@ pub fn create(
         .unwrap_or("");
 
     match extension {
-        "gb" => gb::create(rom_data, bios_loader),
+        "gb" => gb::create(rom_data, bios_loader, options.skip_boot),
         "nes" => nes::create(rom_data),
         _ => Err("ROM type not supported".to_owned())?,
     }

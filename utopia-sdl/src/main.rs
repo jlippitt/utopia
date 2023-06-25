@@ -3,6 +3,7 @@ use clap::Parser;
 use sdl2::event::Event;
 use std::error::Error;
 use std::fs;
+use utopia::Options;
 use video::Video;
 
 mod bios;
@@ -13,6 +14,9 @@ mod video;
 #[command(author, version)]
 struct Args {
     rom_path: String,
+
+    #[arg(short, long)]
+    skip_boot: bool,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -28,7 +32,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let _guard = log::set_subscriber(subscriber);
 
-    let mut system = utopia::create(&args.rom_path, rom_data, &BiosLoader::new())?;
+    let options = Options {
+        skip_boot: args.skip_boot,
+    };
+
+    let mut system = utopia::create(&args.rom_path, rom_data, &BiosLoader::new(), &options)?;
 
     let sdl_context = sdl2::init()?;
 

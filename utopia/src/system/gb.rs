@@ -19,6 +19,7 @@ const M_CYCLE_LENGTH: u64 = 4;
 pub fn create(
     rom_data: Vec<u8>,
     bios_loader: &impl BiosLoader,
+    _skip_boot: bool,
 ) -> Result<Box<dyn System>, Box<dyn Error>> {
     let bios_data = Some(bios_loader.load("dmg")?);
 
