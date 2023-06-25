@@ -1,5 +1,5 @@
 use super::{BiosLoader, System};
-use crate::core::gbz80::{Bus, Core};
+use crate::core::gbz80::{Bus, Core, State};
 use crate::util::MirrorVec;
 use ppu::Ppu;
 use std::error::Error;
@@ -19,12 +19,32 @@ const M_CYCLE_LENGTH: u64 = 4;
 pub fn create(
     rom_data: Vec<u8>,
     bios_loader: &impl BiosLoader,
-    _skip_boot: bool,
+    skip_boot: bool,
 ) -> Result<Box<dyn System>, Box<dyn Error>> {
     let bios_data = Some(bios_loader.load("dmg")?);
 
+    // TODO: Should skip boot sequence for other hardware components as well
     let hw = Hardware::new(rom_data, bios_data);
-    let core = Core::new(hw);
+
+    let initial_state = if skip_boot {
+        // TODO: This post-boot state should depend on hardware model
+        Some(State {
+            a: 0x01,
+            b: 0x00,
+            c: 0x13,
+            d: 0x00,
+            e: 0xd8,
+            h: 0x01,
+            l: 0x4d,
+            sp: 0xfffe,
+            pc: 0x0100,
+            f: 0xb0, // TODO: H & C should depend on header checksum
+        })
+    } else {
+        None
+    };
+
+    let core = Core::new(hw, initial_state);
 
     Ok(Box::new(GameBoy { core }))
 }
@@ -50,8 +70,8 @@ impl System for GameBoy {
         let core = &mut self.core;
 
         loop {
-            core.step();
             debug!("{}", core);
+            core.step();
         }
     }
 }

@@ -15,6 +15,20 @@ pub trait Bus: fmt::Display {
     fn write_high(&mut self, address: u8, value: u8);
 }
 
+#[derive(Clone, Default)]
+pub struct State {
+    pub a: u8,
+    pub b: u8,
+    pub c: u8,
+    pub d: u8,
+    pub e: u8,
+    pub h: u8,
+    pub l: u8,
+    pub sp: u16,
+    pub pc: u16,
+    pub f: u8,
+}
+
 pub struct Flags {
     z: u8,
     n: bool,
@@ -34,19 +48,21 @@ pub struct Core<T: Bus> {
 }
 
 impl<T: Bus> Core<T> {
-    pub fn new(bus: T) -> Self {
+    pub fn new(bus: T, initial_state: Option<State>) -> Self {
+        let state = initial_state.unwrap_or_default();
+
         Self {
-            a: 0,
-            bc: 0,
-            de: 0,
-            hl: 0,
-            sp: 0,
-            pc: 0,
+            a: state.a,
+            bc: ((state.b as u16) << 8) | state.c as u16,
+            de: ((state.d as u16) << 8) | state.e as u16,
+            hl: ((state.h as u16) << 8) | state.l as u16,
+            sp: state.sp,
+            pc: state.pc,
             flags: Flags {
-                z: 0xff,
-                n: false,
-                h: false,
-                c: false,
+                z: state.f & 0x80,
+                n: (state.f & 0x40) != 0,
+                h: (state.f & 0x20) != 0,
+                c: (state.f & 0x10) != 0,
             },
             bus,
         }
