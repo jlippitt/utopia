@@ -13,8 +13,11 @@ pub fn jr_conditional<Cond: Condition>(core: &mut Core<impl Bus>) {
     let offset = core.next_byte() as i8;
 
     if Cond::test(&core.flags) {
+        debug!("Branch taken");
         core.idle();
         core.pc = (core.pc as i16).wrapping_add(offset as i16) as u16;
+    } else {
+        debug!("Branch not taken");
     }
 }
 
