@@ -93,3 +93,10 @@ pub fn reti(core: &mut Core<impl Bus>) {
     core.ime = true;
     core.ime_delayed = true;
 }
+
+pub fn rst(core: &mut Core<impl Bus>, target: u8) {
+    debug!("RST ${:02X}", target);
+    core.idle();
+    core.push(core.pc);
+    core.pc = target as u16;
+}

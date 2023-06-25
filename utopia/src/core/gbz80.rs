@@ -388,6 +388,16 @@ impl<T: Bus> Core<T> {
             0xf6 => instr::or::<addr::Immediate>(self),
             0xfe => instr::cp::<addr::Immediate>(self),
 
+            // +0x07 / 0x0f
+            0xc7 => instr::rst(self, 0x00),
+            0xcf => instr::rst(self, 0x08),
+            0xd7 => instr::rst(self, 0x10),
+            0xdf => instr::rst(self, 0x18),
+            0xe7 => instr::rst(self, 0x20),
+            0xef => instr::rst(self, 0x28),
+            0xf7 => instr::rst(self, 0x30),
+            0xff => instr::rst(self, 0x38),
+
             opcode => panic!("Opcode {:02X} not yet implemented", opcode),
         }
     }
