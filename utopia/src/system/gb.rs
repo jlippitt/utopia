@@ -83,7 +83,7 @@ impl Hardware {
         match address {
             0x00..=0x0f => panic!("System register reads not yet implemented"),
             0x10..=0x3f => panic!("APU register reads not yet implemented"),
-            0x40..=0x4f => panic!("PPU register reads not yet implemented"),
+            0x40..=0x4f => self.ppu.read(address),
             0x50..=0x7f => panic!("Misc register reads not yet implemented"),
             0x80..=0xfe => self.hram[address as usize],
             0xff => panic!("Interrupt register reads not yet implemented"),
@@ -94,7 +94,7 @@ impl Hardware {
         match address {
             0x00..=0x0f => warn!("System register writes not yet implemented"),
             0x10..=0x3f => warn!("APU register writes not yet implemented"),
-            0x40..=0x4f => warn!("PPU register writes not yet implemented"),
+            0x40..=0x4f => self.ppu.write(address, value),
             0x50..=0x7f => warn!("Misc register writes not yet implemented"),
             0x80..=0xfe => self.hram[address as usize] = value,
             0xff => warn!("Interrupt register writes not yet implemented"),
