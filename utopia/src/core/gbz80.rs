@@ -456,6 +456,26 @@ impl<T: Bus> Core<T> {
             0x1e => instr::rr::<addr::HLIndirect>(self),
             0x1f => instr::rr::<addr::A>(self),
 
+            // 0x20
+            0x20 => instr::sla::<addr::B>(self),
+            0x21 => instr::sla::<addr::C>(self),
+            0x22 => instr::sla::<addr::D>(self),
+            0x23 => instr::sla::<addr::E>(self),
+            0x24 => instr::sla::<addr::H>(self),
+            0x25 => instr::sla::<addr::L>(self),
+            0x26 => instr::sla::<addr::HLIndirect>(self),
+            0x27 => instr::sla::<addr::A>(self),
+
+            // 0x28
+            0x28 => instr::sra::<addr::B>(self),
+            0x29 => instr::sra::<addr::C>(self),
+            0x2a => instr::sra::<addr::D>(self),
+            0x2b => instr::sra::<addr::E>(self),
+            0x2c => instr::sra::<addr::H>(self),
+            0x2d => instr::sra::<addr::L>(self),
+            0x2e => instr::sra::<addr::HLIndirect>(self),
+            0x2f => instr::sra::<addr::A>(self),
+
             // 0x38
             0x38 => instr::srl::<addr::B>(self),
             0x39 => instr::srl::<addr::C>(self),
