@@ -13,6 +13,12 @@ pub fn ld16<Lhs: WriteAddress<u16>>(core: &mut Core<impl Bus>) {
     Lhs::write(core, value);
 }
 
+pub fn ld_u16_sp(core: &mut Core<impl Bus>) {
+    debug!("LD (u16), SP");
+    let address = core.next_word();
+    core.write(address, core.sp as u8);
+    core.write(address.wrapping_add(1), (core.sp >> 8) as u8);
+}
 pub fn pop<Addr: WriteAddress<u16>>(core: &mut Core<impl Bus>) {
     debug!("POP {}", Addr::NAME);
     let value = core.pop();
