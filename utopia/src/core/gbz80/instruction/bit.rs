@@ -27,6 +27,18 @@ pub fn rl<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
     core.flags.h = false;
 }
 
+pub fn rr<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
+    debug!("RR {}", Addr::NAME);
+    let value = Addr::read(core);
+    let carry = core.flags.c as u8;
+    core.flags.c = (value & 0x01) != 0;
+    let result = (value >> 1) | (carry << 7);
+    Addr::write(core, result);
+    core.flags.z = result;
+    core.flags.n = false;
+    core.flags.h = false;
+}
+
 pub fn srl<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
     debug!("SRL {}", Addr::NAME);
     let value = Addr::read(core);
