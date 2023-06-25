@@ -1,15 +1,20 @@
 use super::{BiosLoader, System};
 use crate::core::gbz80::{Bus, Core};
 use crate::util::MirrorVec;
+use ppu::Ppu;
 use std::error::Error;
 use std::fmt;
 use tracing::{debug, warn};
+
+mod ppu;
 
 const WIDTH: usize = 160;
 const HEIGHT: usize = 144;
 const PIXELS: [u8; 0] = [];
 
 const HRAM_SIZE: usize = 128;
+
+const M_CYCLE_LENGTH: u64 = 4;
 
 pub fn create(
     rom_data: Vec<u8>,
@@ -55,6 +60,7 @@ struct Hardware {
     rom_data: MirrorVec<u8>,
     bios_data: Option<MirrorVec<u8>>,
     hram: MirrorVec<u8>,
+    ppu: Ppu,
 }
 
 impl Hardware {
@@ -64,7 +70,13 @@ impl Hardware {
             rom_data: rom_data.into(),
             bios_data: bios_data.map(MirrorVec::from),
             hram: MirrorVec::new(HRAM_SIZE),
+            ppu: Ppu::new(),
         }
+    }
+
+    fn step(&mut self) {
+        self.cycles += M_CYCLE_LENGTH;
+        self.ppu.step(M_CYCLE_LENGTH);
     }
 
     fn read_high_impl(&mut self, address: u8) -> u8 {
@@ -92,13 +104,13 @@ impl Hardware {
 
 impl Bus for Hardware {
     fn idle(&mut self) {
-        //
+        self.step();
     }
 
     fn read(&mut self, address: u16) -> u8 {
-        self.cycles += 2;
+        self.step();
 
-        let value = match address >> 13 {
+        match address >> 13 {
             0 => {
                 if address < 0x0100 {
                     if let Some(bios_data) = &self.bios_data {
@@ -120,15 +132,11 @@ impl Bus for Hardware {
                 _ => panic!("Read from unmapped location"),
             },
             _ => unreachable!(),
-        };
-
-        self.cycles += 2;
-
-        value
+        }
     }
 
     fn write(&mut self, address: u16, value: u8) {
-        self.cycles += 2;
+        self.step();
 
         match address >> 13 {
             0 | 1 | 2 | 3 => panic!("Mapper writes not yet implemented"),
@@ -142,26 +150,27 @@ impl Bus for Hardware {
             },
             _ => unreachable!(),
         }
-
-        self.cycles += 2;
     }
 
     fn read_high(&mut self, address: u8) -> u8 {
-        self.cycles += 2;
-        let value = self.read_high_impl(address);
-        self.cycles += 2;
-        value
+        self.step();
+        self.read_high_impl(address)
     }
 
     fn write_high(&mut self, address: u8, value: u8) {
-        self.cycles += 2;
+        self.step();
         self.write_high_impl(address, value);
-        self.cycles += 2;
     }
 }
 
 impl fmt::Display for Hardware {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "T={}", self.cycles)
+        write!(
+            f,
+            "T={} V={} H={}",
+            self.cycles,
+            self.ppu.line(),
+            self.ppu.dot()
+        )
     }
 }
