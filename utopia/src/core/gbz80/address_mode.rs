@@ -73,6 +73,31 @@ reg8_low!(C, bc);
 reg8_low!(E, de);
 reg8_low!(L, hl);
 
+pub struct AF;
+
+impl ReadAddress<u16> for AF {
+    const NAME: &'static str = "AF";
+
+    fn read(core: &mut Core<impl Bus>) -> u16 {
+        let mut value = (core.a as u16) << 8;
+        value |= if core.flags.z == 0 { 0x80 } else { 0 };
+        value |= if core.flags.n { 0x40 } else { 0 };
+        value |= if core.flags.h { 0x20 } else { 0 };
+        value |= if core.flags.c { 0x10 } else { 0 };
+        value
+    }
+}
+
+impl WriteAddress<u16> for AF {
+    fn write(core: &mut Core<impl Bus>, value: u16) {
+        core.a = (value >> 8) as u8;
+        core.flags.z = !(value as u8) & 0x80;
+        core.flags.n = (value & 0x40) != 0;
+        core.flags.h = (value & 0x20) != 0;
+        core.flags.c = (value & 0x10) != 0;
+    }
+}
+
 macro_rules! reg16 {
     ($name:ident, $field:ident) => {
         pub struct $name;

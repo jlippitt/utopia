@@ -326,7 +326,7 @@ impl<T: Bus> Core<T> {
             0xc9 => instr::ret(self),
             0xd1 => instr::pop::<addr::DE>(self),
             0xe1 => instr::pop::<addr::HL>(self),
-            //0xf1 => instr::pop::<addr::AF>(self),
+            0xf1 => instr::pop::<addr::AF>(self),
 
             // +0x02 / 0x0a
             0xe2 => instr::ld::<addr::CIndirect, addr::A>(self),
@@ -345,7 +345,7 @@ impl<T: Bus> Core<T> {
             0xcd => instr::call(self),
             0xd5 => instr::push::<addr::DE>(self),
             0xe5 => instr::push::<addr::HL>(self),
-            //0xf5 => instr::push::<addr::AF>(self),
+            0xf5 => instr::push::<addr::AF>(self),
 
             // +0x06 / 0x0e
             0xc6 => instr::add::<addr::Immediate>(self),
