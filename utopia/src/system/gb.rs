@@ -12,6 +12,7 @@ const WIDTH: usize = 160;
 const HEIGHT: usize = 144;
 const PIXELS: [u8; 0] = [];
 
+const WRAM_SIZE: usize = 8192;
 const HRAM_SIZE: usize = 128;
 
 const M_CYCLE_LENGTH: u64 = 4;
@@ -81,6 +82,7 @@ struct Hardware {
     rom_data: MirrorVec<u8>,
     bios_data: Option<MirrorVec<u8>>,
     hram: MirrorVec<u8>,
+    wram: MirrorVec<u8>,
     ppu: Ppu,
 }
 
@@ -91,6 +93,7 @@ impl Hardware {
             rom_data: rom_data.into(),
             bios_data: bios_data.map(MirrorVec::from),
             hram: MirrorVec::new(HRAM_SIZE),
+            wram: MirrorVec::new(WRAM_SIZE),
             ppu: Ppu::new(),
         }
     }
@@ -150,7 +153,7 @@ impl Bus for Hardware {
             1 | 2 | 3 => self.rom_data[address as usize],
             4 => panic!("VRAM reads not yet implemented"),
             5 => panic!("ERAM reads not yet implemented"),
-            6 => panic!("WRAM reads not yet implemented"),
+            6 => self.wram[address as usize],
             7 => match address {
                 0xff00..=0xffff => self.read_high_impl(address as u8),
                 0xfe00..=0xfea0 => panic!("OAM reads not yet implemented"),
@@ -167,7 +170,7 @@ impl Bus for Hardware {
             0 | 1 | 2 | 3 => panic!("Mapper writes not yet implemented"),
             4 => warn!("VRAM writes not yet implemented"),
             5 => warn!("ERAM writes not yet implemented"),
-            6 => warn!("WRAM writes not yet implemented"),
+            6 => self.wram[address as usize] = value,
             7 => match address {
                 0xff00..=0xffff => self.write_high_impl(address as u8, value),
                 0xfe00..=0xfea0 => warn!("OAM writes not yet implemented"),
