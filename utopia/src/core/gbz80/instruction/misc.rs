@@ -15,3 +15,10 @@ pub fn ei(core: &mut Core<impl Bus>) {
     debug!("EI");
     core.ime_delayed = true;
 }
+
+pub fn cpl(core: &mut Core<impl Bus>) {
+    debug!("CPL");
+    core.a = !core.a;
+    core.flags.n = true;
+    core.flags.h = true;
+}
