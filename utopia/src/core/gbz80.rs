@@ -162,6 +162,7 @@ impl<T: Bus> Core<T> {
             0x3e => instr::ld::<addr::A, addr::Immediate>(self),
 
             // +0x07 / 0x0f
+            0x07 => instr::rlca(self),
             0x17 => instr::rla(self),
             0x1f => instr::rra(self),
             0x2f => instr::cpl(self),

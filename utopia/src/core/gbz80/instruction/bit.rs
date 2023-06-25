@@ -5,6 +5,15 @@ fn bit_from_opcode(opcode: u8) -> u8 {
     (opcode >> 3) & 7
 }
 
+pub fn rlca(core: &mut Core<impl Bus>) {
+    debug!("RLCA");
+    core.flags.c = (core.a & 0x80) != 0;
+    core.a = (core.a << 1) | (core.a >> 7);
+    core.flags.z = 0xff;
+    core.flags.n = false;
+    core.flags.h = false;
+}
+
 pub fn rla(core: &mut Core<impl Bus>) {
     debug!("RLA");
     let carry = core.flags.c as u8;
