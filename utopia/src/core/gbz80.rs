@@ -77,6 +77,7 @@ impl<T: Bus> Core<T> {
             // Page 0: Misc Ops
 
             // +0x00 / +0x08
+            0x00 => instr::nop(self),
             0x18 => instr::jr(self),
             0x20 => instr::jr_conditional::<cond::NZ>(self),
             0x28 => instr::jr_conditional::<cond::Z>(self),
