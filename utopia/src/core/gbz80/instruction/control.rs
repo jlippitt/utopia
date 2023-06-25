@@ -12,6 +12,19 @@ pub fn jp_hl(core: &mut Core<impl Bus>) {
     core.pc = core.hl;
 }
 
+pub fn jp_conditional<Cond: Condition>(core: &mut Core<impl Bus>) {
+    debug!("JP {}, u16", Cond::NAME);
+    let target = core.next_word();
+
+    if Cond::test(&core.flags) {
+        debug!("Branch taken");
+        core.idle();
+        core.pc = target;
+    } else {
+        debug!("Branch not taken");
+    }
+}
+
 pub fn jr(core: &mut Core<impl Bus>) {
     debug!("JR PC+i8");
     let offset = core.next_byte() as i8;

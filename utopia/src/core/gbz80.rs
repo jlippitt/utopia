@@ -349,6 +349,10 @@ impl<T: Bus> Core<T> {
             0xf9 => instr::ld_sp_hl(self),
 
             // +0x02 / 0x0a
+            0xc2 => instr::jp_conditional::<cond::NZ>(self),
+            0xca => instr::jp_conditional::<cond::Z>(self),
+            0xd2 => instr::jp_conditional::<cond::NC>(self),
+            0xda => instr::jp_conditional::<cond::C>(self),
             0xe2 => instr::ld::<addr::CIndirect, addr::A>(self),
             0xea => instr::ld::<addr::Absolute, addr::A>(self),
             0xf2 => instr::ld::<addr::A, addr::CIndirect>(self),
