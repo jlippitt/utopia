@@ -338,6 +338,7 @@ impl<T: Bus> Core<T> {
             0xe1 => instr::pop::<addr::HL>(self),
             0xe9 => instr::jp_hl(self),
             0xf1 => instr::pop::<addr::AF>(self),
+            0xf9 => instr::ld_sp_hl(self),
 
             // +0x02 / 0x0a
             0xe2 => instr::ld::<addr::CIndirect, addr::A>(self),
