@@ -14,6 +14,15 @@ pub fn rlca(core: &mut Core<impl Bus>) {
     core.flags.h = false;
 }
 
+pub fn rrca(core: &mut Core<impl Bus>) {
+    debug!("RRCA");
+    core.flags.c = (core.a & 0x01) != 0;
+    core.a = (core.a >> 1) | (core.a << 7);
+    core.flags.z = 0xff;
+    core.flags.n = false;
+    core.flags.h = false;
+}
+
 pub fn rla(core: &mut Core<impl Bus>) {
     debug!("RLA");
     let carry = core.flags.c as u8;
