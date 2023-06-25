@@ -416,6 +416,26 @@ impl<T: Bus> Core<T> {
         match opcode {
             // Page 0: Shifts and Rotates
 
+            // 0x00
+            0x00 => instr::rlc::<addr::B>(self),
+            0x01 => instr::rlc::<addr::C>(self),
+            0x02 => instr::rlc::<addr::D>(self),
+            0x03 => instr::rlc::<addr::E>(self),
+            0x04 => instr::rlc::<addr::H>(self),
+            0x05 => instr::rlc::<addr::L>(self),
+            0x06 => instr::rlc::<addr::HLIndirect>(self),
+            0x07 => instr::rlc::<addr::A>(self),
+
+            // 0x08
+            0x08 => instr::rrc::<addr::B>(self),
+            0x09 => instr::rrc::<addr::C>(self),
+            0x0a => instr::rrc::<addr::D>(self),
+            0x0b => instr::rrc::<addr::E>(self),
+            0x0c => instr::rrc::<addr::H>(self),
+            0x0d => instr::rrc::<addr::L>(self),
+            0x0e => instr::rrc::<addr::HLIndirect>(self),
+            0x0f => instr::rrc::<addr::A>(self),
+
             // 0x10
             0x10 => instr::rl::<addr::B>(self),
             0x11 => instr::rl::<addr::C>(self),

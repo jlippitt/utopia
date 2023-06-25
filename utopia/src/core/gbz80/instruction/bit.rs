@@ -43,6 +43,28 @@ pub fn rra(core: &mut Core<impl Bus>) {
     core.flags.h = false;
 }
 
+pub fn rlc<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
+    debug!("RLC {}", Addr::NAME);
+    let value = Addr::read(core);
+    core.flags.c = (value & 0x80) != 0;
+    let result = (value << 1) | (value >> 7);
+    Addr::write(core, result);
+    core.flags.z = result;
+    core.flags.n = false;
+    core.flags.h = false;
+}
+
+pub fn rrc<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
+    debug!("RRC {}", Addr::NAME);
+    let value = Addr::read(core);
+    core.flags.c = (value & 0x01) != 0;
+    let result = (value >> 1) | (value << 7);
+    Addr::write(core, result);
+    core.flags.z = result;
+    core.flags.n = false;
+    core.flags.h = false;
+}
+
 pub fn rl<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
     debug!("RL {}", Addr::NAME);
     let value = Addr::read(core);
