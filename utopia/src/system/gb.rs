@@ -22,14 +22,9 @@ pub fn create(
     bios_loader: &impl BiosLoader,
     skip_boot: bool,
 ) -> Result<Box<dyn System>, Box<dyn Error>> {
-    let bios_data = Some(bios_loader.load("dmg")?);
-
-    // TODO: Should skip boot sequence for other hardware components as well
-    let hw = Hardware::new(rom_data, bios_data);
-
-    let initial_state = if skip_boot {
+    let (initial_state, bios_data) = if skip_boot {
         // TODO: This post-boot state should depend on hardware model
-        Some(State {
+        let initial_state = State {
             a: 0x01,
             b: 0x00,
             c: 0x13,
@@ -40,10 +35,17 @@ pub fn create(
             sp: 0xfffe,
             pc: 0x0100,
             f: 0xb0, // TODO: H & C should depend on header checksum
-        })
+        };
+
+        (Some(initial_state), None)
     } else {
-        None
+        let bios_data = bios_loader.load("dmg")?;
+
+        (None, Some(bios_data))
     };
+
+    // TODO: Should skip boot sequence for other hardware components as well
+    let hw = Hardware::new(rom_data, bios_data);
 
     let core = Core::new(hw, initial_state);
 
