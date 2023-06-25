@@ -35,6 +35,20 @@ pub fn call(core: &mut Core<impl Bus>) {
     core.pc = target;
 }
 
+pub fn call_conditional<Cond: Condition>(core: &mut Core<impl Bus>) {
+    debug!("CALL {}, u16", Cond::NAME);
+    let target = core.next_word();
+
+    if Cond::test(&core.flags) {
+        debug!("Branch taken");
+        core.idle();
+        core.push(core.pc);
+        core.pc = target;
+    } else {
+        debug!("Branch not taken");
+    }
+}
+
 pub fn ret(core: &mut Core<impl Bus>) {
     debug!("RET");
     core.pc = core.pop();

@@ -340,6 +340,12 @@ impl<T: Bus> Core<T> {
             0xf3 => instr::di(self),
             0xfb => instr::ei(self),
 
+            // +0x04 / 0x0c
+            0xc4 => instr::call_conditional::<cond::NZ>(self),
+            0xcc => instr::call_conditional::<cond::Z>(self),
+            0xd4 => instr::call_conditional::<cond::NC>(self),
+            0xdc => instr::call_conditional::<cond::C>(self),
+
             // +0x05 / 0x0d
             0xc5 => instr::push::<addr::BC>(self),
             0xcd => instr::call(self),
