@@ -118,14 +118,15 @@ impl Hardware {
 
     fn write_high_impl(&mut self, address: u8, value: u8) {
         match address {
-            0x00..=0x0f => warn!("System register writes not yet implemented"),
+            0x01 => print!("{}", value as char),
+            0x00..=0x0f => warn!("System register write {:02X} not yet implemented", address),
             0x10..=0x3f => warn!("APU register writes not yet implemented"),
             0x40..=0x4f => self.ppu.write(address, value),
             0x50 => {
                 self.bios_data = None;
                 debug!("BIOS disabled");
             }
-            0x51..=0x7f => warn!("Unmapped register write"),
+            0x51..=0x7f => warn!("Unmapped register write: {:02X}", address),
             0x80..=0xfe => self.hram[address as usize] = value,
             0xff => warn!("Interrupt register writes not yet implemented"),
         }
