@@ -94,9 +94,13 @@ impl<T: Bus> Core<T> {
 
             // +0x01 / +0x09
             0x01 => instr::ld16::<addr::BC>(self),
+            0x09 => instr::add16::<addr::BC>(self),
             0x11 => instr::ld16::<addr::DE>(self),
+            0x19 => instr::add16::<addr::DE>(self),
             0x21 => instr::ld16::<addr::HL>(self),
+            0x29 => instr::add16::<addr::HL>(self),
             0x31 => instr::ld16::<addr::SP>(self),
+            0x39 => instr::add16::<addr::SP>(self),
 
             // +0x02 / +0x0a
             0x02 => instr::ld::<addr::BCIndirect, addr::A>(self),
