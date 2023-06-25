@@ -44,6 +44,8 @@ pub struct Core<T: Bus> {
     sp: u16,
     pc: u16,
     flags: Flags,
+    ime: bool,
+    ime_delayed: bool,
     bus: T,
 }
 
@@ -64,6 +66,8 @@ impl<T: Bus> Core<T> {
                 h: (state.f & 0x20) != 0,
                 c: (state.f & 0x10) != 0,
             },
+            ime: false,
+            ime_delayed: false,
             bus,
         }
     }
@@ -72,6 +76,10 @@ impl<T: Bus> Core<T> {
         use address_mode as addr;
         use condition as cond;
         use instruction as instr;
+
+        // TODO: Interrupt checks
+
+        self.ime = self.ime_delayed;
 
         match self.next_byte() {
             // Page 0: Misc Ops
@@ -329,6 +337,8 @@ impl<T: Bus> Core<T> {
             // +0x03 / 0x0b
             0xc3 => instr::jp(self),
             0xcb => self.prefix_cb(),
+            0xf3 => instr::di(self),
+            0xfb => instr::ei(self),
 
             // +0x05 / 0x0d
             0xc5 => instr::push::<addr::BC>(self),
@@ -462,7 +472,7 @@ impl<T: Bus> fmt::Display for Core<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "A={:02X} BC={:04X} DE={:04X} HL={:04X} SP={:04X} PC={:04X} F={}{}{}{}---- {}",
+            "A={:02X} BC={:04X} DE={:04X} HL={:04X} SP={:04X} PC={:04X} F={}{}{}{}---- IME={} {}",
             self.a,
             self.bc,
             self.de,
@@ -473,6 +483,7 @@ impl<T: Bus> fmt::Display for Core<T> {
             if self.flags.n { 'N' } else { '-' },
             if self.flags.h { 'H' } else { '-' },
             if self.flags.c { 'C' } else { '-' },
+            self.ime as u32,
             self.bus,
         )
     }
