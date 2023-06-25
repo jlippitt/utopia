@@ -319,6 +319,10 @@ impl<T: Bus> Core<T> {
             // Page 3: Misc Ops 2
 
             // +0x00 / 0x08
+            0xc0 => instr::ret_conditional::<cond::NZ>(self),
+            0xc8 => instr::ret_conditional::<cond::Z>(self),
+            0xd0 => instr::ret_conditional::<cond::NC>(self),
+            0xd8 => instr::ret_conditional::<cond::C>(self),
             0xe0 => instr::ld::<addr::High, addr::A>(self),
             0xf0 => instr::ld::<addr::A, addr::High>(self),
 

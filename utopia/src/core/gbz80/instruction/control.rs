@@ -54,3 +54,16 @@ pub fn ret(core: &mut Core<impl Bus>) {
     core.pc = core.pop();
     core.idle();
 }
+
+pub fn ret_conditional<Cond: Condition>(core: &mut Core<impl Bus>) {
+    debug!("RET {}", Cond::NAME);
+    core.idle();
+
+    if Cond::test(&core.flags) {
+        debug!("Branch taken");
+        core.pc = core.pop();
+        core.idle();
+    } else {
+        debug!("Branch not taken");
+    }
+}
