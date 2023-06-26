@@ -573,8 +573,6 @@ impl<T: Bus> Core<T> {
             0xc7 | 0xcf | 0xd7 | 0xdf | 0xe7 | 0xef | 0xf7 | 0xff => {
                 instr::set::<addr::A>(self, opcode)
             }
-
-            _ => panic!("Opcode CB{:02X} not yet implemented", opcode),
         }
     }
 
