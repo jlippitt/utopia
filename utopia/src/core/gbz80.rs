@@ -549,6 +549,31 @@ impl<T: Bus> Core<T> {
             }
 
             // Page 3: SET
+            0xc0 | 0xc8 | 0xd0 | 0xd8 | 0xe0 | 0xe8 | 0xf0 | 0xf8 => {
+                instr::set::<addr::B>(self, opcode)
+            }
+            0xc1 | 0xc9 | 0xd1 | 0xd9 | 0xe1 | 0xe9 | 0xf1 | 0xf9 => {
+                instr::set::<addr::C>(self, opcode)
+            }
+            0xc2 | 0xca | 0xd2 | 0xda | 0xe2 | 0xea | 0xf2 | 0xfa => {
+                instr::set::<addr::D>(self, opcode)
+            }
+            0xc3 | 0xcb | 0xd3 | 0xdb | 0xe3 | 0xeb | 0xf3 | 0xfb => {
+                instr::set::<addr::E>(self, opcode)
+            }
+            0xc4 | 0xcc | 0xd4 | 0xdc | 0xe4 | 0xec | 0xf4 | 0xfc => {
+                instr::set::<addr::H>(self, opcode)
+            }
+            0xc5 | 0xcd | 0xd5 | 0xdd | 0xe5 | 0xed | 0xf5 | 0xfd => {
+                instr::set::<addr::L>(self, opcode)
+            }
+            0xc6 | 0xce | 0xd6 | 0xde | 0xe6 | 0xee | 0xf6 | 0xfe => {
+                instr::set::<addr::HLIndirect>(self, opcode)
+            }
+            0xc7 | 0xcf | 0xd7 | 0xdf | 0xe7 | 0xef | 0xf7 | 0xff => {
+                instr::set::<addr::A>(self, opcode)
+            }
+
             _ => panic!("Opcode CB{:02X} not yet implemented", opcode),
         }
     }

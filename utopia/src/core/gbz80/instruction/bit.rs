@@ -147,3 +147,10 @@ pub fn res<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>, opcode: u8) {
     let result = Addr::read(core) & !(1 << bit);
     Addr::write(core, result);
 }
+
+pub fn set<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>, opcode: u8) {
+    let bit = bit_from_opcode(opcode);
+    debug!("SET {}, {}", bit, Addr::NAME);
+    let result = Addr::read(core) | (1 << bit);
+    Addr::write(core, result);
+}
