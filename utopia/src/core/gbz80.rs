@@ -166,6 +166,7 @@ impl<T: Bus> Core<T> {
             0x0f => instr::rrca(self),
             0x17 => instr::rla(self),
             0x1f => instr::rra(self),
+            0x27 => instr::daa(self),
             0x2f => instr::cpl(self),
             0x37 => instr::scf(self),
             0x3f => instr::ccf(self),
