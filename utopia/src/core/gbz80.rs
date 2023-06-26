@@ -523,6 +523,30 @@ impl<T: Bus> Core<T> {
             }
 
             // Page 2: RES
+            0x80 | 0x88 | 0x90 | 0x98 | 0xa0 | 0xa8 | 0xb0 | 0xb8 => {
+                instr::res::<addr::B>(self, opcode)
+            }
+            0x81 | 0x89 | 0x91 | 0x99 | 0xa1 | 0xa9 | 0xb1 | 0xb9 => {
+                instr::res::<addr::C>(self, opcode)
+            }
+            0x82 | 0x8a | 0x92 | 0x9a | 0xa2 | 0xaa | 0xb2 | 0xba => {
+                instr::res::<addr::D>(self, opcode)
+            }
+            0x83 | 0x8b | 0x93 | 0x9b | 0xa3 | 0xab | 0xb3 | 0xbb => {
+                instr::res::<addr::E>(self, opcode)
+            }
+            0x84 | 0x8c | 0x94 | 0x9c | 0xa4 | 0xac | 0xb4 | 0xbc => {
+                instr::res::<addr::H>(self, opcode)
+            }
+            0x85 | 0x8d | 0x95 | 0x9d | 0xa5 | 0xad | 0xb5 | 0xbd => {
+                instr::res::<addr::L>(self, opcode)
+            }
+            0x86 | 0x8e | 0x96 | 0x9e | 0xa6 | 0xae | 0xb6 | 0xbe => {
+                instr::res::<addr::HLIndirect>(self, opcode)
+            }
+            0x87 | 0x8f | 0x97 | 0x9f | 0xa7 | 0xaf | 0xb7 | 0xbf => {
+                instr::res::<addr::A>(self, opcode)
+            }
 
             // Page 3: SET
             _ => panic!("Opcode CB{:02X} not yet implemented", opcode),
