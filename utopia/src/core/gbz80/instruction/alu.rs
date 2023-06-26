@@ -7,8 +7,8 @@ fn add_with_carry(core: &mut Core<impl Bus>, value: u8, carry: bool) -> u8 {
     let overflow = (core.a ^ result) & (value ^ result);
     core.flags.z = result;
     core.flags.n = false;
-    core.flags.c = ((carries ^ overflow) & 0x80) != 0;
     core.flags.h = (carries & 0x10) != 0;
+    core.flags.c = ((carries ^ overflow) & 0x80) != 0;
     result
 }
 
@@ -18,8 +18,20 @@ fn subtract_with_borrow(core: &mut Core<impl Bus>, value: u8, borrow: bool) -> u
     let overflow = (core.a ^ result) & (value ^ core.a);
     core.flags.z = result;
     core.flags.n = true;
-    core.flags.c = ((carries ^ overflow) & 0x80) != 0;
     core.flags.h = (carries & 0x10) != 0;
+    core.flags.c = ((carries ^ overflow) & 0x80) != 0;
+    result
+}
+
+fn add_offset_to_sp(core: &mut Core<impl Bus>) -> u16 {
+    let offset = ((core.next_byte() as i8) as i16) as u16;
+    let result = core.sp.wrapping_add(offset);
+    let carries = core.sp ^ offset ^ result;
+    let overflow = (core.sp ^ result) & (offset ^ result);
+    core.flags.z = 0xff;
+    core.flags.n = false;
+    core.flags.h = (carries & 0x10) != 0;
+    core.flags.c = ((carries ^ overflow) & 0x80) != 0;
     result
 }
 
@@ -123,4 +135,17 @@ pub fn dec16<Addr: WriteAddress<u16>>(core: &mut Core<impl Bus>) {
     core.idle();
     let result = Addr::read(core).wrapping_sub(1);
     Addr::write(core, result);
+}
+
+pub fn add_sp_i8(core: &mut Core<impl Bus>) {
+    debug!("ADD SP, i8");
+    core.sp = add_offset_to_sp(core);
+    core.idle();
+    core.idle();
+}
+
+pub fn ld_hl_sp_i8(core: &mut Core<impl Bus>) {
+    debug!("LD HL, SP+i8");
+    core.hl = add_offset_to_sp(core);
+    core.idle();
 }

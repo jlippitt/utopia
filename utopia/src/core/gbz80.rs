@@ -342,7 +342,9 @@ impl<T: Bus> Core<T> {
             0xd0 => instr::ret_conditional::<cond::NC>(self),
             0xd8 => instr::ret_conditional::<cond::C>(self),
             0xe0 => instr::ld::<addr::High, addr::A>(self),
+            0xe8 => instr::add_sp_i8(self),
             0xf0 => instr::ld::<addr::A, addr::High>(self),
+            0xf8 => instr::ld_hl_sp_i8(self),
 
             // +0x01 / 0x09
             0xc1 => instr::pop::<addr::BC>(self),
