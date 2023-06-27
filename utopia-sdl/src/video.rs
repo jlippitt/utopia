@@ -2,6 +2,7 @@ use sdl2::pixels::PixelFormatEnum;
 use sdl2::render::{Canvas, Texture, TextureCreator, TextureValueError};
 use sdl2::video::{Window, WindowContext};
 use sdl2::Sdl;
+use std::cmp;
 use std::error::Error;
 
 pub struct VideoOptions {
@@ -30,7 +31,14 @@ impl Video {
         let (scaled_width, scaled_height) = if let Some(scale) = options.upscale {
             (width * scale, height * scale)
         } else {
-            (width, height)
+            let display_mode = video.current_display_mode(0)?;
+
+            let width_ratio = display_mode.w as u32 / width;
+            let height_ratio = display_mode.h as u32 / width;
+
+            let scale = cmp::min(width_ratio, height_ratio);
+
+            (width * scale, height * scale)
         };
 
         let window = video
