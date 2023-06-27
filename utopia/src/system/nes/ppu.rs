@@ -9,9 +9,9 @@ use tracing::{debug, warn};
 mod palette;
 mod screen;
 
-const VBLANK_LINE: u32 = 241;
-const PRE_RENDER_LINE: u32 = 241;
-const TOTAL_LINES: u32 = 262;
+const PRE_RENDER_LINE: i32 = -1;
+const VBLANK_LINE: i32 = 241;
+const MAX_LINE_NUMBER: i32 = 261;
 
 const DOTS_PER_LINE: u32 = 341;
 
@@ -24,7 +24,7 @@ struct Registers {
 
 pub struct Ppu {
     ready: bool,
-    line: u32,
+    line: i32,
     dot: u32,
     nmi_occurred: bool,
     nmi_active: bool,
@@ -62,7 +62,7 @@ impl Ppu {
         self.ready = false;
     }
 
-    pub fn v_counter(&self) -> u32 {
+    pub fn v_counter(&self) -> i32 {
         self.line
     }
 
@@ -166,7 +166,7 @@ impl Ppu {
     }
 
     pub fn step(&mut self, _cartridge: &mut Cartridge, interrupt: &mut Interrupt) {
-        if self.line < 240 && self.dot < 256 {
+        if (self.line >= 0 && self.line < 240) && self.dot < 256 {
             self.screen.draw(self.palette.color(0));
         }
 
@@ -186,12 +186,11 @@ impl Ppu {
                 if self.nmi_active {
                     *interrupt |= INT_NMI;
                 }
-            } else if self.line == PRE_RENDER_LINE {
+            } else if self.line == MAX_LINE_NUMBER {
+                self.line = PRE_RENDER_LINE;
                 self.nmi_occurred = false;
                 *interrupt &= !INT_NMI;
                 debug!("PPU NMI Occurred: {}", self.nmi_occurred);
-            } else if self.line == TOTAL_LINES {
-                self.line = 0;
             }
         }
     }
