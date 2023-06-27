@@ -56,29 +56,31 @@ impl Ppu {
             color = self.palette.color(index as usize);
         }
 
-        let sprites = &mut self.render.sprites[0..self.sprites_selected];
+        if self.dot >= self.mask.sprite_start {
+            let sprites = &mut self.render.sprites[0..self.sprites_selected];
 
-        for sprite in sprites {
-            sprite.x -= 1;
+            for sprite in sprites {
+                sprite.x -= 1;
 
-            if sprite.x >= 8 || sprite.x < 0 {
-                continue;
-            }
+                if sprite.x >= 8 || sprite.x < 0 {
+                    continue;
+                }
 
-            let shift = if sprite.attr & 0x40 != 0 {
-                sprite.x ^ 7
-            } else {
-                sprite.x
-            };
+                let shift = if sprite.attr & 0x40 != 0 {
+                    sprite.x ^ 7
+                } else {
+                    sprite.x
+                };
 
-            let low = (sprite.chr_low >> shift) & 0x01;
-            let high = (sprite.chr_high >> shift) & 0x01;
-            let value = (high << 1) | low;
+                let low = (sprite.chr_low >> shift) & 0x01;
+                let high = (sprite.chr_high >> shift) & 0x01;
+                let value = (high << 1) | low;
 
-            // TODO: Sprite priority
-            if value > 0 {
-                let index = 0x10 | ((sprite.attr & 0x03) << 2) | value;
-                color = self.palette.color(index as usize);
+                // TODO: Sprite priority
+                if value > 0 {
+                    let index = 0x10 | ((sprite.attr & 0x03) << 2) | value;
+                    color = self.palette.color(index as usize);
+                }
             }
         }
 

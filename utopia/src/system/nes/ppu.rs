@@ -34,6 +34,7 @@ struct Control {
 struct Mask {
     render_enabled: bool,
     bg_start: i32,
+    sprite_start: i32,
 }
 
 pub struct Ppu {
@@ -77,6 +78,7 @@ impl Ppu {
             mask: Mask {
                 render_enabled: false,
                 bg_start: 0,
+                sprite_start: 0,
             },
             render: RenderState::new(),
             palette: Palette::new(),
@@ -198,8 +200,15 @@ impl Ppu {
                     _ => i32::MAX,
                 };
 
+                self.mask.sprite_start = match value & 0x14 {
+                    0x14 => 0,
+                    0x10 => 8,
+                    _ => i32::MAX,
+                };
+
                 debug!("PPU Render Enabled: {}", self.mask.render_enabled);
                 debug!("PPU BG Start: {}", self.mask.bg_start);
+                debug!("PPU Sprite Start: {}", self.mask.sprite_start);
             }
             3 => self.oam.set_address(value),
             4 => self.oam.write(value),
