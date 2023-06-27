@@ -22,6 +22,10 @@ struct Registers {
     w: bool,
 }
 
+struct Mask {
+    render_enabled: bool,
+}
+
 pub struct Ppu {
     ready: bool,
     line: i32,
@@ -29,6 +33,7 @@ pub struct Ppu {
     nmi_occurred: bool,
     nmi_active: bool,
     regs: Registers,
+    mask: Mask,
     vram_increment: u16,
     palette: Palette,
     screen: Screen,
@@ -48,6 +53,9 @@ impl Ppu {
                 t: 0,
                 x: 0,
                 w: false,
+            },
+            mask: Mask {
+                render_enabled: false,
             },
             palette: Palette::new(),
             screen: Screen::new(),
@@ -124,6 +132,10 @@ impl Ppu {
                 debug!("PPU VRAM Increment: {}", self.vram_increment);
                 debug!("PPU TMP Address: {:04X}", self.regs.t);
             }
+            1 => {
+                self.mask.render_enabled = (value & 0x18) != 0;
+                debug!("PPU Render Enabled: {}", self.mask.render_enabled);
+            }
             5 => {
                 if self.regs.w {
                     self.regs.t = (self.regs.t & 0x0c1f)
@@ -170,7 +182,7 @@ impl Ppu {
     }
 
     pub fn step(&mut self, _cartridge: &mut Cartridge, interrupt: &mut Interrupt) {
-        if self.line < TOTAL_VISIBLE_LINES {
+        if self.line < TOTAL_VISIBLE_LINES && self.mask.render_enabled {
             match self.dot {
                 0..=255 => {
                     if self.line != PRE_RENDER_LINE {
