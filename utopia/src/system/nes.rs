@@ -128,6 +128,12 @@ impl Bus for Hardware {
 
 impl fmt::Display for Hardware {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "V={} T={}", self.ppu.v_counter(), self.cycles)
+        write!(
+            f,
+            "V={} H={} T={}",
+            self.ppu.line(),
+            self.ppu.dot(),
+            self.cycles
+        )
     }
 }

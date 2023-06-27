@@ -62,8 +62,12 @@ impl Ppu {
         self.ready = false;
     }
 
-    pub fn v_counter(&self) -> i32 {
+    pub fn line(&self) -> i32 {
         self.line
+    }
+
+    pub fn dot(&self) -> i32 {
+        self.dot
     }
 
     pub fn pixels(&self) -> &[u8] {
