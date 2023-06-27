@@ -119,6 +119,7 @@ impl Ppu {
 
                 result
             }
+            3 => panic!("OAM reads not yet implemented"),
             7 => {
                 let address = self.regs.v & 0x3fff;
 
@@ -143,7 +144,11 @@ impl Ppu {
 
                 value
             }
-            _ => panic!("PPU read {:04X} not yet implemented", address),
+            _ => {
+                warn!("Unmapped PPU read {:04X}:", address);
+                // TODO: PPU Open Bus
+                0
+            }
         }
     }
 
