@@ -7,13 +7,13 @@ use screen::Screen;
 use tracing::{debug, warn};
 
 mod palette;
+mod render;
 mod screen;
 
 const PRE_RENDER_LINE: i32 = -1;
+const TOTAL_VISIBLE_LINES: i32 = 240;
 const VBLANK_LINE: i32 = 241;
 const MAX_LINE_NUMBER: i32 = 261;
-
-const DOTS_PER_LINE: u32 = 341;
 
 struct Registers {
     v: u16,
@@ -25,7 +25,7 @@ struct Registers {
 pub struct Ppu {
     ready: bool,
     line: i32,
-    dot: u32,
+    dot: i32,
     nmi_occurred: bool,
     nmi_active: bool,
     regs: Registers,
@@ -166,32 +166,69 @@ impl Ppu {
     }
 
     pub fn step(&mut self, _cartridge: &mut Cartridge, interrupt: &mut Interrupt) {
-        if (self.line >= 0 && self.line < 240) && self.dot < 256 {
-            self.screen.draw(self.palette.color(0));
+        if self.line < TOTAL_VISIBLE_LINES {
+            match self.dot {
+                0..=255 => {
+                    if self.line != PRE_RENDER_LINE {
+                        self.screen.draw(self.palette.color(0));
+                    }
+
+                    if (self.dot & 7) == 7 {
+                        self.increment_horizontal();
+                    }
+
+                    if self.dot == 255 {
+                        self.increment_vertical();
+                    }
+                }
+                256..=319 => {
+                    if self.dot == 256 {
+                        self.copy_horizontal();
+                    }
+
+                    if self.line == PRE_RENDER_LINE && self.dot >= 279 && self.dot <= 303 {
+                        self.copy_vertical();
+                    }
+                }
+                320..=335 => {
+                    if (self.dot & 7) == 7 {
+                        self.increment_horizontal();
+                    }
+                }
+                336..=339 => {
+                    //
+                }
+                340 => {
+                    self.next_line(interrupt);
+                }
+                _ => unreachable!(),
+            }
+        } else if self.dot == 340 {
+            self.next_line(interrupt);
         }
 
         self.dot += 1;
+    }
 
-        if self.dot == DOTS_PER_LINE {
-            self.dot = 0;
-            self.line += 1;
+    fn next_line(&mut self, interrupt: &mut Interrupt) {
+        self.dot = -1;
+        self.line += 1;
 
-            if self.line == VBLANK_LINE {
-                self.screen.reset();
-                self.ready = true;
+        if self.line == VBLANK_LINE {
+            self.screen.reset();
+            self.ready = true;
 
-                self.nmi_occurred = true;
-                debug!("PPU NMI Occurred: {}", self.nmi_occurred);
+            self.nmi_occurred = true;
+            debug!("PPU NMI Occurred: {}", self.nmi_occurred);
 
-                if self.nmi_active {
-                    *interrupt |= INT_NMI;
-                }
-            } else if self.line == MAX_LINE_NUMBER {
-                self.line = PRE_RENDER_LINE;
-                self.nmi_occurred = false;
-                *interrupt &= !INT_NMI;
-                debug!("PPU NMI Occurred: {}", self.nmi_occurred);
+            if self.nmi_active {
+                *interrupt |= INT_NMI;
             }
+        } else if self.line == MAX_LINE_NUMBER {
+            self.line = PRE_RENDER_LINE;
+            self.nmi_occurred = false;
+            *interrupt &= !INT_NMI;
+            debug!("PPU NMI Occurred: {}", self.nmi_occurred);
         }
     }
 }
