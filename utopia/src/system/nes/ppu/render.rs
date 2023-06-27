@@ -5,13 +5,12 @@ use tracing::debug;
 
 const ATTR_SHIFT: [u32; 4] = [0, 0x5555, 0xaaaa, 0xffff];
 
+#[derive(Clone, Copy, Debug, Default)]
 struct Sprite {
-    y: u16,
-    name: u16,
-    attr: [u8; 8],
-    x: [i32; 8],
-    chr_shift_low: [u8; 8],
-    chr_shift_high: [u8; 8],
+    x: i32,
+    chr_low: u8,
+    chr_high: u8,
+    attr: u8,
 }
 
 pub struct RenderState {
@@ -19,10 +18,12 @@ pub struct RenderState {
     name: u16,
     attr_latch: u8,
     chr_latch: u8,
-    chr_shift_low: u32,
-    chr_shift_high: u32,
+    chr_low: u32,
+    chr_high: u32,
     attr_shift: u32,
-    sprite: Sprite,
+    sprite_y: u16,
+    sprite_name: u16,
+    sprites: [Sprite; 8],
 }
 
 impl RenderState {
@@ -32,17 +33,12 @@ impl RenderState {
             name: 0,
             attr_latch: 0,
             chr_latch: 0,
-            chr_shift_low: 0,
-            chr_shift_high: 0,
+            chr_low: 0,
+            chr_high: 0,
             attr_shift: 0,
-            sprite: Sprite {
-                y: 0,
-                name: 0,
-                attr: [0; 8],
-                x: [0; 8],
-                chr_shift_low: [0; 8],
-                chr_shift_high: [0; 8],
-            },
+            sprite_y: 0,
+            sprite_name: 0,
+            sprites: [Default::default(); 8],
         }
     }
 }
@@ -53,19 +49,39 @@ impl Ppu {
 
         if self.dot >= self.mask.bg_start {
             let shift = 15 - self.regs.x;
-            let low = (self.render.chr_shift_low >> shift) & 0x01;
-            let high = (self.render.chr_shift_high >> shift) & 0x02;
+            let low = (self.render.chr_low >> shift) & 0x01;
+            let high = (self.render.chr_high >> shift) & 0x02;
             let attr = (self.render.attr_shift >> (shift << 1)) & 0x03;
             let index = (attr << 2) | high | low;
             color = self.palette.color(index as usize);
+        }
+
+        let sprites = &mut self.render.sprites[0..self.sprites_selected];
+
+        for sprite in sprites {
+            sprite.x -= 1;
+
+            if sprite.x >= 8 || sprite.x < 0 {
+                continue;
+            }
+
+            let low = (sprite.chr_low >> sprite.x) & 0x01;
+            let high = (sprite.chr_high >> sprite.x) & 0x01;
+            let value = (high << 1) | low;
+
+            // TODO: Sprite priority
+            if value > 0 {
+                let index = 0x10 | ((sprite.attr & 0x03) << 2) | value;
+                color = self.palette.color(index as usize);
+            }
         }
 
         self.screen.draw(color);
     }
 
     pub(super) fn load_bg_tiles(&mut self, cartridge: &Cartridge) {
-        self.render.chr_shift_low <<= 1;
-        self.render.chr_shift_high <<= 1;
+        self.render.chr_low <<= 1;
+        self.render.chr_high <<= 1;
         self.render.attr_shift <<= 2;
 
         match self.dot & 7 {
@@ -89,11 +105,10 @@ impl Ppu {
                 let value = cartridge.read_chr(self.render.address);
 
                 // TODO: This is actually meant to be one cycle later, but that makes timing more complex
-                self.render.chr_shift_low =
-                    (self.render.chr_shift_low & 0xff00) | (self.render.chr_latch as u32);
+                self.render.chr_low =
+                    (self.render.chr_low & 0xff00) | (self.render.chr_latch as u32);
 
-                self.render.chr_shift_high =
-                    (self.render.chr_shift_high & 0x0001_fe00) | ((value as u32) << 1);
+                self.render.chr_high = (self.render.chr_high & 0x0001_fe00) | ((value as u32) << 1);
 
                 self.render.attr_shift = (self.render.attr_shift & 0xffff_0000)
                     | ATTR_SHIFT[self.render.attr_latch as usize];
@@ -105,40 +120,41 @@ impl Ppu {
     }
 
     pub(super) fn load_sprite_tiles(&mut self, cartridge: &Cartridge) {
-        let index = (self.dot as usize >> 2) & 7;
+        let index = (self.dot as usize >> 3) & 7;
+        let address = index << 2;
 
         match self.dot & 7 {
             0 => {
                 self.render.address = self.tile_address();
-                self.render.sprite.y = self.oam.read_secondary(index) as u16;
+                self.render.sprite_y = self.oam.read_secondary(address) as u16;
             }
             1 => {
                 cartridge.read_name(self.render.address);
-                self.render.sprite.name = self.oam.read_secondary(index + 1) as u16;
+                self.render.sprite_name = (self.oam.read_secondary(address + 1) as u16) << 4;
             }
             2 => {
                 self.render.address = self.attr_address();
-                self.render.sprite.attr[index] = self.oam.read_secondary(index + 2);
+                self.render.sprites[index].attr = self.oam.read_secondary(address + 2);
             }
             3 => {
                 cartridge.read_name(self.render.address);
-                self.render.sprite.x[index] = self.oam.read_secondary(index + 3) as i32;
+                self.render.sprites[index].x = self.oam.read_secondary(address + 3) as i32 + 8;
             }
             4 => {
-                self.render.sprite.x[index] = self.oam.read_secondary(index + 3) as i32;
+                self.render.sprites[index].x = self.oam.read_secondary(address + 3) as i32 + 8;
                 self.render.address = self.sprite_chr_address();
             }
             5 => {
-                self.render.sprite.x[index] = self.oam.read_secondary(index + 3) as i32;
-                self.render.sprite.chr_shift_low[index] = cartridge.read_chr(self.render.address);
+                self.render.sprites[index].x = self.oam.read_secondary(address + 3) as i32 + 8;
+                self.render.sprites[index].chr_low = cartridge.read_chr(self.render.address);
             }
             6 => {
-                self.render.sprite.x[index] = self.oam.read_secondary(index + 3) as i32;
+                self.render.sprites[index].x = self.oam.read_secondary(address + 3) as i32 + 8;
                 self.render.address = self.sprite_chr_address() | 0x08;
             }
             7 => {
-                self.render.sprite.x[index] = self.oam.read_secondary(index + 3) as i32;
-                self.render.sprite.chr_shift_high[index] = cartridge.read_chr(self.render.address);
+                self.render.sprites[index].x = self.oam.read_secondary(address + 3) as i32 + 8;
+                self.render.sprites[index].chr_high = cartridge.read_chr(self.render.address);
             }
             _ => unreachable!(),
         }
@@ -197,7 +213,7 @@ impl Ppu {
     fn sprite_chr_address(&self) -> u16 {
         // TODO: 8x16 sprites
         self.control.sprite_chr_offset
-            | self.render.sprite.name
-            | (self.line as u16).wrapping_sub(self.render.sprite.y as u16)
+            | self.render.sprite_name
+            | (self.line as u16).wrapping_sub(self.render.sprite_y as u16)
     }
 }

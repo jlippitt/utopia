@@ -43,6 +43,7 @@ pub struct Ppu {
     nmi_occurred: bool,
     nmi_active: bool,
     read_buffer: u8,
+    sprites_selected: usize,
     regs: Registers,
     control: Control,
     mask: Mask,
@@ -61,6 +62,7 @@ impl Ppu {
             nmi_occurred: false,
             nmi_active: false,
             read_buffer: 0,
+            sprites_selected: 0,
             regs: Registers {
                 v: 0,
                 t: 0,
@@ -260,8 +262,8 @@ impl Ppu {
                         self.draw_pixel();
 
                         // TODO: Precise timings for sprite operations
-                        if self.dot == 63 {
-                            self.oam.select_sprites(self.line);
+                        if self.dot == 255 {
+                            self.sprites_selected = self.oam.select_sprites(self.line);
                         }
                     }
 
