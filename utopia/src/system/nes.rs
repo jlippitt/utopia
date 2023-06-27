@@ -5,7 +5,7 @@ use cartridge::Cartridge;
 use ppu::Ppu;
 use std::error::Error;
 use std::fmt;
-use tracing::debug;
+use tracing::{debug, warn};
 
 const WRAM_SIZE: usize = 2048;
 
@@ -50,6 +50,7 @@ impl System for Nes {
 
 struct Hardware {
     cycles: u64,
+    mdr: u8,
     interrupt: Interrupt,
     cartridge: Cartridge,
     wram: MirrorVec<u8>,
@@ -60,6 +61,7 @@ impl Hardware {
     pub fn new(rom_data: Vec<u8>) -> Self {
         Self {
             cycles: 0,
+            mdr: 0,
             interrupt: 0,
             cartridge: Cartridge::new(rom_data),
             wram: MirrorVec::new(WRAM_SIZE),
@@ -75,7 +77,7 @@ impl Bus for Hardware {
         self.ppu.step(&mut self.cartridge, &mut self.interrupt);
         self.ppu.step(&mut self.cartridge, &mut self.interrupt);
 
-        match address >> 13 {
+        self.mdr = match address >> 13 {
             0 => self.wram[address as usize],
             1 => self
                 .ppu
@@ -83,19 +85,26 @@ impl Bus for Hardware {
             2 => match address {
                 0x4016..=0x4017 => 0, // TODO: Joypad ports
                 0x4000..=0x401f => 0, // TODO: APU ports
-                _ => panic!("Read from unmapped address"),
+                _ => {
+                    warn!("Read from unmapped address: {:04X}", address);
+                    self.mdr
+                }
             },
             3 => {
                 //panic!("PRG RAM reads not yet implemented"),
                 0
             }
             _ => self.cartridge.read_prg_rom(address),
-        }
+        };
+
+        self.mdr
     }
 
     fn write(&mut self, address: u16, value: u8) {
         self.cycles += 4;
         self.ppu.step(&mut self.cartridge, &mut self.interrupt);
+
+        self.mdr = value;
 
         match address >> 13 {
             0 => self.wram[address as usize] = value,
