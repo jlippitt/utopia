@@ -40,7 +40,9 @@ impl Ppu {
                     | ((self.regs.v >> 2) & 0x07);
             }
             3 => {
-                self.render.attr = cartridge.read_name(self.render.address);
+                let value = cartridge.read_name(self.render.address);
+                let shift = ((self.regs.v & 0x20) >> 4) | (self.regs.v & 0x01);
+                self.render.attr = (value >> shift) & 0x03;
             }
             4 => {
                 self.render.address =
