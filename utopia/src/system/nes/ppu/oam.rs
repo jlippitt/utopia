@@ -45,17 +45,17 @@ impl Oam {
 
         for n in 0..=63 {
             let read_index = (n << 2) + m;
-            let sprite = &self.primary[read_index..(read_index + 4)];
-            let sprite_y = sprite[0];
+
+            let sprite_y = self.primary[read_index];
 
             if write_index < self.secondary.len() {
                 self.secondary[write_index] = sprite_y;
 
                 // TODO: 8x16 sprites
                 if (sprite_y as i32) <= line && (sprite_y as i32 + 8) > line {
-                    self.secondary[write_index + 1] = sprite[1];
-                    self.secondary[write_index + 2] = sprite[2];
-                    self.secondary[write_index + 3] = sprite[3];
+                    self.secondary[write_index + 1] = self.primary[read_index + 1];
+                    self.secondary[write_index + 2] = self.primary[read_index + 2];
+                    self.secondary[write_index + 3] = self.primary[read_index + 3];
                     write_index += 4;
                 }
             } else {
