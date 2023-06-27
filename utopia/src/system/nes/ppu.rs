@@ -3,6 +3,7 @@ pub use screen::{HEIGHT, WIDTH};
 use super::cartridge::Cartridge;
 use crate::core::mos6502::{Interrupt, INT_NMI};
 use palette::Palette;
+use render::RenderState;
 use screen::Screen;
 use tracing::{debug, warn};
 
@@ -22,6 +23,11 @@ struct Registers {
     w: bool,
 }
 
+struct Control {
+    vram_increment: u16,
+    bg_chr_offset: u16,
+}
+
 struct Mask {
     render_enabled: bool,
 }
@@ -33,8 +39,9 @@ pub struct Ppu {
     nmi_occurred: bool,
     nmi_active: bool,
     regs: Registers,
+    control: Control,
     mask: Mask,
-    vram_increment: u16,
+    render: RenderState,
     palette: Palette,
     screen: Screen,
 }
@@ -47,16 +54,20 @@ impl Ppu {
             dot: 0,
             nmi_occurred: false,
             nmi_active: false,
-            vram_increment: 1,
             regs: Registers {
                 v: 0,
                 t: 0,
                 x: 0,
                 w: false,
             },
+            control: Control {
+                vram_increment: 1,
+                bg_chr_offset: 0,
+            },
             mask: Mask {
                 render_enabled: false,
             },
+            render: RenderState::new(),
             palette: Palette::new(),
             screen: Screen::new(),
         }
@@ -126,10 +137,13 @@ impl Ppu {
                 }
 
                 self.nmi_active = nmi_active;
-                self.vram_increment = if (value & 0x04) != 0 { 32 } else { 1 };
+                self.control.bg_chr_offset = if (value & 0x10) != 0 { 0x1000 } else { 0 };
+                self.control.vram_increment = if (value & 0x04) != 0 { 32 } else { 1 };
                 self.regs.t = (self.regs.t & 0x73ff) | ((value as u16 & 0x03) << 10);
+
                 debug!("PPU NMI Active: {}", self.nmi_active);
-                debug!("PPU VRAM Increment: {}", self.vram_increment);
+                debug!("PPU BG CHR Offset: {}", self.control.bg_chr_offset);
+                debug!("PPU VRAM Increment: {}", self.control.vram_increment);
                 debug!("PPU TMP Address: {:04X}", self.regs.t);
             }
             1 => {
@@ -171,17 +185,19 @@ impl Ppu {
 
                 if address >= 0x3f00 {
                     self.palette.write(address, value);
+                } else if address >= 0x2000 {
+                    cartridge.write_name(address, value);
                 } else {
-                    cartridge.write_vram(address, value);
+                    cartridge.write_chr(address, value);
                 }
 
-                self.regs.v = (self.regs.v + self.vram_increment) & 0x7fff;
+                self.regs.v = (self.regs.v + self.control.vram_increment) & 0x7fff;
             }
             _ => warn!("PPU write {:04X} not yet implemented", address),
         }
     }
 
-    pub fn step(&mut self, _cartridge: &mut Cartridge, interrupt: &mut Interrupt) {
+    pub fn step(&mut self, cartridge: &mut Cartridge, interrupt: &mut Interrupt) {
         if self.line < TOTAL_VISIBLE_LINES && self.mask.render_enabled {
             match self.dot {
                 0..=255 => {
@@ -189,9 +205,7 @@ impl Ppu {
                         self.screen.draw(self.palette.color(0));
                     }
 
-                    if (self.dot & 7) == 7 {
-                        self.increment_horizontal();
-                    }
+                    self.load_bg_tiles(cartridge);
 
                     if self.dot == 255 {
                         self.increment_vertical();
@@ -207,9 +221,7 @@ impl Ppu {
                     }
                 }
                 320..=335 => {
-                    if (self.dot & 7) == 7 {
-                        self.increment_horizontal();
-                    }
+                    self.load_bg_tiles(cartridge);
                 }
                 336..=339 => {
                     //
