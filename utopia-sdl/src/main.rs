@@ -4,7 +4,7 @@ use sdl2::event::Event;
 use std::error::Error;
 use std::fs;
 use utopia::Options;
-use video::Video;
+use video::{Video, VideoOptions};
 
 mod bios;
 mod log;
@@ -20,6 +20,9 @@ struct Args {
 
     #[arg(short, long)]
     disable_vsync: bool,
+
+    #[arg(short, long)]
+    upscale: Option<u32>,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -47,7 +50,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         &sdl_context,
         system.width().try_into()?,
         system.height().try_into()?,
-        args.disable_vsync,
+        VideoOptions {
+            disable_vsync: args.disable_vsync,
+            upscale: args.upscale,
+        },
     )?;
 
     let texture_creator = video.texture_creator();

@@ -4,6 +4,11 @@ use sdl2::video::{Window, WindowContext};
 use sdl2::Sdl;
 use std::error::Error;
 
+pub struct VideoOptions {
+    pub disable_vsync: bool,
+    pub upscale: Option<u32>,
+}
+
 pub struct Video {
     width: u32,
     height: u32,
@@ -16,20 +21,26 @@ impl Video {
         sdl_context: &Sdl,
         width: u32,
         height: u32,
-        disable_vsync: bool,
+        options: VideoOptions,
     ) -> Result<Self, Box<dyn Error>> {
         let video = sdl_context.video()?;
 
         let pitch = width as usize * 4;
 
+        let (scaled_width, scaled_height) = if let Some(scale) = options.upscale {
+            (width * scale, height * scale)
+        } else {
+            (width, height)
+        };
+
         let window = video
-            .window("Utopia", width, height)
+            .window("Utopia", scaled_width, scaled_height)
             .position_centered()
             .build()?;
 
         let mut canvas_builder = window.into_canvas();
 
-        if !disable_vsync {
+        if !options.disable_vsync {
             canvas_builder = canvas_builder.present_vsync();
         }
 
