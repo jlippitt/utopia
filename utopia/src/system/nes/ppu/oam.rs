@@ -32,6 +32,10 @@ impl Oam {
         self.address = self.address.wrapping_add(1);
     }
 
+    pub fn read_secondary(&self, index: usize) -> u8 {
+        self.secondary[index]
+    }
+
     pub fn select_sprites(&mut self, line: i32) {
         self.secondary.fill(0xff);
 

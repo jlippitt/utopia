@@ -5,6 +5,15 @@ use tracing::debug;
 
 const ATTR_SHIFT: [u32; 4] = [0, 0x5555, 0xaaaa, 0xffff];
 
+struct Sprite {
+    y: u16,
+    name: u16,
+    attr: [u8; 8],
+    x: [i32; 8],
+    chr_shift_low: [u8; 8],
+    chr_shift_high: [u8; 8],
+}
+
 pub struct RenderState {
     address: u16,
     name: u16,
@@ -13,6 +22,7 @@ pub struct RenderState {
     chr_shift_low: u32,
     chr_shift_high: u32,
     attr_shift: u32,
+    sprite: Sprite,
 }
 
 impl RenderState {
@@ -25,6 +35,14 @@ impl RenderState {
             chr_shift_low: 0,
             chr_shift_high: 0,
             attr_shift: 0,
+            sprite: Sprite {
+                y: 0,
+                name: 0,
+                attr: [0; 8],
+                x: [0; 8],
+                chr_shift_low: [0; 8],
+                chr_shift_high: [0; 8],
+            },
         }
     }
 }
@@ -51,35 +69,22 @@ impl Ppu {
         self.render.attr_shift <<= 2;
 
         match self.dot & 7 {
-            0 => {
-                self.render.address = 0x2000 | (self.regs.v & 0x0fff);
-            }
+            0 => self.render.address = self.tile_address(),
             1 => {
                 let value = cartridge.read_name(self.render.address);
                 self.render.name = (value as u16) << 4;
             }
-            2 => {
-                self.render.address = 0x23c0
-                    | (self.regs.v & 0x0c00)
-                    | ((self.regs.v >> 4) & 0x38)
-                    | ((self.regs.v >> 2) & 0x07);
-            }
+            2 => self.render.address = self.attr_address(),
             3 => {
                 let value = cartridge.read_name(self.render.address);
                 let shift = ((self.regs.v & 0x40) >> 4) | (self.regs.v & 0x02);
                 self.render.attr_latch = (value >> shift) & 0x03;
             }
-            4 => {
-                self.render.address =
-                    self.control.bg_chr_offset | self.render.name | (self.regs.v >> 12);
-            }
+            4 => self.render.address = self.bg_chr_address(),
             5 => {
                 self.render.chr_latch = cartridge.read_chr(self.render.address);
             }
-            6 => {
-                self.render.address =
-                    self.control.bg_chr_offset | self.render.name | (self.regs.v >> 12) | 0x08;
-            }
+            6 => self.render.address = self.bg_chr_address() | 0x08,
             7 => {
                 let value = cartridge.read_chr(self.render.address);
 
@@ -94,6 +99,46 @@ impl Ppu {
                     | ATTR_SHIFT[self.render.attr_latch as usize];
 
                 self.increment_horizontal();
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    pub(super) fn load_sprite_tiles(&mut self, cartridge: &Cartridge) {
+        let index = (self.dot as usize >> 2) & 7;
+
+        match self.dot & 7 {
+            0 => {
+                self.render.address = self.tile_address();
+                self.render.sprite.y = self.oam.read_secondary(index) as u16;
+            }
+            1 => {
+                cartridge.read_name(self.render.address);
+                self.render.sprite.name = self.oam.read_secondary(index + 1) as u16;
+            }
+            2 => {
+                self.render.address = self.attr_address();
+                self.render.sprite.attr[index] = self.oam.read_secondary(index + 2);
+            }
+            3 => {
+                cartridge.read_name(self.render.address);
+                self.render.sprite.x[index] = self.oam.read_secondary(index + 3) as i32;
+            }
+            4 => {
+                self.render.sprite.x[index] = self.oam.read_secondary(index + 3) as i32;
+                self.render.address = self.sprite_chr_address();
+            }
+            5 => {
+                self.render.sprite.x[index] = self.oam.read_secondary(index + 3) as i32;
+                self.render.sprite.chr_shift_low[index] = cartridge.read_chr(self.render.address);
+            }
+            6 => {
+                self.render.sprite.x[index] = self.oam.read_secondary(index + 3) as i32;
+                self.render.address = self.sprite_chr_address() | 0x08;
+            }
+            7 => {
+                self.render.sprite.x[index] = self.oam.read_secondary(index + 3) as i32;
+                self.render.sprite.chr_shift_high[index] = cartridge.read_chr(self.render.address);
             }
             _ => unreachable!(),
         }
@@ -135,5 +180,24 @@ impl Ppu {
         }
 
         debug!("PPU VRAM Address (Increment Vertical): {:04X}", self.regs.v);
+    }
+
+    fn tile_address(&self) -> u16 {
+        0x2000 | (self.regs.v & 0x0fff)
+    }
+
+    fn attr_address(&self) -> u16 {
+        0x23c0 | (self.regs.v & 0x0c00) | ((self.regs.v >> 4) & 0x38) | ((self.regs.v >> 2) & 0x07)
+    }
+
+    fn bg_chr_address(&self) -> u16 {
+        self.control.bg_chr_offset | self.render.name | (self.regs.v >> 12)
+    }
+
+    fn sprite_chr_address(&self) -> u16 {
+        // TODO: 8x16 sprites
+        self.control.sprite_chr_offset
+            | self.render.sprite.name
+            | (self.line as u16).wrapping_sub(self.render.sprite.y as u16)
     }
 }

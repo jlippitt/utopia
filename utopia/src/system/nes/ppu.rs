@@ -28,6 +28,7 @@ struct Registers {
 struct Control {
     vram_increment: u16,
     bg_chr_offset: u16,
+    sprite_chr_offset: u16,
 }
 
 struct Mask {
@@ -69,6 +70,7 @@ impl Ppu {
             control: Control {
                 vram_increment: 1,
                 bg_chr_offset: 0,
+                sprite_chr_offset: 0,
             },
             mask: Mask {
                 render_enabled: false,
@@ -175,11 +177,13 @@ impl Ppu {
 
                 self.nmi_active = nmi_active;
                 self.control.bg_chr_offset = if (value & 0x10) != 0 { 0x1000 } else { 0 };
+                self.control.sprite_chr_offset = if (value & 0x08) != 0 { 0x1000 } else { 0 };
                 self.control.vram_increment = if (value & 0x04) != 0 { 32 } else { 1 };
                 self.regs.t = (self.regs.t & 0x73ff) | ((value as u16 & 0x03) << 10);
 
                 debug!("PPU NMI Active: {}", self.nmi_active);
                 debug!("PPU BG CHR Offset: {}", self.control.bg_chr_offset);
+                debug!("PPU Sprite CHR Offset: {}", self.control.sprite_chr_offset);
                 debug!("PPU VRAM Increment: {}", self.control.vram_increment);
                 debug!("PPU TMP Address: {:04X}", self.regs.t);
             }
@@ -275,6 +279,8 @@ impl Ppu {
                     if self.line == PRE_RENDER_LINE && self.dot >= 279 && self.dot <= 303 {
                         self.copy_vertical();
                     }
+
+                    self.load_sprite_tiles(cartridge);
                 }
                 320..=335 => {
                     self.load_bg_tiles(cartridge);
