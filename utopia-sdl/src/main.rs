@@ -17,6 +17,9 @@ struct Args {
 
     #[arg(short, long)]
     skip_boot: bool,
+
+    #[arg(short, long)]
+    disable_vsync: bool,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -44,6 +47,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         &sdl_context,
         system.width().try_into()?,
         system.height().try_into()?,
+        args.disable_vsync,
     )?;
 
     let texture_creator = video.texture_creator();

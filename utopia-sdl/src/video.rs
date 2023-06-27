@@ -12,7 +12,12 @@ pub struct Video {
 }
 
 impl Video {
-    pub fn new(sdl_context: &Sdl, width: u32, height: u32) -> Result<Self, Box<dyn Error>> {
+    pub fn new(
+        sdl_context: &Sdl,
+        width: u32,
+        height: u32,
+        disable_vsync: bool,
+    ) -> Result<Self, Box<dyn Error>> {
         let video = sdl_context.video()?;
 
         let pitch = width as usize * 4;
@@ -22,7 +27,13 @@ impl Video {
             .position_centered()
             .build()?;
 
-        let canvas = window.into_canvas().present_vsync().build()?;
+        let mut canvas_builder = window.into_canvas();
+
+        if !disable_vsync {
+            canvas_builder = canvas_builder.present_vsync();
+        }
+
+        let canvas = canvas_builder.build()?;
 
         Ok(Self {
             width,
