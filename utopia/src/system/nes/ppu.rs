@@ -30,6 +30,7 @@ struct Control {
 
 struct Mask {
     render_enabled: bool,
+    bg_start: i32,
 }
 
 pub struct Ppu {
@@ -66,6 +67,7 @@ impl Ppu {
             },
             mask: Mask {
                 render_enabled: false,
+                bg_start: 0,
             },
             render: RenderState::new(),
             palette: Palette::new(),
@@ -148,7 +150,15 @@ impl Ppu {
             }
             1 => {
                 self.mask.render_enabled = (value & 0x18) != 0;
+
+                self.mask.bg_start = match value & 0x0a {
+                    0x0a => 0,
+                    0x08 => 8,
+                    _ => i32::MAX,
+                };
+
                 debug!("PPU Render Enabled: {}", self.mask.render_enabled);
+                debug!("PPU BG Start: {}", self.mask.bg_start);
             }
             5 => {
                 if self.regs.w {
@@ -202,7 +212,7 @@ impl Ppu {
             match self.dot {
                 0..=255 => {
                     if self.line != PRE_RENDER_LINE {
-                        self.screen.draw(self.palette.color(0));
+                        self.draw_pixel();
                     }
 
                     self.load_bg_tiles(cartridge);
