@@ -19,11 +19,6 @@ impl Ppu {
         } else {
             self.regs.v += 1;
         }
-
-        debug!(
-            "PPU VRAM Address (Increment Horizontal): {:04X}",
-            self.regs.v
-        );
     }
 
     pub(super) fn increment_vertical(&mut self) {
