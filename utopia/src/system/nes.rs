@@ -5,7 +5,7 @@ use cartridge::Cartridge;
 use ppu::Ppu;
 use std::error::Error;
 use std::fmt;
-use tracing::{debug, warn};
+use tracing::debug;
 
 const WRAM_SIZE: usize = 2048;
 
@@ -102,7 +102,7 @@ impl Bus for Hardware {
             1 => self
                 .ppu
                 .write(&mut self.cartridge, &mut self.interrupt, address, value),
-            2 => warn!("2A03 register writes not yet implemented"),
+            2 => debug!("2A03 register writes not yet implemented"),
             3 => {
                 //panic!("PRG RAM writes not yet implemented"),
                 if address >= 0x6004 {
