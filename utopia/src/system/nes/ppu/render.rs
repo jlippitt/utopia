@@ -46,9 +46,9 @@ impl RenderState {
 impl Ppu {
     pub(super) fn draw_pixel(&mut self) {
         let color = match self.sprite_pixel() {
-            Some((color, false)) => color,
-            Some((color, true)) => self.bg_pixel().unwrap_or(color),
-            None => self.bg_pixel().unwrap_or(self.palette.color(0)),
+            (Some(color), false) => color,
+            (Some(color), true) => self.bg_pixel().unwrap_or(color),
+            (None, _) => self.bg_pixel().unwrap_or(self.palette.color(0)),
         };
 
         self.screen.draw(color);
@@ -192,8 +192,9 @@ impl Ppu {
         }
     }
 
-    fn sprite_pixel(&mut self) -> Option<(u8, bool)> {
-        let mut pixel: Option<(u8, bool)> = None;
+    fn sprite_pixel(&mut self) -> (Option<u8>, bool) {
+        let mut color: Option<u8> = None;
+        let mut priority = false;
 
         if self.dot >= self.mask.sprite_start {
             let sprites = &mut self.render.sprites[0..self.sprites_selected];
@@ -201,9 +202,11 @@ impl Ppu {
             for sprite in sprites {
                 sprite.x -= 1;
 
-                if sprite.x >= 8 || sprite.x < 0 || pixel.is_some() {
+                if sprite.x >= 8 || sprite.x < 0 || color.is_some() {
                     continue;
                 }
+
+                priority = (sprite.attr & 0x20) != 0;
 
                 let shift = if sprite.attr & 0x40 != 0 {
                     sprite.x ^ 7
@@ -220,13 +223,11 @@ impl Ppu {
                 }
 
                 let index = 0x10 | ((sprite.attr & 0x03) << 2) | value;
-                let color = self.palette.color(index as usize);
-                let priority = (sprite.attr & 0x20) != 0;
-                pixel = Some((color, priority))
+                color = Some(self.palette.color(index as usize));
             }
         }
 
-        pixel
+        (color, priority)
     }
 
     fn tile_address(&self) -> u16 {
