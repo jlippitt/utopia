@@ -49,6 +49,7 @@ impl System for Nes {
 }
 
 struct Hardware {
+    dma_address: Option<u8>,
     cycles: u64,
     mdr: u8,
     interrupt: Interrupt,
@@ -60,6 +61,7 @@ struct Hardware {
 impl Hardware {
     pub fn new(rom_data: Vec<u8>) -> Self {
         Self {
+            dma_address: None,
             cycles: 0,
             mdr: 0,
             interrupt: 0,
@@ -68,14 +70,43 @@ impl Hardware {
             ppu: Ppu::new(),
         }
     }
+
+    fn step(&mut self) {
+        self.cycles += 1;
+        self.ppu.step(&mut self.cartridge, &mut self.interrupt);
+    }
+
+    fn transfer_dma(&mut self, base_address: u16) {
+        debug!("DMA Transfer Begin");
+
+        self.step();
+
+        if (self.cycles & 1) != 0 {
+            self.step();
+        }
+
+        self.dma_address = None;
+
+        for index in 0..=255 {
+            let address = base_address + index;
+            let value = self.read(address);
+            debug!("DMA Write: OAM <= {:02X} <= {:04X}", value, address);
+            self.ppu.write_oam(value);
+        }
+
+        debug!("DMA Transfer End");
+    }
 }
 
 impl Bus for Hardware {
     fn read(&mut self, address: u16) -> u8 {
-        self.cycles += 12;
-        self.ppu.step(&mut self.cartridge, &mut self.interrupt);
-        self.ppu.step(&mut self.cartridge, &mut self.interrupt);
-        self.ppu.step(&mut self.cartridge, &mut self.interrupt);
+        if let Some(dma_address) = self.dma_address {
+            self.transfer_dma((dma_address as u16) << 8)
+        }
+
+        self.step();
+        self.step();
+        self.step();
 
         self.mdr = match address >> 13 {
             0 => self.wram[address as usize],
@@ -101,8 +132,7 @@ impl Bus for Hardware {
     }
 
     fn write(&mut self, address: u16, value: u8) {
-        self.cycles += 4;
-        self.ppu.step(&mut self.cartridge, &mut self.interrupt);
+        self.step();
 
         self.mdr = value;
 
@@ -111,7 +141,13 @@ impl Bus for Hardware {
             1 => self
                 .ppu
                 .write(&mut self.cartridge, &mut self.interrupt, address, value),
-            2 => debug!("2A03 register writes not yet implemented"),
+            2 => match address {
+                0x4014 => self.dma_address = Some(value),
+                0x4000..=0x401f => {
+                    debug!("2A03 register write not yet implemented: {:02X}", address)
+                }
+                _ => warn!("Write to unmapped address: {:02X}", address),
+            },
             3 => {
                 //panic!("PRG RAM writes not yet implemented"),
                 if address >= 0x6004 {
@@ -121,9 +157,8 @@ impl Bus for Hardware {
             _ => panic!("Mapper register writes not yet implemented"),
         };
 
-        self.cycles += 8;
-        self.ppu.step(&mut self.cartridge, &mut self.interrupt);
-        self.ppu.step(&mut self.cartridge, &mut self.interrupt);
+        self.step();
+        self.step();
     }
 
     fn poll(&mut self) -> Interrupt {

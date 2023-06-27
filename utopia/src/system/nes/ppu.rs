@@ -244,6 +244,10 @@ impl Ppu {
         }
     }
 
+    pub fn write_oam(&mut self, value: u8) {
+        self.oam.write(value);
+    }
+
     pub fn step(&mut self, cartridge: &mut Cartridge, interrupt: &mut Interrupt) {
         if self.line < TOTAL_VISIBLE_LINES && self.mask.render_enabled {
             match self.dot {
