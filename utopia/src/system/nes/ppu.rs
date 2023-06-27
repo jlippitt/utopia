@@ -47,8 +47,8 @@ pub struct Ppu {
     mask: Mask,
     render: RenderState,
     palette: Palette,
-    oam: Oam,
     screen: Screen,
+    oam: Oam,
 }
 
 impl Ppu {
@@ -76,8 +76,8 @@ impl Ppu {
             },
             render: RenderState::new(),
             palette: Palette::new(),
-            oam: Oam::new(),
             screen: Screen::new(),
+            oam: Oam::new(),
         }
     }
 
@@ -254,6 +254,11 @@ impl Ppu {
                 0..=255 => {
                     if self.line != PRE_RENDER_LINE {
                         self.draw_pixel();
+
+                        // TODO: Precise timings for sprite operations
+                        if self.dot == 63 {
+                            self.oam.select_sprites(self.line);
+                        }
                     }
 
                     self.load_bg_tiles(cartridge);

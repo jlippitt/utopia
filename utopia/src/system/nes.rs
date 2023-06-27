@@ -72,7 +72,7 @@ impl Hardware {
     }
 
     fn step(&mut self) {
-        self.cycles += 1;
+        self.cycles += 4;
         self.ppu.step(&mut self.cartridge, &mut self.interrupt);
     }
 
@@ -81,7 +81,7 @@ impl Hardware {
 
         self.step();
 
-        if (self.cycles & 1) != 0 {
+        if (self.cycles % 12) != 0 {
             self.step();
         }
 
@@ -91,6 +91,7 @@ impl Hardware {
             let address = base_address + index;
             let value = self.read(address);
             debug!("DMA Write: OAM <= {:02X} <= {:04X}", value, address);
+            self.step();
             self.ppu.write_oam(value);
         }
 
