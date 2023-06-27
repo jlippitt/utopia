@@ -13,6 +13,13 @@ impl Palette {
         self.data[index]
     }
 
+    pub fn read(&self, address: u16) -> u8 {
+        let mask = if (address & 0x03) == 0 { 0x0f } else { 0x1f };
+        let index = address as usize & mask;
+        debug!("Palette Read: {:02X} => {:02X}", index, self.data[index]);
+        self.data[index]
+    }
+
     pub fn write(&mut self, address: u16, value: u8) {
         let mask = if (address & 0x03) == 0 { 0x0f } else { 0x1f };
         let index = address as usize & mask;

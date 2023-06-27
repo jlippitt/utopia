@@ -39,6 +39,7 @@ pub struct Ppu {
     dot: i32,
     nmi_occurred: bool,
     nmi_active: bool,
+    read_buffer: u8,
     regs: Registers,
     control: Control,
     mask: Mask,
@@ -55,6 +56,7 @@ impl Ppu {
             dot: 0,
             nmi_occurred: false,
             nmi_active: false,
+            read_buffer: 0,
             regs: Registers {
                 v: 0,
                 t: 0,
@@ -97,7 +99,7 @@ impl Ppu {
 
     pub fn read(
         &mut self,
-        _cartridge: &mut Cartridge,
+        cartridge: &mut Cartridge,
         interrupt: &mut Interrupt,
         address: u16,
     ) -> u8 {
@@ -116,6 +118,30 @@ impl Ppu {
                 self.regs.w = false;
 
                 result
+            }
+            7 => {
+                let address = self.regs.v & 0x3fff;
+
+                let value = if address >= 0x3f00 {
+                    self.palette.read(address)
+                } else {
+                    self.read_buffer
+                };
+
+                self.read_buffer = if address >= 0x2000 {
+                    cartridge.read_name(address)
+                } else {
+                    cartridge.read_chr(address)
+                };
+
+                debug!(
+                    "VRAM Read: {:04X} => {:02X} ({:02X})",
+                    address, value, self.read_buffer
+                );
+
+                self.regs.v = (self.regs.v + self.control.vram_increment) & 0x7fff;
+
+                value
             }
             _ => panic!("PPU read {:04X} not yet implemented", address),
         }
