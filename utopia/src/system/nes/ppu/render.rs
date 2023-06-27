@@ -65,8 +65,14 @@ impl Ppu {
                 continue;
             }
 
-            let low = (sprite.chr_low >> sprite.x) & 0x01;
-            let high = (sprite.chr_high >> sprite.x) & 0x01;
+            let shift = if sprite.attr & 0x40 != 0 {
+                sprite.x ^ 7
+            } else {
+                sprite.x
+            };
+
+            let low = (sprite.chr_low >> shift) & 0x01;
+            let high = (sprite.chr_high >> shift) & 0x01;
             let value = (high << 1) | low;
 
             // TODO: Sprite priority
