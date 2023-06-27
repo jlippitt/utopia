@@ -2,11 +2,13 @@ pub use screen::{HEIGHT, WIDTH};
 
 use super::cartridge::Cartridge;
 use crate::core::mos6502::{Interrupt, INT_NMI};
+use oam::Oam;
 use palette::Palette;
 use render::RenderState;
 use screen::Screen;
 use tracing::{debug, warn};
 
+mod oam;
 mod palette;
 mod render;
 mod screen;
@@ -45,6 +47,7 @@ pub struct Ppu {
     mask: Mask,
     render: RenderState,
     palette: Palette,
+    oam: Oam,
     screen: Screen,
 }
 
@@ -73,6 +76,7 @@ impl Ppu {
             },
             render: RenderState::new(),
             palette: Palette::new(),
+            oam: Oam::new(),
             screen: Screen::new(),
         }
     }
@@ -119,7 +123,7 @@ impl Ppu {
 
                 result
             }
-            3 => panic!("OAM reads not yet implemented"),
+            4 => self.oam.read(),
             7 => {
                 let address = self.regs.v & 0x3fff;
 
@@ -191,6 +195,8 @@ impl Ppu {
                 debug!("PPU Render Enabled: {}", self.mask.render_enabled);
                 debug!("PPU BG Start: {}", self.mask.bg_start);
             }
+            3 => self.oam.set_address(value),
+            4 => self.oam.write(value),
             5 => {
                 if self.regs.w {
                     self.regs.t = (self.regs.t & 0x0c1f)
