@@ -30,7 +30,7 @@ impl System for Nes {
     }
 
     fn height(&self) -> usize {
-        ppu::HEIGHT - CLIP_AMOUNT * 2
+        ppu::HEIGHT
     }
 
     fn clip_top(&self) -> usize {
