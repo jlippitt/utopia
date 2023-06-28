@@ -8,6 +8,7 @@ use std::fmt;
 use tracing::debug;
 
 const WRAM_SIZE: usize = 2048;
+const CLIP_AMOUNT: usize = 8;
 
 mod cartridge;
 mod ppu;
@@ -29,7 +30,15 @@ impl System for Nes {
     }
 
     fn height(&self) -> usize {
-        ppu::HEIGHT
+        ppu::HEIGHT - CLIP_AMOUNT * 2
+    }
+
+    fn clip_top(&self) -> usize {
+        CLIP_AMOUNT
+    }
+
+    fn clip_bottom(&self) -> usize {
+        CLIP_AMOUNT
     }
 
     fn pixels(&self) -> &[u8] {

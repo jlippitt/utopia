@@ -9,6 +9,14 @@ pub trait System {
     fn height(&self) -> usize;
     fn pixels(&self) -> &[u8];
     fn run_frame(&mut self);
+
+    fn clip_top(&self) -> usize {
+        0
+    }
+
+    fn clip_bottom(&self) -> usize {
+        0
+    }
 }
 
 pub trait BiosLoader {

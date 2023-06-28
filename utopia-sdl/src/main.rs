@@ -48,11 +48,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut video = Video::new(
         &sdl_context,
-        system.width().try_into()?,
-        system.height().try_into()?,
         VideoOptions {
-            disable_vsync: args.disable_vsync,
+            width: system.width().try_into()?,
+            height: system.height().try_into()?,
+            clip_top: system.clip_top().try_into()?,
+            clip_bottom: system.clip_bottom().try_into()?,
             upscale: args.upscale,
+            disable_vsync: args.disable_vsync,
         },
     )?;
 

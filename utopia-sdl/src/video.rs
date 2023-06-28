@@ -1,4 +1,5 @@
 use sdl2::pixels::PixelFormatEnum;
+use sdl2::rect::Rect;
 use sdl2::render::{Canvas, Texture, TextureCreator, TextureValueError};
 use sdl2::video::{Window, WindowContext};
 use sdl2::Sdl;
@@ -6,8 +7,12 @@ use std::cmp;
 use std::error::Error;
 
 pub struct VideoOptions {
-    pub disable_vsync: bool,
+    pub width: u32,
+    pub height: u32,
+    pub clip_top: u32,
+    pub clip_bottom: u32,
     pub upscale: Option<u32>,
+    pub disable_vsync: bool,
 }
 
 pub struct Video {
@@ -15,30 +20,28 @@ pub struct Video {
     height: u32,
     pitch: usize,
     canvas: Canvas<Window>,
+    src_rect: Rect,
 }
 
 impl Video {
-    pub fn new(
-        sdl_context: &Sdl,
-        width: u32,
-        height: u32,
-        options: VideoOptions,
-    ) -> Result<Self, Box<dyn Error>> {
+    pub fn new(sdl_context: &Sdl, options: VideoOptions) -> Result<Self, Box<dyn Error>> {
         let video = sdl_context.video()?;
 
-        let pitch = width as usize * 4;
+        let pitch = options.width as usize * 4;
+
+        let clipped_height = options.height - options.clip_top - options.clip_bottom;
 
         let (scaled_width, scaled_height) = if let Some(scale) = options.upscale {
-            (width * scale, height * scale)
+            (options.width * scale, clipped_height * scale)
         } else {
             let display_mode = video.current_display_mode(0)?;
 
-            let width_ratio = display_mode.w as u32 / width;
-            let height_ratio = display_mode.h as u32 / width;
+            let width_ratio = display_mode.w as u32 / options.width;
+            let height_ratio = display_mode.h as u32 / clipped_height;
 
             let scale = cmp::min(width_ratio, height_ratio);
 
-            (width * scale, height * scale)
+            (options.width * scale, clipped_height * scale)
         };
 
         let window = video
@@ -55,10 +58,16 @@ impl Video {
         let canvas = canvas_builder.build()?;
 
         Ok(Self {
-            width,
-            height,
+            width: options.width,
+            height: options.height,
             pitch,
             canvas,
+            src_rect: Rect::new(
+                0,
+                options.clip_top.try_into()?,
+                options.width,
+                clipped_height,
+            ),
         })
     }
 
@@ -81,7 +90,7 @@ impl Video {
         texture.update(None, pixels, self.pitch)?;
 
         self.canvas.clear();
-        self.canvas.copy(texture, None, None)?;
+        self.canvas.copy(texture, self.src_rect, None)?;
         self.canvas.present();
 
         Ok(())
