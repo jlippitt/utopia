@@ -66,48 +66,46 @@ impl Ppu {
         }
 
         // 3. Sprite Layer
-        if self.dot >= self.mask.sprite_start {
-            let sprites = &mut self.render.sprites[0..self.sprites_selected];
+        let sprites = &mut self.render.sprites[0..self.sprites_selected];
 
-            for (index, sprite) in sprites.iter_mut().enumerate() {
-                sprite.x -= 1;
+        for (index, sprite) in sprites.iter_mut().enumerate() {
+            sprite.x -= 1;
 
-                if sprite.x >= 8 || sprite.x < 0 {
-                    continue;
-                }
-
-                let shift = if sprite.attr & 0x40 != 0 {
-                    sprite.x ^ 7
-                } else {
-                    sprite.x
-                };
-
-                let low = (sprite.chr_low >> shift) & 0x01;
-                let high = (sprite.chr_high >> shift) & 0x01;
-                let value = (high << 1) | low;
-
-                if value == 0 {
-                    continue;
-                }
-
-                if index == 0 && self.sprite_zero_selected && bg_present && self.dot != 255 {
-                    self.status.sprite_zero_hit = true;
-                    debug!("Sprite Zero Hit: {}", self.status.sprite_zero_hit);
-                }
-
-                if sprite_present {
-                    continue;
-                }
-
-                // Sprite priority quirk: Lower priority sprites cannot overlap non-transparent pixels
-                // of higher priority sprites, even if they are hidden by the background layer.
-                if (sprite.attr & 0x20) == 0 || !bg_present {
-                    let index = 0x10 | ((sprite.attr & 0x03) << 2) | value;
-                    color = self.palette.color(index as usize);
-                }
-
-                sprite_present = true;
+            if sprite.x < 0 || sprite.x >= 8 || self.dot < self.mask.sprite_start {
+                continue;
             }
+
+            let shift = if sprite.attr & 0x40 != 0 {
+                sprite.x ^ 7
+            } else {
+                sprite.x
+            };
+
+            let low = (sprite.chr_low >> shift) & 0x01;
+            let high = (sprite.chr_high >> shift) & 0x01;
+            let value = (high << 1) | low;
+
+            if value == 0 {
+                continue;
+            }
+
+            if index == 0 && self.sprite_zero_selected && bg_present && self.dot != 255 {
+                self.status.sprite_zero_hit = true;
+                debug!("Sprite Zero Hit: {}", self.status.sprite_zero_hit);
+            }
+
+            if sprite_present {
+                continue;
+            }
+
+            // Sprite priority quirk: Lower priority sprites cannot overlap non-transparent pixels
+            // of higher priority sprites, even if they are hidden by the background layer.
+            if (sprite.attr & 0x20) == 0 || !bg_present {
+                let index = 0x10 | ((sprite.attr & 0x03) << 2) | value;
+                color = self.palette.color(index as usize);
+            }
+
+            sprite_present = true;
         }
 
         self.screen.draw(color);
