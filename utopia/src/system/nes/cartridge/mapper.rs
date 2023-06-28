@@ -2,12 +2,14 @@ use axrom::AxRom;
 use cnrom::CnRom;
 use enum_dispatch::enum_dispatch;
 use mmc1::Mmc1;
+use mmc3::Mmc3;
 use nrom::NRom;
 use uxrom::UxRom;
 
 mod axrom;
 mod cnrom;
 mod mmc1;
+mod mmc3;
 mod nrom;
 mod uxrom;
 
@@ -24,6 +26,7 @@ pub trait Mapper {
 pub enum MapperType {
     NRom,
     Mmc1,
+    Mmc3,
     UxRom,
     CnRom,
     AxRom,
@@ -36,6 +39,7 @@ impl MapperType {
             1 => Self::Mmc1(Mmc1::new(prg_rom_size)),
             2 => Self::UxRom(UxRom::new(prg_rom_size)),
             3 => Self::CnRom(CnRom::new()),
+            4 => Self::Mmc3(Mmc3::new(prg_rom_size)),
             7 => Self::AxRom(AxRom::new()),
             _ => panic!("Mapper {} not yet supported", mapper_number),
         }
@@ -142,6 +146,15 @@ impl Mappings {
             self.prg_write[start + index] = PrgWrite::Ram(offset.try_into().unwrap());
         }
     }
+
+    pub fn map_prg_ram_read_only(&mut self, start: usize, len: usize, base_offset: usize) {
+        for index in 0..len {
+            let offset = base_offset + index * PRG_PAGE_SIZE;
+            self.prg_read[start + index] = PrgRead::Ram(offset.try_into().unwrap());
+            self.prg_write[start + index] = PrgWrite::None;
+        }
+    }
+
     pub fn map_registers(&mut self, start: usize, len: usize) {
         self.prg_write[start..(start + len)].fill(PrgWrite::Register);
     }
@@ -150,6 +163,13 @@ impl Mappings {
         for index in 0..len {
             let offset = base_offset + index * CHR_PAGE_SIZE;
             self.chr[start + index] = offset.try_into().unwrap();
+        }
+    }
+
+    pub fn mirror_nametables(&mut self, mirror_mode: MirrorMode) {
+        self.name = match mirror_mode {
+            MirrorMode::Horizontal => MIRROR_HORIZONTAL,
+            MirrorMode::Vertical => MIRROR_VERTICAL,
         }
     }
 
