@@ -75,7 +75,11 @@ impl Mmc1 {
             _ => unreachable!(),
         }
 
-        // TODO: PRG RAM mapping
+        if self.prg_ram_enabled {
+            mappings.map_prg_ram(6, 2, 0);
+        } else {
+            mappings.unmap_prg(6, 2);
+        }
 
         mappings.name = match self.mirror_mode {
             0 => [NameTable::Low; 4],

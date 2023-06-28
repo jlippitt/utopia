@@ -11,10 +11,12 @@ const HEADER_SIZE: usize = 16;
 const TRAINER_SIZE: usize = 512;
 const PRG_ROM_MULTIPLIER: usize = 16384;
 const CHR_ROM_MULTIPLIER: usize = 8192;
+const PRG_RAM_SIZE: usize = 8192;
 const CI_RAM_SIZE: usize = 2048;
 
 pub struct Cartridge {
     prg_rom: MirrorVec<u8>,
+    prg_ram: MirrorVec<u8>,
     chr_data: MirrorVec<u8>,
     chr_writable: bool,
     ci_ram: MirrorVec<u8>,
@@ -59,6 +61,7 @@ impl Cartridge {
 
         Self {
             prg_rom: prg_rom.into(),
+            prg_ram: MirrorVec::new(PRG_RAM_SIZE),
             chr_data: chr_data.into(),
             chr_writable: chr_rom_size == 0,
             ci_ram: MirrorVec::new(CI_RAM_SIZE),
@@ -70,7 +73,7 @@ impl Cartridge {
     pub fn read_prg(&self, address: u16, prev_value: u8) -> u8 {
         match self.mappings.prg_read[address as usize >> 12] {
             PrgRead::Rom(offset) => self.prg_rom[offset as usize | (address as usize & 0x0fff)],
-            //PrgRead::Ram(_) => panic!("PRG RAM reads not yet implemented"),
+            PrgRead::Ram(offset) => self.prg_ram[offset as usize | (address as usize & 0x0fff)],
             PrgRead::None => prev_value,
         }
     }
@@ -80,7 +83,9 @@ impl Cartridge {
             PrgWrite::Register => self
                 .mapper
                 .write_register(&mut self.mappings, address, value),
-            //PrgWrite::Ram(_) => panic!("PRG RAM writes not yet implemented"),
+            PrgWrite::Ram(offset) => {
+                self.prg_ram[offset as usize | (address as usize & 0x0fff)] = value
+            }
             PrgWrite::None => (),
         }
     }

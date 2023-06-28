@@ -45,14 +45,14 @@ impl MapperType {
 #[derive(Clone, Copy, Debug)]
 pub enum PrgRead {
     Rom(u32),
-    //Ram(u32),
+    Ram(u32),
     None,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub enum PrgWrite {
     Register,
-    //Ram(u32),
+    Ram(u32),
     None,
 }
 
@@ -135,6 +135,13 @@ impl Mappings {
         }
     }
 
+    pub fn map_prg_ram(&mut self, start: usize, len: usize, base_offset: usize) {
+        for index in 0..len {
+            let offset = base_offset + index * PRG_PAGE_SIZE;
+            self.prg_read[start + index] = PrgRead::Ram(offset.try_into().unwrap());
+            self.prg_write[start + index] = PrgWrite::Ram(offset.try_into().unwrap());
+        }
+    }
     pub fn map_registers(&mut self, start: usize, len: usize) {
         self.prg_write[start..(start + len)].fill(PrgWrite::Register);
     }
@@ -143,6 +150,13 @@ impl Mappings {
         for index in 0..len {
             let offset = base_offset + index * CHR_PAGE_SIZE;
             self.chr[start + index] = offset.try_into().unwrap();
+        }
+    }
+
+    pub fn unmap_prg(&mut self, start: usize, len: usize) {
+        for index in 0..len {
+            self.prg_read[start + index] = PrgRead::None;
+            self.prg_write[start + index] = PrgWrite::None;
         }
     }
 }
