@@ -119,22 +119,22 @@ impl Ppu {
         match self.dot & 7 {
             0 => self.render.address = self.tile_address(),
             1 => {
-                let value = cartridge.read_name(self.render.address);
+                let value = cartridge.read_vram(self.render.address);
                 self.render.name = (value as u16) << 4;
             }
             2 => self.render.address = self.attr_address(),
             3 => {
-                let value = cartridge.read_name(self.render.address);
+                let value = cartridge.read_vram(self.render.address);
                 let shift = ((self.regs.v & 0x40) >> 4) | (self.regs.v & 0x02);
                 self.render.attr_latch = (value >> shift) & 0x03;
             }
             4 => self.render.address = self.bg_chr_address(),
             5 => {
-                self.render.chr_latch = cartridge.read_chr(self.render.address);
+                self.render.chr_latch = cartridge.read_vram(self.render.address);
             }
             6 => self.render.address = self.bg_chr_address() | 0x08,
             7 => {
-                let value = cartridge.read_chr(self.render.address);
+                let value = cartridge.read_vram(self.render.address);
 
                 // TODO: This is actually meant to be one cycle later, but that makes timing more complex
                 self.render.chr_low =
@@ -161,7 +161,7 @@ impl Ppu {
                 self.render.sprite_y = self.oam.read_secondary(address) as u16;
             }
             1 => {
-                cartridge.read_name(self.render.address);
+                cartridge.read_vram(self.render.address);
                 self.render.sprite_name = (self.oam.read_secondary(address + 1) as u16) << 4;
             }
             2 => {
@@ -169,7 +169,7 @@ impl Ppu {
                 self.render.sprites[index].attr = self.oam.read_secondary(address + 2);
             }
             3 => {
-                cartridge.read_name(self.render.address);
+                cartridge.read_vram(self.render.address);
                 self.render.sprites[index].x = self.oam.read_secondary(address + 3) as i32 + 8;
             }
             4 => {
@@ -178,7 +178,7 @@ impl Ppu {
             }
             5 => {
                 self.render.sprites[index].x = self.oam.read_secondary(address + 3) as i32 + 8;
-                self.render.sprites[index].chr_low = cartridge.read_chr(self.render.address);
+                self.render.sprites[index].chr_low = cartridge.read_vram(self.render.address);
             }
             6 => {
                 self.render.sprites[index].x = self.oam.read_secondary(address + 3) as i32 + 8;
@@ -186,7 +186,7 @@ impl Ppu {
             }
             7 => {
                 self.render.sprites[index].x = self.oam.read_secondary(address + 3) as i32 + 8;
-                self.render.sprites[index].chr_high = cartridge.read_chr(self.render.address);
+                self.render.sprites[index].chr_high = cartridge.read_vram(self.render.address);
             }
             _ => unreachable!(),
         }

@@ -90,31 +90,29 @@ impl Cartridge {
         }
     }
 
-    pub fn read_name(&self, address: u16) -> u8 {
-        let index = address as usize & 0x0fff;
+    pub fn read_vram(&self, address: u16) -> u8 {
+        if address >= 0x2000 {
+            let index = address as usize & 0x0fff;
 
-        match self.mappings.name[index >> 10] {
-            NameTable::Low => self.ci_ram[index & 0x03ff],
-            NameTable::High => self.ci_ram[0x0400 | (index & 0x03ff)],
+            match self.mappings.name[index >> 10] {
+                NameTable::Low => self.ci_ram[index & 0x03ff],
+                NameTable::High => self.ci_ram[0x0400 | (index & 0x03ff)],
+            }
+        } else {
+            let offset = self.mappings.chr[(address >> 10) as usize];
+            self.chr_data[offset as usize | ((address as usize) & 0x03ff)]
         }
     }
 
-    pub fn write_name(&mut self, address: u16, value: u8) {
-        let index = address as usize & 0x0fff;
+    pub fn write_vram(&mut self, address: u16, value: u8) {
+        if address >= 0x2000 {
+            let index = address as usize & 0x0fff;
 
-        match self.mappings.name[index >> 10] {
-            NameTable::Low => self.ci_ram[index & 0x03ff] = value,
-            NameTable::High => self.ci_ram[0x0400 | (index & 0x03ff)] = value,
-        }
-    }
-
-    pub fn read_chr(&self, address: u16) -> u8 {
-        let offset = self.mappings.chr[(address >> 10) as usize];
-        self.chr_data[offset as usize | ((address as usize) & 0x03ff)]
-    }
-
-    pub fn write_chr(&mut self, address: u16, value: u8) {
-        if self.chr_writable {
+            match self.mappings.name[index >> 10] {
+                NameTable::Low => self.ci_ram[index & 0x03ff] = value,
+                NameTable::High => self.ci_ram[0x0400 | (index & 0x03ff)] = value,
+            }
+        } else if self.chr_writable {
             let offset = self.mappings.chr[(address >> 10) as usize];
             self.chr_data[offset as usize | ((address as usize) & 0x03ff)] = value;
         }

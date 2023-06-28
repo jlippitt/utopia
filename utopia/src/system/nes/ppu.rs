@@ -154,11 +154,7 @@ impl Ppu {
                     self.read_buffer
                 };
 
-                self.read_buffer = if address >= 0x2000 {
-                    cartridge.read_name(address)
-                } else {
-                    cartridge.read_chr(address)
-                };
+                self.read_buffer = cartridge.read_vram(address);
 
                 debug!(
                     "VRAM Read: {:04X} => {:02X} ({:02X})",
@@ -264,10 +260,8 @@ impl Ppu {
 
                 if address >= 0x3f00 {
                     self.palette.write(address, value);
-                } else if address >= 0x2000 {
-                    cartridge.write_name(address, value);
                 } else {
-                    cartridge.write_chr(address, value);
+                    cartridge.write_vram(address, value);
                 }
 
                 self.regs.v = (self.regs.v + self.control.vram_increment) & 0x7fff;
