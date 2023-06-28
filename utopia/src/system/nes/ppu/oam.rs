@@ -36,8 +36,10 @@ impl Oam {
         self.secondary[index]
     }
 
-    pub fn select_sprites(&mut self, line: i32) -> (usize, bool) {
+    pub fn select_sprites(&mut self, line: i32, sprite_size: bool) -> (usize, bool) {
         self.secondary.fill(0xff);
+
+        let height = 8 << sprite_size as u32;
 
         let mut m = 0;
 
@@ -53,8 +55,7 @@ impl Oam {
             if write_index < self.secondary.len() {
                 self.secondary[write_index] = sprite_y;
 
-                // TODO: 8x16 sprites
-                if (sprite_y as i32) <= line && (sprite_y as i32 + 8) > line {
+                if (sprite_y as i32) <= line && (sprite_y as i32 + height) > line {
                     self.secondary[write_index + 1] = self.primary[read_index + 1];
                     self.secondary[write_index + 2] = self.primary[read_index + 2];
                     self.secondary[write_index + 3] = self.primary[read_index + 3];
@@ -66,7 +67,7 @@ impl Oam {
                     }
                 }
             } else {
-                if (sprite_y as i32) <= line && (sprite_y as i32 + 8) > line {
+                if (sprite_y as i32) <= line && (sprite_y as i32 + height) > line {
                     debug!("Line {}: Sprite overflow", line);
                     // TODO: Set sprite overflow flag
                 } else {

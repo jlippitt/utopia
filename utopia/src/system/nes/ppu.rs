@@ -28,6 +28,7 @@ struct Registers {
 struct Control {
     nmi_active: bool,
     bg_chr_offset: u16,
+    sprite_size: bool,
     sprite_chr_offset: u16,
     vram_increment: u16,
 }
@@ -77,6 +78,7 @@ impl Ppu {
             control: Control {
                 nmi_active: false,
                 bg_chr_offset: 0,
+                sprite_size: false,
                 sprite_chr_offset: 0,
                 vram_increment: 1,
             },
@@ -193,12 +195,14 @@ impl Ppu {
                 }
 
                 self.control.nmi_active = nmi_active;
+                self.control.sprite_size = (value & 0x20) != 0;
                 self.control.bg_chr_offset = if (value & 0x10) != 0 { 0x1000 } else { 0 };
                 self.control.sprite_chr_offset = if (value & 0x08) != 0 { 0x1000 } else { 0 };
                 self.control.vram_increment = if (value & 0x04) != 0 { 32 } else { 1 };
                 self.regs.t = (self.regs.t & 0x73ff) | ((value as u16 & 0x03) << 10);
 
                 debug!("PPU NMI Active: {}", self.control.nmi_active);
+                debug!("PPU Sprite Size: {}", 8 << self.control.sprite_size as u32);
                 debug!("PPU BG CHR Offset: {}", self.control.bg_chr_offset);
                 debug!("PPU Sprite CHR Offset: {}", self.control.sprite_chr_offset);
                 debug!("PPU VRAM Increment: {}", self.control.vram_increment);
@@ -286,7 +290,7 @@ impl Ppu {
                         // TODO: Precise timings for sprite operations
                         if self.dot == 255 {
                             (self.sprites_selected, self.sprite_zero_selected) =
-                                self.oam.select_sprites(self.line);
+                                self.oam.select_sprites(self.line, self.control.sprite_size);
                         }
                     }
 

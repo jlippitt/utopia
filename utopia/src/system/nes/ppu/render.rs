@@ -248,12 +248,23 @@ impl Ppu {
 
     fn sprite_chr_address(&self, index: usize) -> u16 {
         let mut row = (self.line as u16).wrapping_sub(self.render.sprite_y as u16);
+        let flip = (self.render.sprites[index].attr & 0x80) != 0;
 
-        if (self.render.sprites[index].attr & 0x80) != 0 {
-            row ^= 7;
+        if self.control.sprite_size {
+            if flip {
+                row ^= 15;
+            }
+
+            ((self.render.sprite_name & 0x10) << 8)
+                | (self.render.sprite_name & 0x0fe0)
+                | ((row & 0x08) << 1)
+                | (row & 0x07)
+        } else {
+            if flip {
+                row ^= 7;
+            }
+
+            self.control.sprite_chr_offset | self.render.sprite_name | row
         }
-
-        // TODO: 8x16 sprites
-        self.control.sprite_chr_offset | self.render.sprite_name | row
     }
 }
