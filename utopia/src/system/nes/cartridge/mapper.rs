@@ -1,11 +1,13 @@
 use axrom::AxRom;
 use cnrom::CnRom;
 use enum_dispatch::enum_dispatch;
+use mmc1::Mmc1;
 use nrom::NRom;
 use uxrom::UxRom;
 
 mod axrom;
 mod cnrom;
+mod mmc1;
 mod nrom;
 mod uxrom;
 
@@ -21,6 +23,7 @@ pub trait Mapper {
 #[enum_dispatch(Mapper)]
 pub enum MapperType {
     NRom,
+    Mmc1,
     UxRom,
     CnRom,
     AxRom,
@@ -30,6 +33,7 @@ impl MapperType {
     pub fn new(mapper_number: u8, prg_rom_size: usize) -> Self {
         match mapper_number {
             0 => Self::NRom(NRom::new()),
+            1 => Self::Mmc1(Mmc1::new(prg_rom_size)),
             2 => Self::UxRom(UxRom::new(prg_rom_size)),
             3 => Self::CnRom(CnRom::new()),
             7 => Self::AxRom(AxRom::new()),
@@ -64,6 +68,20 @@ pub enum NameTable {
     High,
 }
 
+const MIRROR_HORIZONTAL: [NameTable; 4] = [
+    NameTable::Low,
+    NameTable::Low,
+    NameTable::High,
+    NameTable::High,
+];
+
+const MIRROR_VERTICAL: [NameTable; 4] = [
+    NameTable::Low,
+    NameTable::High,
+    NameTable::Low,
+    NameTable::High,
+];
+
 pub struct Mappings {
     pub prg_read: [PrgRead; 16],
     pub prg_write: [PrgWrite; 16],
@@ -94,18 +112,8 @@ impl Mappings {
             ],
             prg_write: [PrgWrite::None; 16],
             name: match mirror_mode {
-                MirrorMode::Horizontal => [
-                    NameTable::Low,
-                    NameTable::Low,
-                    NameTable::High,
-                    NameTable::High,
-                ],
-                MirrorMode::Vertical => [
-                    NameTable::Low,
-                    NameTable::High,
-                    NameTable::Low,
-                    NameTable::High,
-                ],
+                MirrorMode::Horizontal => MIRROR_HORIZONTAL,
+                MirrorMode::Vertical => MIRROR_VERTICAL,
             },
             chr: [
                 0,
