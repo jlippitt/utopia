@@ -36,12 +36,14 @@ impl Oam {
         self.secondary[index]
     }
 
-    pub fn select_sprites(&mut self, line: i32) -> usize {
+    pub fn select_sprites(&mut self, line: i32) -> (usize, bool) {
         self.secondary.fill(0xff);
 
         let mut m = 0;
 
         let mut write_index = 0;
+
+        let mut sprite_zero_selected: bool = false;
 
         for n in 0..=63 {
             let read_index = (n << 2) + m;
@@ -57,6 +59,11 @@ impl Oam {
                     self.secondary[write_index + 2] = self.primary[read_index + 2];
                     self.secondary[write_index + 3] = self.primary[read_index + 3];
                     write_index += 4;
+
+                    if n == 0 {
+                        debug!("Line {}: Sprite zero selected", line);
+                        sprite_zero_selected = true;
+                    }
                 }
             } else {
                 if (sprite_y as i32) <= line && (sprite_y as i32 + 8) > line {
@@ -75,6 +82,6 @@ impl Oam {
             debug!("Line {}: {} sprites selected", line, sprites_selected);
         }
 
-        sprites_selected
+        (sprites_selected, sprite_zero_selected)
     }
 }

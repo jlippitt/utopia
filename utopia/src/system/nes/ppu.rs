@@ -26,9 +26,10 @@ struct Registers {
 }
 
 struct Control {
-    vram_increment: u16,
+    nmi_active: bool,
     bg_chr_offset: u16,
     sprite_chr_offset: u16,
+    vram_increment: u16,
 }
 
 struct Mask {
@@ -36,17 +37,21 @@ struct Mask {
     bg_start: i32,
     sprite_start: i32,
 }
+struct Status {
+    nmi_occurred: bool,
+    sprite_zero_hit: bool,
+}
 
 pub struct Ppu {
     ready: bool,
     line: i32,
     dot: i32,
-    nmi_occurred: bool,
-    nmi_active: bool,
     read_buffer: u8,
     sprites_selected: usize,
+    sprite_zero_selected: bool,
     regs: Registers,
     control: Control,
+    status: Status,
     mask: Mask,
     render: RenderState,
     palette: Palette,
@@ -60,10 +65,9 @@ impl Ppu {
             ready: false,
             line: 0,
             dot: 0,
-            nmi_occurred: false,
-            nmi_active: false,
             read_buffer: 0,
             sprites_selected: 0,
+            sprite_zero_selected: false,
             regs: Registers {
                 v: 0,
                 t: 0,
@@ -71,9 +75,14 @@ impl Ppu {
                 w: false,
             },
             control: Control {
-                vram_increment: 1,
+                nmi_active: false,
                 bg_chr_offset: 0,
                 sprite_chr_offset: 0,
+                vram_increment: 1,
+            },
+            status: Status {
+                nmi_occurred: false,
+                sprite_zero_hit: false,
             },
             mask: Mask {
                 render_enabled: false,
@@ -118,11 +127,15 @@ impl Ppu {
                 // TODO: Open bus
                 let mut result: u8 = 0;
 
-                if self.nmi_occurred {
+                if self.status.nmi_occurred {
                     result |= 0x80;
-                    self.nmi_occurred = false;
-                    debug!("NMI Occurred: {}", self.nmi_occurred);
+                    self.status.nmi_occurred = false;
+                    debug!("NMI Occurred: {}", self.status.nmi_occurred);
                     *interrupt &= !INT_NMI;
+                }
+
+                if self.status.sprite_zero_hit {
+                    result |= 0x40;
                 }
 
                 self.regs.w = false;
@@ -175,17 +188,17 @@ impl Ppu {
 
                 if !nmi_active {
                     *interrupt &= !INT_NMI;
-                } else if self.nmi_occurred && !self.nmi_active {
+                } else if self.status.nmi_occurred && !self.control.nmi_active {
                     *interrupt |= INT_NMI;
                 }
 
-                self.nmi_active = nmi_active;
+                self.control.nmi_active = nmi_active;
                 self.control.bg_chr_offset = if (value & 0x10) != 0 { 0x1000 } else { 0 };
                 self.control.sprite_chr_offset = if (value & 0x08) != 0 { 0x1000 } else { 0 };
                 self.control.vram_increment = if (value & 0x04) != 0 { 32 } else { 1 };
                 self.regs.t = (self.regs.t & 0x73ff) | ((value as u16 & 0x03) << 10);
 
-                debug!("PPU NMI Active: {}", self.nmi_active);
+                debug!("PPU NMI Active: {}", self.control.nmi_active);
                 debug!("PPU BG CHR Offset: {}", self.control.bg_chr_offset);
                 debug!("PPU Sprite CHR Offset: {}", self.control.sprite_chr_offset);
                 debug!("PPU VRAM Increment: {}", self.control.vram_increment);
@@ -272,7 +285,8 @@ impl Ppu {
 
                         // TODO: Precise timings for sprite operations
                         if self.dot == 255 {
-                            self.sprites_selected = self.oam.select_sprites(self.line);
+                            (self.sprites_selected, self.sprite_zero_selected) =
+                                self.oam.select_sprites(self.line);
                         }
                     }
 
@@ -319,17 +333,21 @@ impl Ppu {
             self.screen.reset();
             self.ready = true;
 
-            self.nmi_occurred = true;
-            debug!("PPU NMI Occurred: {}", self.nmi_occurred);
+            self.status.nmi_occurred = true;
+            debug!("PPU NMI Occurred: {}", self.status.nmi_occurred);
 
-            if self.nmi_active {
+            if self.control.nmi_active {
                 *interrupt |= INT_NMI;
             }
         } else if self.line == MAX_LINE_NUMBER {
             self.line = PRE_RENDER_LINE;
-            self.nmi_occurred = false;
+
+            self.status.nmi_occurred = false;
+            debug!("PPU NMI Occurred: {}", self.status.nmi_occurred);
             *interrupt &= !INT_NMI;
-            debug!("PPU NMI Occurred: {}", self.nmi_occurred);
+
+            self.status.sprite_zero_hit = false;
+            debug!("Sprite Zero Hit: {}", self.status.sprite_zero_hit);
         }
     }
 }
