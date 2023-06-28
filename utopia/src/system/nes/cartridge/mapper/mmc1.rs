@@ -93,7 +93,7 @@ impl Mmc1 {
             mappings.map_chr(0, 4, CHR_BANK_SIZE * self.chr_bank[0] as usize);
             mappings.map_chr(4, 4, CHR_BANK_SIZE * self.chr_bank[1] as usize);
         } else {
-            mappings.map_chr(0, 8, CHR_BANK_SIZE * 2 * (self.chr_bank[0] & 0x1e) as usize);
+            mappings.map_chr(0, 8, CHR_BANK_SIZE * (self.chr_bank[0] & 0x1e) as usize);
         }
 
         debug!("MMC1 PRG Read Mappings: {:?}", mappings.prg_read);
