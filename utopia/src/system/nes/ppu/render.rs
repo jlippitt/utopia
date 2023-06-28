@@ -178,7 +178,7 @@ impl Ppu {
             }
             4 => {
                 self.render.sprites[index].x = self.oam.read_secondary(address + 3) as i32 + 8;
-                self.render.address = self.sprite_chr_address();
+                self.render.address = self.sprite_chr_address(index);
             }
             5 => {
                 self.render.sprites[index].x = self.oam.read_secondary(address + 3) as i32 + 8;
@@ -186,7 +186,7 @@ impl Ppu {
             }
             6 => {
                 self.render.sprites[index].x = self.oam.read_secondary(address + 3) as i32 + 8;
-                self.render.address = self.sprite_chr_address() | 0x08;
+                self.render.address = self.sprite_chr_address(index) | 0x08;
             }
             7 => {
                 self.render.sprites[index].x = self.oam.read_secondary(address + 3) as i32 + 8;
@@ -246,10 +246,14 @@ impl Ppu {
         self.control.bg_chr_offset | self.render.name | (self.regs.v >> 12)
     }
 
-    fn sprite_chr_address(&self) -> u16 {
+    fn sprite_chr_address(&self, index: usize) -> u16 {
+        let mut row = (self.line as u16).wrapping_sub(self.render.sprite_y as u16);
+
+        if (self.render.sprites[index].attr & 0x80) != 0 {
+            row ^= 7;
+        }
+
         // TODO: 8x16 sprites
-        self.control.sprite_chr_offset
-            | self.render.sprite_name
-            | (self.line as u16).wrapping_sub(self.render.sprite_y as u16)
+        self.control.sprite_chr_offset | self.render.sprite_name | row
     }
 }
