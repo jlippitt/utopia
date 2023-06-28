@@ -5,7 +5,7 @@ use cartridge::Cartridge;
 use ppu::Ppu;
 use std::error::Error;
 use std::fmt;
-use tracing::{debug, warn};
+use tracing::debug;
 
 const WRAM_SIZE: usize = 2048;
 
@@ -109,6 +109,8 @@ impl Bus for Hardware {
         self.step();
         self.step();
 
+        self.mdr = self.cartridge.read_prg(address, self.mdr);
+
         self.mdr = match address >> 13 {
             0 => self.wram[address as usize],
             1 => self
@@ -117,16 +119,9 @@ impl Bus for Hardware {
             2 => match address {
                 0x4016..=0x4017 => 0, // TODO: Joypad ports
                 0x4000..=0x401f => 0, // TODO: APU ports
-                _ => {
-                    warn!("Read from unmapped address: {:04X}", address);
-                    self.mdr
-                }
+                _ => self.mdr,
             },
-            3 => {
-                //panic!("PRG RAM reads not yet implemented"),
-                0
-            }
-            _ => self.cartridge.read_prg_rom(address),
+            _ => self.mdr,
         };
 
         self.mdr
@@ -136,6 +131,8 @@ impl Bus for Hardware {
         self.step();
 
         self.mdr = value;
+
+        self.cartridge.write_prg(address, value);
 
         match address >> 13 {
             0 => self.wram[address as usize] = value,
@@ -147,15 +144,9 @@ impl Bus for Hardware {
                 0x4000..=0x401f => {
                     debug!("2A03 register write not yet implemented: {:02X}", address)
                 }
-                _ => warn!("Write to unmapped address: {:02X}", address),
+                _ => (),
             },
-            3 => {
-                //panic!("PRG RAM writes not yet implemented"),
-                if address >= 0x6004 {
-                    print!("{}", value as char);
-                }
-            }
-            _ => panic!("Mapper register writes not yet implemented"),
+            _ => (),
         };
 
         self.step();
