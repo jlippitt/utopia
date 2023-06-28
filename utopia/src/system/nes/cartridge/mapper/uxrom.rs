@@ -3,17 +3,17 @@ use tracing::debug;
 
 const PRG_BANK_SIZE: usize = 16384;
 
-pub struct UxROM {
+pub struct UxRom {
     prg_rom_size: usize,
 }
 
-impl UxROM {
+impl UxRom {
     pub fn new(prg_rom_size: usize) -> Self {
         Self { prg_rom_size }
     }
 }
 
-impl Mapper for UxROM {
+impl Mapper for UxRom {
     fn init_mappings(&mut self, mappings: &mut Mappings) {
         mappings.map_prg_rom(8, 4, 0);
         mappings.map_prg_rom(12, 4, self.prg_rom_size - PRG_BANK_SIZE);

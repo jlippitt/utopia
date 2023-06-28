@@ -1,13 +1,13 @@
 use super::Mapper;
 
-pub struct NROM;
+pub struct NRom;
 
-impl NROM {
+impl NRom {
     pub fn new() -> Self {
         Self
     }
 }
 
-impl Mapper for NROM {
+impl Mapper for NRom {
     // Default behaviour
 }

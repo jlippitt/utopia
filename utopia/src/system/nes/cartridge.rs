@@ -104,12 +104,14 @@ impl Cartridge {
     }
 
     pub fn read_chr(&self, address: u16) -> u8 {
-        self.chr_data[address as usize]
+        let offset = self.mappings.chr[(address >> 10) as usize];
+        self.chr_data[offset as usize | ((address as usize) & 0x03ff)]
     }
 
     pub fn write_chr(&mut self, address: u16, value: u8) {
         if self.chr_writable {
-            self.chr_data[address as usize] = value;
+            let offset = self.mappings.chr[(address >> 10) as usize];
+            self.chr_data[offset as usize | ((address as usize) & 0x03ff)] = value;
         }
     }
 }
