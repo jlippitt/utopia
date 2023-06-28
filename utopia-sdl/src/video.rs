@@ -34,10 +34,10 @@ impl Video {
         let (scaled_width, scaled_height) = if let Some(scale) = options.upscale {
             (options.width * scale, clipped_height * scale)
         } else {
-            let display_mode = video.current_display_mode(0)?;
+            let bounds = video.display_usable_bounds(0)?;
 
-            let width_ratio = display_mode.w as u32 / options.width;
-            let height_ratio = display_mode.h as u32 / clipped_height;
+            let width_ratio = bounds.w as u32 / options.width;
+            let height_ratio = bounds.h as u32 / clipped_height;
 
             let scale = cmp::min(width_ratio, height_ratio);
 
