@@ -62,13 +62,13 @@ impl Oam {
                     write_index += 4;
 
                     if n == 0 {
-                        debug!("Line {}: Sprite zero selected", line);
+                        debug!("Line {}: Sprite Zero Selected", line);
                         sprite_zero_selected = true;
                     }
                 }
             } else {
                 if (sprite_y as i32) <= line && (sprite_y as i32 + height) > line {
-                    debug!("Line {}: Sprite overflow", line);
+                    debug!("Line {}: Sprite Overflow", line);
                     // TODO: Set sprite overflow flag
                 } else {
                     // Sprite overflow bug
@@ -80,7 +80,7 @@ impl Oam {
         let sprites_selected = write_index >> 2;
 
         if write_index > 0 {
-            debug!("Line {}: {} sprites selected", line, sprites_selected);
+            debug!("Line {}: {} Sprites Selected", line, sprites_selected);
         }
 
         (sprites_selected, sprite_zero_selected)

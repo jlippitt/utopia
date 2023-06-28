@@ -1,8 +1,10 @@
+use axrom::AxRom;
 use cnrom::CnRom;
 use enum_dispatch::enum_dispatch;
 use nrom::NRom;
 use uxrom::UxRom;
 
+mod axrom;
 mod cnrom;
 mod nrom;
 mod uxrom;
@@ -21,6 +23,7 @@ pub enum MapperType {
     NRom,
     UxRom,
     CnRom,
+    AxRom,
 }
 
 impl MapperType {
@@ -29,6 +32,7 @@ impl MapperType {
             0 => Self::NRom(NRom::new()),
             2 => Self::UxRom(UxRom::new(prg_rom_size)),
             3 => Self::CnRom(CnRom::new()),
+            7 => Self::AxRom(AxRom::new()),
             _ => panic!("Mapper {} not yet supported", mapper_number),
         }
     }

@@ -13,13 +13,6 @@ struct Sprite {
     attr: u8,
 }
 
-#[derive(Clone, Copy, Eq, PartialEq)]
-enum Layer {
-    Backdrop,
-    Background,
-    Sprite,
-}
-
 pub struct RenderState {
     address: u16,
     name: u16,
@@ -54,7 +47,8 @@ impl Ppu {
     pub(super) fn draw_pixel(&mut self) {
         // 1. Backdrop Color
         let mut color = self.palette.color(0);
-        let mut layer = Layer::Backdrop;
+        let mut bg_present = false;
+        let mut sprite_present = false;
 
         // 2. Background Layer
         if self.dot >= self.mask.bg_start {
@@ -67,7 +61,7 @@ impl Ppu {
                 let attr = (self.render.attr_shift >> (shift << 1)) & 0x03;
                 let index = (attr << 2) | high | low;
                 color = self.palette.color(index as usize);
-                layer = Layer::Background;
+                bg_present = true;
             }
         }
 
@@ -78,7 +72,7 @@ impl Ppu {
             for (index, sprite) in sprites.iter_mut().enumerate() {
                 sprite.x -= 1;
 
-                if sprite.x >= 8 || sprite.x < 0 || layer == Layer::Sprite {
+                if sprite.x >= 8 || sprite.x < 0 {
                     continue;
                 }
 
@@ -96,19 +90,23 @@ impl Ppu {
                     continue;
                 }
 
+                if index == 0 && self.sprite_zero_selected && bg_present && self.dot != 255 {
+                    self.status.sprite_zero_hit = true;
+                    debug!("Sprite Zero Hit: {}", self.status.sprite_zero_hit);
+                }
+
+                if sprite_present {
+                    continue;
+                }
+
                 // Sprite priority quirk: Lower priority sprites cannot overlap non-transparent pixels
                 // of higher priority sprites, even if they are hidden by the background layer.
-                if (sprite.attr & 0x20) == 0 || layer == Layer::Backdrop {
+                if (sprite.attr & 0x20) == 0 || !bg_present {
                     let index = 0x10 | ((sprite.attr & 0x03) << 2) | value;
                     color = self.palette.color(index as usize);
                 }
 
-                layer = Layer::Sprite;
-
-                if index == 0 && self.sprite_zero_selected && self.dot != 255 {
-                    self.status.sprite_zero_hit = true;
-                    debug!("Sprite Zero Hit: {}", self.status.sprite_zero_hit);
-                }
+                sprite_present = true;
             }
         }
 
@@ -247,7 +245,7 @@ impl Ppu {
     }
 
     fn sprite_chr_address(&self, index: usize) -> u16 {
-        let mut row = (self.line as u16).wrapping_sub(self.render.sprite_y as u16);
+        let mut row = (self.line as u16).wrapping_sub(self.render.sprite_y as u16) & 15;
         let flip = (self.render.sprites[index].attr & 0x80) != 0;
 
         if self.control.sprite_size {
