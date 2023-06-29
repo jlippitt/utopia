@@ -85,6 +85,8 @@ impl System for GameBoy {
 
 struct Hardware {
     cycles: u64,
+    interrupt_flag: u8,
+    interrupt_enable: u8,
     hram: MirrorVec<u8>,
     wram: MirrorVec<u8>,
     cartridge: Cartridge,
@@ -96,6 +98,8 @@ impl Hardware {
     pub fn new(rom_data: Vec<u8>, bios_data: Option<Vec<u8>>) -> Self {
         Self {
             cycles: 0,
+            interrupt_flag: 0xe0,
+            interrupt_enable: 0xe0,
             hram: MirrorVec::new(HRAM_SIZE),
             wram: MirrorVec::new(WRAM_SIZE),
             cartridge: Cartridge::new(rom_data),
@@ -112,19 +116,24 @@ impl Hardware {
     fn read_high_impl(&mut self, address: u8) -> u8 {
         match address {
             0x00 => 0xff, // TODO: Joypad
-            0x01..=0x0f => panic!("System register read {:02X} not yet implemented", address),
+            0x01..=0x0e => panic!("System register read {:02X} not yet implemented", address),
+            0x0f => self.interrupt_flag,
             0x10..=0x3f => panic!("APU register reads not yet implemented"),
             0x40..=0x4f => self.ppu.read(address),
             0x50..=0x7f => panic!("Unmapped register read"),
             0x80..=0xfe => self.hram[address as usize],
-            0xff => panic!("Interrupt register reads not yet implemented"),
+            0xff => self.interrupt_enable,
         }
     }
 
     fn write_high_impl(&mut self, address: u8, value: u8) {
         match address {
             0x01 => print!("{}", value as char),
-            0x00..=0x0f => warn!("System register write {:02X} not yet implemented", address),
+            0x00..=0x0e => warn!("System register write {:02X} not yet implemented", address),
+            0x0f => {
+                self.interrupt_flag = 0xe0 | (value & 0x1f);
+                debug!("Interrupt Flag: {:02X}", self.interrupt_flag);
+            }
             0x10..=0x3f => warn!("APU register writes not yet implemented"),
             0x40..=0x4f => self.ppu.write(address, value),
             0x50 => {
@@ -133,7 +142,10 @@ impl Hardware {
             }
             0x51..=0x7f => warn!("Unmapped register write: {:02X}", address),
             0x80..=0xfe => self.hram[address as usize] = value,
-            0xff => warn!("Interrupt register writes not yet implemented"),
+            0xff => {
+                self.interrupt_enable = 0xe0 | (value & 0x1f);
+                debug!("Interrupt Enable: {:02X}", self.interrupt_enable);
+            }
         }
     }
 }
