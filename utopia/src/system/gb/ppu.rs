@@ -1,3 +1,4 @@
+use super::interrupt::{Interrupt, InterruptType};
 use tracing::{debug, warn};
 
 const VBLANK_LINE: u32 = 144;
@@ -71,7 +72,7 @@ impl Ppu {
         }
     }
 
-    pub fn step(&mut self, cycles: u64) {
+    pub fn step(&mut self, interrupt: &mut Interrupt, cycles: u64) {
         self.dot += cycles;
 
         if self.dot == DOTS_PER_LINE {
@@ -82,6 +83,7 @@ impl Ppu {
                 self.line = 0;
             } else if self.line == VBLANK_LINE {
                 self.ready = true;
+                interrupt.trigger(InterruptType::VBlank);
             }
         }
     }
