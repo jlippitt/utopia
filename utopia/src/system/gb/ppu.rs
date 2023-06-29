@@ -102,7 +102,7 @@ impl Ppu {
                 self.line = 0;
             } else if self.line == VBLANK_LINE {
                 self.ready = true;
-                interrupt.trigger(InterruptType::VBlank);
+                interrupt.raise(InterruptType::VBlank);
             }
         }
     }

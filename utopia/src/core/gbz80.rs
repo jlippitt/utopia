@@ -8,12 +8,13 @@ mod condition;
 mod instruction;
 
 pub trait Bus: fmt::Display {
-    fn poll(&self) -> u8;
     fn idle(&mut self);
     fn read(&mut self, address: u16) -> u8;
     fn write(&mut self, address: u16, value: u8);
     fn read_high(&mut self, address: u8) -> u8;
     fn write_high(&mut self, address: u8, value: u8);
+    fn poll(&self) -> u8;
+    fn acknowledge(&mut self, mask: u8);
 }
 
 #[derive(Clone, Default)]
@@ -90,7 +91,9 @@ impl<T: Bus> Core<T> {
             let interrupt = self.bus.poll();
 
             if interrupt != 0 {
-                let target = 0x40 + 0x08 * interrupt.trailing_zeros() as u8;
+                let shift = interrupt.trailing_zeros();
+                self.bus.acknowledge(1 << shift);
+                let target = 0x40 + 0x08 * shift as u8;
                 instr::rst(self, target);
                 self.ime = false;
                 self.ime_delayed = false;

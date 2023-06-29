@@ -42,12 +42,16 @@ impl Interrupt {
         debug!("Interrupt Enable: {:05b}", self.enable);
     }
 
-    pub fn trigger(&mut self, interrupt_type: InterruptType) {
+    pub fn raise(&mut self, interrupt_type: InterruptType) {
         let value = interrupt_type as u8;
 
         if (self.enable & value) != 0 {
             self.flag |= value;
             debug!("Interrupt Raised: {:?}", interrupt_type);
         }
+    }
+
+    pub fn acknowledge(&mut self, mask: u8) {
+        self.flag &= !mask;
     }
 }

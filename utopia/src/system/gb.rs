@@ -145,10 +145,6 @@ impl Hardware {
 }
 
 impl Bus for Hardware {
-    fn poll(&self) -> u8 {
-        self.interrupt.poll()
-    }
-
     fn idle(&mut self) {
         self.step();
     }
@@ -208,6 +204,14 @@ impl Bus for Hardware {
     fn write_high(&mut self, address: u8, value: u8) {
         self.step();
         self.write_high_impl(address, value);
+    }
+
+    fn poll(&self) -> u8 {
+        self.interrupt.poll()
+    }
+
+    fn acknowledge(&mut self, mask: u8) {
+        self.interrupt.acknowledge(mask);
     }
 }
 
