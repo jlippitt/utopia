@@ -175,7 +175,7 @@ impl Bus for Hardware {
         self.step();
 
         match address >> 13 {
-            0 | 1 | 2 | 3 => panic!("Mapper writes not yet implemented"),
+            0 | 1 | 2 | 3 => warn!("Mapper writes not yet implemented"),
             4 => warn!("VRAM writes not yet implemented"),
             5 => warn!("ERAM writes not yet implemented"),
             6 => self.wram[address as usize] = value,
