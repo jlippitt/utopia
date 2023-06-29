@@ -164,7 +164,8 @@ impl Bus for Hardware {
             6 => self.wram[address as usize],
             7 => match address {
                 0xff00..=0xffff => self.read_high_impl(address as u8),
-                0xfe00..=0xfea0 => panic!("OAM reads not yet implemented"),
+                0xfe00..=0xfe9f => panic!("OAM reads not yet implemented"),
+                0xfea0..=0xfeff => 0xff,
                 _ => panic!("Read from unmapped location"),
             },
             _ => unreachable!(),
@@ -175,14 +176,15 @@ impl Bus for Hardware {
         self.step();
 
         match address >> 13 {
-            0 | 1 | 2 | 3 => warn!("Mapper writes not yet implemented"),
-            4 => warn!("VRAM writes not yet implemented"),
-            5 => warn!("ERAM writes not yet implemented"),
+            0 | 1 | 2 | 3 => debug!("Mapper writes not yet implemented"),
+            4 => debug!("VRAM writes not yet implemented"),
+            5 => debug!("ERAM writes not yet implemented"),
             6 => self.wram[address as usize] = value,
             7 => match address {
                 0xff00..=0xffff => self.write_high_impl(address as u8, value),
-                0xfe00..=0xfea0 => warn!("OAM writes not yet implemented"),
-                _ => panic!("Write from unmapped location"),
+                0xfe00..=0xfe9f => debug!("OAM writes not yet implemented"),
+                0xfea0..=0xfeff => (),
+                _ => warn!("Write to unmapped location"),
             },
             _ => unreachable!(),
         }
