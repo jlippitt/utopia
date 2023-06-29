@@ -111,7 +111,8 @@ impl Hardware {
 
     fn read_high_impl(&mut self, address: u8) -> u8 {
         match address {
-            0x00..=0x0f => panic!("System register reads not yet implemented"),
+            0x00 => 0xff, // TODO: Joypad
+            0x01..=0x0f => panic!("System register read {:02X} not yet implemented", address),
             0x10..=0x3f => panic!("APU register reads not yet implemented"),
             0x40..=0x4f => self.ppu.read(address),
             0x50..=0x7f => panic!("Unmapped register read"),
