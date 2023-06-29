@@ -23,43 +23,39 @@ impl Mmc3 {
     }
 
     fn update_mappings(&mut self, mappings: &mut Mappings) {
+        let prg_inv = (self.prg_rom_mode as usize) << 2;
+
         mappings.map_prg_rom(
-            self.prg(8),
+            8 ^ prg_inv,
             2,
             PRG_BANK_SIZE * (self.registers[6] & 0x3f) as usize,
         );
 
         mappings.map_prg_rom(10, 2, PRG_BANK_SIZE * (self.registers[7] & 0x3f) as usize);
-        mappings.map_prg_rom(self.prg(12), 2, self.prg_rom_size - PRG_BANK_SIZE * 2);
+        mappings.map_prg_rom(12 ^ prg_inv, 2, self.prg_rom_size - PRG_BANK_SIZE * 2);
         mappings.map_prg_rom(14, 2, self.prg_rom_size - PRG_BANK_SIZE);
 
+        let chr_inv = (self.chr_mode as usize) << 2;
+
         mappings.map_chr(
-            self.chr(0),
+            0 ^ chr_inv,
             2,
             CHR_PAGE_SIZE * (self.registers[0] & 0xfe) as usize,
         );
 
         mappings.map_chr(
-            self.chr(2),
+            2 ^ chr_inv,
             2,
             CHR_PAGE_SIZE * (self.registers[1] & 0xfe) as usize,
         );
 
-        mappings.map_chr(self.chr(4), 1, CHR_PAGE_SIZE * self.registers[2] as usize);
-        mappings.map_chr(self.chr(5), 1, CHR_PAGE_SIZE * self.registers[3] as usize);
-        mappings.map_chr(self.chr(6), 1, CHR_PAGE_SIZE * self.registers[4] as usize);
-        mappings.map_chr(self.chr(7), 1, CHR_PAGE_SIZE * self.registers[5] as usize);
+        mappings.map_chr(4 ^ chr_inv, 1, CHR_PAGE_SIZE * self.registers[2] as usize);
+        mappings.map_chr(5 ^ chr_inv, 1, CHR_PAGE_SIZE * self.registers[3] as usize);
+        mappings.map_chr(6 ^ chr_inv, 1, CHR_PAGE_SIZE * self.registers[4] as usize);
+        mappings.map_chr(7 ^ chr_inv, 1, CHR_PAGE_SIZE * self.registers[5] as usize);
 
         debug!("MMC3 PRG Read Mappings: {:?}", mappings.prg_read);
         debug!("MMC3 CHR Mappings: {:?}", mappings.chr);
-    }
-
-    fn prg(&self, index: usize) -> usize {
-        index ^ ((self.prg_rom_mode as usize) << 2)
-    }
-
-    fn chr(&self, index: usize) -> usize {
-        index ^ ((self.chr_mode as usize) << 2)
     }
 }
 
