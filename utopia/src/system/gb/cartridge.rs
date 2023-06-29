@@ -1,9 +1,10 @@
+use crate::util::MirrorVec;
 use tracing::info;
 
 const BASE_ROM_SIZE: usize = 32768;
 
 pub struct Cartridge {
-    rom: Vec<u8>,
+    rom: MirrorVec<u8>,
 }
 
 impl Cartridge {
@@ -23,7 +24,7 @@ impl Cartridge {
         info!("ROM Size: {}", rom_size);
         info!("RAM Size: {}", ram_size);
 
-        Self { rom }
+        Self { rom: rom.into() }
     }
 
     pub fn read_rom(&self, index: usize) -> u8 {
