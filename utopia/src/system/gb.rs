@@ -119,7 +119,7 @@ impl Hardware {
             0x01..=0x0e => panic!("System register read {:02X} not yet implemented", address),
             0x0f => self.interrupt.flag(),
             0x10..=0x3f => panic!("APU register reads not yet implemented"),
-            0x40..=0x4f => self.ppu.read(address),
+            0x40..=0x4f => self.ppu.read_register(address),
             0x50..=0x7f => panic!("Unmapped register read"),
             0x80..=0xfe => self.hram[address as usize],
             0xff => self.interrupt.enable(),
@@ -132,7 +132,7 @@ impl Hardware {
             0x00..=0x0e => warn!("System register write {:02X} not yet implemented", address),
             0x0f => self.interrupt.set_flag(value),
             0x10..=0x3f => warn!("APU register writes not yet implemented"),
-            0x40..=0x4f => self.ppu.write(address, value),
+            0x40..=0x4f => self.ppu.write_register(address, value),
             0x50 => {
                 self.bios_data = None;
                 debug!("BIOS disabled");
@@ -165,12 +165,12 @@ impl Bus for Hardware {
                 }
             }
             1 | 2 | 3 => self.cartridge.read_rom(address as usize),
-            4 => panic!("VRAM reads not yet implemented"),
+            4 => self.ppu.read_vram(address),
             5 => panic!("ERAM reads not yet implemented"),
             6 => self.wram[address as usize],
             7 => match address {
                 0xff00..=0xffff => self.read_high_impl(address as u8),
-                0xfe00..=0xfe9f => panic!("OAM reads not yet implemented"),
+                0xfe00..=0xfe9f => self.ppu.read_oam(address as u8),
                 0xfea0..=0xfeff => 0xff,
                 _ => panic!("Read from unmapped location"),
             },
@@ -183,12 +183,12 @@ impl Bus for Hardware {
 
         match address >> 13 {
             0 | 1 | 2 | 3 => debug!("Mapper writes not yet implemented"),
-            4 => debug!("VRAM writes not yet implemented"),
+            4 => self.ppu.write_vram(address, value),
             5 => debug!("ERAM writes not yet implemented"),
             6 => self.wram[address as usize] = value,
             7 => match address {
                 0xff00..=0xffff => self.write_high_impl(address as u8, value),
-                0xfe00..=0xfe9f => debug!("OAM writes not yet implemented"),
+                0xfe00..=0xfe9f => self.ppu.write_oam(address as u8, value),
                 0xfea0..=0xfeff => (),
                 _ => warn!("Write to unmapped location"),
             },
