@@ -215,10 +215,10 @@ impl fmt::Display for Hardware {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "T={} V={} H={}",
-            self.cycles,
+            "V={} H={} T={}",
             self.ppu.line(),
-            self.ppu.dot()
+            self.ppu.dot(),
+            self.cycles,
         )
     }
 }

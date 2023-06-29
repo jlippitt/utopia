@@ -7,6 +7,7 @@ const TOTAL_LINES: u32 = 154;
 const DOTS_PER_LINE: u64 = 456;
 
 struct Control {
+    lcd_enable: bool,
     raw: u8,
 }
 
@@ -25,7 +26,10 @@ impl Ppu {
             ready: false,
             line: 0,
             dot: 0,
-            control: Control { raw: 0 },
+            control: Control {
+                lcd_enable: false,
+                raw: 0,
+            },
             scroll_y: 0,
             scroll_x: 0,
         }
@@ -59,20 +63,35 @@ impl Ppu {
 
     pub fn write(&mut self, address: u8, value: u8) {
         match address {
-            0x40 => self.control.raw = value,
+            0x40 => {
+                self.control.lcd_enable = (value & 0x80) != 0;
+
+                if !self.control.lcd_enable {
+                    self.line = 0;
+                    self.dot = 0;
+                }
+
+                self.control.raw = value;
+
+                debug!("LCD Enable: {}", self.control.lcd_enable);
+            }
             0x42 => {
                 self.scroll_y = value;
-                debug!("PPU Scroll Y: {}", self.scroll_y);
+                debug!("Scroll Y: {}", self.scroll_y);
             }
             0x43 => {
                 self.scroll_x = value;
-                debug!("PPU Scroll X: {}", self.scroll_x);
+                debug!("Scroll X: {}", self.scroll_x);
             }
             _ => warn!("PPU register write {:02X} not yet implemented", address),
         }
     }
 
     pub fn step(&mut self, interrupt: &mut Interrupt, cycles: u64) {
+        if !self.control.lcd_enable {
+            return;
+        }
+
         self.dot += cycles;
 
         if self.dot == DOTS_PER_LINE {
