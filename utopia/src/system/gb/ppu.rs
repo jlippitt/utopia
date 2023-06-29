@@ -7,7 +7,16 @@ const VRAM_SIZE: usize = 8192;
 const VBLANK_LINE: u32 = 144;
 const TOTAL_LINES: u32 = 154;
 
+const OAM_SEARCH_LENGTH: u64 = 80;
 const DOTS_PER_LINE: u64 = 456;
+
+#[derive(Copy, Clone, Debug)]
+enum Mode {
+    HBlank = 0,
+    VBlank = 1,
+    Oam = 2,
+    Vram = 3,
+}
 
 struct Control {
     lcd_enable: bool,
@@ -16,6 +25,7 @@ struct Control {
 
 pub struct Ppu {
     ready: bool,
+    mode: Mode,
     line: u32,
     dot: u64,
     control: Control,
@@ -29,6 +39,7 @@ impl Ppu {
     pub fn new() -> Self {
         Self {
             ready: false,
+            mode: Mode::Oam,
             line: 0,
             dot: 0,
             control: Control {
@@ -71,16 +82,21 @@ impl Ppu {
     pub fn write_register(&mut self, address: u8, value: u8) {
         match address {
             0x40 => {
-                self.control.lcd_enable = (value & 0x80) != 0;
+                let lcd_enable = (value & 0x80) != 0;
 
-                if !self.control.lcd_enable {
+                if lcd_enable && !self.control.lcd_enable {
+                    debug!("Screen On");
+                    debug!("Mode: {:?}", self.mode);
+                    self.control.lcd_enable = true;
+                } else if !lcd_enable && self.control.lcd_enable {
+                    debug!("Screen Off");
+                    self.mode = Mode::Oam;
                     self.line = 0;
                     self.dot = 0;
+                    self.control.lcd_enable = false;
                 }
 
                 self.control.raw = value;
-
-                debug!("LCD Enable: {}", self.control.lcd_enable);
             }
             0x42 => {
                 self.scroll_y = value;
@@ -115,18 +131,68 @@ impl Ppu {
             return;
         }
 
-        self.dot += cycles;
+        for _ in 0..cycles {
+            match self.mode {
+                Mode::HBlank => {
+                    self.dot += 1;
 
-        if self.dot == DOTS_PER_LINE {
-            self.dot = 0;
-            self.line += 1;
+                    if self.dot == DOTS_PER_LINE {
+                        self.next_line();
 
-            if self.line == TOTAL_LINES {
-                self.line = 0;
-            } else if self.line == VBLANK_LINE {
-                self.ready = true;
-                interrupt.raise(InterruptType::VBlank);
+                        if self.line == VBLANK_LINE {
+                            self.ready = true;
+                            self.set_mode(Mode::VBlank);
+                            interrupt.raise(InterruptType::VBlank);
+                        } else {
+                            self.set_mode(Mode::Oam);
+                        }
+                    }
+                }
+                Mode::VBlank => {
+                    self.dot += 1;
+
+                    if self.dot == DOTS_PER_LINE {
+                        self.next_line();
+
+                        if self.line == 0 {
+                            self.set_mode(Mode::Oam);
+                        }
+                    }
+                }
+                Mode::Oam => {
+                    self.dot += 1;
+
+                    if self.dot == OAM_SEARCH_LENGTH {
+                        self.set_mode(Mode::Vram);
+                    }
+                }
+                Mode::Vram => {
+                    // For now, just advance when we reach a certain point
+                    self.dot += 1;
+
+                    if self.dot == 252 {
+                        self.set_mode(Mode::HBlank);
+                    }
+                }
             }
         }
+    }
+
+    fn set_mode(&mut self, mode: Mode) {
+        self.mode = mode;
+        debug!("Mode: {:?}", self.mode);
+
+        // TODO: Mode interrupts
+    }
+
+    fn next_line(&mut self) {
+        self.dot = 0;
+        self.line += 1;
+
+        if self.line == TOTAL_LINES {
+            self.line = 0;
+        }
+
+        // TODO: LYC check
     }
 }
