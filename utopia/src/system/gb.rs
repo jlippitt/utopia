@@ -145,6 +145,10 @@ impl Hardware {
 }
 
 impl Bus for Hardware {
+    fn poll(&self) -> u8 {
+        self.interrupt.poll()
+    }
+
     fn idle(&mut self) {
         self.step();
     }

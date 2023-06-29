@@ -8,6 +8,7 @@ mod condition;
 mod instruction;
 
 pub trait Bus: fmt::Display {
+    fn poll(&self) -> u8;
     fn idle(&mut self);
     fn read(&mut self, address: u16) -> u8;
     fn write(&mut self, address: u16, value: u8);
@@ -85,7 +86,17 @@ impl<T: Bus> Core<T> {
         use condition as cond;
         use instruction as instr;
 
-        // TODO: Interrupt checks
+        if self.ime {
+            let interrupt = self.bus.poll();
+
+            if interrupt != 0 {
+                let target = 0x40 + 0x08 * interrupt.trailing_zeros() as u8;
+                instr::rst(self, target);
+                self.ime = false;
+                self.ime_delayed = false;
+                return;
+            }
+        }
 
         self.ime = self.ime_delayed;
 

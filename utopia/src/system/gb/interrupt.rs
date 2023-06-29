@@ -20,6 +20,10 @@ impl Interrupt {
         Self { flag: 0, enable: 0 }
     }
 
+    pub fn poll(&self) -> u8 {
+        self.flag
+    }
+
     pub fn flag(&self) -> u8 {
         0xe0 | self.flag
     }
