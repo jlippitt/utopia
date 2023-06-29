@@ -5,10 +5,15 @@ const TOTAL_LINES: u32 = 154;
 
 const DOTS_PER_LINE: u64 = 456;
 
+struct Control {
+    raw: u8,
+}
+
 pub struct Ppu {
     ready: bool,
     line: u32,
     dot: u64,
+    control: Control,
     scroll_y: u8,
     scroll_x: u8,
 }
@@ -19,6 +24,7 @@ impl Ppu {
             ready: false,
             line: 0,
             dot: 0,
+            control: Control { raw: 0 },
             scroll_y: 0,
             scroll_x: 0,
         }
@@ -42,6 +48,7 @@ impl Ppu {
 
     pub fn read(&self, address: u8) -> u8 {
         match address {
+            0x40 => self.control.raw,
             0x42 => self.scroll_y,
             0x43 => self.scroll_x,
             0x44 => self.line as u8,
@@ -51,6 +58,7 @@ impl Ppu {
 
     pub fn write(&mut self, address: u8, value: u8) {
         match address {
+            0x40 => self.control.raw = value,
             0x42 => {
                 self.scroll_y = value;
                 debug!("PPU Scroll Y: {}", self.scroll_y);
