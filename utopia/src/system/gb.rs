@@ -1,11 +1,13 @@
 use super::{BiosLoader, System};
 use crate::core::gbz80::{Bus, Core, State};
 use crate::util::MirrorVec;
+use cartridge::Cartridge;
 use ppu::Ppu;
 use std::error::Error;
 use std::fmt;
 use tracing::{debug, warn};
 
+mod cartridge;
 mod ppu;
 
 const WIDTH: usize = 160;
@@ -83,22 +85,22 @@ impl System for GameBoy {
 
 struct Hardware {
     cycles: u64,
-    rom_data: MirrorVec<u8>,
-    bios_data: Option<MirrorVec<u8>>,
     hram: MirrorVec<u8>,
     wram: MirrorVec<u8>,
+    cartridge: Cartridge,
     ppu: Ppu,
+    bios_data: Option<MirrorVec<u8>>,
 }
 
 impl Hardware {
     pub fn new(rom_data: Vec<u8>, bios_data: Option<Vec<u8>>) -> Self {
         Self {
             cycles: 0,
-            rom_data: rom_data.into(),
-            bios_data: bios_data.map(MirrorVec::from),
             hram: MirrorVec::new(HRAM_SIZE),
             wram: MirrorVec::new(WRAM_SIZE),
+            cartridge: Cartridge::new(rom_data),
             ppu: Ppu::new(),
+            bios_data: bios_data.map(MirrorVec::from),
         }
     }
 
@@ -149,13 +151,13 @@ impl Bus for Hardware {
                     if let Some(bios_data) = &self.bios_data {
                         bios_data[address as usize]
                     } else {
-                        self.rom_data[address as usize]
+                        self.cartridge.read_rom(address as usize)
                     }
                 } else {
-                    self.rom_data[address as usize]
+                    self.cartridge.read_rom(address as usize)
                 }
             }
-            1 | 2 | 3 => self.rom_data[address as usize],
+            1 | 2 | 3 => self.cartridge.read_rom(address as usize),
             4 => panic!("VRAM reads not yet implemented"),
             5 => panic!("ERAM reads not yet implemented"),
             6 => self.wram[address as usize],
