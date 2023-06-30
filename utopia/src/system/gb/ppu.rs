@@ -2,7 +2,7 @@ use super::interrupt::{Interrupt, InterruptType};
 use crate::util::MirrorVec;
 use render::RenderState;
 use screen::Screen;
-use tracing::{debug, warn};
+use tracing::debug;
 
 pub use screen::{HEIGHT, WIDTH};
 
@@ -144,7 +144,7 @@ impl Ppu {
                 self.bg_palette = value;
                 debug!("BG Palette: {:08b}", self.bg_palette);
             }
-            _ => warn!("PPU register write {:02X} not yet implemented", address),
+            _ => debug!("PPU register write {:02X} not yet implemented", address),
         }
     }
 
