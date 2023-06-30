@@ -124,7 +124,6 @@ impl Hardware {
 
     fn write_high_impl(&mut self, address: u8, value: u8) {
         match address {
-            0x01 => print!("{}", value as char),
             0x00..=0x0e => debug!("System register write {:02X} not yet implemented", address),
             0x0f => self.interrupt.set_flag(value),
             0x10..=0x3f => debug!("APU register writes not yet implemented"),
