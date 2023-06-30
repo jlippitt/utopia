@@ -1,8 +1,7 @@
+use crate::util::Rgb;
+
 pub const WIDTH: usize = 256;
 pub const HEIGHT: usize = 240;
-
-#[derive(Copy, Clone, Debug)]
-struct Rgb(u8, u8, u8);
 
 const RGB_VALUES: [Rgb; 64] = [
     // Dark
