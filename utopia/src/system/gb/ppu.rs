@@ -44,6 +44,7 @@ pub struct Ppu {
     scroll_y: u8,
     scroll_x: u8,
     bg_palette: u8,
+    lcd_y_compare: u8,
     render: RenderState,
     screen: Screen,
     vram: MirrorVec<u8>,
@@ -66,6 +67,7 @@ impl Ppu {
             },
             scroll_y: 0,
             scroll_x: 0,
+            lcd_y_compare: 0,
             bg_palette: 0,
             render: RenderState::new(0),
             screen: Screen::new(),
@@ -100,6 +102,7 @@ impl Ppu {
             0x42 => self.scroll_y,
             0x43 => self.scroll_x,
             0x44 => self.line as u8,
+            0x45 => self.lcd_y_compare,
             0x47 => self.bg_palette,
             _ => panic!("PPU register read {:02X} not yet implemented", address),
         }
@@ -139,6 +142,10 @@ impl Ppu {
             0x43 => {
                 self.scroll_x = value;
                 debug!("Scroll X: {}", self.scroll_x);
+            }
+            0x45 => {
+                self.lcd_y_compare = value;
+                debug!("LCD Y Compare: {}", self.lcd_y_compare);
             }
             0x47 => {
                 self.bg_palette = value;
