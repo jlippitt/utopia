@@ -10,7 +10,7 @@ pub struct RenderState {
     bg_step: u32,
     bg_coarse_x: u16,
     //bg_fine_x: u8,
-    bg_fifo: Fifo<u8>,
+    bg_fifo: Fifo,
     bg_tile: u8,
     bg_chr: (u8, u8),
 }
@@ -38,7 +38,9 @@ impl Ppu {
     pub(super) fn step_renderer(&mut self) -> bool {
         self.fetch_bg();
 
-        if let Some(color) = self.render.bg_fifo.pop() {
+        if let Some((low, high)) = self.render.bg_fifo.pop() {
+            let shift = (high << 2) | (low << 1);
+            let color = (self.bg_palette >> shift) & 3;
             self.screen.draw_pixel(color);
             self.render.pos_x += 1;
         }
@@ -74,7 +76,7 @@ impl Ppu {
             }
             6 => {
                 // Push
-                if self.render.bg_fifo.try_push([0; 8]) {
+                if self.render.bg_fifo.try_push(self.render.bg_chr) {
                     self.render.bg_step = 0;
                 }
             }

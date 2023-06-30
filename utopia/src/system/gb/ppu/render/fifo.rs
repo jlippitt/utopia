@@ -1,33 +1,33 @@
-const SIZE: usize = 8;
-
-pub struct Fifo<T: Default + Clone + Copy> {
-    values: [T; SIZE],
-    index: usize,
+pub struct Fifo {
+    chr: (u8, u8),
+    remaining: u8,
 }
 
-impl<T: Default + Clone + Copy> Fifo<T> {
+impl Fifo {
     pub fn new() -> Self {
         Self {
-            values: [Default::default(); SIZE],
-            index: SIZE,
+            chr: (0, 0),
+            remaining: 0,
         }
     }
 
-    pub fn try_push(&mut self, values: [T; SIZE]) -> bool {
-        if self.index == SIZE {
-            self.values = values;
-            self.index = 0;
+    pub fn try_push(&mut self, chr: (u8, u8)) -> bool {
+        if self.remaining == 0 {
+            self.chr = chr;
+            self.remaining = 8;
             true
         } else {
             false
         }
     }
 
-    pub fn pop(&mut self) -> Option<T> {
-        if self.index < SIZE {
-            let value = self.values[self.index];
-            self.index += 1;
-            Some(value)
+    pub fn pop(&mut self) -> Option<(u8, u8)> {
+        if self.remaining != 0 {
+            let pixel = ((self.chr.0 >> 7) & 1, (self.chr.1 >> 7) & 1);
+            self.chr.0 <<= 1;
+            self.chr.1 <<= 1;
+            self.remaining -= 1;
+            Some(pixel)
         } else {
             None
         }
