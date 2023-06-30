@@ -85,7 +85,7 @@ impl Ppu {
     }
 
     fn bg_pos_y(&self) -> u8 {
-        self.scroll_y.wrapping_add(self.line as u8)
+        self.scroll_y.wrapping_add(self.line)
     }
 
     fn bg_chr_address(&self) -> u16 {

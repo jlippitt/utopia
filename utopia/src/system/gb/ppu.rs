@@ -11,8 +11,8 @@ mod screen;
 
 const VRAM_SIZE: usize = 8192;
 
-const VBLANK_LINE: u32 = 144;
-const TOTAL_LINES: u32 = 154;
+const VBLANK_LINE: u8 = 144;
+const TOTAL_LINES: u8 = 154;
 
 const OAM_SEARCH_LENGTH: u64 = 80;
 const DOTS_PER_LINE: u64 = 456;
@@ -35,12 +35,20 @@ struct Control {
     raw: u8,
 }
 
+struct InterruptEnable {
+    hblank: bool,
+    vblank: bool,
+    oam: bool,
+    lcd_y: bool,
+}
+
 pub struct Ppu {
     ready: bool,
     mode: Mode,
-    line: u32,
+    line: u8,
     dot: u64,
     control: Control,
+    interrupt_enable: InterruptEnable,
     scroll_y: u8,
     scroll_x: u8,
     bg_palette: u8,
@@ -65,6 +73,12 @@ impl Ppu {
                 bg_chr_select: false,
                 raw: 0,
             },
+            interrupt_enable: InterruptEnable {
+                hblank: false,
+                vblank: false,
+                oam: false,
+                lcd_y: false,
+            },
             scroll_y: 0,
             scroll_x: 0,
             lcd_y_compare: 0,
@@ -84,7 +98,7 @@ impl Ppu {
         self.ready = false;
     }
 
-    pub fn line(&self) -> u32 {
+    pub fn line(&self) -> u8 {
         self.line
     }
 
@@ -99,6 +113,31 @@ impl Ppu {
     pub fn read_register(&self, address: u8) -> u8 {
         match address {
             0x40 => self.control.raw,
+            0x41 => {
+                let mut value: u8 = 0x80 | (self.mode as u8);
+
+                if self.line == self.lcd_y_compare {
+                    value |= 0x04;
+                }
+
+                if self.interrupt_enable.hblank {
+                    value |= 0x08;
+                }
+
+                if self.interrupt_enable.vblank {
+                    value |= 0x10;
+                }
+
+                if self.interrupt_enable.oam {
+                    value |= 0x20;
+                }
+
+                if self.interrupt_enable.lcd_y {
+                    value |= 0x40;
+                }
+
+                value
+            }
             0x42 => self.scroll_y,
             0x43 => self.scroll_x,
             0x44 => self.line as u8,
@@ -134,6 +173,16 @@ impl Ppu {
                 debug!("BG CHR Select: {}", self.control.bg_chr_select);
 
                 self.control.raw = value;
+            }
+            0x41 => {
+                self.interrupt_enable.hblank = (value & 0x08) != 0;
+                self.interrupt_enable.vblank = (value & 0x10) != 0;
+                self.interrupt_enable.oam = (value & 0x20) != 0;
+                self.interrupt_enable.lcd_y = (value & 0x40) != 0;
+                debug!("HBlank Interrupt Enable: {}", self.interrupt_enable.hblank);
+                debug!("VBlank Interrupt Enable: {}", self.interrupt_enable.vblank);
+                debug!("OAM Interrupt Enable: {}", self.interrupt_enable.oam);
+                debug!("LCD Y Interrupt Enable: {}", self.interrupt_enable.lcd_y);
             }
             0x42 => {
                 self.scroll_y = value;
