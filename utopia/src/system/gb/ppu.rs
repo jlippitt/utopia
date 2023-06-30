@@ -67,7 +67,7 @@ impl Ppu {
             scroll_y: 0,
             scroll_x: 0,
             bg_palette: 0,
-            render: RenderState::new(),
+            render: RenderState::new(0),
             screen: Screen::new(),
             vram: MirrorVec::new(VRAM_SIZE),
             oam: [0; 160],
