@@ -1,6 +1,13 @@
 use super::interrupt::{Interrupt, InterruptType};
 use crate::util::MirrorVec;
+use render::RenderState;
+use screen::Screen;
 use tracing::{debug, warn};
+
+pub use screen::{HEIGHT, WIDTH};
+
+mod render;
+mod screen;
 
 const VRAM_SIZE: usize = 8192;
 
@@ -31,6 +38,8 @@ pub struct Ppu {
     control: Control,
     scroll_y: u8,
     scroll_x: u8,
+    render: RenderState,
+    screen: Screen,
     vram: MirrorVec<u8>,
     oam: [u8; 160],
 }
@@ -48,6 +57,8 @@ impl Ppu {
             },
             scroll_y: 0,
             scroll_x: 0,
+            render: RenderState::new(),
+            screen: Screen::new(),
             vram: MirrorVec::new(VRAM_SIZE),
             oam: [0; 160],
         }
@@ -67,6 +78,10 @@ impl Ppu {
 
     pub fn dot(&self) -> u64 {
         self.dot
+    }
+
+    pub fn pixels(&self) -> &[u8] {
+        self.screen.pixels()
     }
 
     pub fn read_register(&self, address: u8) -> u8 {
@@ -141,6 +156,7 @@ impl Ppu {
 
                         if self.line == VBLANK_LINE {
                             self.ready = true;
+                            self.screen.reset();
                             self.set_mode(Mode::VBlank);
                             interrupt.raise(InterruptType::VBlank);
                         } else {
@@ -164,13 +180,15 @@ impl Ppu {
 
                     if self.dot == OAM_SEARCH_LENGTH {
                         self.set_mode(Mode::Vram);
+                        self.reset_renderer();
                     }
                 }
                 Mode::Vram => {
-                    // For now, just advance when we reach a certain point
                     self.dot += 1;
 
-                    if self.dot == 252 {
+                    let done = self.step_renderer();
+
+                    if done {
                         self.set_mode(Mode::HBlank);
                     }
                 }

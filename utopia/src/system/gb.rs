@@ -12,10 +12,6 @@ mod cartridge;
 mod interrupt;
 mod ppu;
 
-const WIDTH: usize = 160;
-const HEIGHT: usize = 144;
-const PIXELS: [u8; WIDTH * HEIGHT * 4] = [0; WIDTH * HEIGHT * 4];
-
 const WRAM_SIZE: usize = 8192;
 const HRAM_SIZE: usize = 128;
 
@@ -62,15 +58,15 @@ pub struct GameBoy {
 
 impl System for GameBoy {
     fn width(&self) -> usize {
-        WIDTH
+        ppu::WIDTH
     }
 
     fn height(&self) -> usize {
-        HEIGHT
+        ppu::HEIGHT
     }
 
     fn pixels(&self) -> &[u8] {
-        &PIXELS
+        self.core.bus().ppu.pixels()
     }
 
     fn run_frame(&mut self) {
