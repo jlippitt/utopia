@@ -43,6 +43,7 @@ pub struct Ppu {
     control: Control,
     scroll_y: u8,
     scroll_x: u8,
+    bg_palette: u8,
     render: RenderState,
     screen: Screen,
     vram: MirrorVec<u8>,
@@ -65,6 +66,7 @@ impl Ppu {
             },
             scroll_y: 0,
             scroll_x: 0,
+            bg_palette: 0,
             render: RenderState::new(),
             screen: Screen::new(),
             vram: MirrorVec::new(VRAM_SIZE),
@@ -98,6 +100,7 @@ impl Ppu {
             0x42 => self.scroll_y,
             0x43 => self.scroll_x,
             0x44 => self.line as u8,
+            0x47 => self.bg_palette,
             _ => panic!("PPU register read {:02X} not yet implemented", address),
         }
     }
@@ -136,6 +139,10 @@ impl Ppu {
             0x43 => {
                 self.scroll_x = value;
                 debug!("Scroll X: {}", self.scroll_x);
+            }
+            0x47 => {
+                self.bg_palette = value;
+                debug!("BG Palette: {:08b}", self.bg_palette);
             }
             _ => warn!("PPU register write {:02X} not yet implemented", address),
         }
