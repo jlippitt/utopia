@@ -17,6 +17,8 @@ const TOTAL_LINES: u32 = 154;
 const OAM_SEARCH_LENGTH: u64 = 80;
 const DOTS_PER_LINE: u64 = 456;
 
+const BASE_TILE_OFFSET: u16 = 0x1800;
+
 #[derive(Copy, Clone, Debug)]
 enum Mode {
     HBlank = 0,
@@ -27,6 +29,9 @@ enum Mode {
 
 struct Control {
     lcd_enable: bool,
+    bg_enable: bool,
+    bg_tile_offset: u16,
+    bg_chr_select: bool,
     raw: u8,
 }
 
@@ -53,6 +58,9 @@ impl Ppu {
             dot: 0,
             control: Control {
                 lcd_enable: false,
+                bg_enable: false,
+                bg_tile_offset: BASE_TILE_OFFSET,
+                bg_chr_select: false,
                 raw: 0,
             },
             scroll_y: 0,
@@ -111,6 +119,13 @@ impl Ppu {
                     self.dot = 0;
                     self.control.lcd_enable = false;
                 }
+
+                self.control.bg_enable = (value & 0x01) != 0;
+                self.control.bg_tile_offset = BASE_TILE_OFFSET + ((value as u16 & 0x08) << 7);
+                self.control.bg_chr_select = (value & 0x10) != 0;
+                debug!("BG Enable: {}", self.control.bg_enable);
+                debug!("BG Tile Offset: {:04X}", self.control.bg_tile_offset);
+                debug!("BG CHR Select: {}", self.control.bg_chr_select);
 
                 self.control.raw = value;
             }
