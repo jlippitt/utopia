@@ -21,11 +21,13 @@ impl Mbc1 {
             panic!("MBC1 advanced banking mode not yet implemented");
         } else {
             mappings.rom[0] = 0;
+            mappings.ram = if self.ram_enable { Some(0) } else { None };
         }
 
         mappings.rom[1] = ((self.register[1] as usize) << 19) | ((self.register[0] as usize) << 14);
 
         debug!("MBC1 ROM Mapping: {:?}", mappings.rom);
+        debug!("MBC1 RAM Mapping: {:?}", mappings.ram);
     }
 }
 
