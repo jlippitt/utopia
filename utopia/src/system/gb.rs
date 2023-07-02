@@ -6,11 +6,13 @@ use interrupt::Interrupt;
 use ppu::Ppu;
 use std::error::Error;
 use std::fmt;
+use timer::Timer;
 use tracing::{debug, warn};
 
 mod cartridge;
 mod interrupt;
 mod ppu;
+mod timer;
 
 const WRAM_SIZE: usize = 8192;
 const HRAM_SIZE: usize = 128;
@@ -84,6 +86,7 @@ impl System for GameBoy {
 struct Hardware {
     cycles: u64,
     interrupt: Interrupt,
+    timer: Timer,
     hram: MirrorVec<u8>,
     wram: MirrorVec<u8>,
     cartridge: Cartridge,
@@ -96,6 +99,7 @@ impl Hardware {
         Self {
             cycles: 0,
             interrupt: Interrupt::new(),
+            timer: Timer::new(),
             hram: MirrorVec::new(HRAM_SIZE),
             wram: MirrorVec::new(WRAM_SIZE),
             cartridge: Cartridge::new(rom_data),
@@ -106,25 +110,28 @@ impl Hardware {
 
     fn step(&mut self) {
         self.cycles += M_CYCLE_LENGTH;
+        self.timer.step(&mut self.interrupt, M_CYCLE_LENGTH);
         self.ppu.step(&mut self.interrupt, M_CYCLE_LENGTH);
     }
 
     fn read_high_impl(&mut self, address: u8) -> u8 {
         match address {
             0x00 => 0xff, // TODO: Joypad
-            0x01..=0x0e => panic!("System register read {:02X} not yet implemented", address),
+            0x04..=0x07 => self.timer.read(address),
             0x0f => self.interrupt.flag(),
             0x10..=0x3f => panic!("APU register reads not yet implemented"),
             0x40..=0x4f => self.ppu.read_register(address),
-            0x50..=0x7f => panic!("Unmapped register read"),
             0x80..=0xfe => self.hram[address as usize],
             0xff => self.interrupt.enable(),
+            _ => panic!("Unmapped register read"),
         }
     }
 
     fn write_high_impl(&mut self, address: u8, value: u8) {
         match address {
-            0x00..=0x0e => debug!("System register write {:02X} not yet implemented", address),
+            0x00 => (),        // TODO: Joypad
+            0x01 | 0x02 => (), // TODO: Serial port
+            0x04..=0x07 => self.timer.write(address, value),
             0x0f => self.interrupt.set_flag(value),
             0x10..=0x3f => debug!("APU register writes not yet implemented"),
             0x40..=0x4f => self.ppu.write_register(address, value),
@@ -132,9 +139,9 @@ impl Hardware {
                 self.bios_data = None;
                 debug!("BIOS disabled");
             }
-            0x51..=0x7f => warn!("Unmapped register write: {:02X}", address),
             0x80..=0xfe => self.hram[address as usize] = value,
             0xff => self.interrupt.set_enable(value),
+            _ => warn!("Unmapped register write: {:02X}", address),
         }
     }
 }

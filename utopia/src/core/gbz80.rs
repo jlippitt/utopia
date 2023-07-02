@@ -46,6 +46,7 @@ pub struct Core<T: Bus> {
     sp: u16,
     pc: u16,
     flags: Flags,
+    halted: bool,
     ime: bool,
     ime_delayed: bool,
     bus: T,
@@ -68,6 +69,7 @@ impl<T: Bus> Core<T> {
                 h: (state.f & 0x20) != 0,
                 c: (state.f & 0x10) != 0,
             },
+            halted: false,
             ime: false,
             ime_delayed: false,
             bus,
@@ -87,9 +89,14 @@ impl<T: Bus> Core<T> {
         use condition as cond;
         use instruction as instr;
 
-        if self.ime {
-            let interrupt = self.bus.poll();
+        let interrupt = self.bus.poll();
 
+        if self.halted && interrupt == 0 {
+            self.idle();
+            return;
+        }
+
+        if self.ime {
             if interrupt != 0 {
                 let shift = interrupt.trailing_zeros();
                 self.bus.acknowledge(1 << shift);
@@ -254,7 +261,7 @@ impl<T: Bus> Core<T> {
             0x73 => instr::ld::<addr::HLIndirect, addr::E>(self),
             0x74 => instr::ld::<addr::HLIndirect, addr::H>(self),
             0x75 => instr::ld::<addr::HLIndirect, addr::L>(self),
-            //0x76 => instr::halt(self);
+            0x76 => instr::halt(self),
             0x77 => instr::ld::<addr::HLIndirect, addr::A>(self),
 
             // 0x78

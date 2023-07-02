@@ -5,6 +5,11 @@ pub fn nop(_core: &mut Core<impl Bus>) {
     debug!("NOP");
 }
 
+pub fn halt(core: &mut Core<impl Bus>) {
+    debug!("HALT");
+    core.halted = true;
+}
+
 pub fn di(core: &mut Core<impl Bus>) {
     debug!("DI");
     core.ime = false;
