@@ -9,7 +9,7 @@ pub struct RenderState {
     //bg_ready: bool,
     bg_step: u32,
     bg_coarse_x: u16,
-    //bg_fine_x: u8,
+    bg_fine_x: u8,
     bg_fifo: Fifo,
     bg_tile: u8,
     bg_chr: (u8, u8),
@@ -22,7 +22,7 @@ impl RenderState {
             //bg_ready: false,
             bg_step: 0,
             bg_coarse_x: scroll_x as u16 >> 3,
-            //bg_fine_x: 0,
+            bg_fine_x: scroll_x & 7,
             bg_fifo: Fifo::new(),
             bg_tile: 0,
             bg_chr: (0, 0),
@@ -39,10 +39,14 @@ impl Ppu {
         self.fetch_bg();
 
         if let Some((low, high)) = self.render.bg_fifo.pop() {
-            let shift = (high << 2) | (low << 1);
-            let color = (self.bg_palette >> shift) & 3;
-            self.screen.draw_pixel(color);
-            self.render.pos_x += 1;
+            if self.render.bg_fine_x == 0 {
+                let shift = (high << 2) | (low << 1);
+                let color = (self.bg_palette >> shift) & 3;
+                self.screen.draw_pixel(color);
+                self.render.pos_x += 1;
+            } else {
+                self.render.bg_fine_x -= 1;
+            }
         }
 
         self.render.pos_x == WIDTH
