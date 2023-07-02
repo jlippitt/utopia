@@ -91,9 +91,13 @@ impl<T: Bus> Core<T> {
 
         let interrupt = self.bus.poll();
 
-        if self.halted && interrupt == 0 {
-            self.idle();
-            return;
+        if self.halted {
+            if interrupt == 0 {
+                self.idle();
+                return;
+            }
+
+            self.halted = false;
         }
 
         if self.ime {
