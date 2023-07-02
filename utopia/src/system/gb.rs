@@ -163,15 +163,15 @@ impl Bus for Hardware {
                     if let Some(bios_data) = &self.bios_data {
                         bios_data[address as usize]
                     } else {
-                        self.cartridge.read_rom(address as usize)
+                        self.cartridge.read_rom(address)
                     }
                 } else {
-                    self.cartridge.read_rom(address as usize)
+                    self.cartridge.read_rom(address)
                 }
             }
-            1 | 2 | 3 => self.cartridge.read_rom(address as usize),
+            1 | 2 | 3 => self.cartridge.read_rom(address),
             4 => self.ppu.read_vram(address),
-            5 => panic!("ERAM reads not yet implemented"),
+            5 => self.cartridge.read_ram(address),
             6 => self.wram[address as usize],
             7 => match address {
                 0xff00..=0xffff => self.read_high_impl(address as u8),
@@ -189,7 +189,7 @@ impl Bus for Hardware {
         match address >> 13 {
             0 | 1 | 2 | 3 => self.cartridge.write_register(address, value),
             4 => self.ppu.write_vram(address, value),
-            5 => debug!("ERAM writes not yet implemented"),
+            5 => self.cartridge.write_ram(address, value),
             6 => self.wram[address as usize] = value,
             7 => match address {
                 0xff00..=0xffff => self.write_high_impl(address as u8, value),

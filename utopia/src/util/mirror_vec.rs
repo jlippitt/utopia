@@ -7,13 +7,19 @@ pub struct MirrorVec<T: Clone + Default> {
 
 impl<T: Clone + Default> MirrorVec<T> {
     pub fn new(size: usize) -> Self {
-        if !size.is_power_of_two() {
-            panic!("MirrorVec size must be a power of two");
-        }
-
         Self {
             vec: vec![Default::default(); size],
-            mask: size - 1,
+            mask: Self::mask_for(size),
+        }
+    }
+
+    fn mask_for(size: usize) -> usize {
+        if size.is_power_of_two() {
+            size - 1
+        } else if size == 0 {
+            0
+        } else {
+            panic!("MirrorVec size must be a power of two");
         }
     }
 }
@@ -22,13 +28,9 @@ impl<T: Clone + Default> From<Vec<T>> for MirrorVec<T> {
     fn from(vec: Vec<T>) -> Self {
         let size = vec.len();
 
-        if !size.is_power_of_two() {
-            panic!("MirrorVec size must be a power of two");
-        }
-
         Self {
             vec,
-            mask: size - 1,
+            mask: Self::mask_for(size),
         }
     }
 }

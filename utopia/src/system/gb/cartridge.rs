@@ -8,6 +8,7 @@ const BASE_ROM_SIZE: usize = 32768;
 
 pub struct Cartridge {
     rom: MirrorVec<u8>,
+    ram: MirrorVec<u8>,
     mappings: Mappings,
     mapper: MbcType,
 }
@@ -33,14 +34,29 @@ impl Cartridge {
 
         Self {
             rom: rom.into(),
+            ram: MirrorVec::new(ram_size),
             mappings: Mappings::new(),
             mapper: MbcType::new(mapper_number),
         }
     }
 
-    pub fn read_rom(&self, index: usize) -> u8 {
-        let offset = self.mappings.rom[(index >> 14) & 1];
-        self.rom[offset | (index & 0x3fff)]
+    pub fn read_rom(&self, address: u16) -> u8 {
+        let offset = self.mappings.rom[(address as usize >> 14) & 1];
+        self.rom[offset | (address as usize & 0x3fff)]
+    }
+
+    pub fn read_ram(&self, address: u16) -> u8 {
+        if let Some(offset) = self.mappings.ram {
+            self.ram[offset | (address as usize & 0x1fff)]
+        } else {
+            0xff
+        }
+    }
+
+    pub fn write_ram(&mut self, address: u16, value: u8) {
+        if let Some(offset) = self.mappings.ram {
+            self.ram[offset | (address as usize & 0x1fff)] = value;
+        }
     }
 
     pub fn write_register(&mut self, address: u16, value: u8) {

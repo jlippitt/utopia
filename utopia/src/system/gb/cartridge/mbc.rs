@@ -32,14 +32,14 @@ impl MbcType {
 #[derive(Debug)]
 pub struct Mappings {
     pub rom: [usize; 2],
-    //pub ram: Some(usize),
+    pub ram: Option<usize>,
 }
 
 impl Mappings {
     pub fn new() -> Self {
         Self {
             rom: [0, ROM_PAGE_SIZE],
-            //ram: None,
+            ram: None,
         }
     }
 }
