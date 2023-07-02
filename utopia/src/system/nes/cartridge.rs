@@ -1,8 +1,5 @@
-use crate::{
-    system::nes::cartridge::mapper::{Mapper, MirrorMode},
-    util::MirrorVec,
-};
-use mapper::{MapperType, Mappings, NameTable, PrgRead, PrgWrite};
+use crate::util::MirrorVec;
+use mapper::{Mapper, MapperType, Mappings, MirrorMode, NameTable, PrgRead, PrgWrite};
 use tracing::debug;
 
 mod mapper;

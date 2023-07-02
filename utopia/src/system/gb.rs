@@ -187,7 +187,7 @@ impl Bus for Hardware {
         self.step();
 
         match address >> 13 {
-            0 | 1 | 2 | 3 => debug!("Mapper writes not yet implemented"),
+            0 | 1 | 2 | 3 => self.cartridge.write_register(address, value),
             4 => self.ppu.write_vram(address, value),
             5 => debug!("ERAM writes not yet implemented"),
             6 => self.wram[address as usize] = value,
