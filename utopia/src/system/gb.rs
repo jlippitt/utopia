@@ -47,7 +47,7 @@ pub fn create(
     };
 
     // TODO: Should skip boot sequence for other hardware components as well
-    let hw = Hardware::new(rom_data, bios_data);
+    let hw = Hardware::new(rom_data, bios_data, skip_boot);
 
     let core = Core::new(hw, initial_state);
 
@@ -95,7 +95,7 @@ struct Hardware {
 }
 
 impl Hardware {
-    pub fn new(rom_data: Vec<u8>, bios_data: Option<Vec<u8>>) -> Self {
+    pub fn new(rom_data: Vec<u8>, bios_data: Option<Vec<u8>>, skip_boot: bool) -> Self {
         Self {
             cycles: 0,
             interrupt: Interrupt::new(),
@@ -103,7 +103,7 @@ impl Hardware {
             hram: MirrorVec::new(HRAM_SIZE),
             wram: MirrorVec::new(WRAM_SIZE),
             cartridge: Cartridge::new(rom_data),
-            ppu: Ppu::new(),
+            ppu: Ppu::new(skip_boot),
             bios_data: bios_data.map(MirrorVec::from),
         }
     }

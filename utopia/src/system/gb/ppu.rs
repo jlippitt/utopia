@@ -60,14 +60,14 @@ pub struct Ppu {
 }
 
 impl Ppu {
-    pub fn new() -> Self {
+    pub fn new(skip_boot: bool) -> Self {
         Self {
             ready: false,
             mode: Mode::Oam,
             line: 0,
             dot: 0,
             control: Control {
-                lcd_enable: false,
+                lcd_enable: skip_boot,
                 bg_enable: false,
                 bg_tile_offset: BASE_TILE_OFFSET,
                 bg_chr_select: false,
