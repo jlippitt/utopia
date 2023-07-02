@@ -154,12 +154,12 @@ impl Ppu {
 
                 if lcd_enable && !self.control.lcd_enable {
                     debug!("Screen On");
-                    debug!("Mode: {:?}", self.mode);
+                    self.set_mode(Mode::Oam);
                     self.control.lcd_enable = true;
                     self.screen.reset();
                 } else if !lcd_enable && self.control.lcd_enable {
                     debug!("Screen Off");
-                    self.mode = Mode::Oam;
+                    self.mode = Mode::HBlank;
                     self.line = 0;
                     self.dot = 0;
                     self.control.lcd_enable = false;
