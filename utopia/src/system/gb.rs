@@ -119,7 +119,10 @@ impl Hardware {
             0x00 => 0xff, // TODO: Joypad
             0x04..=0x07 => self.timer.read(address),
             0x0f => self.interrupt.flag(),
-            0x10..=0x3f => panic!("APU register reads not yet implemented"),
+            0x10..=0x3f => {
+                warn!("APU register reads not yet implemented");
+                0
+            }
             0x40..=0x4f => self.ppu.read_register(address),
             0x80..=0xfe => self.hram[address as usize],
             0xff => self.interrupt.enable(),

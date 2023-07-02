@@ -21,7 +21,7 @@ impl Interrupt {
     }
 
     pub fn poll(&self) -> u8 {
-        self.flag
+        self.flag & self.enable
     }
 
     pub fn flag(&self) -> u8 {
@@ -43,12 +43,8 @@ impl Interrupt {
     }
 
     pub fn raise(&mut self, interrupt_type: InterruptType) {
-        let value = interrupt_type as u8;
-
-        if (self.enable & value) != 0 {
-            self.flag |= value;
-            debug!("Interrupt Raised: {:?}", interrupt_type);
-        }
+        self.flag |= interrupt_type as u8;
+        debug!("Interrupt Raised: {:?}", interrupt_type);
     }
 
     pub fn acknowledge(&mut self, mask: u8) {
