@@ -147,14 +147,14 @@ impl Ppu {
         }
     }
 
-    pub fn write_register(&mut self, address: u8, value: u8) {
+    pub fn write_register(&mut self, interrupt: &mut Interrupt, address: u8, value: u8) {
         match address {
             0x40 => {
                 let lcd_enable = (value & 0x80) != 0;
 
                 if lcd_enable && !self.control.lcd_enable {
                     debug!("Screen On");
-                    self.set_mode(Mode::Oam);
+                    self.set_mode(interrupt, Mode::Oam);
                     self.control.lcd_enable = true;
                     self.screen.reset();
                 } else if !lcd_enable && self.control.lcd_enable {
@@ -231,15 +231,15 @@ impl Ppu {
                     self.dot += 1;
 
                     if self.dot == DOTS_PER_LINE {
-                        self.next_line();
+                        self.next_line(interrupt);
 
                         if self.line == VBLANK_LINE {
                             self.ready = true;
                             self.screen.reset();
-                            self.set_mode(Mode::VBlank);
+                            self.set_mode(interrupt, Mode::VBlank);
                             interrupt.raise(InterruptType::VBlank);
                         } else {
-                            self.set_mode(Mode::Oam);
+                            self.set_mode(interrupt, Mode::Oam);
                         }
                     }
                 }
@@ -247,10 +247,10 @@ impl Ppu {
                     self.dot += 1;
 
                     if self.dot == DOTS_PER_LINE {
-                        self.next_line();
+                        self.next_line(interrupt);
 
                         if self.line == 0 {
-                            self.set_mode(Mode::Oam);
+                            self.set_mode(interrupt, Mode::Oam);
                         }
                     }
                 }
@@ -258,7 +258,7 @@ impl Ppu {
                     self.dot += 1;
 
                     if self.dot == OAM_SEARCH_LENGTH {
-                        self.set_mode(Mode::Vram);
+                        self.set_mode(interrupt, Mode::Vram);
                         self.reset_renderer();
                     }
                 }
@@ -268,21 +268,30 @@ impl Ppu {
                     let done = self.step_renderer();
 
                     if done {
-                        self.set_mode(Mode::HBlank);
+                        self.set_mode(interrupt, Mode::HBlank);
                     }
                 }
             }
         }
     }
 
-    fn set_mode(&mut self, mode: Mode) {
+    fn set_mode(&mut self, interrupt: &mut Interrupt, mode: Mode) {
         self.mode = mode;
         debug!("Mode: {:?}", self.mode);
 
-        // TODO: Mode interrupts
+        let lcd_stat = match self.mode {
+            Mode::HBlank => self.interrupt_enable.hblank,
+            Mode::VBlank => self.interrupt_enable.vblank,
+            Mode::Oam => self.interrupt_enable.oam,
+            Mode::Vram => false,
+        };
+
+        if lcd_stat {
+            interrupt.raise(InterruptType::LcdStat);
+        }
     }
 
-    fn next_line(&mut self) {
+    fn next_line(&mut self, interrupt: &mut Interrupt) {
         self.dot = 0;
         self.line += 1;
 
@@ -290,6 +299,8 @@ impl Ppu {
             self.line = 0;
         }
 
-        // TODO: LYC check
+        if self.line == self.lcd_y_compare && self.interrupt_enable.lcd_y {
+            interrupt.raise(InterruptType::LcdStat);
+        }
     }
 }

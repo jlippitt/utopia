@@ -137,7 +137,7 @@ impl Hardware {
             0x04..=0x07 => self.timer.write(address, value),
             0x0f => self.interrupt.set_flag(value),
             0x10..=0x3f => debug!("APU register writes not yet implemented"),
-            0x40..=0x4f => self.ppu.write_register(address, value),
+            0x40..=0x4f => self.ppu.write_register(&mut self.interrupt, address, value),
             0x50 => {
                 self.bios_data = None;
                 debug!("BIOS disabled");
