@@ -85,6 +85,7 @@ impl System for GameBoy {
 
 struct Hardware {
     cycles: u64,
+    dma_address: Option<u16>,
     interrupt: Interrupt,
     timer: Timer,
     hram: MirrorVec<u8>,
@@ -98,6 +99,7 @@ impl Hardware {
     pub fn new(rom_data: Vec<u8>, bios_data: Option<Vec<u8>>, skip_boot: bool) -> Self {
         Self {
             cycles: 0,
+            dma_address: None,
             interrupt: Interrupt::new(),
             timer: Timer::new(),
             hram: MirrorVec::new(HRAM_SIZE),
@@ -108,55 +110,35 @@ impl Hardware {
         }
     }
 
-    fn step(&mut self) {
+    fn step(&mut self) -> bool {
         self.cycles += M_CYCLE_LENGTH;
         self.timer.step(&mut self.interrupt, M_CYCLE_LENGTH);
         self.ppu.step(&mut self.interrupt, M_CYCLE_LENGTH);
-    }
 
-    fn read_high_impl(&mut self, address: u8) -> u8 {
-        match address {
-            0x00 => 0xff, // TODO: Joypad
-            0x04..=0x07 => self.timer.read(address),
-            0x0f => self.interrupt.flag(),
-            0x10..=0x3f => {
-                warn!("APU register reads not yet implemented");
-                0
-            }
-            0x40..=0x4f => self.ppu.read_register(address),
-            0x80..=0xfe => self.hram[address as usize],
-            0xff => self.interrupt.enable(),
-            _ => panic!("Unmapped register read"),
+        if let Some(src_address) = self.dma_address {
+            let dst_address = src_address as u8;
+            let value = self.read_normal(src_address);
+
+            debug!(
+                "DMA Transfer: FE{:02X} <= {:02X} <= {:04X}",
+                dst_address, value, src_address
+            );
+
+            self.ppu.write_oam(dst_address, value);
+
+            self.dma_address = if (dst_address + 1) <= 0x9f {
+                Some(src_address + 1)
+            } else {
+                None
+            };
+
+            true
+        } else {
+            false
         }
     }
 
-    fn write_high_impl(&mut self, address: u8, value: u8) {
-        match address {
-            0x00 => (),        // TODO: Joypad
-            0x01 | 0x02 => (), // TODO: Serial port
-            0x04..=0x07 => self.timer.write(address, value),
-            0x0f => self.interrupt.set_flag(value),
-            0x10..=0x3f => debug!("APU register writes not yet implemented"),
-            0x40..=0x4f => self.ppu.write_register(&mut self.interrupt, address, value),
-            0x50 => {
-                self.bios_data = None;
-                debug!("BIOS disabled");
-            }
-            0x80..=0xfe => self.hram[address as usize] = value,
-            0xff => self.interrupt.set_enable(value),
-            _ => warn!("Unmapped register write: {:02X}", address),
-        }
-    }
-}
-
-impl Bus for Hardware {
-    fn idle(&mut self) {
-        self.step();
-    }
-
-    fn read(&mut self, address: u16) -> u8 {
-        self.step();
-
+    fn read_normal(&mut self, address: u16) -> u8 {
         match address >> 13 {
             0 => {
                 if address < 0x0100 {
@@ -174,7 +156,7 @@ impl Bus for Hardware {
             5 => self.cartridge.read_ram(address),
             6 => self.wram[address as usize],
             7 => match address {
-                0xff00..=0xffff => self.read_high_impl(address as u8),
+                0xff00..=0xffff => self.read_high_normal(address as u8),
                 0xfe00..=0xfe9f => self.ppu.read_oam(address as u8),
                 0xfea0..=0xfeff => 0xff,
                 _ => panic!("Read from unmapped location"),
@@ -183,16 +165,24 @@ impl Bus for Hardware {
         }
     }
 
-    fn write(&mut self, address: u16, value: u8) {
-        self.step();
+    fn read_restricted(&mut self, address: u16) -> u8 {
+        match address >> 13 {
+            7 => match address {
+                0xff00..=0xffff => self.read_high_restricted(address as u8),
+                _ => 0xff,
+            },
+            _ => 0xff,
+        }
+    }
 
+    fn write_normal(&mut self, address: u16, value: u8) {
         match address >> 13 {
             0 | 1 | 2 | 3 => self.cartridge.write_register(address, value),
             4 => self.ppu.write_vram(address, value),
             5 => self.cartridge.write_ram(address, value),
             6 => self.wram[address as usize] = value,
             7 => match address {
-                0xff00..=0xffff => self.write_high_impl(address as u8, value),
+                0xff00..=0xffff => self.write_high_normal(address as u8, value),
                 0xfe00..=0xfe9f => self.ppu.write_oam(address as u8, value),
                 0xfea0..=0xfeff => (),
                 _ => warn!("Write to unmapped location"),
@@ -201,14 +191,101 @@ impl Bus for Hardware {
         }
     }
 
-    fn read_high(&mut self, address: u8) -> u8 {
+    fn write_restricted(&mut self, address: u16, value: u8) {
+        match address >> 13 {
+            7 => match address {
+                0xff00..=0xffff => self.write_high_restricted(address as u8, value),
+                _ => (),
+            },
+            _ => (),
+        }
+    }
+
+    fn read_high_normal(&mut self, address: u8) -> u8 {
+        match address {
+            0x00 => 0xff, // TODO: Joypad
+            0x04..=0x07 => self.timer.read(address),
+            0x0f => self.interrupt.flag(),
+            0x10..=0x3f => {
+                warn!("APU register reads not yet implemented");
+                0
+            }
+            0x40..=0x4f => self.ppu.read_register(address),
+            0x80..=0xfe => self.hram[address as usize],
+            0xff => self.interrupt.enable(),
+            _ => panic!("Unmapped register read"),
+        }
+    }
+
+    fn read_high_restricted(&mut self, address: u8) -> u8 {
+        match address {
+            0x80..=0xfe => self.hram[address as usize],
+            _ => 0xff,
+        }
+    }
+
+    fn write_high_normal(&mut self, address: u8, value: u8) {
+        match address {
+            0x00 => (),        // TODO: Joypad
+            0x01 | 0x02 => (), // TODO: Serial port
+            0x04..=0x07 => self.timer.write(address, value),
+            0x0f => self.interrupt.set_flag(value),
+            0x10..=0x3f => debug!("APU register writes not yet implemented"),
+            0x46 => self.dma_address = Some((value as u16) << 8),
+            0x40..=0x4f => self.ppu.write_register(&mut self.interrupt, address, value),
+            0x50 => {
+                self.bios_data = None;
+                debug!("BIOS disabled");
+            }
+            0x80..=0xfe => self.hram[address as usize] = value,
+            0xff => self.interrupt.set_enable(value),
+            _ => warn!("Unmapped register write: {:02X}", address),
+        }
+    }
+
+    fn write_high_restricted(&mut self, address: u8, value: u8) {
+        match address {
+            0x80..=0xfe => self.hram[address as usize] = value,
+            _ => (),
+        }
+    }
+}
+
+impl Bus for Hardware {
+    fn idle(&mut self) {
         self.step();
-        self.read_high_impl(address)
+    }
+
+    fn read(&mut self, address: u16) -> u8 {
+        if self.step() {
+            self.read_restricted(address)
+        } else {
+            self.read_normal(address)
+        }
+    }
+
+    fn write(&mut self, address: u16, value: u8) {
+        if self.step() {
+            self.write_restricted(address, value);
+        } else {
+            self.write_normal(address, value);
+        }
+    }
+
+    fn read_high(&mut self, address: u8) -> u8 {
+        if self.step() {
+            self.read_high_restricted(address)
+        } else {
+            self.read_high_normal(address)
+        }
     }
 
     fn write_high(&mut self, address: u8, value: u8) {
-        self.step();
-        self.write_high_impl(address, value);
+        if self.step() {
+            self.write_high_restricted(address, value);
+        } else {
+            self.write_high_normal(address, value);
+        }
     }
 
     fn poll(&self) -> u8 {
