@@ -1,11 +1,13 @@
 use super::interrupt::{Interrupt, InterruptType};
 use crate::util::MirrorVec;
+use oam::Oam;
 use render::RenderState;
 use screen::Screen;
 use tracing::debug;
 
 pub use screen::{HEIGHT, WIDTH};
 
+mod oam;
 mod render;
 mod screen;
 
@@ -56,7 +58,7 @@ pub struct Ppu {
     render: RenderState,
     screen: Screen,
     vram: MirrorVec<u8>,
-    oam: [u8; 160],
+    oam: Oam,
 }
 
 impl Ppu {
@@ -86,7 +88,7 @@ impl Ppu {
             render: RenderState::new(0),
             screen: Screen::new(),
             vram: MirrorVec::new(VRAM_SIZE),
-            oam: [0; 160],
+            oam: Oam::new(),
         }
     }
 
@@ -213,11 +215,11 @@ impl Ppu {
     }
 
     pub fn read_oam(&self, address: u8) -> u8 {
-        self.oam[address as usize]
+        self.oam.read(address)
     }
 
     pub fn write_oam(&mut self, address: u8, value: u8) {
-        self.oam[address as usize] = value;
+        self.oam.write(address, value)
     }
 
     pub fn step(&mut self, interrupt: &mut Interrupt, cycles: u64) {
