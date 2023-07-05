@@ -2,6 +2,7 @@ use tracing::debug;
 
 const OAM_SIZE: usize = 160;
 const TOTAL_SPRITES: usize = OAM_SIZE / 4;
+const MAX_SPRITES_PER_LINE: usize = 10;
 
 #[derive(Copy, Clone, Default)]
 struct Sprite {
@@ -17,6 +18,7 @@ struct Sprite {
 pub struct Oam {
     data: Vec<u8>,
     sprites: Vec<Sprite>,
+    selected: [usize; MAX_SPRITES_PER_LINE],
 }
 
 impl Oam {
@@ -24,6 +26,7 @@ impl Oam {
         Self {
             data: vec![0; OAM_SIZE],
             sprites: vec![Default::default(); TOTAL_SPRITES],
+            selected: [0; MAX_SPRITES_PER_LINE],
         }
     }
 
@@ -62,5 +65,39 @@ impl Oam {
             }
             _ => unreachable!(),
         }
+    }
+
+    pub fn select_sprites(&mut self, line: i32) {
+        let mut write_index: usize = 0;
+
+        for (read_index, sprite) in self.sprites.iter().enumerate() {
+            // TODO: 8x16 sprites
+            if sprite.y > line || (sprite.y + 8) <= line {
+                continue;
+            }
+
+            if write_index >= MAX_SPRITES_PER_LINE {
+                debug!("Line {}: Sprite Overflow", line);
+                break;
+            }
+
+            let mut insert_index = write_index;
+
+            // Sort by X coordinate upon insert
+            while insert_index > 0 {
+                if sprite.x >= self.sprites[insert_index - 1].x {
+                    break;
+                }
+
+                self.selected[insert_index] = self.selected[insert_index - 1];
+                insert_index -= 1;
+            }
+
+            self.selected[insert_index] = read_index;
+
+            write_index += 1;
+        }
+
+        debug!("Line {}: {} Sprites Selected", line, write_index);
     }
 }

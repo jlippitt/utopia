@@ -142,7 +142,7 @@ impl Ppu {
             }
             0x42 => self.scroll_y,
             0x43 => self.scroll_x,
-            0x44 => self.line as u8,
+            0x44 => self.line,
             0x45 => self.lcd_y_compare,
             0x47 => self.bg_palette,
             _ => panic!("PPU register read {:02X} not yet implemented", address),
@@ -260,6 +260,7 @@ impl Ppu {
                     self.dot += 1;
 
                     if self.dot == OAM_SEARCH_LENGTH {
+                        self.oam.select_sprites(self.line as i32);
                         self.set_mode(interrupt, Mode::Vram);
                         self.reset_renderer();
                     }
