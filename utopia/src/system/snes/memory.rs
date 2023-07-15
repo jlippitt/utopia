@@ -12,11 +12,11 @@ pub enum Page {
     OpenBus,
 }
 
-pub fn map(rom: &[u8]) -> [Page; TOTAL_PAGES] {
+pub fn map() -> [Page; TOTAL_PAGES] {
     let mut pages = [Page::OpenBus; TOTAL_PAGES];
 
     // Assume LoROM for now
-    map_lo_rom(&mut pages, rom);
+    map_lo_rom(&mut pages);
 
     // Map system pages
     map_system_pages(&mut pages, 0x00..=0x3f);
@@ -49,7 +49,7 @@ fn map_system_pages(pages: &mut [Page], banks: impl Iterator<Item = u8>) {
     }
 }
 
-fn map_lo_rom(pages: &mut [Page], _rom: &[u8]) {
+fn map_lo_rom(pages: &mut [Page]) {
     for bank in 0x00..=0x7f {
         let index = bank << 3;
         let offset = (bank as u32) << 14;

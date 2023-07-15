@@ -1,4 +1,7 @@
 use std::fmt;
+use tracing::debug;
+
+mod instruction;
 
 pub type Interrupt = u32;
 
@@ -15,7 +18,7 @@ enum IrqDisable {
 }
 
 pub trait Bus: fmt::Display {
-    //
+    fn read(&mut self, address: u32) -> u8;
 }
 
 pub struct Flags {
@@ -29,10 +32,10 @@ pub struct Flags {
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub enum Mode {
-    Native11 = 0,
-    Native10 = 1,
-    Native01 = 2,
-    Native00 = 3,
+    //Native11 = 0,
+    //Native10 = 1,
+    //Native01 = 2,
+    //Native00 = 3,
     Emulation = 4,
 }
 
@@ -72,6 +75,31 @@ impl<T: Bus> Core<T> {
             mode: Mode::Emulation,
             bus,
         }
+    }
+
+    pub fn step(&mut self) {
+        use instruction as instr;
+
+        if self.interrupt != 0 {
+            self.read(self.pc);
+
+            if (self.interrupt & INT_RESET) != 0 {
+                instr::reset(self);
+            } else {
+                panic!("Interrupt not yet implemented");
+            }
+
+            self.interrupt = 0;
+            return;
+        }
+
+        panic!("Opcode dispatch not yet implemented");
+    }
+
+    fn read(&mut self, address: u32) -> u8 {
+        let value = self.bus.read(address);
+        debug!("  {:06X} => {:02X}", address, value);
+        value
     }
 }
 

@@ -1,14 +1,18 @@
 use super::{JoypadState, System};
 use crate::core::wdc65c816::{Bus, Core};
+use crate::util::MirrorVec;
 use memory::{Page, TOTAL_PAGES};
 use std::error::Error;
 use std::fmt;
+use tracing::debug;
 
 mod memory;
 
 const WIDTH: usize = 512;
 const HEIGHT: usize = 448;
 const PIXELS: [u8; WIDTH * HEIGHT * 4] = [0; WIDTH * HEIGHT * 4];
+
+const WRAM_SIZE: usize = 131072;
 
 pub struct Snes {
     core: Core<Hardware>,
@@ -36,25 +40,45 @@ impl System for Snes {
     }
 
     fn run_frame(&mut self, _joypad_state: &JoypadState) {
-        println!("{}", self.core);
+        loop {
+            self.core.step();
+            debug!("{}", self.core);
+        }
     }
 }
 
 pub struct Hardware {
-    rom: Vec<u8>,
+    mdr: u8,
     pages: [Page; TOTAL_PAGES],
+    rom: MirrorVec<u8>,
+    wram: MirrorVec<u8>,
 }
 
 impl Hardware {
-    pub fn new(rom: Vec<u8>) -> Self {
-        let pages = memory::map(&rom);
+    pub fn new(rom_data: Vec<u8>) -> Self {
+        let pages = memory::map();
 
-        Self { rom, pages }
+        Self {
+            mdr: 0,
+            pages,
+            rom: rom_data.into(),
+            wram: MirrorVec::new(WRAM_SIZE),
+        }
     }
 }
 
 impl Bus for Hardware {
-    //
+    fn read(&mut self, address: u32) -> u8 {
+        self.mdr = match self.pages[(address >> 13) as usize] {
+            Page::Rom(offset) => self.rom[(offset | (address & 0x1fff)) as usize],
+            Page::Wram(offset) => self.wram[(offset | (address & 0x1fff)) as usize],
+            Page::ExternalRegisters => panic!("External register reads not yet implemented"),
+            Page::InternalRegisters => panic!("Internal register reads not yet implemented"),
+            Page::OpenBus => self.mdr,
+        };
+
+        self.mdr
+    }
 }
 
 impl fmt::Display for Hardware {
