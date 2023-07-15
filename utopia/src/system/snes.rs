@@ -1,7 +1,10 @@
 use super::{JoypadState, System};
 use crate::core::wdc65c816::{Bus, Core};
+use memory::{Page, TOTAL_PAGES};
 use std::error::Error;
 use std::fmt;
+
+mod memory;
 
 const WIDTH: usize = 512;
 const HEIGHT: usize = 448;
@@ -38,12 +41,15 @@ impl System for Snes {
 }
 
 pub struct Hardware {
-    //
+    rom: Vec<u8>,
+    pages: [Page; TOTAL_PAGES],
 }
 
 impl Hardware {
-    pub fn new(_rom_data: Vec<u8>) -> Self {
-        Self {}
+    pub fn new(rom: Vec<u8>) -> Self {
+        let pages = memory::map(&rom);
+
+        Self { rom, pages }
     }
 }
 
