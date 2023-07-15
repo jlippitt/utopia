@@ -1,5 +1,6 @@
 use bios::BiosLoader;
 use clap::Parser;
+use joypad::Joypad;
 use sdl2::event::Event;
 use std::error::Error;
 use std::fs;
@@ -7,6 +8,7 @@ use utopia::Options;
 use video::{Video, VideoOptions};
 
 mod bios;
+mod joypad;
 mod log;
 mod video;
 
@@ -62,17 +64,27 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut texture = video.create_texture(&texture_creator)?;
 
+    let mut joypad = Joypad::new();
+
     let mut event_pump = sdl_context.event_pump()?;
 
     'outer: loop {
         for event in event_pump.poll_iter() {
             match event {
+                Event::KeyDown {
+                    scancode: Some(scancode),
+                    ..
+                } => joypad.key_event(scancode, true),
+                Event::KeyUp {
+                    scancode: Some(scancode),
+                    ..
+                } => joypad.key_event(scancode, false),
                 Event::Quit { .. } => break 'outer,
                 _ => (),
             }
         }
 
-        system.run_frame();
+        system.run_frame(joypad.state());
 
         video.update(&mut texture, system.pixels())?;
     }

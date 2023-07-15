@@ -1,6 +1,7 @@
 use super::System;
 use crate::core::mos6502::{Bus, Core, Interrupt};
 use crate::util::MirrorVec;
+use crate::JoypadState;
 use cartridge::Cartridge;
 use ppu::Ppu;
 use std::error::Error;
@@ -45,7 +46,7 @@ impl System for Nes {
         self.core.bus().ppu.pixels()
     }
 
-    fn run_frame(&mut self) {
+    fn run_frame(&mut self, _joypad_state: &JoypadState) {
         let core = &mut self.core;
 
         core.bus_mut().ppu.start_frame();

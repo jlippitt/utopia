@@ -1,4 +1,4 @@
-use super::{BiosLoader, System};
+use super::{BiosLoader, JoypadState, System};
 use crate::core::gbz80::{Bus, Core, State};
 use crate::util::MirrorVec;
 use cartridge::Cartridge;
@@ -71,7 +71,7 @@ impl System for GameBoy {
         self.core.bus().ppu.pixels()
     }
 
-    fn run_frame(&mut self) {
+    fn run_frame(&mut self, _joypad_state: &JoypadState) {
         let core = &mut self.core;
 
         core.bus_mut().ppu.start_frame();

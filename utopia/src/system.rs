@@ -4,11 +4,23 @@ use std::path::Path;
 mod gb;
 mod nes;
 
+#[derive(Clone, Default, Debug, Eq, PartialEq)]
+pub struct JoypadState {
+    pub up: bool,
+    pub down: bool,
+    pub left: bool,
+    pub right: bool,
+    pub a: bool,
+    pub b: bool,
+    pub select: bool,
+    pub start: bool,
+}
+
 pub trait System {
     fn width(&self) -> usize;
     fn height(&self) -> usize;
     fn pixels(&self) -> &[u8];
-    fn run_frame(&mut self);
+    fn run_frame(&mut self, joypad_state: &JoypadState);
 
     fn clip_top(&self) -> usize {
         0
