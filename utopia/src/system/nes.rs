@@ -3,6 +3,7 @@ use crate::core::mos6502::{Bus, Core, Interrupt};
 use crate::util::MirrorVec;
 use crate::JoypadState;
 use cartridge::Cartridge;
+use joypad::Joypad;
 use ppu::Ppu;
 use std::error::Error;
 use std::fmt;
@@ -12,6 +13,7 @@ const WRAM_SIZE: usize = 2048;
 const CLIP_AMOUNT: usize = 8;
 
 mod cartridge;
+mod joypad;
 mod ppu;
 
 pub fn create(rom_data: Vec<u8>) -> Result<Box<dyn System>, Box<dyn Error>> {
@@ -46,9 +48,10 @@ impl System for Nes {
         self.core.bus().ppu.pixels()
     }
 
-    fn run_frame(&mut self, _joypad_state: &JoypadState) {
+    fn run_frame(&mut self, joypad_state: &JoypadState) {
         let core = &mut self.core;
 
+        core.bus_mut().joypad.update(joypad_state);
         core.bus_mut().ppu.start_frame();
 
         while !core.bus().ppu.ready() {
@@ -65,6 +68,7 @@ struct Hardware {
     interrupt: Interrupt,
     cartridge: Cartridge,
     wram: MirrorVec<u8>,
+    joypad: Joypad,
     ppu: Ppu,
 }
 
@@ -77,6 +81,7 @@ impl Hardware {
             interrupt: 0,
             cartridge: Cartridge::new(rom_data),
             wram: MirrorVec::new(WRAM_SIZE),
+            joypad: Joypad::new(),
             ppu: Ppu::new(),
         }
     }
@@ -127,7 +132,7 @@ impl Bus for Hardware {
                 .ppu
                 .read(&mut self.cartridge, &mut self.interrupt, address),
             2 => match address {
-                0x4016..=0x4017 => 0, // TODO: Joypad ports
+                0x4016..=0x4017 => self.joypad.read_register(address, self.mdr),
                 0x4000..=0x401f => 0, // TODO: APU ports
                 _ => self.mdr,
             },
@@ -151,6 +156,7 @@ impl Bus for Hardware {
                 .write(&mut self.cartridge, &mut self.interrupt, address, value),
             2 => match address {
                 0x4014 => self.dma_address = Some(value),
+                0x4016 => self.joypad.write_register(value),
                 0x4000..=0x401f => {
                     debug!("2A03 register write not yet implemented: {:02X}", address)
                 }
