@@ -1,8 +1,12 @@
+use gb::GameBoy;
+use nes::Nes;
+use snes::Snes;
 use std::error::Error;
 use std::path::Path;
 
 mod gb;
 mod nes;
+mod snes;
 
 #[derive(Clone, Default, Debug, Eq, PartialEq)]
 pub struct JoypadState {
@@ -50,9 +54,10 @@ pub fn create(
         .and_then(|e| e.to_str())
         .unwrap_or("");
 
-    match extension {
-        "gb" => gb::create(rom_data, bios_loader, options.skip_boot),
-        "nes" => nes::create(rom_data),
+    Ok(match extension {
+        "gb" => Box::new(GameBoy::new(rom_data, bios_loader, options.skip_boot)?),
+        "nes" => Box::new(Nes::new(rom_data)?),
+        "sfc" | "smc" => Box::new(Snes::new(rom_data)?),
         _ => Err("ROM type not supported".to_owned())?,
-    }
+    })
 }

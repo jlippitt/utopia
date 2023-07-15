@@ -19,43 +19,45 @@ const HRAM_SIZE: usize = 128;
 
 const M_CYCLE_LENGTH: u64 = 4;
 
-pub fn create(
-    rom_data: Vec<u8>,
-    bios_loader: &impl BiosLoader,
-    skip_boot: bool,
-) -> Result<Box<dyn System>, Box<dyn Error>> {
-    let (initial_state, bios_data) = if skip_boot {
-        // TODO: This post-boot state should depend on hardware model
-        let initial_state = State {
-            a: 0x01,
-            b: 0x00,
-            c: 0x13,
-            d: 0x00,
-            e: 0xd8,
-            h: 0x01,
-            l: 0x4d,
-            sp: 0xfffe,
-            pc: 0x0100,
-            f: 0xb0, // TODO: H & C should depend on header checksum
-        };
-
-        (Some(initial_state), None)
-    } else {
-        let bios_data = bios_loader.load("dmg")?;
-
-        (None, Some(bios_data))
-    };
-
-    // TODO: Should skip boot sequence for other hardware components as well
-    let hw = Hardware::new(rom_data, bios_data, skip_boot);
-
-    let core = Core::new(hw, initial_state);
-
-    Ok(Box::new(GameBoy { core }))
-}
-
 pub struct GameBoy {
     core: Core<Hardware>,
+}
+
+impl GameBoy {
+    pub fn new(
+        rom_data: Vec<u8>,
+        bios_loader: &impl BiosLoader,
+        skip_boot: bool,
+    ) -> Result<Self, Box<dyn Error>> {
+        let (initial_state, bios_data) = if skip_boot {
+            // TODO: This post-boot state should depend on hardware model
+            let initial_state = State {
+                a: 0x01,
+                b: 0x00,
+                c: 0x13,
+                d: 0x00,
+                e: 0xd8,
+                h: 0x01,
+                l: 0x4d,
+                sp: 0xfffe,
+                pc: 0x0100,
+                f: 0xb0, // TODO: H & C should depend on header checksum
+            };
+
+            (Some(initial_state), None)
+        } else {
+            let bios_data = bios_loader.load("dmg")?;
+
+            (None, Some(bios_data))
+        };
+
+        // TODO: Should skip boot sequence for other hardware components as well
+        let hw = Hardware::new(rom_data, bios_data, skip_boot);
+
+        let core = Core::new(hw, initial_state);
+
+        Ok(GameBoy { core })
+    }
 }
 
 impl System for GameBoy {

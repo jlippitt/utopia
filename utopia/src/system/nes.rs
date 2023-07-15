@@ -16,15 +16,16 @@ mod cartridge;
 mod joypad;
 mod ppu;
 
-pub fn create(rom_data: Vec<u8>) -> Result<Box<dyn System>, Box<dyn Error>> {
-    let hw = Hardware::new(rom_data);
-    let core = Core::new(hw);
-
-    Ok(Box::new(Nes { core }))
-}
-
 pub struct Nes {
     core: Core<Hardware>,
+}
+
+impl Nes {
+    pub fn new(rom_data: Vec<u8>) -> Result<Self, Box<dyn Error>> {
+        let hw = Hardware::new(rom_data);
+        let core = Core::new(hw);
+        Ok(Nes { core })
+    }
 }
 
 impl System for Nes {
