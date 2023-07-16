@@ -156,8 +156,8 @@ impl<T: Bus> Core<T> {
             //0xf4 => instr::read::<addr::ZeroPageX, op::Nop>(self),
 
             // +0x08
-            //0x08 => instr::php(self),
-            //0x28 => instr::plp(self),
+            0x08 => instr::php::<E>(self),
+            //0x28 => instr::plp::<E>(self),
             //0x48 => instr::pha(self),
             //0x68 => instr::pla(self),
             0x88 => instr::dey::<X>(self),
