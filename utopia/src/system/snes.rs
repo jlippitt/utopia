@@ -79,7 +79,10 @@ impl Hardware {
     fn read_bus_b(&mut self, address: u8) -> u8 {
         match address {
             0x00..=0x3f => todo!("PPU reads"),
-            0x40..=0x7f => self.apu.read(address),
+            0x40..=0x7f => {
+                self.apu.run_until(self.cycles);
+                self.apu.read(address)
+            }
             0x80..=0x83 => todo!("WRAM registers"),
             _ => {
                 warn!("Unmapped Bus B read: {:02X}", address);
@@ -91,7 +94,10 @@ impl Hardware {
     fn write_bus_b(&mut self, address: u8, value: u8) {
         match address {
             0x00..=0x3f => (), // TODO: PPU writes
-            0x40..=0x7f => self.apu.write(address, value),
+            0x40..=0x7f => {
+                self.apu.run_until(self.cycles);
+                self.apu.write(address, value);
+            }
             0x80..=0x83 => todo!("WRAM registers"),
             _ => warn!("Unmapped Bus B write: {:02X} <= {:02X}", address, value),
         }

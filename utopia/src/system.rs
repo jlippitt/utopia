@@ -3,6 +3,7 @@ use nes::Nes;
 use snes::Snes;
 use std::error::Error;
 use std::path::Path;
+use std::rc::Rc;
 
 mod gb;
 mod nes;
