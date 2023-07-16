@@ -25,7 +25,7 @@ pub trait Bus: fmt::Display {
 }
 
 pub struct Flags {
-    n: u8,
+    n: bool,
     v: u8,
     d: bool,
     i: IrqDisable,
@@ -67,7 +67,7 @@ impl<T: Bus> Core<T> {
             pc: 0,
             dbr: 0,
             flags: Flags {
-                n: 0,
+                n: false,
                 v: 0,
                 d: false,
                 i: IrqDisable::Clear,
@@ -116,10 +116,10 @@ impl<T: Bus> Core<T> {
             //0x20 => instr::jsr(self),
             //0x40 => instr::rti(self),
             //0x60 => instr::rts(self),
-            //0x80 => instr::read::<addr::Immediate, op::Nop>(self),
-            //0xa0 => instr::read::<addr::Immediate, op::Ldy>(self),
-            //0xc0 => instr::read::<addr::Immediate, op::Cpy>(self),
-            //0xe0 => instr::read::<addr::Immediate, op::Cpx>(self),
+            //0x80 => instr::immediate::<op::Nop>(self),
+            0xa0 => instr::immediate::<X, op::Ldy>(self),
+            //0xc0 => instr::immediate::<X, op::Cpy>(self),
+            //0xe0 => instr::immediate::<X, op::Cpx>(self),
 
             // +0x10
             //0x10 => instr::branch::<op::Bpl>(self),
@@ -234,14 +234,14 @@ impl<T: Bus> Core<T> {
             //0xf5 => instr::read::<addr::ZeroPageX, op::Sbc>(self),
 
             // +0x09
-            //0x09 => instr::read::<addr::Immediate, op::Ora>(self),
-            //0x29 => instr::read::<addr::Immediate, op::And>(self),
-            //0x49 => instr::read::<addr::Immediate, op::Eor>(self),
-            //0x69 => instr::read::<addr::Immediate, op::Adc>(self),
-            //0x89 => instr::read::<addr::Immediate, op::Nop>(self),
-            //0xa9 => instr::read::<addr::Immediate, op::Lda>(self),
-            //0xc9 => instr::read::<addr::Immediate, op::Cmp>(self),
-            //0xe9 => instr::read::<addr::Immediate, op::Sbc>(self),
+            //0x09 => instr::immediate::<M, op::Ora>(self),
+            //0x29 => instr::immediate::<M, op::And>(self),
+            //0x49 => instr::immediate::<M, op::Eor>(self),
+            //0x69 => instr::immediate::<M, op::Adc>(self),
+            //0x89 => instr::immediate::<M, op::BitImmediate>(self),
+            0xa9 => instr::immediate::<M, op::Lda>(self),
+            //0xc9 => instr::immediate::<M, op::Cmp>(self),
+            //0xe9 => instr::immediate::<M, op::Sbc>(self),
 
             // +0x19
             //0x19 => instr::read::<addr::AbsoluteY, op::Ora>(self),
@@ -276,7 +276,7 @@ impl<T: Bus> Core<T> {
             // Page 2: Read-Modify-Write Ops
 
             // +0x02
-            //0xa2 => instr::read::<addr::Immediate, op::Ldx>(self),
+            0xa2 => instr::immediate::<X, op::Ldx>(self),
 
             // +0x06
             //0x06 => instr::modify::<addr::ZeroPage, op::Asl>(self),
@@ -361,6 +361,16 @@ impl<T: Bus> Core<T> {
         let high = self.next_byte();
         u16::from_le_bytes([low, high])
     }
+
+    fn set_nz8(&mut self, value: u8) {
+        self.flags.n = (value & 0x80) != 0;
+        self.flags.z = value as u16;
+    }
+
+    fn set_nz16(&mut self, value: u16) {
+        self.flags.n = (value & 0x8000) != 0;
+        self.flags.z = value;
+    }
 }
 
 impl<T: Bus> fmt::Display for Core<T> {
@@ -375,7 +385,7 @@ impl<T: Bus> fmt::Display for Core<T> {
             self.s,
             self.pc,
             self.dbr >> 16,
-            if (self.flags.n & 0x80) != 0 { 'N' } else { '-' },
+            if self.flags.n { 'N' } else { '-' },
             if (self.flags.v & 0x80) != 0 { 'V' } else { '-' },
             if (self.mode as u8 & 0x02) == 0 { 'M' } else { '-' },
             if (self.mode as u8 & 0x01) == 0 { 'X' } else { '-' },
