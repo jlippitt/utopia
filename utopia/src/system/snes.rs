@@ -68,6 +68,10 @@ impl Hardware {
 }
 
 impl Bus for Hardware {
+    fn idle(&mut self) {
+        // Nothing yet
+    }
+
     fn read(&mut self, address: u32) -> u8 {
         self.mdr = match self.pages[(address >> 13) as usize] {
             Page::Rom(offset) => self.rom[(offset | (address & 0x1fff)) as usize],

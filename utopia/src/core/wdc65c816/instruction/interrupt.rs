@@ -13,7 +13,7 @@ fn jump_to_vector(core: &mut Core<impl Bus>, vector: u16) {
 
 pub fn reset(core: &mut Core<impl Bus>) {
     debug!("RESET");
-    core.read(core.pc);
+    core.idle();
 
     for _ in 0..=2 {
         core.read(core.s as u32);

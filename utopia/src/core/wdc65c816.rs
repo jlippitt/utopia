@@ -1,4 +1,5 @@
 use std::fmt;
+use std::mem;
 use tracing::debug;
 
 mod address_mode;
@@ -20,6 +21,7 @@ enum IrqDisable {
 }
 
 pub trait Bus: fmt::Display {
+    fn idle(&mut self);
     fn read(&mut self, address: u32) -> u8;
     fn write(&mut self, address: u32, value: u8);
 }
@@ -33,7 +35,9 @@ pub struct Flags {
     c: bool,
 }
 
+#[repr(u8)]
 #[derive(Copy, Clone, Eq, PartialEq)]
+#[allow(dead_code)]
 pub enum Mode {
     Native11 = 0,
     Native10 = 1,
@@ -277,6 +281,8 @@ impl<T: Bus> Core<T> {
 
             // +0x02
             0xa2 => instr::immediate::<X, op::Ldx>(self),
+            0xc2 => instr::rep::<E>(self),
+            0xe2 => instr::sep::<E>(self),
 
             // +0x06
             //0x06 => instr::modify::<addr::ZeroPage, op::Asl>(self),
@@ -343,6 +349,11 @@ impl<T: Bus> Core<T> {
         // Nothing yet
     }
 
+    fn idle(&mut self) {
+        debug!("  IO");
+        self.bus.idle();
+    }
+
     fn read(&mut self, address: u32) -> u8 {
         let value = self.bus.read(address);
         debug!("  {:06X} => {:02X}", address, value);
@@ -364,6 +375,52 @@ impl<T: Bus> Core<T> {
         let low = self.next_byte();
         let high = self.next_byte();
         u16::from_le_bytes([low, high])
+    }
+
+    fn flags_to_u8<const E: bool>(&self, break_flag: bool) -> u8 {
+        let mut result = 0;
+        result |= if self.flags.n { 0x80 } else { 0 };
+        result |= (self.flags.v & 0x80) >> 1;
+        result |= if self.flags.d { 0x08 } else { 0 };
+        result |= if self.flags.i == IrqDisable::Set {
+            0x04
+        } else {
+            0
+        };
+        result |= if self.flags.z == 0 { 0x02 } else { 0 };
+        result |= self.flags.c as u8;
+
+        if E {
+            result |= if break_flag { 0x30 } else { 0x20 };
+        } else {
+            result |= !((self.mode as u8) << 4) & 0x30;
+        }
+
+        result
+    }
+
+    fn flags_from_u8<const E: bool>(&mut self, value: u8) {
+        self.flags.n = (value & 0x80) != 0;
+        self.flags.v = value << 1;
+        self.flags.d = (value & 0x08) != 0;
+        self.flags.i = if (value & 0x04) != 0 {
+            IrqDisable::Set
+        } else {
+            IrqDisable::Clear
+        };
+        self.flags.z = (!value & 0x02) as u16;
+        self.flags.c = (value & 0x01) != 0;
+
+        if !E {
+            let mode_value = (!value & 0x30) >> 4;
+
+            unsafe { self.mode = mem::transmute(mode_value) };
+
+            if (value & 0x10) != 0 {
+                self.x &= 0xff;
+                self.y &= 0xff;
+            }
+        }
     }
 
     fn set_nz8(&mut self, value: u8) {
