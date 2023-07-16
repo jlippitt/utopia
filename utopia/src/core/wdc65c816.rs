@@ -28,7 +28,7 @@ pub trait Bus: fmt::Display {
 
 pub struct Flags {
     n: bool,
-    v: u8,
+    v: bool,
     d: bool,
     i: IrqDisable,
     z: u16,
@@ -72,7 +72,7 @@ impl<T: Bus> Core<T> {
             dbr: 0,
             flags: Flags {
                 n: false,
-                v: 0,
+                v: false,
                 d: false,
                 i: IrqDisable::Clear,
                 z: 0xffff,
@@ -241,11 +241,11 @@ impl<T: Bus> Core<T> {
             //0x09 => instr::immediate::<M, op::Ora>(self),
             //0x29 => instr::immediate::<M, op::And>(self),
             //0x49 => instr::immediate::<M, op::Eor>(self),
-            //0x69 => instr::immediate::<M, op::Adc>(self),
+            0x69 => instr::immediate::<M, op::Adc>(self),
             //0x89 => instr::immediate::<M, op::BitImmediate>(self),
             0xa9 => instr::immediate::<M, op::Lda>(self),
             //0xc9 => instr::immediate::<M, op::Cmp>(self),
-            //0xe9 => instr::immediate::<M, op::Sbc>(self),
+            0xe9 => instr::immediate::<M, op::Sbc>(self),
 
             // +0x19
             //0x19 => instr::read::<addr::AbsoluteY, op::Ora>(self),
@@ -412,7 +412,7 @@ impl<T: Bus> Core<T> {
     fn flags_to_u8<const E: bool>(&self, break_flag: bool) -> u8 {
         let mut result = 0;
         result |= if self.flags.n { 0x80 } else { 0 };
-        result |= (self.flags.v & 0x80) >> 1;
+        result |= if self.flags.v { 0x40 } else { 0 };
         result |= if self.flags.d { 0x08 } else { 0 };
         result |= if self.flags.i == IrqDisable::Set {
             0x04
@@ -433,7 +433,7 @@ impl<T: Bus> Core<T> {
 
     fn flags_from_u8<const E: bool>(&mut self, value: u8) {
         self.flags.n = (value & 0x80) != 0;
-        self.flags.v = value << 1;
+        self.flags.v = (value & 0x40) != 0;
         self.flags.d = (value & 0x08) != 0;
         self.flags.i = if (value & 0x04) != 0 {
             IrqDisable::Set
@@ -479,7 +479,7 @@ impl<T: Bus> fmt::Display for Core<T> {
             self.pc,
             self.dbr >> 16,
             if self.flags.n { 'N' } else { '-' },
-            if (self.flags.v & 0x80) != 0 { 'V' } else { '-' },
+            if self.flags.v { 'V' } else { '-' },
             if (self.mode as u8 & 0x02) == 0 { 'M' } else { '-' },
             if (self.mode as u8 & 0x01) == 0 { 'X' } else { '-' },
             if self.flags.d { 'D' } else { '-' },

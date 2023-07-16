@@ -49,7 +49,7 @@ pub fn clv(core: &mut Core<impl Bus>) {
     debug!("CLV");
     core.poll();
     core.idle();
-    core.flags.v = 0;
+    core.flags.v = false;
 }
 
 pub fn cld(core: &mut Core<impl Bus>) {
