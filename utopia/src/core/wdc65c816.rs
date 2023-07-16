@@ -1,7 +1,9 @@
 use std::fmt;
 use tracing::debug;
 
+mod address_mode;
 mod instruction;
+mod operator;
 
 pub type Interrupt = u32;
 
@@ -19,6 +21,7 @@ enum IrqDisable {
 
 pub trait Bus: fmt::Display {
     fn read(&mut self, address: u32) -> u8;
+    fn write(&mut self, address: u32, value: u8);
 }
 
 pub struct Flags {
@@ -32,10 +35,10 @@ pub struct Flags {
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub enum Mode {
-    //Native11 = 0,
-    //Native10 = 1,
-    //Native01 = 2,
-    //Native00 = 3,
+    Native11 = 0,
+    Native10 = 1,
+    Native01 = 2,
+    Native00 = 3,
     Emulation = 4,
 }
 
@@ -78,7 +81,19 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn step(&mut self) {
+        match self.mode {
+            Mode::Native11 => self.dispatch::<false, true, true>(),
+            Mode::Native10 => self.dispatch::<false, true, false>(),
+            Mode::Native01 => self.dispatch::<false, false, true>(),
+            Mode::Native00 => self.dispatch::<false, false, false>(),
+            Mode::Emulation => self.dispatch::<true, true, true>(),
+        }
+    }
+
+    fn dispatch<const E: bool, const M: bool, const X: bool>(&mut self) {
+        use address_mode as addr;
         use instruction as instr;
+        use operator as op;
 
         if self.interrupt != 0 {
             self.read(self.pc);
@@ -171,7 +186,7 @@ impl<T: Bus> Core<T> {
             //0x3c => instr::read::<addr::AbsoluteX, op::Nop>(self),
             //0x5c => instr::read::<addr::AbsoluteX, op::Nop>(self),
             //0x7c => instr::read::<addr::AbsoluteX, op::Nop>(self),
-            //0x9c => instr::write::<addr::AbsoluteX, op::Shy>(self),
+            0x9c => instr::write::<M, addr::Absolute, op::Stz>(self),
             //0xbc => instr::read::<addr::AbsoluteX, op::Ldy>(self),
             //0xdc => instr::read::<addr::AbsoluteX, op::Nop>(self),
             //0xfc => instr::read::<addr::AbsoluteX, op::Nop>(self),
@@ -330,10 +345,21 @@ impl<T: Bus> Core<T> {
         value
     }
 
+    fn write(&mut self, address: u32, value: u8) {
+        debug!("  {:06X} <= {:02X}", address, value);
+        self.bus.write(address, value);
+    }
+
     fn next_byte(&mut self) -> u8 {
         let value = self.read(self.pc);
         self.pc = (self.pc & 0xffff0000) | ((self.pc.wrapping_add(1)) & 0xffff);
         value
+    }
+
+    fn next_word(&mut self) -> u16 {
+        let low = self.next_byte();
+        let high = self.next_byte();
+        u16::from_le_bytes([low, high])
     }
 }
 

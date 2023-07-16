@@ -4,7 +4,7 @@ use crate::util::MirrorVec;
 use memory::{Page, TOTAL_PAGES};
 use std::error::Error;
 use std::fmt;
-use tracing::debug;
+use tracing::{debug, warn};
 
 mod memory;
 
@@ -74,10 +74,25 @@ impl Bus for Hardware {
             Page::Wram(offset) => self.wram[(offset | (address & 0x1fff)) as usize],
             Page::ExternalRegisters => panic!("External register reads not yet implemented"),
             Page::InternalRegisters => panic!("Internal register reads not yet implemented"),
-            Page::OpenBus => self.mdr,
+            Page::OpenBus => {
+                warn!("Read from unmapped area: {:06X}", address);
+                self.mdr
+            }
         };
 
         self.mdr
+    }
+
+    fn write(&mut self, address: u32, value: u8) {
+        self.mdr = value;
+
+        match self.pages[(address >> 13) as usize] {
+            Page::Rom(..) => warn!("Write to ROM area: {:06X}", address),
+            Page::Wram(offset) => self.wram[(offset | (address & 0x1fff)) as usize] = value,
+            Page::ExternalRegisters => (), // TODO
+            Page::InternalRegisters => (), // TODO
+            Page::OpenBus => warn!("Write to unmapped area: {:06X}", address),
+        }
     }
 }
 
