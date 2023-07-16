@@ -481,7 +481,7 @@ impl<T: Bus> fmt::Display for Core<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "A={:04X} X={:04X} Y={:04X} D={:04X} S={:04X} PC={:06X} DBR={:02X} P={}{}{}{}{}{}{}{}{}",
+            "A={:04X} X={:04X} Y={:04X} D={:04X} S={:04X} PC={:06X} DBR={:02X} P={}{}{}{}{}{}{}{}{} {}",
             self.a,
             self.x,
             self.y,
@@ -498,6 +498,7 @@ impl<T: Bus> fmt::Display for Core<T> {
             if self.flags.z == 0 { 'Z' } else { '-' },
             if self.flags.c { 'C' } else { '-' },
             if (self.mode as u8 & 0x04) != 0 { 'E' } else { '-' },
+            self.bus,
         )
     }
 }
