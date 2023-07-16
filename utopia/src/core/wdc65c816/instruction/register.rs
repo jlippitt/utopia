@@ -1,6 +1,62 @@
 use super::super::{Bus, Core, EMULATION_STACK_PAGE};
 use tracing::debug;
 
+pub fn dex<const X: bool>(core: &mut Core<impl Bus>) {
+    debug!("DEX.{}", super::size(X));
+    core.poll();
+    core.idle();
+    core.x = core.x.wrapping_sub(1);
+
+    if X {
+        core.x &= 0xff;
+        core.set_nz8(core.x as u8);
+    } else {
+        core.set_nz16(core.x);
+    }
+}
+
+pub fn dey<const X: bool>(core: &mut Core<impl Bus>) {
+    debug!("DEY.{}", super::size(X));
+    core.poll();
+    core.idle();
+    core.y = core.y.wrapping_sub(1);
+
+    if X {
+        core.y &= 0xff;
+        core.set_nz8(core.y as u8);
+    } else {
+        core.set_nz16(core.y);
+    }
+}
+
+pub fn inx<const X: bool>(core: &mut Core<impl Bus>) {
+    debug!("INX.{}", super::size(X));
+    core.poll();
+    core.idle();
+    core.x = core.x.wrapping_add(1);
+
+    if X {
+        core.x &= 0xff;
+        core.set_nz8(core.x as u8);
+    } else {
+        core.set_nz16(core.x);
+    }
+}
+
+pub fn iny<const X: bool>(core: &mut Core<impl Bus>) {
+    debug!("INY.{}", super::size(X));
+    core.poll();
+    core.idle();
+    core.y = core.y.wrapping_add(1);
+
+    if X {
+        core.y &= 0xff;
+        core.set_nz8(core.y as u8);
+    } else {
+        core.set_nz16(core.y);
+    }
+}
+
 pub fn tcd(core: &mut Core<impl Bus>) {
     debug!("TCD");
     core.poll();

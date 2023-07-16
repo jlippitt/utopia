@@ -160,10 +160,10 @@ impl<T: Bus> Core<T> {
             //0x28 => instr::plp(self),
             //0x48 => instr::pha(self),
             //0x68 => instr::pla(self),
-            //0x88 => instr::dey(self),
+            0x88 => instr::dey::<X>(self),
             0xa8 => instr::tay::<X>(self),
-            //0xc8 => instr::iny(self),
-            //0xe8 => instr::inx(self),
+            0xc8 => instr::iny::<X>(self),
+            0xe8 => instr::inx::<X>(self),
 
             // +0x18
             0x18 => instr::clc(self),
@@ -311,7 +311,7 @@ impl<T: Bus> Core<T> {
             //0x6a => instr::accumulator::<op::Ror>(self),
             0x8a => instr::txa::<M>(self),
             0xaa => instr::tax::<X>(self),
-            //0xca => instr::dex(self),
+            0xca => instr::dex::<X>(self),
             //0xea => instr::nop(self),
 
             // +0x1a
