@@ -9,6 +9,12 @@ pub fn immediate<const MX: bool, Op: ReadOperator>(core: &mut Core<impl Bus>) {
         core.poll();
         let value = core.next_byte();
         Op::apply8(core, value);
+    } else {
+        debug!("{}.W #const", Op::NAME);
+        let low = core.next_byte();
+        core.poll();
+        let high = core.next_byte();
+        Op::apply16(core, u16::from_le_bytes([low, high]));
     }
 }
 
