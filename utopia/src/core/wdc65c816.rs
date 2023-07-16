@@ -332,7 +332,7 @@ impl<T: Bus> Core<T> {
 
     fn next_byte(&mut self) -> u8 {
         let value = self.read(self.pc);
-        self.pc = (self.pc & 0xff0000) | ((self.pc.wrapping_add(1)) & 0xffff);
+        self.pc = (self.pc & 0xffff0000) | ((self.pc.wrapping_add(1)) & 0xffff);
         value
     }
 }
