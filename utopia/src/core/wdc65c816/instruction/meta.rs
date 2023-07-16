@@ -1,5 +1,5 @@
 use super::super::address_mode::AddressMode;
-use super::super::operator::{ReadOperator, WriteOperator};
+use super::super::operator::{BranchOperator, ReadOperator, WriteOperator};
 use super::super::{Bus, Core};
 use tracing::debug;
 
@@ -32,5 +32,27 @@ pub fn write<const MX: bool, Addr: AddressMode, Op: WriteOperator>(core: &mut Co
         core.poll();
         let address_high = address.wrapping_add(1) & Addr::WRAP;
         core.write(address_high, (value >> 8) as u8);
+    }
+}
+
+pub fn branch<const E: bool, Op: BranchOperator>(core: &mut Core<impl Bus>) {
+    debug!("{} nearlabel", Op::NAME);
+
+    if Op::apply(&core.flags) {
+        let offset = ((core.next_byte() as i8) as i32) as u32;
+        debug!("Branch taken");
+        let target = (core.pc & 0xffff0000) | (core.pc.wrapping_add(offset) & 0xffff);
+
+        if E && (target & 0xff00) != (core.pc & 0xff00) {
+            core.idle();
+        }
+
+        core.poll();
+        core.idle();
+        core.pc = target;
+    } else {
+        core.poll();
+        core.next_byte();
+        debug!("Branch not taken");
     }
 }
