@@ -1,6 +1,22 @@
 use super::super::{Bus, Core, IrqDisable};
 use tracing::debug;
 
+pub fn rep<const E: bool>(core: &mut Core<impl Bus>) {
+    debug!("REP #const");
+    let value = core.next_byte();
+    core.poll();
+    core.idle();
+    core.flags_from_u8::<E>(core.flags_to_u8::<E>(false) & !value);
+}
+
+pub fn sep<const E: bool>(core: &mut Core<impl Bus>) {
+    debug!("REP #const");
+    let value = core.next_byte();
+    core.poll();
+    core.idle();
+    core.flags_from_u8::<E>(core.flags_to_u8::<E>(false) | value);
+}
+
 pub fn clc(core: &mut Core<impl Bus>) {
     debug!("CLC");
     core.poll();

@@ -36,3 +36,85 @@ pub fn tsc(core: &mut Core<impl Bus>) {
     core.a = core.s;
     core.set_nz16(core.a);
 }
+
+pub fn tax<const X: bool>(core: &mut Core<impl Bus>) {
+    debug!("TAX.{}", super::size(X));
+    core.poll();
+    core.idle();
+
+    if X {
+        core.x = core.a & 0xff;
+        core.set_nz8(core.x as u8);
+    } else {
+        core.x = core.a;
+        core.set_nz16(core.x);
+    }
+}
+
+pub fn txa<const M: bool>(core: &mut Core<impl Bus>) {
+    debug!("TXA.{}", super::size(M));
+    core.poll();
+    core.idle();
+
+    if M {
+        core.a = (core.a & 0xff00) | (core.x & 0xff);
+        core.set_nz8(core.a as u8);
+    } else {
+        core.a = core.x;
+        core.set_nz16(core.a);
+    }
+}
+
+pub fn tay<const X: bool>(core: &mut Core<impl Bus>) {
+    debug!("TAY.{}", super::size(X));
+    core.poll();
+    core.idle();
+
+    if X {
+        core.y = core.a & 0xff;
+        core.set_nz8(core.y as u8);
+    } else {
+        core.y = core.a;
+        core.set_nz16(core.y);
+    }
+}
+
+pub fn tya<const M: bool>(core: &mut Core<impl Bus>) {
+    debug!("TYA.{}", super::size(M));
+    core.poll();
+    core.idle();
+
+    if M {
+        core.a = (core.a & 0xff00) | (core.y & 0xff);
+        core.set_nz8(core.a as u8);
+    } else {
+        core.a = core.y;
+        core.set_nz16(core.a);
+    }
+}
+
+pub fn txy<const X: bool>(core: &mut Core<impl Bus>) {
+    debug!("TXY.{}", super::size(X));
+    core.poll();
+    core.idle();
+    core.y = core.x;
+
+    if X {
+        core.set_nz8(core.y as u8);
+    } else {
+        core.set_nz16(core.y);
+    }
+}
+
+pub fn tyx<const X: bool>(core: &mut Core<impl Bus>) {
+    debug!("TYX.{}", super::size(X));
+    core.poll();
+    core.idle();
+    core.x = core.y;
+
+    if X {
+        core.set_nz8(core.x as u8);
+    } else {
+        core.set_nz16(core.x);
+    }
+}

@@ -161,7 +161,7 @@ impl<T: Bus> Core<T> {
             //0x48 => instr::pha(self),
             //0x68 => instr::pla(self),
             //0x88 => instr::dey(self),
-            //0xa8 => instr::tay(self),
+            0xa8 => instr::tay::<X>(self),
             //0xc8 => instr::iny(self),
             //0xe8 => instr::inx(self),
 
@@ -170,7 +170,7 @@ impl<T: Bus> Core<T> {
             0x38 => instr::sec(self),
             0x58 => instr::cli(self),
             0x78 => instr::sei(self),
-            //0x98 => instr::tya(self),
+            0x98 => instr::tya::<M>(self),
             0xb8 => instr::clv(self),
             0xd8 => instr::cld(self),
             0xf8 => instr::sed(self),
@@ -309,8 +309,8 @@ impl<T: Bus> Core<T> {
             //0x2a => instr::accumulator::<op::Rol>(self),
             //0x4a => instr::accumulator::<op::Lsr>(self),
             //0x6a => instr::accumulator::<op::Ror>(self),
-            //0x8a => instr::txa(self),
-            //0xaa => instr::tax(self),
+            0x8a => instr::txa::<M>(self),
+            0xaa => instr::tax::<X>(self),
             //0xca => instr::dex(self),
             //0xea => instr::nop(self),
 
@@ -343,6 +343,8 @@ impl<T: Bus> Core<T> {
             0x3b => instr::tsc(self),
             0x5b => instr::tcd(self),
             0x7b => instr::tdc(self),
+            0x9b => instr::txy::<X>(self),
+            0xbb => instr::tyx::<X>(self),
             0xfb => instr::xce(self),
 
             // +0x0f
