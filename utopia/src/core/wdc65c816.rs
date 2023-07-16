@@ -331,6 +331,10 @@ impl<T: Bus> Core<T> {
             //0xbe => instr::read::<addr::AbsoluteY, op::Ldx>(self),
             //0xde => instr::modify::<addr::AbsoluteX, op::Dec>(self),
             //0xfe => instr::modify::<addr::AbsoluteX, op::Inc>(self),
+
+            // +0x0b
+            0xfb => instr::xce(self),
+
             opcode => panic!("Opcode {:02X} not yet implemented", opcode),
         }
     }
