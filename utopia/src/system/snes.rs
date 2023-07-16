@@ -1,11 +1,13 @@
 use super::{JoypadState, System};
 use crate::core::wdc65c816::{Bus, Core};
 use crate::util::MirrorVec;
+use apu::Apu;
 use memory::{Page, TOTAL_PAGES};
 use std::error::Error;
 use std::fmt;
 use tracing::{debug, warn};
 
+mod apu;
 mod memory;
 
 const WIDTH: usize = 512;
@@ -57,6 +59,7 @@ pub struct Hardware {
     pages: [Page; TOTAL_PAGES],
     rom: MirrorVec<u8>,
     wram: MirrorVec<u8>,
+    apu: Apu,
 }
 
 impl Hardware {
@@ -69,6 +72,28 @@ impl Hardware {
             pages,
             rom: rom_data.into(),
             wram: MirrorVec::new(WRAM_SIZE),
+            apu: Apu::new(),
+        }
+    }
+
+    fn read_bus_b(&mut self, address: u8) -> u8 {
+        match address {
+            0x00..=0x3f => todo!("PPU reads"),
+            0x40..=0x7f => self.apu.read(address),
+            0x80..=0x83 => todo!("WRAM registers"),
+            _ => {
+                warn!("Unmapped Bus B read: {:02X}", address);
+                self.mdr
+            }
+        }
+    }
+
+    fn write_bus_b(&mut self, address: u8, value: u8) {
+        match address {
+            0x00..=0x3f => (), // TODO: PPU writes
+            0x40..=0x7f => self.apu.write(address, value),
+            0x80..=0x83 => todo!("WRAM registers"),
+            _ => warn!("Unmapped Bus B write: {:02X} <= {:02X}", address, value),
         }
     }
 
@@ -104,10 +129,16 @@ impl Bus for Hardware {
         self.mdr = match self.pages[(address >> 13) as usize] {
             Page::Rom(offset) => self.rom[(offset | (address & 0x1fff)) as usize],
             Page::Wram(offset) => self.wram[(offset | (address & 0x1fff)) as usize],
-            Page::ExternalRegisters => panic!("External register reads not yet implemented"),
+            Page::ExternalRegisters => match address & 0x1f00 {
+                0x0100 => self.read_bus_b(address as u8),
+                _ => {
+                    warn!("Unmapped external register read: {:06X}", address);
+                    self.mdr
+                }
+            },
             Page::InternalRegisters => panic!("Internal register reads not yet implemented"),
             Page::OpenBus => {
-                warn!("Read from unmapped area: {:06X}", address);
+                warn!("Unmapped Bus A read: {:06X}", address);
                 self.mdr
             }
         };
@@ -122,11 +153,17 @@ impl Bus for Hardware {
         self.mdr = value;
 
         match self.pages[(address >> 13) as usize] {
-            Page::Rom(..) => warn!("Write to ROM area: {:06X}", address),
+            Page::Rom(..) => warn!("Write to ROM area: {:06X} <= {:02X}", address, value),
             Page::Wram(offset) => self.wram[(offset | (address & 0x1fff)) as usize] = value,
-            Page::ExternalRegisters => (), // TODO
+            Page::ExternalRegisters => match address & 0x1f00 {
+                0x0100 => self.write_bus_b(address as u8, value),
+                _ => warn!(
+                    "Unmapped external register write: {:06X} <= {:02X}",
+                    address, value
+                ),
+            },
             Page::InternalRegisters => (), // TODO
-            Page::OpenBus => warn!("Write to unmapped area: {:06X}", address),
+            Page::OpenBus => warn!("Unmapped Bus A write: {:06X} <= {:02X}", address, value),
         }
     }
 }
