@@ -258,14 +258,14 @@ impl<T: Bus> Core<T> {
             //0xf9 => instr::read::<addr::AbsoluteY, op::Sbc>(self),
 
             // +0x0d
-            //0x0d => instr::read::<addr::Absolute, op::Ora>(self),
-            //0x2d => instr::read::<addr::Absolute, op::And>(self),
-            //0x4d => instr::read::<addr::Absolute, op::Eor>(self),
-            //0x6d => instr::read::<addr::Absolute, op::Adc>(self),
+            //0x0d => instr::read::<M, addr::Absolute, op::Ora>(self),
+            //0x2d => instr::read::<M, addr::Absolute, op::And>(self),
+            //0x4d => instr::read::<M, addr::Absolute, op::Eor>(self),
+            //0x6d => instr::read::<M, addr::Absolute, op::Adc>(self),
             0x8d => instr::write::<M, addr::Absolute, op::Sta>(self),
-            //0xad => instr::read::<addr::Absolute, op::Lda>(self),
-            //0xcd => instr::read::<addr::Absolute, op::Cmp>(self),
-            //0xed => instr::read::<addr::Absolute, op::Sbc>(self),
+            //0xad => instr::read::<M, addr::Absolute, op::Lda>(self),
+            //0xcd => instr::read::<M, addr::Absolute, op::Cmp>(self),
+            //0xed => instr::read::<M, addr::Absolute, op::Sbc>(self),
 
             // +0x1d
             //0x1d => instr::read::<addr::AbsoluteX, op::Ora>(self),
@@ -345,6 +345,25 @@ impl<T: Bus> Core<T> {
             0x7b => instr::tdc(self),
             0xfb => instr::xce(self),
 
+            // +0x0f
+            //0x0f => instr::read::<M, addr::AbsoluteLong, op::Ora>(self),
+            //0x2f => instr::read::<M, addr::AbsoluteLong, op::And>(self),
+            //0x4f => instr::read::<M, addr::AbsoluteLong, op::Eor>(self),
+            //0x6f => instr::read::<M, addr::AbsoluteLong, op::Adc>(self),
+            0x8f => instr::write::<M, addr::AbsoluteLong, op::Sta>(self),
+            //0xaf => instr::read::<M, addr::AbsoluteLong, op::Lda>(self),
+            //0xcf => instr::read::<M, addr::AbsoluteLong, op::Cmp>(self),
+            //0xef => instr::read::<M, addr::AbsoluteLong, op::Sbc>(self),
+
+            // +0x1f
+            //0x1f => instr::read::<M, addr::AbsoluteLongX, op::Ora>(self),
+            //0x3f => instr::read::<M, addr::AbsoluteLongX, op::And>(self),
+            //0x5f => instr::read::<M, addr::AbsoluteLongX, op::Eor>(self),
+            //0x7f => instr::read::<M, addr::AbsoluteLongX, op::Adc>(self),
+            0x9f => instr::write::<M, addr::AbsoluteLongX, op::Sta>(self),
+            //0xbf => instr::read::<M, addr::AbsoluteLongX, op::Lda>(self),
+            //0xdf => instr::read::<M, addr::AbsoluteLongX, op::Cmp>(self),
+            //0xff => instr::read::<M, addr::AbsoluteLongX, op::Sbc>(self),
             opcode => panic!("Opcode {:02X} not yet implemented", opcode),
         }
     }
@@ -379,6 +398,13 @@ impl<T: Bus> Core<T> {
         let low = self.next_byte();
         let high = self.next_byte();
         u16::from_le_bytes([low, high])
+    }
+
+    fn next_long(&mut self) -> u32 {
+        let low = self.next_byte();
+        let high = self.next_byte();
+        let bank = self.next_byte();
+        u32::from_le_bytes([low, high, bank, 0])
     }
 
     fn flags_to_u8<const E: bool>(&self, break_flag: bool) -> u8 {
