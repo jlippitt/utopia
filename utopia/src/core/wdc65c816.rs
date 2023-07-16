@@ -117,7 +117,7 @@ impl<T: Bus> Core<T> {
 
             // +0x00
             //0x00 => instr::brk(self),
-            //0x20 => instr::jsr(self),
+            0x20 => instr::jsr::<E>(self),
             //0x40 => instr::rti(self),
             //0x60 => instr::rts(self),
             0x80 => instr::branch::<E, op::Bra>(self),
@@ -388,6 +388,16 @@ impl<T: Bus> Core<T> {
     fn write(&mut self, address: u32, value: u8) {
         debug!("  {:06X} <= {:02X}", address, value);
         self.bus.write(address, value);
+    }
+
+    fn push<const E: bool>(&mut self, value: u8) {
+        self.write(self.s as u32, value);
+
+        if E {
+            self.s = (self.s & 0xff00) | (self.s.wrapping_sub(1) & 0xff);
+        } else {
+            self.s = self.s.wrapping_sub(1);
+        }
     }
 
     fn next_byte(&mut self) -> u8 {

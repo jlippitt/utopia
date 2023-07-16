@@ -1,4 +1,4 @@
-use super::super::{Bus, Core, IrqDisable, EMULATION_STACK_PAGE};
+use super::super::{Bus, Core, IrqDisable};
 use tracing::debug;
 
 const EMULATION_RESET_VECTOR: u16 = 0xfffc;
@@ -17,7 +17,7 @@ pub fn reset(core: &mut Core<impl Bus>) {
 
     for _ in 0..=2 {
         core.read(core.s as u32);
-        core.s = EMULATION_STACK_PAGE | (core.s.wrapping_sub(1) & 0xff);
+        core.s = (core.s & 0xff00) | (core.s.wrapping_sub(1) & 0xff);
     }
 
     jump_to_vector(core, EMULATION_RESET_VECTOR);
