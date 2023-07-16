@@ -6,6 +6,18 @@ pub trait ReadOperator {
     fn apply16(core: &mut Core<impl Bus>, value: u16);
 }
 
+fn compare8(core: &mut Core<impl Bus>, lhs: u8, rhs: u8) {
+    let (result, borrow) = lhs.overflowing_sub(rhs);
+    core.set_nz8(result);
+    core.flags.c = !borrow;
+}
+
+fn compare16(core: &mut Core<impl Bus>, lhs: u16, rhs: u16) {
+    let (result, borrow) = lhs.overflowing_sub(rhs);
+    core.set_nz16(result);
+    core.flags.c = !borrow;
+}
+
 pub struct Lda;
 
 impl ReadOperator for Lda {
@@ -51,5 +63,47 @@ impl ReadOperator for Ldy {
     fn apply16(core: &mut Core<impl Bus>, value: u16) {
         core.y = value;
         core.set_nz16(value);
+    }
+}
+
+pub struct Cmp;
+
+impl ReadOperator for Cmp {
+    const NAME: &'static str = "CMP";
+
+    fn apply8(core: &mut Core<impl Bus>, value: u8) {
+        compare8(core, core.a as u8, value);
+    }
+
+    fn apply16(core: &mut Core<impl Bus>, value: u16) {
+        compare16(core, core.a, value);
+    }
+}
+
+pub struct Cpx;
+
+impl ReadOperator for Cpx {
+    const NAME: &'static str = "CPX";
+
+    fn apply8(core: &mut Core<impl Bus>, value: u8) {
+        compare8(core, core.x as u8, value);
+    }
+
+    fn apply16(core: &mut Core<impl Bus>, value: u16) {
+        compare16(core, core.x, value);
+    }
+}
+
+pub struct Cpy;
+
+impl ReadOperator for Cpy {
+    const NAME: &'static str = "CPY";
+
+    fn apply8(core: &mut Core<impl Bus>, value: u8) {
+        compare8(core, core.y as u8, value);
+    }
+
+    fn apply16(core: &mut Core<impl Bus>, value: u16) {
+        compare16(core, core.y, value);
     }
 }

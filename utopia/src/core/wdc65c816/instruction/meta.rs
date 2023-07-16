@@ -18,6 +18,23 @@ pub fn immediate<const MX: bool, Op: ReadOperator>(core: &mut Core<impl Bus>) {
     }
 }
 
+pub fn read<const MX: bool, Addr: AddressMode, Op: ReadOperator>(core: &mut Core<impl Bus>) {
+    debug!("{}.{} {}", Op::NAME, super::size(MX), Addr::NAME);
+    let address = Addr::resolve(core, false);
+
+    if MX {
+        core.poll();
+        let value = core.read(address);
+        Op::apply8(core, value);
+    } else {
+        let low = core.read(address);
+        core.poll();
+        let address_high = address.wrapping_add(1) & Addr::WRAP;
+        let high = core.read(address_high);
+        Op::apply16(core, u16::from_le_bytes([low, high]));
+    }
+}
+
 pub fn write<const MX: bool, Addr: AddressMode, Op: WriteOperator>(core: &mut Core<impl Bus>) {
     debug!("{}.{} {}", Op::NAME, super::size(MX), Addr::NAME);
     let address = Addr::resolve(core, true);

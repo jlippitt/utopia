@@ -122,8 +122,8 @@ impl<T: Bus> Core<T> {
             //0x60 => instr::rts(self),
             0x80 => instr::branch::<E, op::Bra>(self),
             0xa0 => instr::immediate::<X, op::Ldy>(self),
-            //0xc0 => instr::immediate::<X, op::Cpy>(self),
-            //0xe0 => instr::immediate::<X, op::Cpx>(self),
+            0xc0 => instr::immediate::<X, op::Cpy>(self),
+            0xe0 => instr::immediate::<X, op::Cpx>(self),
 
             // +0x10
             0x10 => instr::branch::<E, op::Bpl>(self),
@@ -181,9 +181,9 @@ impl<T: Bus> Core<T> {
             //0x4c => instr::jmp(self),
             //0x6c => instr::jmp_indirect(self),
             0x8c => instr::write::<X, addr::Absolute, op::Sty>(self),
-            //0xac => instr::read::<addr::Absolute, op::Ldy>(self),
-            //0xcc => instr::read::<addr::Absolute, op::Cpy>(self),
-            //0xec => instr::read::<addr::Absolute, op::Cpx>(self),
+            0xac => instr::read::<X, addr::Absolute, op::Ldy>(self),
+            0xcc => instr::read::<X, addr::Absolute, op::Cpy>(self),
+            0xec => instr::read::<X, addr::Absolute, op::Cpx>(self),
 
             // +0x1c
             //0x1c => instr::read::<addr::AbsoluteX, op::Nop>(self),
@@ -244,7 +244,7 @@ impl<T: Bus> Core<T> {
             0x69 => instr::immediate::<M, op::Adc>(self),
             //0x89 => instr::immediate::<M, op::BitImmediate>(self),
             0xa9 => instr::immediate::<M, op::Lda>(self),
-            //0xc9 => instr::immediate::<M, op::Cmp>(self),
+            0xc9 => instr::immediate::<M, op::Cmp>(self),
             0xe9 => instr::immediate::<M, op::Sbc>(self),
 
             // +0x19
@@ -261,11 +261,11 @@ impl<T: Bus> Core<T> {
             //0x0d => instr::read::<M, addr::Absolute, op::Ora>(self),
             //0x2d => instr::read::<M, addr::Absolute, op::And>(self),
             //0x4d => instr::read::<M, addr::Absolute, op::Eor>(self),
-            //0x6d => instr::read::<M, addr::Absolute, op::Adc>(self),
+            0x6d => instr::read::<M, addr::Absolute, op::Adc>(self),
             0x8d => instr::write::<M, addr::Absolute, op::Sta>(self),
-            //0xad => instr::read::<M, addr::Absolute, op::Lda>(self),
-            //0xcd => instr::read::<M, addr::Absolute, op::Cmp>(self),
-            //0xed => instr::read::<M, addr::Absolute, op::Sbc>(self),
+            0xad => instr::read::<M, addr::Absolute, op::Lda>(self),
+            0xcd => instr::read::<M, addr::Absolute, op::Cmp>(self),
+            0xed => instr::read::<M, addr::Absolute, op::Sbc>(self),
 
             // +0x1d
             //0x1d => instr::read::<addr::AbsoluteX, op::Ora>(self),
@@ -324,7 +324,7 @@ impl<T: Bus> Core<T> {
             //0x4e => instr::modify::<addr::Absolute, op::Lsr>(self),
             //0x6e => instr::modify::<addr::Absolute, op::Ror>(self),
             0x8e => instr::write::<X, addr::Absolute, op::Stx>(self),
-            //0xae => instr::read::<addr::Absolute, op::Ldx>(self),
+            0xae => instr::read::<X, addr::Absolute, op::Ldx>(self),
             //0xce => instr::modify::<addr::Absolute, op::Dec>(self),
             //0xee => instr::modify::<addr::Absolute, op::Inc>(self),
 
@@ -351,21 +351,22 @@ impl<T: Bus> Core<T> {
             //0x0f => instr::read::<M, addr::AbsoluteLong, op::Ora>(self),
             //0x2f => instr::read::<M, addr::AbsoluteLong, op::And>(self),
             //0x4f => instr::read::<M, addr::AbsoluteLong, op::Eor>(self),
-            //0x6f => instr::read::<M, addr::AbsoluteLong, op::Adc>(self),
+            0x6f => instr::read::<M, addr::AbsoluteLong, op::Adc>(self),
             0x8f => instr::write::<M, addr::AbsoluteLong, op::Sta>(self),
-            //0xaf => instr::read::<M, addr::AbsoluteLong, op::Lda>(self),
-            //0xcf => instr::read::<M, addr::AbsoluteLong, op::Cmp>(self),
-            //0xef => instr::read::<M, addr::AbsoluteLong, op::Sbc>(self),
+            0xaf => instr::read::<M, addr::AbsoluteLong, op::Lda>(self),
+            0xcf => instr::read::<M, addr::AbsoluteLong, op::Cmp>(self),
+            0xef => instr::read::<M, addr::AbsoluteLong, op::Sbc>(self),
 
             // +0x1f
             //0x1f => instr::read::<M, addr::AbsoluteLongX, op::Ora>(self),
             //0x3f => instr::read::<M, addr::AbsoluteLongX, op::And>(self),
             //0x5f => instr::read::<M, addr::AbsoluteLongX, op::Eor>(self),
-            //0x7f => instr::read::<M, addr::AbsoluteLongX, op::Adc>(self),
+            0x7f => instr::read::<M, addr::AbsoluteLongX, op::Adc>(self),
             0x9f => instr::write::<M, addr::AbsoluteLongX, op::Sta>(self),
-            //0xbf => instr::read::<M, addr::AbsoluteLongX, op::Lda>(self),
-            //0xdf => instr::read::<M, addr::AbsoluteLongX, op::Cmp>(self),
-            //0xff => instr::read::<M, addr::AbsoluteLongX, op::Sbc>(self),
+            0xbf => instr::read::<M, addr::AbsoluteLongX, op::Lda>(self),
+            0xdf => instr::read::<M, addr::AbsoluteLongX, op::Cmp>(self),
+            0xff => instr::read::<M, addr::AbsoluteLongX, op::Sbc>(self),
+
             opcode => panic!("Opcode {:02X} not yet implemented", opcode),
         }
     }
