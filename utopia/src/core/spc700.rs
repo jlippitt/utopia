@@ -6,6 +6,7 @@ mod instruction;
 mod operator;
 
 pub trait Bus: fmt::Display {
+    fn idle(&mut self);
     fn read(&mut self, address: u16) -> u8;
     fn write(&mut self, address: u16, value: u8);
 }
@@ -67,6 +68,16 @@ impl<T: Bus> Core<T> {
         use operator as op;
 
         match self.next_byte() {
+            // +0x10
+            0x10 => instr::branch::<op::Bpl>(self),
+            0x30 => instr::branch::<op::Bmi>(self),
+            0x50 => instr::branch::<op::Bvc>(self),
+            0x70 => instr::branch::<op::Bvs>(self),
+            0x90 => instr::branch::<op::Bcc>(self),
+            0xb0 => instr::branch::<op::Bcs>(self),
+            0xd0 => instr::branch::<op::Bne>(self),
+            0xf0 => instr::branch::<op::Beq>(self),
+
             // +0x06
             0xc6 => instr::write::<addr::XIndirect, addr::A>(self),
 
@@ -82,6 +93,10 @@ impl<T: Bus> Core<T> {
 
             opcode => todo!("SPC700 opcode {:02X}", opcode),
         }
+    }
+
+    fn idle(&mut self) {
+        self.bus.idle();
     }
 
     fn read(&mut self, address: u16) -> u8 {

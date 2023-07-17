@@ -79,6 +79,10 @@ impl Hardware {
 }
 
 impl Bus for Hardware {
+    fn idle(&mut self) {
+        self.step();
+    }
+
     fn read(&mut self, address: u16) -> u8 {
         self.step();
 
