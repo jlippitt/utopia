@@ -387,7 +387,7 @@ impl<T: Bus> Core<T> {
             0xdf => instr::read::<M, addr::AbsoluteLongX, op::Cmp>(self),
             0xff => instr::read::<M, addr::AbsoluteLongX, op::Sbc>(self),
 
-            opcode => panic!("Opcode {:02X} not yet implemented", opcode),
+            opcode => todo!("WDC65c816 opcode {:02X}", opcode),
         }
     }
 

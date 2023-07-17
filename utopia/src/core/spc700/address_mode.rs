@@ -8,6 +8,7 @@ pub trait ReadAddress {
 
 pub trait WriteAddress: ReadAddress {
     fn modify<T: Bus>(core: &mut Core<T>, callback: impl FnOnce(&mut Core<T>, u8) -> u8);
+    fn finalize(_core: &mut Core<impl Bus>) {}
 }
 
 macro_rules! register {
@@ -75,6 +76,10 @@ impl<T: Resolver> WriteAddress for T {
         let value = core.read(address);
         let result = callback(core, value);
         core.write(address, result);
+    }
+
+    fn finalize(core: &mut Core<impl Bus>) {
+        core.idle();
     }
 }
 

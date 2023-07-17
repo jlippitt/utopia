@@ -84,6 +84,9 @@ impl<T: Bus> Core<T> {
             // +0x08
             0xe8 => instr::binary::<addr::A, addr::Immediate, op::Mov>(self),
 
+            // +0x18
+            0x78 => instr::compare::<addr::Direct, addr::Immediate>(self),
+
             // +0x0d
             0xcd => instr::binary::<addr::X, addr::Immediate, op::Mov>(self),
 
