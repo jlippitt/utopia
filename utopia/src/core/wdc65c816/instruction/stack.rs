@@ -9,10 +9,10 @@ pub fn php<const E: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn pha<const E: bool, const M: bool>(core: &mut Core<impl Bus>) {
-    debug!("PHA");
+    debug!("PHA.{}", super::size(M));
     core.idle();
 
-    if M {
+    if !M {
         core.push::<E>((core.a >> 8) as u8);
     }
 
