@@ -1,7 +1,8 @@
 use std::fmt;
+use tracing::debug;
 
 pub trait Bus: fmt::Display {
-    //
+    fn read(&mut self, address: u16) -> u8;
 }
 
 pub struct Flags {
@@ -32,7 +33,7 @@ impl<T: Bus> Core<T> {
             x: 0,
             y: 0,
             sp: 0,
-            pc: 0,
+            pc: 0xffc0,
             flags: Flags {
                 n: 0,
                 v: 0,
@@ -56,7 +57,21 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn step(&mut self) {
-        todo!("SPC700 instructions");
+        match self.next_byte() {
+            opcode => todo!("SPC700 Opcode {:02X}", opcode),
+        }
+    }
+
+    fn read(&mut self, address: u16) -> u8 {
+        let value = self.bus.read(address);
+        debug!("  {:04X} => {:02X}", address, value);
+        value
+    }
+
+    fn next_byte(&mut self) -> u8 {
+        let value = self.read(self.pc);
+        self.pc = self.pc.wrapping_add(1);
+        value
     }
 }
 

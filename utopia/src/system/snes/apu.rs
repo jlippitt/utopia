@@ -1,9 +1,12 @@
 use crate::core::spc700::{Bus, Core};
+use crate::util::MirrorVec;
 use std::fmt;
 use tracing::debug;
 
 const APU_CLOCK_RATE: i64 = 1024000;
 const CPU_CLOCK_RATE: i64 = 21477272;
+
+const RAM_SIZE: usize = 65536;
 
 pub struct Apu {
     core: Core<Hardware>,
@@ -11,8 +14,8 @@ pub struct Apu {
 }
 
 impl Apu {
-    pub fn new() -> Self {
-        let hw = Hardware::new();
+    pub fn new(ipl_rom: Vec<u8>) -> Self {
+        let hw = Hardware::new(ipl_rom);
         let core = Core::new(hw);
 
         Self {
@@ -46,19 +49,31 @@ impl Apu {
 struct Hardware {
     time_remaining: i64,
     cycles: u64,
+    ram: MirrorVec<u8>,
+    ipl_rom: MirrorVec<u8>,
 }
 
 impl Hardware {
-    pub fn new() -> Self {
+    pub fn new(ipl_rom: Vec<u8>) -> Self {
         Self {
             time_remaining: 0,
             cycles: 0,
+            ram: MirrorVec::new(RAM_SIZE),
+            ipl_rom: ipl_rom.into(),
         }
     }
 }
 
 impl Bus for Hardware {
-    //
+    fn read(&mut self, address: u16) -> u8 {
+        if (address & 0xfff0) == (address & 0x00f0) {
+            todo!("SMP registers")
+        } else if address >= 0xffc0 {
+            self.ipl_rom[address as usize]
+        } else {
+            self.ram[address as usize]
+        }
+    }
 }
 
 impl fmt::Display for Hardware {

@@ -1,4 +1,4 @@
-use super::{JoypadState, System};
+use super::{BiosLoader, JoypadState, System};
 use crate::core::wdc65c816::{Bus, Core};
 use crate::util::MirrorVec;
 use apu::Apu;
@@ -25,8 +25,9 @@ pub struct Snes {
 }
 
 impl Snes {
-    pub fn new(rom_data: Vec<u8>) -> Result<Self, Box<dyn Error>> {
-        let hw = Hardware::new(rom_data);
+    pub fn new(rom_data: Vec<u8>, bios_loader: &impl BiosLoader) -> Result<Self, Box<dyn Error>> {
+        let ipl_rom = bios_loader.load("ipl_rom")?;
+        let hw = Hardware::new(rom_data, ipl_rom);
         let core = Core::new(hw);
         Ok(Snes { core })
     }
@@ -63,7 +64,7 @@ pub struct Hardware {
 }
 
 impl Hardware {
-    pub fn new(rom_data: Vec<u8>) -> Self {
+    pub fn new(rom_data: Vec<u8>, ipl_rom: Vec<u8>) -> Self {
         let pages = memory::map();
 
         Self {
@@ -72,7 +73,7 @@ impl Hardware {
             pages,
             rom: rom_data.into(),
             wram: MirrorVec::new(WRAM_SIZE),
-            apu: Apu::new(),
+            apu: Apu::new(ipl_rom),
         }
     }
 

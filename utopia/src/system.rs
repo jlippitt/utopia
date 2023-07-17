@@ -3,7 +3,6 @@ use nes::Nes;
 use snes::Snes;
 use std::error::Error;
 use std::path::Path;
-use std::rc::Rc;
 
 mod gb;
 mod nes;
@@ -58,7 +57,7 @@ pub fn create(
     Ok(match extension {
         "gb" => Box::new(GameBoy::new(rom_data, bios_loader, options.skip_boot)?),
         "nes" => Box::new(Nes::new(rom_data)?),
-        "sfc" | "smc" => Box::new(Snes::new(rom_data)?),
+        "sfc" | "smc" => Box::new(Snes::new(rom_data, bios_loader)?),
         _ => Err("ROM type not supported".to_owned())?,
     })
 }
