@@ -1,7 +1,7 @@
 use crate::core::spc700::{Bus, Core};
 use crate::util::MirrorVec;
 use std::fmt;
-use tracing::debug;
+use tracing::{debug, debug_span};
 
 const APU_CLOCK_RATE: i64 = 1024000;
 const CPU_CLOCK_RATE: i64 = 21477272;
@@ -33,6 +33,10 @@ impl Apu {
     }
 
     pub fn run_until(&mut self, cpu_cycles: u64) {
+        debug!("[CPU:{} => SMP:{}]", cpu_cycles, self.core.bus().cycles);
+
+        let _span = debug_span!("spc700").entered();
+
         debug!("[CPU:{} => SMP:{}]", cpu_cycles, self.core.bus().cycles);
 
         self.core.bus_mut().time_remaining +=

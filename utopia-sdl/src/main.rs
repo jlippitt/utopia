@@ -32,13 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let rom_data = fs::read(&args.rom_path)?;
 
-    #[cfg(debug_assertions)]
-    let subscriber = log::create_debug_writer("main")?;
-
-    #[cfg(not(debug_assertions))]
-    let subscriber = std::io::stdout;
-
-    let _guard = log::set_subscriber(subscriber);
+    let _guard = log::init();
 
     let options = Options {
         skip_boot: args.skip_boot,
