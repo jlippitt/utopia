@@ -71,12 +71,13 @@ impl<T: Bus> Core<T> {
             0xc6 => instr::write::<addr::XIndirect, addr::A>(self),
 
             // +0x08
-            0xe8 => instr::read::<addr::A, addr::Immediate, op::Mov>(self),
+            0xe8 => instr::binary::<addr::A, addr::Immediate, op::Mov>(self),
 
             // +0x0d
-            0xcd => instr::read::<addr::X, addr::Immediate, op::Mov>(self),
+            0xcd => instr::binary::<addr::X, addr::Immediate, op::Mov>(self),
 
             // +0x1d
+            0x1d => instr::unary::<addr::X, op::Dec>(self),
             0xbd => instr::write::<addr::SP, addr::X>(self),
 
             opcode => todo!("SPC700 opcode {:02X}", opcode),
