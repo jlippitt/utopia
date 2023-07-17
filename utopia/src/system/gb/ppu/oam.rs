@@ -5,20 +5,22 @@ const TOTAL_SPRITES: usize = OAM_SIZE / 4;
 const MAX_SPRITES_PER_LINE: usize = 10;
 
 #[derive(Copy, Clone, Default)]
-struct Sprite {
-    y: i32,
-    x: i32,
-    chr: u8,
-    palette: bool,
-    flip_x: bool,
-    flip_y: bool,
-    below_bg: bool,
+pub struct Sprite {
+    pub y: i32,
+    pub x: i32,
+    pub chr: u8,
+    pub palette: bool,
+    pub flip_x: bool,
+    pub flip_y: bool,
+    pub below_bg: bool,
 }
 
 pub struct Oam {
     data: Vec<u8>,
     sprites: Vec<Sprite>,
     selected: [usize; MAX_SPRITES_PER_LINE],
+    read_index: usize,
+    write_index: usize,
 }
 
 impl Oam {
@@ -27,6 +29,8 @@ impl Oam {
             data: vec![0; OAM_SIZE],
             sprites: vec![Default::default(); TOTAL_SPRITES],
             selected: [0; MAX_SPRITES_PER_LINE],
+            read_index: 0,
+            write_index: 0,
         }
     }
 
@@ -68,20 +72,21 @@ impl Oam {
     }
 
     pub fn select_sprites(&mut self, line: i32) {
-        let mut write_index: usize = 0;
+        self.read_index = 0;
+        self.write_index = 0;
 
-        for (read_index, sprite) in self.sprites.iter().enumerate() {
+        for (sprite_id, sprite) in self.sprites.iter().enumerate() {
             // TODO: 8x16 sprites
             if sprite.y > line || (sprite.y + 8) <= line {
                 continue;
             }
 
-            if write_index >= MAX_SPRITES_PER_LINE {
+            if self.write_index >= MAX_SPRITES_PER_LINE {
                 debug!("Line {}: Sprite Overflow", line);
                 break;
             }
 
-            let mut insert_index = write_index;
+            let mut insert_index = self.write_index;
 
             // Sort by X coordinate upon insert
             while insert_index > 0 {
@@ -93,11 +98,23 @@ impl Oam {
                 insert_index -= 1;
             }
 
-            self.selected[insert_index] = read_index;
+            self.selected[insert_index] = sprite_id;
 
-            write_index += 1;
+            self.write_index += 1;
         }
 
-        debug!("Line {}: {} Sprites Selected", line, write_index);
+        debug!("Line {}: {} Sprites Selected", line, self.write_index);
+    }
+
+    pub fn current_sprite(&self) -> Option<&Sprite> {
+        if self.read_index < self.write_index {
+            Some(&self.sprites[self.selected[self.read_index]])
+        } else {
+            None
+        }
+    }
+
+    pub fn next_sprite(&mut self) {
+        self.read_index += 1;
     }
 }

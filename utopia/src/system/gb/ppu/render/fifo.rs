@@ -1,9 +1,11 @@
-pub struct Fifo {
+use super::super::oam::Sprite;
+
+pub struct BackgroundFifo {
     chr: (u8, u8),
     remaining: u8,
 }
 
-impl Fifo {
+impl BackgroundFifo {
     pub fn new() -> Self {
         Self {
             chr: (0, 0),
@@ -31,5 +33,29 @@ impl Fifo {
         } else {
             None
         }
+    }
+}
+
+#[derive(Copy, Clone, Default)]
+pub struct SpritePixel {
+    pub color: u8,
+    pub below_bg: bool,
+}
+
+pub struct SpriteFifo {
+    pixels: [SpritePixel; 8],
+    index: usize,
+}
+
+impl SpriteFifo {
+    pub fn new() -> Self {
+        Self {
+            pixels: [Default::default(); 8],
+            index: 0,
+        }
+    }
+
+    pub fn push(&mut self, sprite: &Sprite, chr: (u8, u8)) {
+        //
     }
 }
