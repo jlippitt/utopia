@@ -2,6 +2,7 @@ use super::{Bus, Core};
 
 pub trait ReadAddress {
     const NAME: &'static str;
+    fn init(_core: &mut Core<impl Bus>) {}
     fn read(core: &mut Core<impl Bus>) -> u8;
 }
 
@@ -16,15 +17,18 @@ macro_rules! register {
         impl ReadAddress for $name {
             const NAME: &'static str = stringify!($name);
 
-            fn read(core: &mut Core<impl Bus>) -> u8 {
+            fn init(core: &mut Core<impl Bus>) {
                 core.read(core.pc);
+            }
+
+            fn read(core: &mut Core<impl Bus>) -> u8 {
                 core.$field
             }
         }
 
         impl WriteAddress for $name {
             fn modify<T: Bus>(core: &mut Core<T>, callback: impl FnOnce(&mut Core<T>, u8) -> u8) {
-                let value = core.$field;
+                let value = Self::read(core);
                 let result = callback(core, value);
                 core.$field = result;
             }
@@ -48,21 +52,26 @@ impl ReadAddress for Immediate {
 
 pub trait Resolver {
     const NAME: &'static str;
-    fn resolve(core: &mut Core<impl Bus>, write: bool) -> u16;
+    fn init(_core: &mut Core<impl Bus>) {}
+    fn resolve(core: &mut Core<impl Bus>) -> u16;
 }
 
 impl<T: Resolver> ReadAddress for T {
     const NAME: &'static str = T::NAME;
 
+    fn init(core: &mut Core<impl Bus>) {
+        T::init(core);
+    }
+
     fn read(core: &mut Core<impl Bus>) -> u8 {
-        let address = T::resolve(core, false);
+        let address = T::resolve(core);
         core.read(address)
     }
 }
 
 impl<T: Resolver> WriteAddress for T {
     fn modify<U: Bus>(core: &mut Core<U>, callback: impl FnOnce(&mut Core<U>, u8) -> u8) {
-        let address = T::resolve(core, true);
+        let address = T::resolve(core);
         let value = core.read(address);
         let result = callback(core, value);
         core.write(address, result);
@@ -74,11 +83,11 @@ pub struct XIndirect;
 impl Resolver for XIndirect {
     const NAME: &'static str = "(X)";
 
-    fn resolve(core: &mut Core<impl Bus>, write: bool) -> u16 {
-        if !write {
-            core.read(core.pc);
-        }
+    fn init(core: &mut Core<impl Bus>) {
+        core.read(core.pc);
+    }
 
+    fn resolve(core: &mut Core<impl Bus>) -> u16 {
         core.flags.p | (core.x as u16)
     }
 }
