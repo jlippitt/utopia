@@ -78,6 +78,16 @@ impl<T: Resolver> WriteAddress for T {
     }
 }
 
+pub struct Direct;
+
+impl Resolver for Direct {
+    const NAME: &'static str = "d";
+
+    fn resolve(core: &mut Core<impl Bus>) -> u16 {
+        core.flags.p | (core.next_byte() as u16)
+    }
+}
+
 pub struct XIndirect;
 
 impl Resolver for XIndirect {

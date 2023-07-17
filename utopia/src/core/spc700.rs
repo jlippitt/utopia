@@ -91,6 +91,9 @@ impl<T: Bus> Core<T> {
             0x1d => instr::unary::<addr::X, op::Dec>(self),
             0xbd => instr::write::<addr::SP, addr::X>(self),
 
+            // +0x0f
+            0x8f => instr::write::<addr::Direct, addr::Immediate>(self),
+
             opcode => todo!("SPC700 opcode {:02X}", opcode),
         }
     }

@@ -29,7 +29,9 @@ impl Apu {
     }
 
     pub fn write(&mut self, address: u8, value: u8) {
-        self.core.bus_mut().input_ports[address as usize & 3] = value;
+        let index = address as usize & 3;
+        self.core.bus_mut().input_ports[index] = value;
+        debug!("APU Input Port {}: {:02}", index, value);
     }
 
     pub fn run_until(&mut self, cpu_cycles: u64) {
@@ -87,7 +89,10 @@ impl Bus for Hardware {
         self.step();
 
         if (address & 0xfff0) == 0x00f0 {
-            todo!("SMP registers")
+            match address & 0xff {
+                0xf4..=0xf7 => self.input_ports[address as usize & 3],
+                _ => todo!("SMP register read {:02X}", address),
+            }
         } else if address >= 0xffc0 {
             self.ipl_rom[address as usize]
         } else {
@@ -99,7 +104,14 @@ impl Bus for Hardware {
         self.step();
 
         if (address & 0xfff0) == 0x00f0 {
-            todo!("SMP registers")
+            match address & 0xff {
+                0xf4..=0xf7 => {
+                    let index = address as usize & 3;
+                    self.output_ports[index] = value;
+                    debug!("APU Output Port {}: {:02X}", index, value);
+                }
+                _ => todo!("SMP register write {:02X} <= {:02X}", address, value),
+            }
         } else {
             self.ram[address as usize] = value;
         }
