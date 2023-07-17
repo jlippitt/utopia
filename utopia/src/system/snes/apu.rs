@@ -46,6 +46,7 @@ impl Apu {
 
         while self.core.bus().time_remaining > 0 {
             self.core.step();
+            debug!("{}", self.core);
         }
     }
 }
@@ -66,10 +67,17 @@ impl Hardware {
             ipl_rom: ipl_rom.into(),
         }
     }
+
+    fn step(&mut self) {
+        self.time_remaining -= CPU_CLOCK_RATE;
+        self.cycles += 1;
+    }
 }
 
 impl Bus for Hardware {
     fn read(&mut self, address: u16) -> u8 {
+        self.step();
+
         if (address & 0xfff0) == (address & 0x00f0) {
             todo!("SMP registers")
         } else if address >= 0xffc0 {

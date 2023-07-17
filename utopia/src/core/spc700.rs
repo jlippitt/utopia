@@ -1,6 +1,10 @@
 use std::fmt;
 use tracing::debug;
 
+mod address_mode;
+mod instruction;
+mod operator;
+
 pub trait Bus: fmt::Display {
     fn read(&mut self, address: u16) -> u8;
 }
@@ -57,8 +61,15 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn step(&mut self) {
+        use address_mode as addr;
+        use instruction as instr;
+        use operator as op;
+
         match self.next_byte() {
-            opcode => todo!("SPC700 Opcode {:02X}", opcode),
+            // +0x0d
+            0xcd => instr::read::<addr::X, addr::Immediate, op::Mov>(self),
+
+            opcode => todo!("SPC700 opcode {:02X}", opcode),
         }
     }
 
@@ -72,6 +83,11 @@ impl<T: Bus> Core<T> {
         let value = self.read(self.pc);
         self.pc = self.pc.wrapping_add(1);
         value
+    }
+
+    pub fn set_nz(&mut self, value: u8) {
+        self.flags.n = value;
+        self.flags.z = value;
     }
 }
 
