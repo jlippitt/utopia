@@ -5,6 +5,16 @@ pub trait BranchOperator {
     fn apply(flags: &Flags) -> bool;
 }
 
+pub struct Bra;
+
+impl BranchOperator for Bra {
+    const NAME: &'static str = "BRA";
+
+    fn apply(_flags: &Flags) -> bool {
+        true
+    }
+}
+
 pub struct Bpl;
 
 impl BranchOperator for Bpl {

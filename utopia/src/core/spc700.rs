@@ -87,6 +87,9 @@ impl<T: Bus> Core<T> {
             // +0x18
             0x78 => instr::compare::<addr::Direct, addr::Immediate>(self),
 
+            // +0x1a
+            0xba => instr::movw_read(self),
+
             // +0x0d
             0xcd => instr::binary::<addr::X, addr::Immediate, op::Mov>(self),
 
@@ -95,6 +98,7 @@ impl<T: Bus> Core<T> {
             0xbd => instr::write::<addr::SP, addr::X>(self),
 
             // +0x0f
+            0x2f => instr::branch::<op::Bra>(self),
             0x8f => instr::write::<addr::Direct, addr::Immediate>(self),
 
             opcode => todo!("SPC700 opcode {:02X}", opcode),
@@ -114,6 +118,10 @@ impl<T: Bus> Core<T> {
     fn write(&mut self, address: u16, value: u8) {
         debug!("  {:04X} <= {:02X}", address, value);
         self.bus.write(address, value);
+    }
+
+    fn read_direct(&mut self, address: u8) -> u8 {
+        self.read(self.flags.p | (address as u16))
     }
 
     fn next_byte(&mut self) -> u8 {
