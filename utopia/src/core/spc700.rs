@@ -7,6 +7,7 @@ mod operator;
 
 pub trait Bus: fmt::Display {
     fn read(&mut self, address: u16) -> u8;
+    fn write(&mut self, address: u16, value: u8);
 }
 
 pub struct Flags {
@@ -66,8 +67,17 @@ impl<T: Bus> Core<T> {
         use operator as op;
 
         match self.next_byte() {
+            // +0x06
+            0xc6 => instr::write::<addr::XIndirect, addr::A>(self),
+
+            // +0x08
+            0xe8 => instr::read::<addr::A, addr::Immediate, op::Mov>(self),
+
             // +0x0d
             0xcd => instr::read::<addr::X, addr::Immediate, op::Mov>(self),
+
+            // +0x1d
+            0xbd => instr::write::<addr::SP, addr::X>(self),
 
             opcode => todo!("SPC700 opcode {:02X}", opcode),
         }
@@ -77,6 +87,11 @@ impl<T: Bus> Core<T> {
         let value = self.bus.read(address);
         debug!("  {:04X} => {:02X}", address, value);
         value
+    }
+
+    fn write(&mut self, address: u16, value: u8) {
+        debug!("  {:04X} <= {:02X}", address, value);
+        self.bus.write(address, value);
     }
 
     fn next_byte(&mut self) -> u8 {

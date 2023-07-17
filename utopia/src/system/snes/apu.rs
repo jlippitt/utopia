@@ -78,12 +78,22 @@ impl Bus for Hardware {
     fn read(&mut self, address: u16) -> u8 {
         self.step();
 
-        if (address & 0xfff0) == (address & 0x00f0) {
+        if (address & 0xfff0) == 0x00f0 {
             todo!("SMP registers")
         } else if address >= 0xffc0 {
             self.ipl_rom[address as usize]
         } else {
             self.ram[address as usize]
+        }
+    }
+
+    fn write(&mut self, address: u16, value: u8) {
+        self.step();
+
+        if (address & 0xfff0) == 0x00f0 {
+            todo!("SMP registers")
+        } else {
+            self.ram[address as usize] = value;
         }
     }
 }
