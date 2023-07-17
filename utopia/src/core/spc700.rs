@@ -89,6 +89,7 @@ impl<T: Bus> Core<T> {
 
             // +0x1a
             0xba => instr::movw_read(self),
+            0xda => instr::movw_write(self),
 
             // +0x0d
             0xcd => instr::binary::<addr::X, addr::Immediate, op::Mov>(self),
@@ -122,6 +123,10 @@ impl<T: Bus> Core<T> {
 
     fn read_direct(&mut self, address: u8) -> u8 {
         self.read(self.flags.p | (address as u16))
+    }
+
+    fn write_direct(&mut self, address: u8, value: u8) {
+        self.write(self.flags.p | (address as u16), value);
     }
 
     fn next_byte(&mut self) -> u8 {
