@@ -159,7 +159,7 @@ impl<T: Bus> Core<T> {
             0x08 => instr::php::<E>(self),
             //0x28 => instr::plp::<E>(self),
             0x48 => instr::pha::<E, M>(self),
-            //0x68 => instr::pla(self),
+            0x68 => instr::pla::<E, M>(self),
             0x88 => instr::dey::<X>(self),
             0xa8 => instr::tay::<X>(self),
             0xc8 => instr::iny::<X>(self),
@@ -409,6 +409,16 @@ impl<T: Bus> Core<T> {
     fn write(&mut self, address: u32, value: u8) {
         debug!("  {:06X} <= {:02X}", address, value);
         self.bus.write(address, value);
+    }
+
+    fn pull<const E: bool>(&mut self) -> u8 {
+        if E {
+            self.s = (self.s & 0xff00) | (self.s.wrapping_add(1) & 0xff);
+        } else {
+            self.s = self.s.wrapping_add(1);
+        }
+
+        self.read(self.s as u32)
     }
 
     fn push<const E: bool>(&mut self, value: u8) {
