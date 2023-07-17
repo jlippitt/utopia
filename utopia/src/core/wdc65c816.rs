@@ -305,10 +305,10 @@ impl<T: Bus> Core<T> {
             //0xf6 => instr::modify::<addr::DirectX, op::Inc>(self),
 
             // +0x0a
-            //0x0a => instr::accumulator::<op::Asl>(self),
-            //0x2a => instr::accumulator::<op::Rol>(self),
-            //0x4a => instr::accumulator::<op::Lsr>(self),
-            //0x6a => instr::accumulator::<op::Ror>(self),
+            0x0a => instr::accumulator::<M, op::Asl>(self),
+            0x2a => instr::accumulator::<M, op::Rol>(self),
+            0x4a => instr::accumulator::<M, op::Lsr>(self),
+            0x6a => instr::accumulator::<M, op::Ror>(self),
             0x8a => instr::txa::<M>(self),
             0xaa => instr::tax::<X>(self),
             0xca => instr::dex::<X>(self),

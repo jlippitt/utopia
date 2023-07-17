@@ -1,5 +1,5 @@
 use super::super::address_mode::AddressMode;
-use super::super::operator::{BranchOperator, ReadOperator, WriteOperator};
+use super::super::operator::{BranchOperator, ModifyOperator, ReadOperator, WriteOperator};
 use super::super::{Bus, Core};
 use tracing::debug;
 
@@ -49,6 +49,19 @@ pub fn write<const MX: bool, Addr: AddressMode, Op: WriteOperator>(core: &mut Co
         core.poll();
         let address_high = address.wrapping_add(1) & Addr::WRAP;
         core.write(address_high, (value >> 8) as u8);
+    }
+}
+
+pub fn accumulator<const M: bool, Op: ModifyOperator>(core: &mut Core<impl Bus>) {
+    debug!("{}.{} A", Op::NAME, super::size(M));
+    core.poll();
+    core.idle();
+
+    if M {
+        let result = Op::apply8(core, core.a as u8);
+        core.a = (core.a & 0xff00) | (result as u16);
+    } else {
+        core.a = Op::apply16(core, core.a);
     }
 }
 
