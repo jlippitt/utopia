@@ -24,20 +24,20 @@ impl Apu {
         }
     }
 
-    pub fn read(&self, _address: u8) -> u8 {
-        todo!("APU reads");
+    pub fn read(&self, address: u8) -> u8 {
+        self.core.bus().output_ports[address as usize & 3]
     }
 
-    pub fn write(&self, _address: u8, _value: u8) {
-        todo!("APU writes");
+    pub fn write(&mut self, address: u8, value: u8) {
+        self.core.bus_mut().input_ports[address as usize & 3] = value;
     }
 
     pub fn run_until(&mut self, cpu_cycles: u64) {
-        debug!("[CPU:{} => SMP:{}]", cpu_cycles, self.core.bus().cycles);
+        debug!("[CPU:{} => APU:{}]", cpu_cycles, self.core.bus().cycles);
 
         let _span = debug_span!("spc700").entered();
 
-        debug!("[CPU:{} => SMP:{}]", cpu_cycles, self.core.bus().cycles);
+        debug!("[CPU:{} => APU:{}]", cpu_cycles, self.core.bus().cycles);
 
         self.core.bus_mut().time_remaining +=
             (cpu_cycles - self.prev_cpu_cycles) as i64 * APU_CLOCK_RATE;
@@ -54,6 +54,8 @@ impl Apu {
 struct Hardware {
     time_remaining: i64,
     cycles: u64,
+    input_ports: [u8; 4],
+    output_ports: [u8; 4],
     ram: MirrorVec<u8>,
     ipl_rom: MirrorVec<u8>,
 }
@@ -63,6 +65,8 @@ impl Hardware {
         Self {
             time_remaining: 0,
             cycles: 0,
+            input_ports: [0; 4],
+            output_ports: [0; 4],
             ram: MirrorVec::new(RAM_SIZE),
             ipl_rom: ipl_rom.into(),
         }
