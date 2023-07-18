@@ -88,6 +88,15 @@ impl Hardware {
     fn step(&mut self) {
         self.time_remaining -= CPU_CLOCK_RATE;
         self.cycles += 1;
+
+        if (self.cycles & 15) == 0 {
+            self.timers[2].step();
+
+            if (self.cycles & 127) == 0 {
+                self.timers[0].step();
+                self.timers[1].step();
+            }
+        }
     }
 }
 
@@ -106,9 +115,9 @@ impl Bus for Hardware {
                 0x03 => self.dsp.read(),
                 0x04..=0x07 => self.input_ports[address as usize & 3],
                 0x08..=0x0c => self.ram[address as usize],
-                0x0d => self.timers[0].counter(),
-                0x0e => self.timers[1].counter(),
-                0x0f => self.timers[2].counter(),
+                0x0d => self.timers[0].get_and_reset_output(),
+                0x0e => self.timers[1].get_and_reset_output(),
+                0x0f => self.timers[2].get_and_reset_output(),
                 _ => todo!("SMP register read {:02X}", address),
             }
         } else if address >= 0xffc0 && self.ipl_rom_enabled {
@@ -163,6 +172,6 @@ impl Bus for Hardware {
 
 impl fmt::Display for Hardware {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "")
+        write!(f, "T={}", self.cycles)
     }
 }
