@@ -59,6 +59,7 @@ impl Apu {
 struct Hardware {
     time_remaining: i64,
     cycles: u64,
+    ipl_rom_enabled: bool,
     input_ports: [u8; 4],
     output_ports: [u8; 4],
     ram: MirrorVec<u8>,
@@ -71,6 +72,7 @@ impl Hardware {
         Self {
             time_remaining: 0,
             cycles: 0,
+            ipl_rom_enabled: true,
             input_ports: [0; 4],
             output_ports: [0; 4],
             ram: MirrorVec::new(RAM_SIZE),
@@ -95,12 +97,13 @@ impl Bus for Hardware {
 
         if (address & 0xfff0) == 0x00f0 {
             match address & 0xff {
+                0xf1 => self.ram[address as usize],
                 0xf2 => self.dsp.address(),
                 0xf3 => self.dsp.read(),
                 0xf4..=0xf7 => self.input_ports[address as usize & 3],
                 _ => todo!("SMP register read {:02X}", address),
             }
-        } else if address >= 0xffc0 {
+        } else if address >= 0xffc0 && self.ipl_rom_enabled {
             self.ipl_rom[address as usize]
         } else {
             self.ram[address as usize]
@@ -112,6 +115,26 @@ impl Bus for Hardware {
 
         if (address & 0xfff0) == 0x00f0 {
             match address & 0xff {
+                0xf1 => {
+                    if (value & 0x07) != 0 {
+                        todo!("Timers");
+                    }
+
+                    if (value & 0x10) != 0 {
+                        self.input_ports[0] = 0;
+                        self.input_ports[1] = 0;
+                        debug!("Input Ports 0 & 1 Reset");
+                    }
+
+                    if (value & 0x20) != 0 {
+                        self.input_ports[2] = 0;
+                        self.input_ports[3] = 0;
+                        debug!("Input Ports 2 & 3 Reset");
+                    }
+
+                    self.ipl_rom_enabled = (value & 0x80) != 0;
+                    debug!("IPL ROM Enabled: {}", self.ipl_rom_enabled);
+                }
                 0xf2 => self.dsp.set_address(value),
                 0xf3 => self.dsp.write(value),
                 0xf4..=0xf7 => {
