@@ -89,3 +89,39 @@ impl ModifyOperator for Ror {
         result
     }
 }
+
+pub struct Dec;
+
+impl ModifyOperator for Dec {
+    const NAME: &'static str = "DEC";
+
+    fn apply8(core: &mut Core<impl Bus>, value: u8) -> u8 {
+        let result = value.wrapping_sub(1);
+        core.set_nz8(result);
+        result
+    }
+
+    fn apply16(core: &mut Core<impl Bus>, value: u16) -> u16 {
+        let result = value.wrapping_sub(1);
+        core.set_nz16(result);
+        result
+    }
+}
+
+pub struct Inc;
+
+impl ModifyOperator for Inc {
+    const NAME: &'static str = "INC";
+
+    fn apply8(core: &mut Core<impl Bus>, value: u8) -> u8 {
+        let result = value.wrapping_add(1);
+        core.set_nz8(result);
+        result
+    }
+
+    fn apply16(core: &mut Core<impl Bus>, value: u16) -> u16 {
+        let result = value.wrapping_add(1);
+        core.set_nz16(result);
+        result
+    }
+}
