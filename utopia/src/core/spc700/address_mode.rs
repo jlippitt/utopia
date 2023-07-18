@@ -94,6 +94,22 @@ impl Resolver for Direct {
     }
 }
 
+pub struct DirectIndirectY;
+
+impl Resolver for DirectIndirectY {
+    const NAME: &'static str = "[d]+Y";
+
+    fn resolve(core: &mut Core<impl Bus>) -> u16 {
+        let low_address = Direct::resolve(core);
+        let low = core.read(low_address);
+        let high_address = (low_address & 0xff00) | (low_address.wrapping_add(1) & 0xff);
+        let high = core.read(high_address);
+        let base = u16::from_le_bytes([low, high]);
+        core.idle();
+        base.wrapping_add(core.y as u16)
+    }
+}
+
 pub struct XIndirect;
 
 impl Resolver for XIndirect {

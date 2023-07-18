@@ -152,11 +152,11 @@ impl<T: Bus> Core<T> {
             //0x17 => instr::binary::<addr::A, addr::DirectIndirectY, op::Or>(self),
             //0x37 => instr::binary::<addr::A, addr::DirectIndirectY, op::And>(self),
             //0x57 => instr::binary::<addr::A, addr::DirectIndirectY, op::Eor>(self),
-            //0x77 => instr::compare::<addr::A, addr::DirectIndirectY>(self),
+            0x77 => instr::compare::<addr::A, addr::DirectIndirectY>(self),
             //0x97 => instr::binary::<addr::A, addr::DirectIndirectY, op::Adc>(self),
             //0xb7 => instr::binary::<addr::A, addr::DirectIndirectY, op::Sbc>(self),
-            //0xd7 => instr::write::<addr::DirectIndirectY, addr::A>(self),
-            //0xf7 => instr::binary::<addr::A, addr::DirectIndirectY, op::Mov>(self),
+            0xd7 => instr::write::<addr::DirectIndirectY, addr::A>(self),
+            0xf7 => instr::binary::<addr::A, addr::DirectIndirectY, op::Mov>(self),
 
             // +0x08
             //0x08 => instr::binary::<addr::A, addr::Immediate, op::Or>(self),
@@ -273,6 +273,7 @@ impl<T: Bus> Core<T> {
     }
 
     fn idle(&mut self) {
+        debug!("  IO");
         self.bus.idle();
     }
 
