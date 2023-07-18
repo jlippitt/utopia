@@ -23,6 +23,15 @@ pub fn call(core: &mut Core<impl Bus>) {
     core.idle();
 }
 
+pub fn ret(core: &mut Core<impl Bus>) {
+    debug!("RET");
+    core.read(core.pc);
+    core.idle();
+    let low = core.pop();
+    let high = core.pop();
+    core.pc = u16::from_le_bytes([low, high]);
+}
+
 pub fn branch<Op: BranchOperator>(core: &mut Core<impl Bus>) {
     debug!("{} r", Op::NAME);
     let offset = core.next_byte();

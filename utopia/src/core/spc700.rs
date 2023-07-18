@@ -278,6 +278,7 @@ impl<T: Bus> Core<T> {
 
             // +0x0f
             0x2f => instr::branch::<op::Bra>(self),
+            0x6f => instr::ret(self),
             0x8f => instr::write::<addr::Direct, addr::Immediate>(self),
             0xaf => instr::auto_inc_write(self),
 
@@ -312,6 +313,11 @@ impl<T: Bus> Core<T> {
 
     fn write_direct(&mut self, address: u8, value: u8) {
         self.write(self.flags.p | (address as u16), value);
+    }
+
+    fn pop(&mut self) -> u8 {
+        self.sp = self.sp.wrapping_add(1);
+        self.read(STACK_PAGE | (self.sp as u16))
     }
 
     fn push(&mut self, value: u8) {
