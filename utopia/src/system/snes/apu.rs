@@ -31,7 +31,7 @@ impl Apu {
     pub fn write(&mut self, address: u8, value: u8) {
         let index = address as usize & 3;
         self.core.bus_mut().input_ports[index] = value;
-        debug!("APU Input Port {}: {:02}", index, value);
+        debug!("APU Input Port {}: {:02X}", index, value);
     }
 
     pub fn run_until(&mut self, cpu_cycles: u64) {

@@ -52,7 +52,7 @@ fn map_system_pages(pages: &mut [Page], banks: impl Iterator<Item = u8>) {
 fn map_lo_rom(pages: &mut [Page]) {
     for bank in 0x00..=0x7f {
         let index = bank << 3;
-        let offset = (bank as u32) << 14;
+        let offset = (bank as u32) << 15;
         pages[index | 4] = Page::Rom(offset | 0x0000);
         pages[index | 5] = Page::Rom(offset | 0x2000);
         pages[index | 6] = Page::Rom(offset | 0x4000);
