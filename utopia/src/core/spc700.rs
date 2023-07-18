@@ -283,6 +283,7 @@ impl<T: Bus> Core<T> {
 
             // +0x1f
             0x1f => instr::jmp_x_indirect(self),
+            0x3f => instr::call(self),
             0xbf => instr::auto_inc_read(self),
 
             opcode => todo!("SPC700 opcode {:02X}", opcode),
@@ -311,6 +312,11 @@ impl<T: Bus> Core<T> {
 
     fn write_direct(&mut self, address: u8, value: u8) {
         self.write(self.flags.p | (address as u16), value);
+    }
+
+    fn push(&mut self, value: u8) {
+        self.write(STACK_PAGE | (self.sp as u16), value);
+        self.sp = self.sp.wrapping_sub(1);
     }
 
     fn next_byte(&mut self) -> u8 {

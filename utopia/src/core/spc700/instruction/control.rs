@@ -12,6 +12,17 @@ pub fn jmp_x_indirect(core: &mut Core<impl Bus>) {
     core.pc = u16::from_le_bytes([low, high]);
 }
 
+pub fn call(core: &mut Core<impl Bus>) {
+    debug!("CALL !a");
+    let target = core.next_word();
+    core.idle();
+    core.push((core.pc >> 8) as u8);
+    core.push(core.pc as u8);
+    core.pc = target;
+    core.idle();
+    core.idle();
+}
+
 pub fn branch<Op: BranchOperator>(core: &mut Core<impl Bus>) {
     debug!("{} r", Op::NAME);
     let offset = core.next_byte();
