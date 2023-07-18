@@ -239,10 +239,10 @@ impl<T: Bus> Core<T> {
             //0x2c => instr::unary::<addr::Absolute, op::Rol>(self),
             //0x4c => instr::unary::<addr::Absolute, op::Lsr>(self),
             //0x6c => instr::unary::<addr::Absolute, op::Ror>(self),
-            //0x8c => instr::unary::<addr::Absolute, op::Dec>(self),
-            //0xac => instr::unary::<addr::Absolute, op::Inc>(self),
-            //0xcc => instr::write::<addr::Absolute, addr::Y>(self),
-            //0xec => instr::binary::<addr::Y, addr::Absolute, op::Mov>(self),
+            0x8c => instr::unary::<addr::Absolute, op::Dec>(self),
+            0xac => instr::unary::<addr::Absolute, op::Inc>(self),
+            0xcc => instr::write::<addr::Absolute, addr::Y>(self),
+            0xec => instr::binary::<addr::Y, addr::Absolute, op::Mov>(self),
 
             // +0x1c
             //0x1c => instr::unary::<addr::A, op::Asl>(self),
@@ -271,9 +271,9 @@ impl<T: Bus> Core<T> {
             0xfd => instr::binary::<addr::Y, addr::A, op::Mov>(self),
 
             // +0x1e
-            //0x1e => instr::compare::<addr::X, addr::Absolute>(self),
+            0x1e => instr::compare::<addr::X, addr::Absolute>(self),
             0x3e => instr::compare::<addr::X, addr::Direct>(self),
-            //0x5e => instr::compare::<addr::Y, addr::Absolute>(self),
+            0x5e => instr::compare::<addr::Y, addr::Absolute>(self),
             0x7e => instr::compare::<addr::Y, addr::Direct>(self),
 
             // +0x0f
