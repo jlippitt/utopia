@@ -289,6 +289,7 @@ impl<T: Bus> Core<T> {
             0x6f => instr::ret(self),
             0x8f => instr::write::<addr::Direct, addr::Immediate>(self),
             0xaf => instr::auto_inc_write(self),
+            0xcf => instr::mul(self),
 
             // +0x1f
             0x1f => instr::jmp_x_indirect(self),
