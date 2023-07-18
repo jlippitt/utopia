@@ -16,6 +16,42 @@ impl BinaryOperator for Mov {
     }
 }
 
+pub struct Or;
+
+impl BinaryOperator for Or {
+    const NAME: &'static str = "OR";
+
+    fn apply(core: &mut Core<impl Bus>, lhs: u8, rhs: u8) -> u8 {
+        let result = lhs | rhs;
+        core.set_nz(result);
+        result
+    }
+}
+
+pub struct And;
+
+impl BinaryOperator for And {
+    const NAME: &'static str = "AND";
+
+    fn apply(core: &mut Core<impl Bus>, lhs: u8, rhs: u8) -> u8 {
+        let result = lhs & rhs;
+        core.set_nz(result);
+        result
+    }
+}
+
+pub struct Eor;
+
+impl BinaryOperator for Eor {
+    const NAME: &'static str = "EOR";
+
+    fn apply(core: &mut Core<impl Bus>, lhs: u8, rhs: u8) -> u8 {
+        let result = lhs ^ rhs;
+        core.set_nz(result);
+        result
+    }
+}
+
 pub struct Adc;
 
 impl BinaryOperator for Adc {
@@ -26,8 +62,8 @@ impl BinaryOperator for Adc {
         let carries = lhs ^ rhs ^ result;
         let overflow = (lhs ^ result) & (rhs ^ result);
         core.set_nz(result);
-        core.flags.c = ((carries ^ overflow) & 0x80) != 0;
         core.flags.v = overflow;
+        core.flags.c = ((carries ^ overflow) & 0x80) != 0;
         result
     }
 }

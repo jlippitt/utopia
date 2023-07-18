@@ -91,9 +91,9 @@ impl<T: Bus> Core<T> {
             0xf0 => instr::branch::<op::Beq>(self),
 
             // +0x04
-            //0x04 => instr::binary::<addr::A, addr::Direct, op::Or>(self),
-            //0x24 => instr::binary::<addr::A, addr::Direct, op::And>(self),
-            //0x44 => instr::binary::<addr::A, addr::Direct, op::Eor>(self),
+            0x04 => instr::binary::<addr::A, addr::Direct, op::Or>(self),
+            0x24 => instr::binary::<addr::A, addr::Direct, op::And>(self),
+            0x44 => instr::binary::<addr::A, addr::Direct, op::Eor>(self),
             0x64 => instr::compare::<addr::A, addr::Direct>(self),
             0x84 => instr::binary::<addr::A, addr::Direct, op::Adc>(self),
             0xa4 => instr::binary::<addr::A, addr::Direct, op::Sbc>(self),
@@ -101,9 +101,9 @@ impl<T: Bus> Core<T> {
             0xe4 => instr::binary::<addr::A, addr::Direct, op::Mov>(self),
 
             // +0x14
-            //0x14 => instr::binary::<addr::A, addr::DirectX, op::Or>(self),
-            //0x34 => instr::binary::<addr::A, addr::DirectX, op::And>(self),
-            //0x54 => instr::binary::<addr::A, addr::DirectX, op::Eor>(self),
+            0x14 => instr::binary::<addr::A, addr::DirectX, op::Or>(self),
+            0x34 => instr::binary::<addr::A, addr::DirectX, op::And>(self),
+            0x54 => instr::binary::<addr::A, addr::DirectX, op::Eor>(self),
             0x74 => instr::compare::<addr::A, addr::DirectX>(self),
             0x94 => instr::binary::<addr::A, addr::DirectX, op::Adc>(self),
             0xb4 => instr::binary::<addr::A, addr::DirectX, op::Sbc>(self),
@@ -111,9 +111,9 @@ impl<T: Bus> Core<T> {
             0xf4 => instr::binary::<addr::A, addr::DirectX, op::Mov>(self),
 
             // +0x05
-            //0x05 => instr::binary::<addr::A, addr::Absolute, op::Or>(self),
-            //0x25 => instr::binary::<addr::A, addr::Absolute, op::And>(self),
-            //0x45 => instr::binary::<addr::A, addr::Absolute, op::Eor>(self),
+            0x05 => instr::binary::<addr::A, addr::Absolute, op::Or>(self),
+            0x25 => instr::binary::<addr::A, addr::Absolute, op::And>(self),
+            0x45 => instr::binary::<addr::A, addr::Absolute, op::Eor>(self),
             0x65 => instr::compare::<addr::A, addr::Absolute>(self),
             0x85 => instr::binary::<addr::A, addr::Absolute, op::Adc>(self),
             0xa5 => instr::binary::<addr::A, addr::Absolute, op::Sbc>(self),
@@ -121,9 +121,9 @@ impl<T: Bus> Core<T> {
             0xe5 => instr::binary::<addr::A, addr::Absolute, op::Mov>(self),
 
             // +0x15
-            //0x15 => instr::binary::<addr::A, addr::AbsoluteX, op::Or>(self),
-            //0x35 => instr::binary::<addr::A, addr::AbsoluteX, op::And>(self),
-            //0x55 => instr::binary::<addr::A, addr::AbsoluteX, op::Eor>(self),
+            0x15 => instr::binary::<addr::A, addr::AbsoluteX, op::Or>(self),
+            0x35 => instr::binary::<addr::A, addr::AbsoluteX, op::And>(self),
+            0x55 => instr::binary::<addr::A, addr::AbsoluteX, op::Eor>(self),
             0x75 => instr::compare::<addr::A, addr::AbsoluteX>(self),
             0x95 => instr::binary::<addr::A, addr::AbsoluteX, op::Adc>(self),
             0xb5 => instr::binary::<addr::A, addr::AbsoluteX, op::Sbc>(self),
@@ -131,9 +131,9 @@ impl<T: Bus> Core<T> {
             0xf5 => instr::binary::<addr::A, addr::AbsoluteX, op::Mov>(self),
 
             // +0x06
-            //0x06 => instr::binary::<addr::A, addr::XIndirect, op::Or>(self),
-            //0x26 => instr::binary::<addr::A, addr::XIndirect, op::And>(self),
-            //0x46 => instr::binary::<addr::A, addr::XIndirect, op::Eor>(self),
+            0x06 => instr::binary::<addr::A, addr::XIndirect, op::Or>(self),
+            0x26 => instr::binary::<addr::A, addr::XIndirect, op::And>(self),
+            0x46 => instr::binary::<addr::A, addr::XIndirect, op::Eor>(self),
             0x66 => instr::compare::<addr::A, addr::XIndirect>(self),
             0x86 => instr::binary::<addr::A, addr::XIndirect, op::Adc>(self),
             0xa6 => instr::binary::<addr::A, addr::XIndirect, op::Sbc>(self),
@@ -141,9 +141,9 @@ impl<T: Bus> Core<T> {
             0xe6 => instr::binary::<addr::A, addr::XIndirect, op::Mov>(self),
 
             // +0x16
-            //0x16 => instr::binary::<addr::A, addr::AbsoluteY, op::Or>(self),
-            //0x36 => instr::binary::<addr::A, addr::AbsoluteY, op::And>(self),
-            //0x56 => instr::binary::<addr::A, addr::AbsoluteY, op::Eor>(self),
+            0x16 => instr::binary::<addr::A, addr::AbsoluteY, op::Or>(self),
+            0x36 => instr::binary::<addr::A, addr::AbsoluteY, op::And>(self),
+            0x56 => instr::binary::<addr::A, addr::AbsoluteY, op::Eor>(self),
             0x76 => instr::compare::<addr::A, addr::AbsoluteY>(self),
             0x96 => instr::binary::<addr::A, addr::AbsoluteY, op::Adc>(self),
             0xb6 => instr::binary::<addr::A, addr::AbsoluteY, op::Sbc>(self),
@@ -161,9 +161,9 @@ impl<T: Bus> Core<T> {
             //0xe7 => instr::binary::<addr::A, addr::DirectXIndirect, op::Mov>(self),
 
             // +0x17
-            //0x17 => instr::binary::<addr::A, addr::DirectIndirectY, op::Or>(self),
-            //0x37 => instr::binary::<addr::A, addr::DirectIndirectY, op::And>(self),
-            //0x57 => instr::binary::<addr::A, addr::DirectIndirectY, op::Eor>(self),
+            0x17 => instr::binary::<addr::A, addr::DirectIndirectY, op::Or>(self),
+            0x37 => instr::binary::<addr::A, addr::DirectIndirectY, op::And>(self),
+            0x57 => instr::binary::<addr::A, addr::DirectIndirectY, op::Eor>(self),
             0x77 => instr::compare::<addr::A, addr::DirectIndirectY>(self),
             0x97 => instr::binary::<addr::A, addr::DirectIndirectY, op::Adc>(self),
             0xb7 => instr::binary::<addr::A, addr::DirectIndirectY, op::Sbc>(self),
@@ -171,9 +171,9 @@ impl<T: Bus> Core<T> {
             0xf7 => instr::binary::<addr::A, addr::DirectIndirectY, op::Mov>(self),
 
             // +0x08
-            //0x08 => instr::binary::<addr::A, addr::Immediate, op::Or>(self),
-            //0x28 => instr::binary::<addr::A, addr::Immediate, op::And>(self),
-            //0x48 => instr::binary::<addr::A, addr::Immediate, op::Eor>(self),
+            0x08 => instr::binary::<addr::A, addr::Immediate, op::Or>(self),
+            0x28 => instr::binary::<addr::A, addr::Immediate, op::And>(self),
+            0x48 => instr::binary::<addr::A, addr::Immediate, op::Eor>(self),
             0x68 => instr::compare::<addr::A, addr::Immediate>(self),
             0x88 => instr::binary::<addr::A, addr::Immediate, op::Adc>(self),
             0xa8 => instr::binary::<addr::A, addr::Immediate, op::Sbc>(self),
@@ -181,9 +181,9 @@ impl<T: Bus> Core<T> {
             0xe8 => instr::binary::<addr::A, addr::Immediate, op::Mov>(self),
 
             // +0x18
-            //0x18 => instr::binary::<addr::Direct, addr::Immediate, op::Or>(self),
-            //0x38 => instr::binary::<addr::Direct, addr::Immediate, op::And>(self),
-            //0x58 => instr::binary::<addr::Direct, addr::Immediate, op::Eor>(self),
+            0x18 => instr::binary::<addr::Direct, addr::Immediate, op::Or>(self),
+            0x38 => instr::binary::<addr::Direct, addr::Immediate, op::And>(self),
+            0x58 => instr::binary::<addr::Direct, addr::Immediate, op::Eor>(self),
             0x78 => instr::compare::<addr::Direct, addr::Immediate>(self),
             0x98 => instr::binary::<addr::Direct, addr::Immediate, op::Adc>(self),
             0xb8 => instr::binary::<addr::Direct, addr::Immediate, op::Sbc>(self),
@@ -191,9 +191,9 @@ impl<T: Bus> Core<T> {
             0xf8 => instr::binary::<addr::X, addr::Direct, op::Mov>(self),
 
             // +0x09
-            //0x09 => instr::binary::<addr::Direct, addr::Direct, op::Or>(self),
-            //0x29 => instr::binary::<addr::Direct, addr::Direct, op::And>(self),
-            //0x49 => instr::binary::<addr::Direct, addr::Direct, op::Eor>(self),
+            0x09 => instr::binary::<addr::Direct, addr::Direct, op::Or>(self),
+            0x29 => instr::binary::<addr::Direct, addr::Direct, op::And>(self),
+            0x49 => instr::binary::<addr::Direct, addr::Direct, op::Eor>(self),
             0x69 => instr::compare::<addr::Direct, addr::Direct>(self),
             0x89 => instr::binary::<addr::Direct, addr::Direct, op::Adc>(self),
             0xa9 => instr::binary::<addr::Direct, addr::Direct, op::Sbc>(self),
