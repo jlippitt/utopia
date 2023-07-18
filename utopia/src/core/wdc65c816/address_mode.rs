@@ -3,6 +3,14 @@ use super::{Bus, Core};
 const WRAP16: u32 = 0x0000_ffff;
 const WRAP24: u32 = 0x00ff_ffff;
 
+fn index_direct<const E: bool>(core: &Core<impl Bus>, base: u32, index: u32) -> u32 {
+    if E && (core.d & 0xff) == 0 {
+        (base & 0xff00) | (base.wrapping_add(index) & 0xff)
+    } else {
+        base.wrapping_add(index) & WRAP16
+    }
+}
+
 pub trait AddressMode {
     const NAME: &'static str;
     const WRAP: u32;
@@ -56,6 +64,19 @@ impl AddressMode for Direct {
         }
 
         base.wrapping_add(core.d as u32) & WRAP16
+    }
+}
+
+pub struct DirectX<const E: bool>;
+
+impl<const E: bool> AddressMode for DirectX<E> {
+    const NAME: &'static str = "dp,X";
+    const WRAP: u32 = WRAP16;
+
+    fn resolve(core: &mut Core<impl Bus>, write: bool) -> u32 {
+        let base = Direct::resolve(core, write);
+        core.idle();
+        index_direct::<E>(core, base, core.x as u32)
     }
 }
 
