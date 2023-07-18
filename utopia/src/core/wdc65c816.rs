@@ -339,6 +339,9 @@ impl<T: Bus> Core<T> {
             //0xfe => instr::modify::<addr::AbsoluteX, op::Inc>(self),
 
             // +0x0b
+            0xeb => instr::xba(self),
+
+            // +0x1b
             0x1b => instr::tcs::<E>(self),
             0x3b => instr::tsc(self),
             0x5b => instr::tcd(self),
