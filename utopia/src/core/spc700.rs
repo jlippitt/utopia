@@ -208,7 +208,7 @@ impl<T: Bus> Core<T> {
             //0x4b => instr::unary::<addr::Direct, op::Lsr>(self),
             //0x6b => instr::unary::<addr::Direct, op::Ror>(self),
             0x8b => instr::unary::<addr::Direct, op::Dec>(self),
-            //0xab => instr::unary::<addr::Direct, op::Inc>(self),
+            0xab => instr::unary::<addr::Direct, op::Inc>(self),
             0xcb => instr::write::<addr::Direct, addr::Y>(self),
             0xeb => instr::binary::<addr::Y, addr::Direct, op::Mov>(self),
 
@@ -238,9 +238,9 @@ impl<T: Bus> Core<T> {
             //0x5c => instr::unary::<addr::A, op::Lsr>(self),
             //0x7c => instr::unary::<addr::A, op::Ror>(self),
             0x9c => instr::unary::<addr::A, op::Dec>(self),
-            //0xbc => instr::unary::<addr::A, op::Inc>(self),
+            0xbc => instr::unary::<addr::A, op::Inc>(self),
             0xdc => instr::unary::<addr::Y, op::Dec>(self),
-            //0xfc => instr::unary::<addr::Y, op::Inc>(self),
+            0xfc => instr::unary::<addr::Y, op::Inc>(self),
 
             // +0x0d
             0x8d => instr::binary::<addr::Y, addr::Immediate, op::Mov>(self),
@@ -250,7 +250,7 @@ impl<T: Bus> Core<T> {
 
             // +0x1d
             0x1d => instr::unary::<addr::X, op::Dec>(self),
-            //0x3d => instr::unary::<addr::X, op::Inc>(self),
+            0x3d => instr::unary::<addr::X, op::Inc>(self),
             0x5d => instr::binary::<addr::X, addr::A, op::Mov>(self),
             0x7d => instr::binary::<addr::A, addr::X, op::Mov>(self),
             0x9d => instr::binary::<addr::X, addr::SP, op::Mov>(self),

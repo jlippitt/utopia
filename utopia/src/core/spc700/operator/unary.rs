@@ -16,3 +16,15 @@ impl UnaryOperator for Dec {
         result
     }
 }
+
+pub struct Inc;
+
+impl UnaryOperator for Inc {
+    const NAME: &'static str = "INC";
+
+    fn apply(core: &mut Core<impl Bus>, value: u8) -> u8 {
+        let result = value.wrapping_add(1);
+        core.set_nz(result);
+        result
+    }
+}
