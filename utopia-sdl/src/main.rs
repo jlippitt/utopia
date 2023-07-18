@@ -32,7 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let rom_data = fs::read(&args.rom_path)?;
 
-    let _guard = log::init();
+    let _guard = log::init()?;
 
     let options = Options {
         skip_boot: args.skip_boot,

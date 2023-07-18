@@ -1,6 +1,12 @@
 const ENV_VAR_NAME: &str = "LOG_LEVEL";
 
 #[cfg(not(debug_assertions))]
+pub use release::init;
+
+#[cfg(debug_assertions)]
+pub use debug::init;
+
+#[cfg(not(debug_assertions))]
 mod release {
     use super::ENV_VAR_NAME;
     use std::{fmt, io};
@@ -11,7 +17,7 @@ mod release {
     use tracing_subscriber::fmt::FmtContext;
     use tracing_subscriber::registry::LookupSpan;
 
-    pub struct Formatter;
+    struct Formatter;
 
     impl<S, N> FormatEvent<S, N> for Formatter
     where
@@ -46,9 +52,6 @@ mod release {
         Ok(guard)
     }
 }
-
-#[cfg(not(debug_assertions))]
-pub use release::*;
 
 #[cfg(debug_assertions)]
 mod debug {
@@ -142,7 +145,7 @@ mod debug {
         }
     }
 
-    pub struct DebugSubscriber {
+    struct DebugSubscriber {
         level: Level,
         router: Arc<Mutex<LogRouter>>,
     }
@@ -192,6 +195,3 @@ mod debug {
         Ok(guard)
     }
 }
-
-#[cfg(debug_assertions)]
-pub use debug::*;
