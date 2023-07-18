@@ -124,6 +124,30 @@ impl Resolver for Direct {
     }
 }
 
+pub struct DirectX;
+
+impl Resolver for DirectX {
+    const NAME: &'static str = "d+X";
+
+    fn resolve(core: &mut Core<impl Bus>) -> u16 {
+        let base = core.next_byte();
+        core.idle();
+        core.flags.p | base.wrapping_add(core.x) as u16
+    }
+}
+
+pub struct DirectY;
+
+impl Resolver for DirectY {
+    const NAME: &'static str = "d+Y";
+
+    fn resolve(core: &mut Core<impl Bus>) -> u16 {
+        let base = core.next_byte();
+        core.idle();
+        core.flags.p | base.wrapping_add(core.y) as u16
+    }
+}
+
 pub struct DirectIndirectY;
 
 impl Resolver for DirectIndirectY {

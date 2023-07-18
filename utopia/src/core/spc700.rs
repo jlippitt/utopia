@@ -104,11 +104,11 @@ impl<T: Bus> Core<T> {
             //0x14 => instr::binary::<addr::A, addr::DirectX, op::Or>(self),
             //0x34 => instr::binary::<addr::A, addr::DirectX, op::And>(self),
             //0x54 => instr::binary::<addr::A, addr::DirectX, op::Eor>(self),
-            //0x74 => instr::compare::<addr::A, addr::DirectX>(self),
-            //0x94 => instr::binary::<addr::A, addr::DirectX, op::Adc>(self),
-            //0xb4 => instr::binary::<addr::A, addr::DirectX, op::Sbc>(self),
-            //0xd4 => instr::write::<addr::DirectX, addr::A>(self),
-            //0xf4 => instr::binary::<addr::A, addr::DirectX, op::Mov>(self),
+            0x74 => instr::compare::<addr::A, addr::DirectX>(self),
+            0x94 => instr::binary::<addr::A, addr::DirectX, op::Adc>(self),
+            0xb4 => instr::binary::<addr::A, addr::DirectX, op::Sbc>(self),
+            0xd4 => instr::write::<addr::DirectX, addr::A>(self),
+            0xf4 => instr::binary::<addr::A, addr::DirectX, op::Mov>(self),
 
             // +0x05
             //0x05 => instr::binary::<addr::A, addr::Absolute, op::Or>(self),
@@ -197,8 +197,8 @@ impl<T: Bus> Core<T> {
             0x69 => instr::compare::<addr::Direct, addr::Direct>(self),
             0x89 => instr::binary::<addr::Direct, addr::Direct, op::Adc>(self),
             0xa9 => instr::binary::<addr::Direct, addr::Direct, op::Sbc>(self),
-            //0xc9 => instr::write::<addr::Absolute, addr::X>(self),
-            //0xe9 => instr::binary::<addr::X, addr::Absolute, op::Mov>(self),
+            0xc9 => instr::write::<addr::Absolute, addr::X>(self),
+            0xe9 => instr::binary::<addr::X, addr::Absolute, op::Mov>(self),
 
             // +0x19
             //0x19 => instr::binary::<addr::XIndirect, addr::YIndirect, op::Or>(self),
@@ -207,8 +207,8 @@ impl<T: Bus> Core<T> {
             //0x79 => instr::compare::<addr::XIndirect, addr::YIndirect>(self),
             //0x99 => instr::binary::<addr::XIndirect, addr::YIndirect, op::Adc>(self),
             //0xb9 => instr::binary::<addr::XIndirect, addr::YIndirect, op::Sbc>(self),
-            //0xd9 => instr::write::<addr::DirectY, addr::X>(self),
-            //0xf9 => instr::binary::<addr::X, addr::DirectY, op::Mov>(self),
+            0xd9 => instr::write::<addr::DirectY, addr::X>(self),
+            0xf9 => instr::binary::<addr::X, addr::DirectY, op::Mov>(self),
 
             // +0x1a
             0xba => instr::movw_read(self),
@@ -229,10 +229,10 @@ impl<T: Bus> Core<T> {
             //0x3b => instr::unary::<addr::DirectX, op::Rol>(self),
             //0x5b => instr::unary::<addr::DirectX, op::Lsr>(self),
             //0x7b => instr::unary::<addr::DirectX, op::Ror>(self),
-            //0x9b => instr::unary::<addr::DirectX, op::Dec>(self),
-            //0xbb => instr::unary::<addr::DirectX, op::Inc>(self),
-            //0xdb => instr::write::<addr::DirectX, addr::Y>(self),
-            //0xfb => instr::binary::<addr::Y, addr::DirectX, op::Mov>(self),
+            0x9b => instr::unary::<addr::DirectX, op::Dec>(self),
+            0xbb => instr::unary::<addr::DirectX, op::Inc>(self),
+            0xdb => instr::write::<addr::DirectX, addr::Y>(self),
+            0xfb => instr::binary::<addr::Y, addr::DirectX, op::Mov>(self),
 
             // +0x0c
             //0x0c => instr::unary::<addr::Absolute, op::Asl>(self),
