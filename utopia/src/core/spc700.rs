@@ -5,6 +5,8 @@ mod address_mode;
 mod instruction;
 mod operator;
 
+const STACK_PAGE: u16 = 0x0100;
+
 pub trait Bus: fmt::Display {
     fn idle(&mut self);
     fn read(&mut self, address: u16) -> u8;
@@ -68,6 +70,16 @@ impl<T: Bus> Core<T> {
         use operator as op;
 
         match self.next_byte() {
+            // +0x00
+            0x00 => instr::nop(self),
+            0x20 => instr::clrp(self),
+            0x40 => instr::setp(self),
+            0x60 => instr::clrc(self),
+            0x80 => instr::setc(self),
+            0xa0 => instr::ei(self),
+            0xc0 => instr::di(self),
+            0xe0 => instr::clrv(self),
+
             // +0x10
             0x10 => instr::branch::<op::Bpl>(self),
             0x30 => instr::branch::<op::Bmi>(self),
@@ -246,7 +258,7 @@ impl<T: Bus> Core<T> {
             0x8d => instr::binary::<addr::Y, addr::Immediate, op::Mov>(self),
             0xad => instr::compare::<addr::Y, addr::Immediate>(self),
             0xcd => instr::binary::<addr::X, addr::Immediate, op::Mov>(self),
-            //0xed => instr::notc(self),
+            0xed => instr::notc(self),
 
             // +0x1d
             0x1d => instr::unary::<addr::X, op::Dec>(self),
