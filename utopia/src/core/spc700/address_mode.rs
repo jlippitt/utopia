@@ -39,6 +39,7 @@ macro_rules! register {
 
 register!(A, a);
 register!(X, x);
+register!(Y, y);
 register!(SP, sp);
 
 pub struct Immediate;

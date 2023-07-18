@@ -207,7 +207,13 @@ impl<T: Bus> Core<T> {
 
             // +0x1d
             0x1d => instr::unary::<addr::X, op::Dec>(self),
+            //0x3d => instr::unary::<addr::X, op::Inc>(self),
+            0x5d => instr::binary::<addr::X, addr::A, op::Mov>(self),
+            0x7d => instr::binary::<addr::A, addr::X, op::Mov>(self),
+            0x9d => instr::binary::<addr::X, addr::SP, op::Mov>(self),
             0xbd => instr::write::<addr::SP, addr::X>(self),
+            0xdd => instr::binary::<addr::A, addr::Y, op::Mov>(self),
+            0xfd => instr::binary::<addr::Y, addr::A, op::Mov>(self),
 
             // +0x0f
             0x2f => instr::branch::<op::Bra>(self),
