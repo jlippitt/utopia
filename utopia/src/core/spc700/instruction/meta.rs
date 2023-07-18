@@ -35,3 +35,18 @@ pub fn compare<Lhs: WriteAddress, Rhs: ReadAddress>(core: &mut Core<impl Bus>) {
     core.set_nz(result);
     core.flags.c = !borrow;
 }
+
+pub fn pop<Addr: WriteAddress>(core: &mut Core<impl Bus>) {
+    debug!("POP {}", Addr::NAME);
+    core.read(core.pc);
+    core.idle();
+    Addr::modify(core, |core, _value| core.pop());
+}
+
+pub fn push<Addr: ReadAddress>(core: &mut Core<impl Bus>) {
+    debug!("PUSH {}", Addr::NAME);
+    core.read(core.pc);
+    let value = Addr::read(core);
+    core.push(value);
+    core.idle();
+}
