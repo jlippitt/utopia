@@ -1,7 +1,10 @@
 use crate::core::spc700::{Bus, Core};
 use crate::util::MirrorVec;
+use dsp::Dsp;
 use std::fmt;
 use tracing::{debug, debug_span};
+
+mod dsp;
 
 const APU_CLOCK_RATE: i64 = 1024000;
 const CPU_CLOCK_RATE: i64 = 21477272;
@@ -60,6 +63,7 @@ struct Hardware {
     output_ports: [u8; 4],
     ram: MirrorVec<u8>,
     ipl_rom: MirrorVec<u8>,
+    dsp: Dsp,
 }
 
 impl Hardware {
@@ -71,6 +75,7 @@ impl Hardware {
             output_ports: [0; 4],
             ram: MirrorVec::new(RAM_SIZE),
             ipl_rom: ipl_rom.into(),
+            dsp: Dsp::new(),
         }
     }
 
@@ -90,6 +95,8 @@ impl Bus for Hardware {
 
         if (address & 0xfff0) == 0x00f0 {
             match address & 0xff {
+                0xf2 => self.dsp.address(),
+                0xf3 => self.dsp.read(),
                 0xf4..=0xf7 => self.input_ports[address as usize & 3],
                 _ => todo!("SMP register read {:02X}", address),
             }
@@ -105,6 +112,8 @@ impl Bus for Hardware {
 
         if (address & 0xfff0) == 0x00f0 {
             match address & 0xff {
+                0xf2 => self.dsp.set_address(value),
+                0xf3 => self.dsp.write(value),
                 0xf4..=0xf7 => {
                     let index = address as usize & 3;
                     self.output_ports[index] = value;
