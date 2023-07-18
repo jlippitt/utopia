@@ -2,9 +2,11 @@ use crate::core::spc700::{Bus, Core};
 use crate::util::MirrorVec;
 use dsp::Dsp;
 use std::fmt;
+use timer::Timer;
 use tracing::{debug, debug_span};
 
 mod dsp;
+mod timer;
 
 const APU_CLOCK_RATE: i64 = 1024000;
 const CPU_CLOCK_RATE: i64 = 21477272;
@@ -62,6 +64,7 @@ struct Hardware {
     ipl_rom_enabled: bool,
     input_ports: [u8; 4],
     output_ports: [u8; 4],
+    timers: [Timer; 3],
     ram: MirrorVec<u8>,
     ipl_rom: MirrorVec<u8>,
     dsp: Dsp,
@@ -75,6 +78,7 @@ impl Hardware {
             ipl_rom_enabled: true,
             input_ports: [0; 4],
             output_ports: [0; 4],
+            timers: [Timer::new(0), Timer::new(1), Timer::new(2)],
             ram: MirrorVec::new(RAM_SIZE),
             ipl_rom: ipl_rom.into(),
             dsp: Dsp::new(),
@@ -96,11 +100,15 @@ impl Bus for Hardware {
         self.step();
 
         if (address & 0xfff0) == 0x00f0 {
-            match address & 0xff {
-                0xf1 => self.ram[address as usize],
-                0xf2 => self.dsp.address(),
-                0xf3 => self.dsp.read(),
-                0xf4..=0xf7 => self.input_ports[address as usize & 3],
+            match address & 0x0f {
+                0x01 => self.ram[address as usize],
+                0x02 => self.dsp.address(),
+                0x03 => self.dsp.read(),
+                0x04..=0x07 => self.input_ports[address as usize & 3],
+                0x08..=0x0c => self.ram[address as usize],
+                0x0d => self.timers[0].counter(),
+                0x0e => self.timers[1].counter(),
+                0x0f => self.timers[2].counter(),
                 _ => todo!("SMP register read {:02X}", address),
             }
         } else if address >= 0xffc0 && self.ipl_rom_enabled {
@@ -114,11 +122,11 @@ impl Bus for Hardware {
         self.step();
 
         if (address & 0xfff0) == 0x00f0 {
-            match address & 0xff {
-                0xf1 => {
-                    if (value & 0x07) != 0 {
-                        todo!("Timers");
-                    }
+            match address & 0x0f {
+                0x01 => {
+                    self.timers[0].set_enabled((value & 0x01) != 0);
+                    self.timers[1].set_enabled((value & 0x02) != 0);
+                    self.timers[2].set_enabled((value & 0x04) != 0);
 
                     if (value & 0x10) != 0 {
                         self.input_ports[0] = 0;
@@ -135,13 +143,16 @@ impl Bus for Hardware {
                     self.ipl_rom_enabled = (value & 0x80) != 0;
                     debug!("IPL ROM Enabled: {}", self.ipl_rom_enabled);
                 }
-                0xf2 => self.dsp.set_address(value),
-                0xf3 => self.dsp.write(value),
-                0xf4..=0xf7 => {
+                0x02 => self.dsp.set_address(value),
+                0x03 => self.dsp.write(value),
+                0x04..=0x07 => {
                     let index = address as usize & 3;
                     self.output_ports[index] = value;
                     debug!("APU Output Port {}: {:02X}", index, value);
                 }
+                0x0a => self.timers[0].set_divider(value),
+                0x0b => self.timers[1].set_divider(value),
+                0x0c => self.timers[2].set_divider(value),
                 _ => todo!("SMP register write {:02X} <= {:02X}", address, value),
             }
         } else {
