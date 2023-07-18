@@ -124,11 +124,11 @@ impl<T: Bus> Core<T> {
             //0x15 => instr::binary::<addr::A, addr::AbsoluteX, op::Or>(self),
             //0x35 => instr::binary::<addr::A, addr::AbsoluteX, op::And>(self),
             //0x55 => instr::binary::<addr::A, addr::AbsoluteX, op::Eor>(self),
-            //0x75 => instr::compare::<addr::A, addr::AbsoluteX>(self),
+            0x75 => instr::compare::<addr::A, addr::AbsoluteX>(self),
             //0x95 => instr::binary::<addr::A, addr::AbsoluteX, op::Adc>(self),
             //0xb5 => instr::binary::<addr::A, addr::AbsoluteX, op::Sbc>(self),
-            //0xd5 => instr::write::<addr::AbsoluteX, addr::A>(self),
-            //0xf5 => instr::binary::<addr::A, addr::AbsoluteX, op::Mov>(self),
+            0xd5 => instr::write::<addr::AbsoluteX, addr::A>(self),
+            0xf5 => instr::binary::<addr::A, addr::AbsoluteX, op::Mov>(self),
 
             // +0x06
             //0x06 => instr::binary::<addr::A, addr::XIndirect, op::Or>(self),
@@ -144,11 +144,11 @@ impl<T: Bus> Core<T> {
             //0x16 => instr::binary::<addr::A, addr::AbsoluteY, op::Or>(self),
             //0x36 => instr::binary::<addr::A, addr::AbsoluteY, op::And>(self),
             //0x56 => instr::binary::<addr::A, addr::AbsoluteY, op::Eor>(self),
-            //0x76 => instr::compare::<addr::A, addr::AbsoluteY>(self),
+            0x76 => instr::compare::<addr::A, addr::AbsoluteY>(self),
             //0x96 => instr::binary::<addr::A, addr::AbsoluteY, op::Adc>(self),
             //0xb6 => instr::binary::<addr::A, addr::AbsoluteY, op::Sbc>(self),
-            //0xd6 => instr::write::<addr::AbsoluteY, addr::A>(self),
-            //0xf6 => instr::binary::<addr::A, addr::AbsoluteY, op::Mov>(self),
+            0xd6 => instr::write::<addr::AbsoluteY, addr::A>(self),
+            0xf6 => instr::binary::<addr::A, addr::AbsoluteY, op::Mov>(self),
 
             // +0x07
             //0x07 => instr::binary::<addr::A, addr::DirectXIndirect, op::Or>(self),

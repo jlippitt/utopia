@@ -94,6 +94,26 @@ impl Resolver for Absolute {
     }
 }
 
+pub struct AbsoluteX;
+
+impl Resolver for AbsoluteX {
+    const NAME: &'static str = "!a+X";
+
+    fn resolve(core: &mut Core<impl Bus>) -> u16 {
+        core.next_word().wrapping_add(core.x as u16)
+    }
+}
+
+pub struct AbsoluteY;
+
+impl Resolver for AbsoluteY {
+    const NAME: &'static str = "!a+Y";
+
+    fn resolve(core: &mut Core<impl Bus>) -> u16 {
+        core.next_word().wrapping_add(core.y as u16)
+    }
+}
+
 pub struct Direct;
 
 impl Resolver for Direct {
