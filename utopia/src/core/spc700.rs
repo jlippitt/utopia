@@ -277,7 +277,7 @@ impl<T: Bus> Core<T> {
             // +0x0e
             //0x8e => instr::pop::<addr::Psw>(self),
             0xae => instr::pop::<addr::A>(self),
-            0xde => instr::pop::<addr::X>(self),
+            0xce => instr::pop::<addr::X>(self),
             0xee => instr::pop::<addr::Y>(self),
 
             // +0x1e
