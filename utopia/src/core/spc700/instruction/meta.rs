@@ -18,7 +18,7 @@ pub fn unary<Addr: WriteAddress, Op: UnaryOperator>(core: &mut Core<impl Bus>) {
 
 pub fn write<Lhs: WriteAddress, Rhs: ReadAddress>(core: &mut Core<impl Bus>) {
     debug!("MOV {}, {}", Lhs::NAME, Rhs::NAME);
-    Rhs::init(core);
+    Lhs::init(core);
     let value = Rhs::read(core);
     Lhs::modify(core, |_core, _value| value);
 }
