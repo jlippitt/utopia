@@ -268,6 +268,9 @@ impl<T: Bus> Core<T> {
             0x2f => instr::branch::<op::Bra>(self),
             0x8f => instr::write::<addr::Direct, addr::Immediate>(self),
 
+            // +0x1f
+            0x1f => instr::jmp_x_indirect(self),
+
             opcode => todo!("SPC700 opcode {:02X}", opcode),
         }
     }
@@ -300,6 +303,12 @@ impl<T: Bus> Core<T> {
         let value = self.read(self.pc);
         self.pc = self.pc.wrapping_add(1);
         value
+    }
+
+    fn next_word(&mut self) -> u16 {
+        let low = self.next_byte();
+        let high = self.next_byte();
+        u16::from_le_bytes([low, high])
     }
 
     pub fn set_nz(&mut self, value: u8) {
