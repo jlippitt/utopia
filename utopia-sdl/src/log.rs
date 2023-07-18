@@ -1,10 +1,10 @@
-const ENV_VAR_NAME: &str = "LOG_LEVEL";
-
 #[cfg(not(debug_assertions))]
 pub use release::init;
 
 #[cfg(debug_assertions)]
 pub use debug::init;
+
+const ENV_VAR_NAME: &str = "LOG_LEVEL";
 
 #[cfg(not(debug_assertions))]
 mod release {
