@@ -114,11 +114,11 @@ impl<T: Bus> Core<T> {
             //0x05 => instr::binary::<addr::A, addr::Absolute, op::Or>(self),
             //0x25 => instr::binary::<addr::A, addr::Absolute, op::And>(self),
             //0x45 => instr::binary::<addr::A, addr::Absolute, op::Eor>(self),
-            //0x65 => instr::compare::<addr::A, addr::Absolute>(self),
+            0x65 => instr::compare::<addr::A, addr::Absolute>(self),
             //0x85 => instr::binary::<addr::A, addr::Absolute, op::Adc>(self),
             //0xa5 => instr::binary::<addr::A, addr::Absolute, op::Sbc>(self),
-            //0xc5 => instr::write::<addr::Absolute, addr::A>(self),
-            //0xe5 => instr::binary::<addr::A, addr::Absolute, op::Mov>(self),
+            0xc5 => instr::write::<addr::Absolute, addr::A>(self),
+            0xe5 => instr::binary::<addr::A, addr::Absolute, op::Mov>(self),
 
             // +0x15
             //0x15 => instr::binary::<addr::A, addr::AbsoluteX, op::Or>(self),

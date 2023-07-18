@@ -84,6 +84,16 @@ impl<T: Resolver> WriteAddress for T {
     }
 }
 
+pub struct Absolute;
+
+impl Resolver for Absolute {
+    const NAME: &'static str = "!a";
+
+    fn resolve(core: &mut Core<impl Bus>) -> u16 {
+        core.next_word()
+    }
+}
+
 pub struct Direct;
 
 impl Resolver for Direct {
