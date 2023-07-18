@@ -279,9 +279,11 @@ impl<T: Bus> Core<T> {
             // +0x0f
             0x2f => instr::branch::<op::Bra>(self),
             0x8f => instr::write::<addr::Direct, addr::Immediate>(self),
+            0xaf => instr::auto_inc_write(self),
 
             // +0x1f
             0x1f => instr::jmp_x_indirect(self),
+            0xbf => instr::auto_inc_read(self),
 
             opcode => todo!("SPC700 opcode {:02X}", opcode),
         }
