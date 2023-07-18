@@ -90,12 +90,12 @@ impl Hardware {
         self.cycles += 1;
 
         if (self.cycles & 15) == 0 {
-            self.timers[2].step();
-
             if (self.cycles & 127) == 0 {
                 self.timers[0].step();
                 self.timers[1].step();
             }
+
+            self.timers[2].step();
         }
     }
 }
