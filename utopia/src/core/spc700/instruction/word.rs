@@ -35,6 +35,54 @@ pub fn incw(core: &mut Core<impl Bus>) {
     core.flags.z = high_result | low_result;
 }
 
+pub fn addw(core: &mut Core<impl Bus>) {
+    debug!("ADDW YA, d");
+
+    let low_address = core.next_byte();
+    let low = core.read_direct(low_address);
+    core.idle();
+    let high_address = low_address.wrapping_add(1);
+    let high = core.read_direct(high_address);
+
+    let rhs = u16::from_le_bytes([low, high]);
+    let lhs = u16::from_le_bytes([core.a, core.y]);
+    let result = lhs.wrapping_add(rhs);
+    let carries = lhs ^ rhs ^ result;
+    let overflow = (lhs ^ result) & (rhs ^ result);
+
+    core.a = result as u8;
+    core.y = (result >> 8) as u8;
+    core.flags.n = core.y;
+    core.flags.v = (overflow >> 8) as u8;
+    core.flags.h = (carries >> 8) as u8;
+    core.flags.z = core.y | core.a;
+    core.flags.c = ((carries ^ overflow) & 0x8000) != 0;
+}
+
+pub fn subw(core: &mut Core<impl Bus>) {
+    debug!("SUBW YA, d");
+
+    let low_address = core.next_byte();
+    let low = core.read_direct(low_address);
+    core.idle();
+    let high_address = low_address.wrapping_add(1);
+    let high = core.read_direct(high_address);
+
+    let rhs = u16::from_le_bytes([low, high]);
+    let lhs = u16::from_le_bytes([core.a, core.y]);
+    let result = lhs.wrapping_sub(rhs);
+    let carries = lhs ^ !rhs ^ result;
+    let overflow = (lhs ^ result) & (lhs ^ rhs);
+
+    core.a = result as u8;
+    core.y = (result >> 8) as u8;
+    core.flags.n = core.y;
+    core.flags.v = (overflow >> 8) as u8;
+    core.flags.h = (carries >> 8) as u8;
+    core.flags.z = core.y | core.a;
+    core.flags.c = ((carries ^ overflow) & 0x8000) != 0;
+}
+
 pub fn movw_read(core: &mut Core<impl Bus>) {
     debug!("MOVW YA, d");
     let low_address = core.next_byte();
