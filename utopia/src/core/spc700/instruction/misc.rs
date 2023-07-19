@@ -36,3 +36,39 @@ pub fn mul(core: &mut Core<impl Bus>) {
     core.y = high;
     core.set_nz(core.y);
 }
+
+pub fn div(core: &mut Core<impl Bus>) {
+    debug!("DIV YA, X");
+    core.read(core.pc);
+
+    for _ in 0..10 {
+        core.idle();
+    }
+
+    core.flags.h = (core.x & 0x0f) <= (core.y & 0x0f);
+
+    let divisor = (core.x as u32) << 9;
+    let mut result = u32::from_le_bytes([core.a, core.y, 0, 0]);
+
+    for _ in 0..9 {
+        result <<= 1;
+
+        if (result & 0x0002_0000) != 0 {
+            result ^= 0x0002_0001;
+        }
+
+        if result >= divisor {
+            result ^= 1;
+        }
+
+        if (result & 1) != 0 {
+            result = (result - divisor) & 0x0001_ffff;
+        }
+    }
+
+    core.a = result as u8;
+    core.y = (result >> 9) as u8;
+    core.flags.n = core.a;
+    core.flags.v = (result & 0x0100) != 0;
+    core.flags.z = core.a;
+}

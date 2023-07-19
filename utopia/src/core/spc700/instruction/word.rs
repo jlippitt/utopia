@@ -53,8 +53,8 @@ pub fn addw(core: &mut Core<impl Bus>) {
     core.a = result as u8;
     core.y = (result >> 8) as u8;
     core.flags.n = core.y;
-    core.flags.v = (overflow >> 8) as u8;
-    core.flags.h = (carries >> 8) as u8;
+    core.flags.v = (overflow & 0x8000) != 0;
+    core.flags.h = (carries & 0x1000) != 0;
     core.flags.z = core.y | core.a;
     core.flags.c = ((carries ^ overflow) & 0x8000) != 0;
 }
@@ -77,8 +77,8 @@ pub fn subw(core: &mut Core<impl Bus>) {
     core.a = result as u8;
     core.y = (result >> 8) as u8;
     core.flags.n = core.y;
-    core.flags.v = (overflow >> 8) as u8;
-    core.flags.h = (carries >> 8) as u8;
+    core.flags.v = (overflow & 0x8000) != 0;
+    core.flags.h = (carries & 0x1000) != 0;
     core.flags.z = core.y | core.a;
     core.flags.c = ((carries ^ overflow) & 0x8000) != 0;
 }

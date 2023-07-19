@@ -40,8 +40,8 @@ pub fn di(core: &mut Core<impl Bus>) {
 pub fn clrv(core: &mut Core<impl Bus>) {
     debug!("CLRV");
     core.read(core.pc);
-    core.flags.v = 0;
-    core.flags.h = 0;
+    core.flags.v = false;
+    core.flags.h = false;
 }
 
 pub fn notc(core: &mut Core<impl Bus>) {

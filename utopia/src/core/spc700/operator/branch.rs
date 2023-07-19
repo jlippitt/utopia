@@ -41,7 +41,7 @@ impl BranchOperator for Bvc {
     const NAME: &'static str = "BVC";
 
     fn apply(flags: &Flags) -> bool {
-        (flags.v & 0x80) == 0
+        !flags.v
     }
 }
 
@@ -51,7 +51,7 @@ impl BranchOperator for Bvs {
     const NAME: &'static str = "BVS";
 
     fn apply(flags: &Flags) -> bool {
-        (flags.v & 0x80) != 0
+        flags.v
     }
 }
 
