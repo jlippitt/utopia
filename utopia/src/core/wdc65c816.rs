@@ -318,8 +318,12 @@ impl<T: Bus> Core<T> {
             // +0x1a
             0x1a => instr::accumulator::<M, op::Inc>(self),
             0x3a => instr::accumulator::<M, op::Dec>(self),
+            0x5a => instr::phy::<E, X>(self),
+            0x7a => instr::ply::<E, X>(self),
             //0x9a => instr::txs(self),
             //0xba => instr::tsx(self),
+            0xda => instr::phx::<E, X>(self),
+            0xfa => instr::plx::<E, X>(self),
 
             // +0x0e
             0x0e => instr::modify::<M, addr::Absolute, op::Asl>(self),
