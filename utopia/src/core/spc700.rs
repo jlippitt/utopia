@@ -171,14 +171,14 @@ impl<T: Bus> Core<T> {
             0xf6 => instr::binary::<addr::A, addr::AbsoluteY, op::Mov>(self),
 
             // +0x07
-            //0x07 => instr::binary::<addr::A, addr::DirectXIndirect, op::Or>(self),
-            //0x27 => instr::binary::<addr::A, addr::DirectXIndirect, op::And>(self),
-            //0x47 => instr::binary::<addr::A, addr::DirectXIndirect, op::Eor>(self),
-            //0x67 => instr::compare::<addr::A, addr::DirectXIndirect>(self),
-            //0x87 => instr::binary::<addr::A, addr::DirectXIndirect, op::Adc>(self),
-            //0xa7 => instr::binary::<addr::A, addr::DirectXIndirect, op::Sbc>(self),
-            //0xc7 => instr::write::<addr::DirectXIndirect, addr::A>(self),
-            //0xe7 => instr::binary::<addr::A, addr::DirectXIndirect, op::Mov>(self),
+            0x07 => instr::binary::<addr::A, addr::DirectXIndirect, op::Or>(self),
+            0x27 => instr::binary::<addr::A, addr::DirectXIndirect, op::And>(self),
+            0x47 => instr::binary::<addr::A, addr::DirectXIndirect, op::Eor>(self),
+            0x67 => instr::compare::<addr::A, addr::DirectXIndirect>(self),
+            0x87 => instr::binary::<addr::A, addr::DirectXIndirect, op::Adc>(self),
+            0xa7 => instr::binary::<addr::A, addr::DirectXIndirect, op::Sbc>(self),
+            0xc7 => instr::write::<addr::DirectXIndirect, addr::A>(self),
+            0xe7 => instr::binary::<addr::A, addr::DirectXIndirect, op::Mov>(self),
 
             // +0x17
             0x17 => instr::binary::<addr::A, addr::DirectIndirectY, op::Or>(self),

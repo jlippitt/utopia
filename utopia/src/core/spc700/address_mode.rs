@@ -84,6 +84,13 @@ impl<T: Resolver> WriteAddress for T {
     }
 }
 
+fn get_indirect(core: &mut Core<impl Bus>, low_address: u16) -> u16 {
+    let low = core.read(low_address);
+    let high_address = (low_address & 0xff00) | (low_address.wrapping_add(1) & 0xff);
+    let high = core.read(high_address);
+    u16::from_le_bytes([low, high])
+}
+
 pub struct Absolute;
 
 impl Resolver for Absolute {
@@ -148,17 +155,25 @@ impl Resolver for DirectY {
     }
 }
 
+pub struct DirectXIndirect;
+
+impl Resolver for DirectXIndirect {
+    const NAME: &'static str = "[d+X]";
+
+    fn resolve(core: &mut Core<impl Bus>) -> u16 {
+        let direct = DirectX::resolve(core);
+        get_indirect(core, direct)
+    }
+}
+
 pub struct DirectIndirectY;
 
 impl Resolver for DirectIndirectY {
     const NAME: &'static str = "[d]+Y";
 
     fn resolve(core: &mut Core<impl Bus>) -> u16 {
-        let low_address = Direct::resolve(core);
-        let low = core.read(low_address);
-        let high_address = (low_address & 0xff00) | (low_address.wrapping_add(1) & 0xff);
-        let high = core.read(high_address);
-        let base = u16::from_le_bytes([low, high]);
+        let direct = Direct::resolve(core);
+        let base = get_indirect(core, direct);
         core.idle();
         base.wrapping_add(core.y as u16)
     }
