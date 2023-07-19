@@ -23,6 +23,16 @@ pub fn auto_inc_write(core: &mut Core<impl Bus>) {
     core.x = core.x.wrapping_add(1);
 }
 
+pub fn xcn(core: &mut Core<impl Bus>) {
+    debug!("XCN A");
+    core.read(core.pc);
+    core.idle();
+    core.idle();
+    core.idle();
+    core.a = (core.a << 4) | (core.a >> 4);
+    core.set_nz(core.a);
+}
+
 pub fn mul(core: &mut Core<impl Bus>) {
     debug!("MUL YA");
     core.read(core.pc);
