@@ -5,6 +5,60 @@ pub trait UnaryOperator {
     fn apply(core: &mut Core<impl Bus>, value: u8) -> u8;
 }
 
+pub struct Asl;
+
+impl UnaryOperator for Asl {
+    const NAME: &'static str = "ASL";
+
+    fn apply(core: &mut Core<impl Bus>, value: u8) -> u8 {
+        core.flags.c = (value & 0x80) != 0;
+        let result = value << 1;
+        core.set_nz(result);
+        result
+    }
+}
+
+pub struct Rol;
+
+impl UnaryOperator for Rol {
+    const NAME: &'static str = "ROL";
+
+    fn apply(core: &mut Core<impl Bus>, value: u8) -> u8 {
+        let carry = core.flags.c as u8;
+        core.flags.c = (value & 0x80) != 0;
+        let result = (value << 1) | carry;
+        core.set_nz(result);
+        result
+    }
+}
+
+pub struct Lsr;
+
+impl UnaryOperator for Lsr {
+    const NAME: &'static str = "LSR";
+
+    fn apply(core: &mut Core<impl Bus>, value: u8) -> u8 {
+        core.flags.c = (value & 0x01) != 0;
+        let result = value >> 1;
+        core.set_nz(result);
+        result
+    }
+}
+
+pub struct Ror;
+
+impl UnaryOperator for Ror {
+    const NAME: &'static str = "ROR";
+
+    fn apply(core: &mut Core<impl Bus>, value: u8) -> u8 {
+        let carry = core.flags.c as u8;
+        core.flags.c = (value & 0x01) != 0;
+        let result = (value >> 1) | (carry << 7);
+        core.set_nz(result);
+        result
+    }
+}
+
 pub struct Dec;
 
 impl UnaryOperator for Dec {
