@@ -16,6 +16,11 @@ fn execute_branch(core: &mut Core<impl Bus>, condition: bool) {
     }
 }
 
+pub fn jmp(core: &mut Core<impl Bus>) {
+    debug!("JMP !a");
+    core.pc = core.next_word();
+}
+
 pub fn jmp_x_indirect(core: &mut Core<impl Bus>) {
     debug!("JMP [!a+X]");
     let low_address = core.next_word().wrapping_add(core.x as u16);
