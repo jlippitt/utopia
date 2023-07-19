@@ -208,14 +208,14 @@ impl<T: Bus> Core<T> {
             //0xe1 => instr::read::<addr::DirectXIndirect, op::Sbc>(self),
 
             // +0x11
-            //0x11 => instr::read::<addr::DirectIndirectY, op::Ora>(self),
-            //0x31 => instr::read::<addr::DirectIndirectY, op::And>(self),
-            //0x51 => instr::read::<addr::DirectIndirectY, op::Eor>(self),
-            //0x71 => instr::read::<addr::DirectIndirectY, op::Adc>(self),
-            //0x91 => instr::write::<addr::DirectIndirectY, op::Sta>(self),
-            //0xb1 => instr::read::<addr::DirectIndirectY, op::Lda>(self),
-            //0xd1 => instr::read::<addr::DirectIndirectY, op::Cmp>(self),
-            //0xf1 => instr::read::<addr::DirectIndirectY, op::Sbc>(self),
+            0x11 => instr::read::<M, addr::DirectIndirectY<E, X>, op::Ora>(self),
+            0x31 => instr::read::<M, addr::DirectIndirectY<E, X>, op::And>(self),
+            0x51 => instr::read::<M, addr::DirectIndirectY<E, X>, op::Eor>(self),
+            0x71 => instr::read::<M, addr::DirectIndirectY<E, X>, op::Adc>(self),
+            0x91 => instr::write::<M, addr::DirectIndirectY<E, X>, op::Sta>(self),
+            0xb1 => instr::read::<M, addr::DirectIndirectY<E, X>, op::Lda>(self),
+            0xd1 => instr::read::<M, addr::DirectIndirectY<E, X>, op::Cmp>(self),
+            0xf1 => instr::read::<M, addr::DirectIndirectY<E, X>, op::Sbc>(self),
 
             // +0x05
             0x05 => instr::read::<M, addr::Direct, op::Ora>(self),
@@ -284,6 +284,16 @@ impl<T: Bus> Core<T> {
             0xa2 => instr::immediate::<X, op::Ldx>(self),
             0xc2 => instr::rep::<E>(self),
             0xe2 => instr::sep::<E>(self),
+
+            // +0x12
+            0x12 => instr::read::<M, addr::DirectIndirect<E>, op::Ora>(self),
+            0x32 => instr::read::<M, addr::DirectIndirect<E>, op::And>(self),
+            0x52 => instr::read::<M, addr::DirectIndirect<E>, op::Eor>(self),
+            0x72 => instr::read::<M, addr::DirectIndirect<E>, op::Adc>(self),
+            0x92 => instr::write::<M, addr::DirectIndirect<E>, op::Sta>(self),
+            0xb2 => instr::read::<M, addr::DirectIndirect<E>, op::Lda>(self),
+            0xd2 => instr::read::<M, addr::DirectIndirect<E>, op::Cmp>(self),
+            0xf2 => instr::read::<M, addr::DirectIndirect<E>, op::Sbc>(self),
 
             // +0x06
             0x06 => instr::modify::<M, addr::Direct, op::Asl>(self),

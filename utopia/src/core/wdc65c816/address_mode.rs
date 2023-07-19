@@ -119,6 +119,34 @@ impl<const E: bool> AddressMode for DirectX<E> {
     }
 }
 
+pub struct DirectIndirect<const E: bool>;
+
+impl<const E: bool> AddressMode for DirectIndirect<E> {
+    const NAME: &'static str = "(dp)";
+    const WRAP: u32 = WRAP24;
+
+    fn resolve(core: &mut Core<impl Bus>, write: bool) -> u32 {
+        let low_address = Direct::resolve(core, write);
+        let low = core.read(low_address);
+        let high_address = index_direct::<E>(core, low_address, 1);
+        let high = core.read(high_address);
+        let target = u16::from_le_bytes([low, high]);
+        core.dbr | (target as u32)
+    }
+}
+
+pub struct DirectIndirectY<const E: bool, const X: bool>;
+
+impl<const E: bool, const X: bool> AddressMode for DirectIndirectY<E, X> {
+    const NAME: &'static str = "(dp),Y";
+    const WRAP: u32 = WRAP24;
+
+    fn resolve(core: &mut Core<impl Bus>, write: bool) -> u32 {
+        let base = DirectIndirect::<E>::resolve(core, write);
+        index_absolute::<X>(core, base, core.y, write)
+    }
+}
+
 pub struct DirectIndirectLong;
 
 impl AddressMode for DirectIndirectLong {
