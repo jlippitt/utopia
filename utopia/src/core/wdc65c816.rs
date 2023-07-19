@@ -178,7 +178,7 @@ impl<T: Bus> Core<T> {
             // +0x0c
             //0x0c => instr::read::<addr::Absolute, op::Nop>(self),
             //0x2c => instr::read::<addr::Absolute, op::Bit>(self),
-            //0x4c => instr::jmp(self),
+            0x4c => instr::jmp(self),
             //0x6c => instr::jmp_indirect(self),
             0x8c => instr::write::<X, addr::Absolute, op::Sty>(self),
             0xac => instr::read::<X, addr::Absolute, op::Ldy>(self),

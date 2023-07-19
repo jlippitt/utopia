@@ -1,6 +1,15 @@
 use super::super::{Bus, Core};
 use tracing::debug;
 
+pub fn jmp(core: &mut Core<impl Bus>) {
+    debug!("JMP addr");
+    let low = core.next_byte();
+    core.poll();
+    let high = core.next_byte();
+    let target = u16::from_le_bytes([low, high]);
+    core.pc = (core.pc & 0xffff0000) | (target as u32);
+}
+
 pub fn jmp_indirect_long(core: &mut Core<impl Bus>) {
     debug!("JMP [addr]");
     let low_address = core.next_word();
