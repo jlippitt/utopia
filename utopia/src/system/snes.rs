@@ -2,12 +2,14 @@ use super::{BiosLoader, JoypadState, System};
 use crate::core::wdc65c816::{Bus, Core};
 use crate::util::MirrorVec;
 use apu::Apu;
+use clock::{Clock, Event, FAST_CYCLES};
 use memory::{Page, TOTAL_PAGES};
 use std::error::Error;
 use std::fmt;
 use tracing::{debug, warn};
 
 mod apu;
+mod clock;
 mod memory;
 
 const WIDTH: usize = 512;
@@ -15,10 +17,6 @@ const HEIGHT: usize = 448;
 const PIXELS: [u8; WIDTH * HEIGHT * 4] = [0; WIDTH * HEIGHT * 4];
 
 const WRAM_SIZE: usize = 131072;
-
-const FAST_CYCLES: u64 = 6;
-const SLOW_CYCLES: u64 = 8;
-const EXTRA_SLOW_CYCLES: u64 = 12;
 
 pub struct Snes {
     core: Core<Hardware>,
@@ -55,7 +53,7 @@ impl System for Snes {
 }
 
 pub struct Hardware {
-    cycles: u64,
+    clock: Clock,
     mdr: u8,
     pages: [Page; TOTAL_PAGES],
     rom: MirrorVec<u8>,
@@ -68,7 +66,7 @@ impl Hardware {
         let pages = memory::map();
 
         Self {
-            cycles: 0,
+            clock: Clock::new(),
             mdr: 0,
             pages,
             rom: rom_data.into(),
@@ -77,11 +75,23 @@ impl Hardware {
         }
     }
 
+    fn step(&mut self, cycles: u64) {
+        self.clock.add_cycles(cycles);
+
+        while let Some(event) = self.clock.event() {
+            match event {
+                Event::NewLine => {
+                    // TODO
+                }
+            }
+        }
+    }
+
     fn read_bus_b(&mut self, address: u8) -> u8 {
         match address {
             0x00..=0x3f => todo!("PPU reads"),
             0x40..=0x7f => {
-                self.apu.run_until(self.cycles);
+                self.apu.run_until(self.clock.cycles());
                 self.apu.read(address)
             }
             0x80..=0x83 => todo!("WRAM registers"),
@@ -96,42 +106,22 @@ impl Hardware {
         match address {
             0x00..=0x3f => (), // TODO: PPU writes
             0x40..=0x7f => {
-                self.apu.run_until(self.cycles);
+                self.apu.run_until(self.clock.cycles());
                 self.apu.write(address, value);
             }
             0x80..=0x83 => todo!("WRAM registers"),
             _ => warn!("Unmapped Bus B write: {:02X} <= {:02X}", address, value),
         }
     }
-
-    fn cycles_for_address(&self, address: u32) -> u64 {
-        if (address & 0x408000) != 0 {
-            return if (address & 0x800000) != 0 {
-                todo!("FastROM");
-            } else {
-                SLOW_CYCLES
-            };
-        }
-
-        if (address.wrapping_add(0x6000) & 0x4000) != 0 {
-            return SLOW_CYCLES;
-        }
-
-        if (address.wrapping_sub(0x4000) & 0x7e00) != 0 {
-            return FAST_CYCLES;
-        }
-
-        return EXTRA_SLOW_CYCLES;
-    }
 }
 
 impl Bus for Hardware {
     fn idle(&mut self) {
-        self.cycles += FAST_CYCLES;
+        self.step(FAST_CYCLES);
     }
 
     fn read(&mut self, address: u32) -> u8 {
-        self.cycles += self.cycles_for_address(address) - 4;
+        self.step(self.clock.cycles_for_address(address) - 4);
 
         self.mdr = match self.pages[(address >> 13) as usize] {
             Page::Rom(offset) => self.rom[(offset | (address & 0x1fff)) as usize],
@@ -150,13 +140,13 @@ impl Bus for Hardware {
             }
         };
 
-        self.cycles += 4;
+        self.step(4);
 
         self.mdr
     }
 
     fn write(&mut self, address: u32, value: u8) {
-        self.cycles += self.cycles_for_address(address);
+        self.step(self.clock.cycles_for_address(address));
         self.mdr = value;
 
         match self.pages[(address >> 13) as usize] {
@@ -177,6 +167,6 @@ impl Bus for Hardware {
 
 impl fmt::Display for Hardware {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "T={}", self.cycles)
+        write!(f, "{}", self.clock)
     }
 }
