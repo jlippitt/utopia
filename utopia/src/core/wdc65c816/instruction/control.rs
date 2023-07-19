@@ -70,3 +70,24 @@ pub fn rtl<const E: bool>(core: &mut Core<impl Bus>) {
     let bank = core.pull::<E>();
     core.pc = ((bank as u32) << 16) | (target as u32);
 }
+
+pub fn rti<const E: bool>(core: &mut Core<impl Bus>) {
+    debug!("RTI");
+    core.idle();
+    core.idle();
+    let flags = core.pull::<E>();
+    core.flags_from_u8::<E>(flags);
+    let low = core.pull::<E>();
+
+    if E {
+        core.poll();
+        let high = core.pull::<E>();
+        let target = u16::from_le_bytes([low, high]);
+        core.pc = (core.pc & 0xffff0000) | (target as u32);
+    } else {
+        let high = core.pull::<E>();
+        core.poll();
+        let bank = core.pull::<E>();
+        core.pc = u32::from_le_bytes([low, high, bank, 0]);
+    }
+}

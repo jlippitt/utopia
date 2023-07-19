@@ -124,7 +124,7 @@ impl<T: Bus> Core<T> {
             // +0x00
             //0x00 => instr::brk(self),
             0x20 => instr::jsr::<E>(self),
-            //0x40 => instr::rti(self),
+            0x40 => instr::rti::<E>(self),
             0x60 => instr::rts::<E>(self),
             0x80 => instr::branch::<E, op::Bra>(self),
             0xa0 => instr::immediate::<X, op::Ldy>(self),
