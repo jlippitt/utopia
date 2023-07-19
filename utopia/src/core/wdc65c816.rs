@@ -218,9 +218,9 @@ impl<T: Bus> Core<T> {
             //0xf1 => instr::read::<addr::DirectIndirectY, op::Sbc>(self),
 
             // +0x05
-            //0x05 => instr::read::<M, addr::Direct, op::Ora>(self),
-            //0x25 => instr::read::<M, addr::Direct, op::And>(self),
-            //0x45 => instr::read::<M, addr::Direct, op::Eor>(self),
+            0x05 => instr::read::<M, addr::Direct, op::Ora>(self),
+            0x25 => instr::read::<M, addr::Direct, op::And>(self),
+            0x45 => instr::read::<M, addr::Direct, op::Eor>(self),
             0x65 => instr::read::<M, addr::Direct, op::Adc>(self),
             0x85 => instr::write::<M, addr::Direct, op::Sta>(self),
             0xa5 => instr::read::<M, addr::Direct, op::Lda>(self),
@@ -228,9 +228,9 @@ impl<T: Bus> Core<T> {
             0xe5 => instr::read::<M, addr::Direct, op::Sbc>(self),
 
             // +0x15
-            //0x15 => instr::read::<M, addr::DirectX<E>, op::Ora>(self),
-            //0x35 => instr::read::<M, addr::DirectX<E>, op::And>(self),
-            //0x55 => instr::read::<M, addr::DirectX<E>, op::Eor>(self),
+            0x15 => instr::read::<M, addr::DirectX<E>, op::Ora>(self),
+            0x35 => instr::read::<M, addr::DirectX<E>, op::And>(self),
+            0x55 => instr::read::<M, addr::DirectX<E>, op::Eor>(self),
             0x75 => instr::read::<M, addr::DirectX<E>, op::Adc>(self),
             0x95 => instr::write::<M, addr::DirectX<E>, op::Sta>(self),
             0xb5 => instr::read::<M, addr::DirectX<E>, op::Lda>(self),
@@ -238,9 +238,9 @@ impl<T: Bus> Core<T> {
             0xf5 => instr::read::<M, addr::DirectX<E>, op::Sbc>(self),
 
             // +0x09
-            //0x09 => instr::immediate::<M, op::Ora>(self),
-            //0x29 => instr::immediate::<M, op::And>(self),
-            //0x49 => instr::immediate::<M, op::Eor>(self),
+            0x09 => instr::immediate::<M, op::Ora>(self),
+            0x29 => instr::immediate::<M, op::And>(self),
+            0x49 => instr::immediate::<M, op::Eor>(self),
             0x69 => instr::immediate::<M, op::Adc>(self),
             //0x89 => instr::immediate::<M, op::BitImmediate>(self),
             0xa9 => instr::immediate::<M, op::Lda>(self),
@@ -248,9 +248,9 @@ impl<T: Bus> Core<T> {
             0xe9 => instr::immediate::<M, op::Sbc>(self),
 
             // +0x19
-            //0x19 => instr::read::<M, addr::AbsoluteY<X>, op::Ora>(self),
-            //0x39 => instr::read::<M, addr::AbsoluteY<X>, op::And>(self),
-            //0x59 => instr::read::<M, addr::AbsoluteY<X>, op::Eor>(self),
+            0x19 => instr::read::<M, addr::AbsoluteY<X>, op::Ora>(self),
+            0x39 => instr::read::<M, addr::AbsoluteY<X>, op::And>(self),
+            0x59 => instr::read::<M, addr::AbsoluteY<X>, op::Eor>(self),
             0x79 => instr::read::<M, addr::AbsoluteY<X>, op::Adc>(self),
             0x99 => instr::write::<M, addr::AbsoluteY<X>, op::Sta>(self),
             0xb9 => instr::read::<M, addr::AbsoluteY<X>, op::Lda>(self),
@@ -258,9 +258,9 @@ impl<T: Bus> Core<T> {
             0xf9 => instr::read::<M, addr::AbsoluteY<X>, op::Sbc>(self),
 
             // +0x0d
-            //0x0d => instr::read::<M, addr::Absolute, op::Ora>(self),
-            //0x2d => instr::read::<M, addr::Absolute, op::And>(self),
-            //0x4d => instr::read::<M, addr::Absolute, op::Eor>(self),
+            0x0d => instr::read::<M, addr::Absolute, op::Ora>(self),
+            0x2d => instr::read::<M, addr::Absolute, op::And>(self),
+            0x4d => instr::read::<M, addr::Absolute, op::Eor>(self),
             0x6d => instr::read::<M, addr::Absolute, op::Adc>(self),
             0x8d => instr::write::<M, addr::Absolute, op::Sta>(self),
             0xad => instr::read::<M, addr::Absolute, op::Lda>(self),
@@ -268,9 +268,9 @@ impl<T: Bus> Core<T> {
             0xed => instr::read::<M, addr::Absolute, op::Sbc>(self),
 
             // +0x1d
-            //0x1d => instr::read::<M, addr::AbsoluteX<X>, op::Ora>(self),
-            //0x3d => instr::read::<M, addr::AbsoluteX<X>, op::And>(self),
-            //0x5d => instr::read::<M, addr::AbsoluteX<X>, op::Eor>(self),
+            0x1d => instr::read::<M, addr::AbsoluteX<X>, op::Ora>(self),
+            0x3d => instr::read::<M, addr::AbsoluteX<X>, op::And>(self),
+            0x5d => instr::read::<M, addr::AbsoluteX<X>, op::Eor>(self),
             0x7d => instr::read::<M, addr::AbsoluteX<X>, op::Adc>(self),
             0x9d => instr::write::<M, addr::AbsoluteX<X>, op::Sta>(self),
             0xbd => instr::read::<M, addr::AbsoluteX<X>, op::Lda>(self),
@@ -358,9 +358,9 @@ impl<T: Bus> Core<T> {
             0xfb => instr::xce(self),
 
             // +0x07
-            //0x07 => instr::read::<M, addr::DirectIndirectLong, op::Ora>(self),
-            //0x27 => instr::read::<M, addr::DirectIndirectLong, op::And>(self),
-            //0x47 => instr::read::<M, addr::DirectIndirectLong, op::Eor>(self),
+            0x07 => instr::read::<M, addr::DirectIndirectLong, op::Ora>(self),
+            0x27 => instr::read::<M, addr::DirectIndirectLong, op::And>(self),
+            0x47 => instr::read::<M, addr::DirectIndirectLong, op::Eor>(self),
             0x67 => instr::read::<M, addr::DirectIndirectLong, op::Adc>(self),
             0x87 => instr::write::<M, addr::DirectIndirectLong, op::Sta>(self),
             0xa7 => instr::read::<M, addr::DirectIndirectLong, op::Lda>(self),
@@ -368,9 +368,9 @@ impl<T: Bus> Core<T> {
             0xe7 => instr::read::<M, addr::DirectIndirectLong, op::Sbc>(self),
 
             // +0x17
-            //0x17 => instr::read::<M, addr::DirectIndirectLongY, op::Ora>(self),
-            //0x37 => instr::read::<M, addr::DirectIndirectLongY, op::And>(self),
-            //0x57 => instr::read::<M, addr::DirectIndirectLongY, op::Eor>(self),
+            0x17 => instr::read::<M, addr::DirectIndirectLongY, op::Ora>(self),
+            0x37 => instr::read::<M, addr::DirectIndirectLongY, op::And>(self),
+            0x57 => instr::read::<M, addr::DirectIndirectLongY, op::Eor>(self),
             0x77 => instr::read::<M, addr::DirectIndirectLongY, op::Adc>(self),
             0x97 => instr::write::<M, addr::DirectIndirectLongY, op::Sta>(self),
             0xb7 => instr::read::<M, addr::DirectIndirectLongY, op::Lda>(self),
@@ -378,9 +378,9 @@ impl<T: Bus> Core<T> {
             0xf7 => instr::read::<M, addr::DirectIndirectLongY, op::Sbc>(self),
 
             // +0x0f
-            //0x0f => instr::read::<M, addr::AbsoluteLong, op::Ora>(self),
-            //0x2f => instr::read::<M, addr::AbsoluteLong, op::And>(self),
-            //0x4f => instr::read::<M, addr::AbsoluteLong, op::Eor>(self),
+            0x0f => instr::read::<M, addr::AbsoluteLong, op::Ora>(self),
+            0x2f => instr::read::<M, addr::AbsoluteLong, op::And>(self),
+            0x4f => instr::read::<M, addr::AbsoluteLong, op::Eor>(self),
             0x6f => instr::read::<M, addr::AbsoluteLong, op::Adc>(self),
             0x8f => instr::write::<M, addr::AbsoluteLong, op::Sta>(self),
             0xaf => instr::read::<M, addr::AbsoluteLong, op::Lda>(self),
@@ -388,9 +388,9 @@ impl<T: Bus> Core<T> {
             0xef => instr::read::<M, addr::AbsoluteLong, op::Sbc>(self),
 
             // +0x1f
-            //0x1f => instr::read::<M, addr::AbsoluteLongX, op::Ora>(self),
-            //0x3f => instr::read::<M, addr::AbsoluteLongX, op::And>(self),
-            //0x5f => instr::read::<M, addr::AbsoluteLongX, op::Eor>(self),
+            0x1f => instr::read::<M, addr::AbsoluteLongX, op::Ora>(self),
+            0x3f => instr::read::<M, addr::AbsoluteLongX, op::And>(self),
+            0x5f => instr::read::<M, addr::AbsoluteLongX, op::Eor>(self),
             0x7f => instr::read::<M, addr::AbsoluteLongX, op::Adc>(self),
             0x9f => instr::write::<M, addr::AbsoluteLongX, op::Sta>(self),
             0xbf => instr::read::<M, addr::AbsoluteLongX, op::Lda>(self),

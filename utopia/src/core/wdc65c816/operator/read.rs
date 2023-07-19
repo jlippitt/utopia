@@ -107,3 +107,54 @@ impl ReadOperator for Cpy {
         compare16(core, core.y, value);
     }
 }
+
+pub struct Ora;
+
+impl ReadOperator for Ora {
+    const NAME: &'static str = "ORA";
+
+    fn apply8(core: &mut Core<impl Bus>, value: u8) {
+        let result = core.a as u8 | value;
+        core.a = (core.a & 0xff00) | (result as u16);
+        core.set_nz8(result);
+    }
+
+    fn apply16(core: &mut Core<impl Bus>, value: u16) {
+        core.a |= value;
+        core.set_nz16(core.a);
+    }
+}
+
+pub struct And;
+
+impl ReadOperator for And {
+    const NAME: &'static str = "AND";
+
+    fn apply8(core: &mut Core<impl Bus>, value: u8) {
+        let result = core.a as u8 & value;
+        core.a = (core.a & 0xff00) | (result as u16);
+        core.set_nz8(result);
+    }
+
+    fn apply16(core: &mut Core<impl Bus>, value: u16) {
+        core.a &= value;
+        core.set_nz16(core.a);
+    }
+}
+
+pub struct Eor;
+
+impl ReadOperator for Eor {
+    const NAME: &'static str = "EOR";
+
+    fn apply8(core: &mut Core<impl Bus>, value: u8) {
+        let result = core.a as u8 ^ value;
+        core.a = (core.a & 0xff00) | (result as u16);
+        core.set_nz8(result);
+    }
+
+    fn apply16(core: &mut Core<impl Bus>, value: u16) {
+        core.a ^= value;
+        core.set_nz16(core.a);
+    }
+}
