@@ -312,14 +312,14 @@ impl<T: Bus> Core<T> {
             0xe6 => instr::modify::<M, addr::Direct, op::Inc>(self),
 
             // +0x16
-            //0x16 => instr::modify::<M, addr::DirectX, op::Asl>(self),
-            //0x36 => instr::modify::<M, addr::DirectX, op::Rol>(self),
-            //0x56 => instr::modify::<M, addr::DirectX, op::Lsr>(self),
-            //0x76 => instr::modify::<M, addr::DirectX, op::Ror>(self),
-            //0x96 => instr::write::<X, addr::DirectY, op::Stx>(self),
-            //0xb6 => instr::read::<X, addr::DirectY, op::Ldx>(self),
-            //0xd6 => instr::modify::<M, addr::DirectX, op::Dec>(self),
-            //0xf6 => instr::modify::<M, addr::DirectX, op::Inc>(self),
+            0x16 => instr::modify::<M, addr::DirectX<E>, op::Asl>(self),
+            0x36 => instr::modify::<M, addr::DirectX<E>, op::Rol>(self),
+            0x56 => instr::modify::<M, addr::DirectX<E>, op::Lsr>(self),
+            0x76 => instr::modify::<M, addr::DirectX<E>, op::Ror>(self),
+            0x96 => instr::write::<X, addr::DirectY<E>, op::Stx>(self),
+            0xb6 => instr::read::<X, addr::DirectY<E>, op::Ldx>(self),
+            0xd6 => instr::modify::<M, addr::DirectX<E>, op::Dec>(self),
+            0xf6 => instr::modify::<M, addr::DirectX<E>, op::Inc>(self),
 
             // +0x0a
             0x0a => instr::accumulator::<M, op::Asl>(self),

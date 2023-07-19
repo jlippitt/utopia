@@ -119,6 +119,19 @@ impl<const E: bool> AddressMode for DirectX<E> {
     }
 }
 
+pub struct DirectY<const E: bool>;
+
+impl<const E: bool> AddressMode for DirectY<E> {
+    const NAME: &'static str = "dp,Y";
+    const WRAP: u32 = WRAP16;
+
+    fn resolve(core: &mut Core<impl Bus>, write: bool) -> u32 {
+        let base = Direct::resolve(core, write);
+        core.idle();
+        index_direct::<E>(core, base, core.y)
+    }
+}
+
 pub struct DirectIndirect<const E: bool>;
 
 impl<const E: bool> AddressMode for DirectIndirect<E> {
