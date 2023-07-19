@@ -8,17 +8,17 @@ use registers::Registers;
 use std::error::Error;
 use std::fmt;
 use tracing::{debug, warn};
+use wram::Wram;
 
 mod apu;
 mod clock;
 mod memory;
 mod registers;
+mod wram;
 
 const WIDTH: usize = 512;
 const HEIGHT: usize = 448;
 const PIXELS: [u8; WIDTH * HEIGHT * 4] = [0; WIDTH * HEIGHT * 4];
-
-const WRAM_SIZE: usize = 131072;
 
 // TODO: Overscan
 const VBLANK_LINE: u32 = 225;
@@ -63,7 +63,7 @@ pub struct Hardware {
     interrupt: Interrupt,
     pages: [Page; TOTAL_PAGES],
     rom: MirrorVec<u8>,
-    wram: MirrorVec<u8>,
+    wram: Wram,
     regs: Registers,
     apu: Apu,
 }
@@ -78,7 +78,7 @@ impl Hardware {
             interrupt: 0,
             pages,
             rom: rom_data.into(),
-            wram: MirrorVec::new(WRAM_SIZE),
+            wram: Wram::new(),
             regs: Registers::new(),
             apu: Apu::new(ipl_rom),
         }
@@ -108,13 +108,13 @@ impl Hardware {
     }
 
     fn read_bus_b(&mut self, address: u8) -> u8 {
-        match address {
-            0x00..=0x3f => todo!("PPU reads"),
-            0x40..=0x7f => {
+        match address & 0xc0 {
+            0x00 => todo!("PPU reads"),
+            0x40 => {
                 self.apu.run_until(self.clock.cycles());
                 self.apu.read(address)
             }
-            0x80..=0x83 => todo!("WRAM registers"),
+            0x80 => self.wram.read_register(address, self.mdr),
             _ => {
                 warn!("Unmapped Bus B read: {:02X}", address);
                 self.mdr
@@ -123,13 +123,13 @@ impl Hardware {
     }
 
     fn write_bus_b(&mut self, address: u8, value: u8) {
-        match address {
-            0x00..=0x3f => (), // TODO: PPU writes
-            0x40..=0x7f => {
+        match address & 0xc0 {
+            0x00 => (), // TODO: PPU writes
+            0x40 => {
                 self.apu.run_until(self.clock.cycles());
                 self.apu.write(address, value);
             }
-            0x80..=0x83 => todo!("WRAM registers"),
+            0x80 => self.wram.write_register(address, value),
             _ => warn!("Unmapped Bus B write: {:02X} <= {:02X}", address, value),
         }
     }
