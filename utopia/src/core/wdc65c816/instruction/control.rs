@@ -1,6 +1,18 @@
 use super::super::{Bus, Core};
 use tracing::debug;
 
+pub fn jmp_indirect_long(core: &mut Core<impl Bus>) {
+    debug!("JMP [addr]");
+    let low_address = core.next_word();
+    let low = core.read(low_address as u32);
+    let high_address = low_address.wrapping_add(1);
+    let high = core.read(high_address as u32);
+    core.poll();
+    let bank_address = high_address.wrapping_add(1);
+    let bank = core.read(bank_address as u32);
+    core.pc = u32::from_le_bytes([low, high, bank, 0]);
+}
+
 pub fn jsr<const E: bool>(core: &mut Core<impl Bus>) {
     debug!("JSR addr");
     let low = core.next_byte();

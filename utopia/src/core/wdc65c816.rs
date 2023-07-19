@@ -192,7 +192,7 @@ impl<T: Bus> Core<T> {
             //0x7c => instr::read::<addr::AbsoluteX<X>, op::Nop>(self),
             0x9c => instr::write::<M, addr::Absolute, op::Stz>(self),
             0xbc => instr::read::<X, addr::AbsoluteX<X>, op::Ldy>(self),
-            //0xdc => instr::read::<addr::AbsoluteX<X>, op::Nop>(self),
+            0xdc => instr::jmp_indirect_long(self),
             //0xfc => instr::read::<addr::AbsoluteX<X>, op::Nop>(self),
 
             // Page 1: Accumulator Ops
