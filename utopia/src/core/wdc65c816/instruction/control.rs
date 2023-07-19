@@ -49,3 +49,15 @@ pub fn rts<const E: bool>(core: &mut Core<impl Bus>) {
     core.poll();
     core.idle();
 }
+
+pub fn rtl<const E: bool>(core: &mut Core<impl Bus>) {
+    debug!("RTL");
+    core.idle();
+    core.idle();
+    let low = core.pull::<E>();
+    let high = core.pull::<E>();
+    let target = u16::from_le_bytes([low, high]).wrapping_add(1);
+    core.poll();
+    let bank = core.pull::<E>();
+    core.pc = ((bank as u32) << 16) | (target as u32);
+}
