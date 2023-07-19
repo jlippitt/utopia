@@ -5,7 +5,7 @@ pub const FAST_CYCLES: u64 = 6;
 pub const SLOW_CYCLES: u64 = 8;
 pub const EXTRA_SLOW_CYCLES: u64 = 12;
 
-// TODO: Interlace/Overscan
+// TODO: Interlace
 pub const TOTAL_LINES: u32 = 262;
 
 pub const CYCLES_PER_LINE: u64 = 1364;
@@ -44,6 +44,10 @@ impl Clock {
 
     pub fn cycles(&self) -> u64 {
         self.cycles + self.dot
+    }
+
+    pub fn line(&self) -> u32 {
+        self.line
     }
 
     pub fn add_cycles(&mut self, cycles: u64) {

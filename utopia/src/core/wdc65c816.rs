@@ -24,6 +24,8 @@ pub trait Bus: fmt::Display {
     fn idle(&mut self);
     fn read(&mut self, address: u32) -> u8;
     fn write(&mut self, address: u32, value: u8);
+    fn poll(&self) -> Interrupt;
+    fn acknowledge(&mut self, interrupt: Interrupt);
 }
 
 pub struct Flags {
@@ -103,7 +105,11 @@ impl<T: Bus> Core<T> {
             self.read(self.pc);
 
             if (self.interrupt & INT_RESET) != 0 {
+                self.bus.acknowledge(INT_RESET);
                 instr::reset(self);
+            } else if (self.interrupt & INT_NMI) != 0 {
+                self.bus.acknowledge(INT_NMI);
+                instr::nmi::<E>(self);
             } else {
                 panic!("Interrupt not yet implemented");
             }
@@ -416,7 +422,7 @@ impl<T: Bus> Core<T> {
     }
 
     fn poll(&mut self) {
-        // Nothing yet
+        self.interrupt = self.bus.poll() & (self.flags.i as Interrupt);
     }
 
     fn idle(&mut self) {

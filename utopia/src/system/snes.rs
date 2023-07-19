@@ -1,9 +1,10 @@
 use super::{BiosLoader, JoypadState, System};
-use crate::core::wdc65c816::{Bus, Core};
+use crate::core::wdc65c816::{Bus, Core, Interrupt, INT_NMI};
 use crate::util::MirrorVec;
 use apu::Apu;
 use clock::{Clock, Event, FAST_CYCLES};
 use memory::{Page, TOTAL_PAGES};
+use registers::Registers;
 use std::error::Error;
 use std::fmt;
 use tracing::{debug, warn};
@@ -11,12 +12,16 @@ use tracing::{debug, warn};
 mod apu;
 mod clock;
 mod memory;
+mod registers;
 
 const WIDTH: usize = 512;
 const HEIGHT: usize = 448;
 const PIXELS: [u8; WIDTH * HEIGHT * 4] = [0; WIDTH * HEIGHT * 4];
 
 const WRAM_SIZE: usize = 131072;
+
+// TODO: Overscan
+const VBLANK_LINE: u32 = 225;
 
 pub struct Snes {
     core: Core<Hardware>,
@@ -55,9 +60,11 @@ impl System for Snes {
 pub struct Hardware {
     clock: Clock,
     mdr: u8,
+    interrupt: Interrupt,
     pages: [Page; TOTAL_PAGES],
     rom: MirrorVec<u8>,
     wram: MirrorVec<u8>,
+    regs: Registers,
     apu: Apu,
 }
 
@@ -68,9 +75,11 @@ impl Hardware {
         Self {
             clock: Clock::new(),
             mdr: 0,
+            interrupt: 0,
             pages,
             rom: rom_data.into(),
             wram: MirrorVec::new(WRAM_SIZE),
+            regs: Registers::new(),
             apu: Apu::new(ipl_rom),
         }
     }
@@ -81,7 +90,18 @@ impl Hardware {
         while let Some(event) = self.clock.event() {
             match event {
                 Event::NewLine => {
-                    // TODO
+                    let line = self.clock.line();
+
+                    if line == VBLANK_LINE {
+                        self.regs.set_nmi_occurred(true);
+
+                        if self.regs.nmi_raised() {
+                            self.interrupt |= INT_NMI;
+                        }
+                    } else if line == 0 {
+                        self.regs.set_nmi_occurred(false);
+                        self.interrupt &= !INT_NMI;
+                    }
                 }
             }
         }
@@ -133,7 +153,15 @@ impl Bus for Hardware {
                     self.mdr
                 }
             },
-            Page::InternalRegisters => panic!("Internal register reads not yet implemented"),
+            Page::InternalRegisters => match address & 0x1f00 {
+                0x0000 => 0, // TODO: NES-style joypads
+                0x0200 => self.read_register(address as u8, self.mdr),
+                0x0300 => todo!("DMA reads"),
+                _ => {
+                    warn!("Unmapped internal register read: {:06X}", address);
+                    self.mdr
+                }
+            },
             Page::OpenBus => {
                 warn!("Unmapped Bus A read: {:06X}", address);
                 self.mdr
@@ -159,9 +187,25 @@ impl Bus for Hardware {
                     address, value
                 ),
             },
-            Page::InternalRegisters => (), // TODO
+            Page::InternalRegisters => match address & 0x1f00 {
+                0x0000 => (), // TODO: NES-style joypads
+                0x0200 => self.write_register(address as u8, value),
+                0x0300 => (), // TODO: DMA
+                _ => warn!(
+                    "Unmapped external register write: {:06X} <= {:02X}",
+                    address, value
+                ),
+            },
             Page::OpenBus => warn!("Unmapped Bus A write: {:06X} <= {:02X}", address, value),
         }
+    }
+
+    fn poll(&self) -> Interrupt {
+        self.interrupt
+    }
+
+    fn acknowledge(&mut self, interrupt: Interrupt) {
+        self.interrupt &= !interrupt;
     }
 }
 

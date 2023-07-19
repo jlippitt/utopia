@@ -186,7 +186,7 @@ impl Ppu {
 
                 if !nmi_active {
                     *interrupt &= !INT_NMI;
-                } else if self.status.nmi_occurred && !self.control.nmi_active {
+                } else if nmi_active && self.status.nmi_occurred && !self.control.nmi_active {
                     *interrupt |= INT_NMI;
                 }
 
