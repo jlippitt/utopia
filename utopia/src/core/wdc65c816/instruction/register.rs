@@ -174,3 +174,29 @@ pub fn tyx<const X: bool>(core: &mut Core<impl Bus>) {
         core.set_nz16(core.x);
     }
 }
+
+pub fn tsx<const X: bool>(core: &mut Core<impl Bus>) {
+    debug!("TSX.{}", super::size(X));
+    core.poll();
+    core.idle();
+
+    if X {
+        core.x = core.s & 0xff;
+        core.set_nz8(core.x as u8);
+    } else {
+        core.x = core.s;
+        core.set_nz16(core.x);
+    }
+}
+
+pub fn txs<const E: bool>(core: &mut Core<impl Bus>) {
+    debug!("TXS");
+    core.poll();
+    core.idle();
+
+    if E {
+        core.s = EMULATION_STACK_PAGE | (core.x & 0xff);
+    } else {
+        core.s = core.x;
+    }
+}
