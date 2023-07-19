@@ -3,11 +3,26 @@ use super::{Bus, Core};
 const WRAP16: u32 = 0x0000_ffff;
 const WRAP24: u32 = 0x00ff_ffff;
 
-fn index_direct<const E: bool>(core: &Core<impl Bus>, base: u32, index: u32) -> u32 {
+fn index_absolute<const X: bool>(
+    core: &mut Core<impl Bus>,
+    base: u32,
+    index: u16,
+    write: bool,
+) -> u32 {
+    let address = base.wrapping_add(index as u32) & WRAP24;
+
+    if !X || write || (address & 0xffff_ff00) != (base & 0xffff_ff00) {
+        core.idle();
+    }
+
+    address
+}
+
+fn index_direct<const E: bool>(core: &Core<impl Bus>, base: u32, index: u16) -> u32 {
     if E && (core.d & 0xff) == 0 {
-        (base & 0xff00) | (base.wrapping_add(index) & 0xff)
+        (base & 0xff00) | (base.wrapping_add(index as u32) & 0xff)
     } else {
-        base.wrapping_add(index) & WRAP16
+        base.wrapping_add(index as u32) & WRAP16
     }
 }
 
@@ -25,6 +40,30 @@ impl AddressMode for Absolute {
 
     fn resolve(core: &mut Core<impl Bus>, _write: bool) -> u32 {
         core.dbr | (core.next_word() as u32)
+    }
+}
+
+pub struct AbsoluteX<const X: bool>;
+
+impl<const X: bool> AddressMode for AbsoluteX<X> {
+    const NAME: &'static str = "addr,X";
+    const WRAP: u32 = WRAP24;
+
+    fn resolve(core: &mut Core<impl Bus>, write: bool) -> u32 {
+        let base = Absolute::resolve(core, write);
+        index_absolute::<X>(core, base, core.x, write)
+    }
+}
+
+pub struct AbsoluteY<const X: bool>;
+
+impl<const X: bool> AddressMode for AbsoluteY<X> {
+    const NAME: &'static str = "addr,Y";
+    const WRAP: u32 = WRAP24;
+
+    fn resolve(core: &mut Core<impl Bus>, write: bool) -> u32 {
+        let base = Absolute::resolve(core, write);
+        index_absolute::<X>(core, base, core.y, write)
     }
 }
 
@@ -76,7 +115,7 @@ impl<const E: bool> AddressMode for DirectX<E> {
     fn resolve(core: &mut Core<impl Bus>, write: bool) -> u32 {
         let base = Direct::resolve(core, write);
         core.idle();
-        index_direct::<E>(core, base, core.x as u32)
+        index_direct::<E>(core, base, core.x)
     }
 }
 
