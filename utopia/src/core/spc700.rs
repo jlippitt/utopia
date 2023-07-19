@@ -90,6 +90,26 @@ impl<T: Bus> Core<T> {
             0xd0 => instr::branch::<op::Bne>(self),
             0xf0 => instr::branch::<op::Beq>(self),
 
+            // +0x02
+            0x02 => instr::unary::<addr::Direct, op::Set1<0>>(self),
+            0x22 => instr::unary::<addr::Direct, op::Set1<1>>(self),
+            0x42 => instr::unary::<addr::Direct, op::Set1<2>>(self),
+            0x62 => instr::unary::<addr::Direct, op::Set1<3>>(self),
+            0x82 => instr::unary::<addr::Direct, op::Set1<4>>(self),
+            0xa2 => instr::unary::<addr::Direct, op::Set1<5>>(self),
+            0xc2 => instr::unary::<addr::Direct, op::Set1<6>>(self),
+            0xe2 => instr::unary::<addr::Direct, op::Set1<7>>(self),
+
+            // +0x12
+            0x12 => instr::unary::<addr::Direct, op::Clr1<0>>(self),
+            0x32 => instr::unary::<addr::Direct, op::Clr1<1>>(self),
+            0x52 => instr::unary::<addr::Direct, op::Clr1<2>>(self),
+            0x72 => instr::unary::<addr::Direct, op::Clr1<3>>(self),
+            0x92 => instr::unary::<addr::Direct, op::Clr1<4>>(self),
+            0xb2 => instr::unary::<addr::Direct, op::Clr1<5>>(self),
+            0xd2 => instr::unary::<addr::Direct, op::Clr1<6>>(self),
+            0xf2 => instr::unary::<addr::Direct, op::Clr1<7>>(self),
+
             // +0x04
             0x04 => instr::binary::<addr::A, addr::Direct, op::Or>(self),
             0x24 => instr::binary::<addr::A, addr::Direct, op::And>(self),
