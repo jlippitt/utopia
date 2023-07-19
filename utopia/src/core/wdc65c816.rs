@@ -329,7 +329,7 @@ impl<T: Bus> Core<T> {
             0x8a => instr::txa::<M>(self),
             0xaa => instr::tax::<X>(self),
             0xca => instr::dex::<X>(self),
-            //0xea => instr::nop(self),
+            0xea => instr::nop(self),
 
             // +0x1a
             0x1a => instr::accumulator::<M, op::Inc>(self),

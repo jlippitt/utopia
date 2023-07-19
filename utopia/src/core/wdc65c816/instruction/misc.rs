@@ -1,6 +1,12 @@
 use super::super::{Bus, Core, Mode, EMULATION_STACK_PAGE};
 use tracing::debug;
 
+pub fn nop(core: &mut Core<impl Bus>) {
+    debug!("NOP");
+    core.poll();
+    core.idle();
+}
+
 pub fn xba(core: &mut Core<impl Bus>) {
     debug!("XBA");
     core.poll();
