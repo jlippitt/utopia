@@ -38,7 +38,8 @@ impl super::Hardware {
 
                 value
             }
-            0x18..=0x1f => 0, // TODO: Auto joypad read
+            0x11 => prev_value & 0x7f, // TODO: IRQ
+            0x18..=0x1f => 0,          // TODO: Auto joypad read
             _ => todo!("Register read {:02X}", address),
         }
     }
