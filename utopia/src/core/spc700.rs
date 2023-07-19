@@ -231,6 +231,8 @@ impl<T: Bus> Core<T> {
             0xf9 => instr::binary::<addr::X, addr::DirectY, op::Mov>(self),
 
             // +0x1a
+            0x1a => instr::decw(self),
+            0x3a => instr::incw(self),
             0xba => instr::movw_read(self),
             0xda => instr::movw_write(self),
 
