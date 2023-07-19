@@ -101,6 +101,6 @@ impl Clock {
 impl fmt::Display for Clock {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // TODO: Long dots
-        write!(f, "V={} H={} T={}", self.line, self.dot >> 2, self.cycles)
+        write!(f, "V={} H={} T={}", self.line, self.dot >> 2, self.cycles())
     }
 }
