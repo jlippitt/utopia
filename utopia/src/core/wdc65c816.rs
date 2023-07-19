@@ -346,7 +346,10 @@ impl<T: Bus> Core<T> {
             0xfe => instr::modify::<M, addr::AbsoluteX<X>, op::Inc>(self),
 
             // +0x0b
+            0x4b => instr::phk::<E>(self),
             0x6b => instr::rtl::<E>(self),
+            0x8b => instr::phb::<E>(self),
+            0xab => instr::plb::<E>(self),
             0xeb => instr::xba(self),
 
             // +0x1b

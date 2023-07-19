@@ -77,3 +77,27 @@ pub fn ply<const E: bool, const X: bool>(core: &mut Core<impl Bus>) {
     debug!("PLY.{}", super::size(X));
     core.y = pull_register::<E, X>(core, 0);
 }
+
+pub fn phk<const E: bool>(core: &mut Core<impl Bus>) {
+    debug!("PHK");
+    core.idle();
+    core.poll();
+    core.push::<E>((core.pc >> 16) as u8);
+}
+
+pub fn phb<const E: bool>(core: &mut Core<impl Bus>) {
+    debug!("PHB");
+    core.idle();
+    core.poll();
+    core.push::<E>((core.dbr >> 16) as u8);
+}
+
+pub fn plb<const E: bool>(core: &mut Core<impl Bus>) {
+    debug!("PLB");
+    core.idle();
+    core.idle();
+    core.poll();
+    let value = core.pull::<E>();
+    core.dbr = (value as u32) << 16;
+    core.set_nz8(value);
+}
