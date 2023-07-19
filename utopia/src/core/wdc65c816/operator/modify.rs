@@ -125,3 +125,35 @@ impl ModifyOperator for Inc {
         result
     }
 }
+
+pub struct Tsb;
+
+impl ModifyOperator for Tsb {
+    const NAME: &'static str = "TSB";
+
+    fn apply8(core: &mut Core<impl Bus>, value: u8) -> u8 {
+        core.flags.z = value as u16 & core.a;
+        value | core.a as u8
+    }
+
+    fn apply16(core: &mut Core<impl Bus>, value: u16) -> u16 {
+        core.flags.z = value & core.a;
+        value | core.a
+    }
+}
+
+pub struct Trb;
+
+impl ModifyOperator for Trb {
+    const NAME: &'static str = "TRB";
+
+    fn apply8(core: &mut Core<impl Bus>, value: u8) -> u8 {
+        core.flags.z = value as u16 & core.a;
+        value & !(core.a as u8)
+    }
+
+    fn apply16(core: &mut Core<impl Bus>, value: u16) -> u16 {
+        core.flags.z = value & core.a;
+        value & !core.a
+    }
+}

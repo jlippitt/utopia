@@ -142,7 +142,7 @@ impl<T: Bus> Core<T> {
             0xf0 => instr::branch::<E, op::Beq>(self),
 
             // +0x04
-            //0x04 => instr::read::<addr::Direct, op::Nop>(self),
+            0x04 => instr::modify::<M, addr::Direct, op::Tsb>(self),
             0x24 => instr::read::<M, addr::Direct, op::Bit>(self),
             //0x44 => instr::read::<addr::Direct, op::Nop>(self),
             0x64 => instr::write::<M, addr::Direct, op::Stz>(self),
@@ -152,7 +152,7 @@ impl<T: Bus> Core<T> {
             0xe4 => instr::read::<X, addr::Direct, op::Cpx>(self),
 
             // +0x14
-            //0x14 => instr::read::<addr::DirectX<E>, op::Nop>(self),
+            0x14 => instr::modify::<M, addr::Direct, op::Trb>(self),
             0x34 => instr::read::<M, addr::DirectX<E>, op::Bit>(self),
             //0x54 => instr::read::<addr::DirectX<E>, op::Nop>(self),
             0x74 => instr::write::<M, addr::DirectX<E>, op::Stz>(self),
@@ -182,7 +182,7 @@ impl<T: Bus> Core<T> {
             0xf8 => instr::sed(self),
 
             // +0x0c
-            //0x0c => instr::read::<addr::Absolute, op::Nop>(self),
+            0x0c => instr::modify::<M, addr::Absolute, op::Tsb>(self),
             0x2c => instr::read::<M, addr::Absolute, op::Bit>(self),
             0x4c => instr::jmp(self),
             //0x6c => instr::jmp_indirect(self),
@@ -192,7 +192,7 @@ impl<T: Bus> Core<T> {
             0xec => instr::read::<X, addr::Absolute, op::Cpx>(self),
 
             // +0x1c
-            //0x1c => instr::read::<addr::AbsoluteX<X>, op::Nop>(self),
+            0x1c => instr::modify::<M, addr::Absolute, op::Trb>(self),
             0x3c => instr::read::<M, addr::AbsoluteX<X>, op::Bit>(self),
             //0x5c => instr::read::<addr::AbsoluteX<X>, op::Nop>(self),
             //0x7c => instr::read::<addr::AbsoluteX<X>, op::Nop>(self),
