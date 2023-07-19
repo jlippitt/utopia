@@ -275,6 +275,7 @@ impl<T: Bus> Core<T> {
             0xfd => instr::binary::<addr::Y, addr::A, op::Mov>(self),
 
             // +0x0e
+            0x2e => instr::cbne::<addr::Direct>(self),
             //0x8e => instr::pop::<addr::Psw>(self),
             0xae => instr::pop::<addr::A>(self),
             0xce => instr::pop::<addr::X>(self),
@@ -285,6 +286,7 @@ impl<T: Bus> Core<T> {
             0x3e => instr::compare::<addr::X, addr::Direct>(self),
             0x5e => instr::compare::<addr::Y, addr::Absolute>(self),
             0x7e => instr::compare::<addr::Y, addr::Direct>(self),
+            0xde => instr::cbne::<addr::DirectX>(self),
 
             // +0x0f
             0x2f => instr::branch::<op::Bra>(self),
