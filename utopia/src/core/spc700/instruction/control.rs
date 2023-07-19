@@ -55,5 +55,22 @@ pub fn cbne<Addr: ReadAddress>(core: &mut Core<impl Bus>) {
     debug!("CBNE {}, r", Addr::NAME);
     let value = Addr::read(core);
     core.idle();
-    execute_branch(core, value != 0);
+    execute_branch(core, core.a != value);
+}
+
+pub fn dbnz_y(core: &mut Core<impl Bus>) {
+    debug!("DBNZ Y, r");
+    core.read(core.pc);
+    core.idle();
+    core.y = core.y.wrapping_sub(1);
+    execute_branch(core, core.y != 0);
+}
+
+pub fn dbnz_direct(core: &mut Core<impl Bus>) {
+    debug!("DBNZ d, r");
+    let address = core.next_byte();
+    let value = core.read_direct(address);
+    let result = value.wrapping_sub(1);
+    core.write_direct(address, result);
+    execute_branch(core, result != 0);
 }
