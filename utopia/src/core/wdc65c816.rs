@@ -143,7 +143,7 @@ impl<T: Bus> Core<T> {
 
             // +0x04
             //0x04 => instr::read::<addr::Direct, op::Nop>(self),
-            //0x24 => instr::read::<addr::Direct, op::Bit>(self),
+            0x24 => instr::read::<M, addr::Direct, op::Bit>(self),
             //0x44 => instr::read::<addr::Direct, op::Nop>(self),
             0x64 => instr::write::<M, addr::Direct, op::Stz>(self),
             0x84 => instr::write::<X, addr::Direct, op::Sty>(self),
@@ -153,7 +153,7 @@ impl<T: Bus> Core<T> {
 
             // +0x14
             //0x14 => instr::read::<addr::DirectX<E>, op::Nop>(self),
-            //0x34 => instr::read::<addr::DirectX<E>, op::Nop>(self),
+            0x34 => instr::read::<M, addr::DirectX<E>, op::Bit>(self),
             //0x54 => instr::read::<addr::DirectX<E>, op::Nop>(self),
             0x74 => instr::write::<M, addr::DirectX<E>, op::Stz>(self),
             0x94 => instr::write::<X, addr::DirectX<E>, op::Sty>(self),
@@ -183,7 +183,7 @@ impl<T: Bus> Core<T> {
 
             // +0x0c
             //0x0c => instr::read::<addr::Absolute, op::Nop>(self),
-            //0x2c => instr::read::<addr::Absolute, op::Bit>(self),
+            0x2c => instr::read::<M, addr::Absolute, op::Bit>(self),
             0x4c => instr::jmp(self),
             //0x6c => instr::jmp_indirect(self),
             0x8c => instr::write::<X, addr::Absolute, op::Sty>(self),
@@ -193,7 +193,7 @@ impl<T: Bus> Core<T> {
 
             // +0x1c
             //0x1c => instr::read::<addr::AbsoluteX<X>, op::Nop>(self),
-            //0x3c => instr::read::<addr::AbsoluteX<X>, op::Nop>(self),
+            0x3c => instr::read::<M, addr::AbsoluteX<X>, op::Bit>(self),
             //0x5c => instr::read::<addr::AbsoluteX<X>, op::Nop>(self),
             //0x7c => instr::read::<addr::AbsoluteX<X>, op::Nop>(self),
             0x9c => instr::write::<M, addr::Absolute, op::Stz>(self),
@@ -248,7 +248,7 @@ impl<T: Bus> Core<T> {
             0x29 => instr::immediate::<M, op::And>(self),
             0x49 => instr::immediate::<M, op::Eor>(self),
             0x69 => instr::immediate::<M, op::Adc>(self),
-            //0x89 => instr::immediate::<M, op::BitImmediate>(self),
+            0x89 => instr::immediate::<M, op::BitImmediate>(self),
             0xa9 => instr::immediate::<M, op::Lda>(self),
             0xc9 => instr::immediate::<M, op::Cmp>(self),
             0xe9 => instr::immediate::<M, op::Sbc>(self),

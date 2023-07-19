@@ -158,3 +158,35 @@ impl ReadOperator for Eor {
         core.set_nz16(core.a);
     }
 }
+
+pub struct Bit;
+
+impl ReadOperator for Bit {
+    const NAME: &'static str = "BIT";
+
+    fn apply8(core: &mut Core<impl Bus>, value: u8) {
+        core.flags.n = (value & 0x80) != 0;
+        core.flags.v = (value & 0x40) != 0;
+        core.flags.z = value as u16 & core.a;
+    }
+
+    fn apply16(core: &mut Core<impl Bus>, value: u16) {
+        core.flags.n = (value & 0x8000) != 0;
+        core.flags.v = (value & 0x4000) != 0;
+        core.flags.z = value & core.a;
+    }
+}
+
+pub struct BitImmediate;
+
+impl ReadOperator for BitImmediate {
+    const NAME: &'static str = "BIT";
+
+    fn apply8(core: &mut Core<impl Bus>, value: u8) {
+        core.flags.z = value as u16 & core.a;
+    }
+
+    fn apply16(core: &mut Core<impl Bus>, value: u16) {
+        core.flags.z = value & core.a;
+    }
+}
