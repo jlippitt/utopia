@@ -280,6 +280,7 @@ impl<T: Bus> Core<T> {
             // Page 2: Read-Modify-Write Ops
 
             // +0x02
+            0x22 => instr::jsl::<E>(self),
             0xa2 => instr::immediate::<X, op::Ldx>(self),
             0xc2 => instr::rep::<E>(self),
             0xe2 => instr::sep::<E>(self),
