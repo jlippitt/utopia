@@ -3,8 +3,11 @@ use tracing::debug;
 
 const VRAM_SIZE: usize = 32768;
 
+const PLANE_0_MASK: u16 = 0x5555;
+
 pub struct Vram {
     data: MirrorVec<u16>,
+    chr_cache: MirrorVec<u16>,
     address: u16,
     increment_high: bool,
     increment_amount: u16,
@@ -14,6 +17,7 @@ impl Vram {
     pub fn new() -> Self {
         Self {
             data: MirrorVec::new(VRAM_SIZE),
+            chr_cache: MirrorVec::new(VRAM_SIZE),
             address: 0,
             increment_high: false,
             increment_amount: 1,
@@ -22,6 +26,10 @@ impl Vram {
 
     pub fn data(&self, address: u16) -> u16 {
         self.data[address as usize]
+    }
+
+    pub fn chr4(&self, address: u16) -> u16 {
+        self.chr_cache[address as usize]
     }
 
     pub fn set_control(&mut self, value: u8) {
@@ -60,6 +68,8 @@ impl Vram {
             address, value, self.data[address]
         );
 
+        self.update_chr_cache(address, 0, value as u16);
+
         if !self.increment_high {
             self.address = self.address.wrapping_add(self.increment_amount);
         }
@@ -74,8 +84,26 @@ impl Vram {
             address, value, self.data[address]
         );
 
+        self.update_chr_cache(address, 1, value as u16);
+
         if self.increment_high {
             self.address = self.address.wrapping_add(self.increment_amount);
         }
+    }
+
+    fn update_chr_cache(&mut self, address: usize, plane: u8, value: u16) {
+        let index = ((address << 12) | (address >> 3)) & 0x7fff;
+
+        let chr_value = ((value & 0x01) << 14)
+            | ((value & 0x02) << 11)
+            | ((value & 0x04) << 8)
+            | ((value & 0x08) << 5)
+            | ((value & 0x10) << 2)
+            | ((value & 0x20) >> 1)
+            | ((value & 0x40) >> 4)
+            | ((value & 0x80) >> 7);
+
+        self.chr_cache[index] =
+            self.chr_cache[index] & !(PLANE_0_MASK << plane) | (chr_value << plane);
     }
 }

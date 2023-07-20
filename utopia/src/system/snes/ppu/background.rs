@@ -130,7 +130,8 @@ impl super::Ppu {
             match COLOR_DEPTH {
                 0 => {
                     let chr_address = bg.chr_map | (chr_name << 4) | fine_y;
-                    debug!("CHR: {:04X}", chr_address);
+                    let chr_data = self.vram.chr4(chr_address);
+                    debug!("CHR: {:04X} => {:04X}", chr_address, chr_data);
                 }
                 1 => todo!("16 color backgrounds"),
                 2 => todo!("256 color backgrounds"),
