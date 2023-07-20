@@ -1,5 +1,5 @@
 use super::super::{Bus, Core, Mode, EMULATION_STACK_PAGE};
-use tracing::debug;
+use tracing::{debug, warn};
 
 pub fn nop(core: &mut Core<impl Bus>) {
     debug!("NOP");
@@ -38,4 +38,17 @@ pub fn xce(core: &mut Core<impl Bus>) {
     } else {
         core.mode = Mode::Native11;
     }
+}
+
+pub fn wai(core: &mut Core<impl Bus>) {
+    debug!("WAI");
+    core.idle();
+    core.waiting = true;
+}
+
+pub fn stp(core: &mut Core<impl Bus>) {
+    debug!("STP");
+    core.idle();
+    core.stopped = true;
+    warn!("Processor stopped");
 }

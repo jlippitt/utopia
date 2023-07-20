@@ -57,6 +57,8 @@ pub struct Core<T: Bus> {
     pc: u32,
     dbr: u32,
     flags: Flags,
+    stopped: bool,
+    waiting: bool,
     interrupt: Interrupt,
     mode: Mode,
     bus: T,
@@ -80,6 +82,8 @@ impl<T: Bus> Core<T> {
                 z: 0xffff,
                 c: false,
             },
+            stopped: false,
+            waiting: false,
             interrupt: INT_RESET,
             mode: Mode::Emulation,
             bus,
@@ -95,6 +99,19 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn step(&mut self) {
+        if self.stopped {
+            self.idle();
+            return;
+        }
+
+        if self.waiting {
+            let poll_value = self.bus.poll();
+            self.waiting = poll_value == 0;
+            self.interrupt = poll_value & (self.flags.i as Interrupt);
+            self.idle();
+            return;
+        }
+
         match self.mode {
             Mode::Native11 => self.dispatch::<false, true, true>(),
             Mode::Native10 => self.dispatch::<false, true, false>(),
@@ -380,6 +397,7 @@ impl<T: Bus> Core<T> {
             0x6b => instr::rtl::<E>(self),
             0x8b => instr::phb::<E>(self),
             0xab => instr::plb::<E>(self),
+            0xcb => instr::wai(self),
             0xeb => instr::xba(self),
 
             // +0x1b
@@ -389,6 +407,7 @@ impl<T: Bus> Core<T> {
             0x7b => instr::tdc(self),
             0x9b => instr::txy::<X>(self),
             0xbb => instr::tyx::<X>(self),
+            0xdb => instr::stp(self),
             0xfb => instr::xce(self),
 
             // +0x03
