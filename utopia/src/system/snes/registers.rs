@@ -4,6 +4,7 @@ use tracing::debug;
 pub struct Registers {
     nmi_occurred: bool,
     nmi_active: bool,
+    multiplicand: u8,
     dividend: u16,
     quotient: u16,
     remainder: u16,
@@ -14,6 +15,7 @@ impl Registers {
         Self {
             nmi_occurred: false,
             nmi_active: false,
+            multiplicand: 0xff,
             dividend: 0xffff,
             quotient: 0xffff,
             remainder: 0xffff,
@@ -27,6 +29,16 @@ impl Registers {
     pub fn set_nmi_occurred(&mut self, nmi_occurred: bool) {
         self.nmi_occurred = nmi_occurred;
         debug!("NMI Occurred: {}", self.nmi_occurred);
+    }
+
+    pub fn multiply(&mut self, value: u8) {
+        // TODO: Simulate hardware delay
+        self.remainder = (self.multiplicand as u16) * (value as u16);
+
+        debug!(
+            "Multiplication (Unsigned): {} * {} = {}",
+            self.multiplicand, value, self.remainder
+        );
     }
 
     pub fn divide(&mut self, value: u8) {
@@ -84,6 +96,11 @@ impl super::Hardware {
                 self.regs.nmi_active = nmi_active;
                 debug!("NMI Active: {}", self.regs.nmi_active);
             }
+            0x02 => {
+                self.regs.multiplicand = value;
+                debug!("Multiplicand: {}", self.regs.multiplicand);
+            }
+            0x03 => self.regs.multiply(value),
             0x04 => {
                 self.regs.dividend = (self.regs.dividend & 0xff00) | (value as u16);
                 debug!("Dividend: {}", self.regs.dividend);
