@@ -8,6 +8,16 @@ const MIRROR_MASK_64: u16 = 63;
 const NAME_SHIFT_32: u16 = 5;
 const NAME_SHIFT_64: u16 = 6;
 
+fn color<const COLOR_DEPTH: u8>(chr: u64) -> usize {
+    let mut color = chr & 0x03;
+
+    if COLOR_DEPTH > 1 {
+        color |= (chr >> 14) & 0x0c;
+    }
+
+    color as usize
+}
+
 pub struct BackgroundLayer {
     tile_map: u16,
     mirror_mask_x: u16,
@@ -64,8 +74,9 @@ impl BackgroundLayer {
     }
 
     pub fn set_chr_map(&mut self, value: u8) {
-        self.chr_map = (value as u16) << 8;
-        debug!("{} CHR Map: {:04X}", self.name, self.chr_map);
+        let chr_address = (value as u16) << 12;
+        debug!("{} CHR Map: {:04X}", self.name, chr_address);
+        self.chr_map = chr_address >> 3;
     }
 
     pub fn set_scroll_x(&mut self, regs: &mut (u8, u8), value: u8) {
@@ -158,7 +169,7 @@ impl super::Ppu {
             match COLOR_DEPTH {
                 0 => {
                     let chr_index = (fine_y << 12) | ((bg.chr_map + chr_name) & 0x0fff);
-                    let chr_data = self.vram.chr4(chr_index);
+                    let chr_data = self.vram.chr4(chr_index as usize);
                     trace!("CHR Load: {:04X} => {:04X}", chr_index, chr_data);
 
                     *tile = Tile {
@@ -168,7 +179,18 @@ impl super::Ppu {
                         palette: ((tile_data & 0x1c00) >> 8),
                     };
                 }
-                1 => todo!("16 color backgrounds"),
+                1 => {
+                    let chr_index = (fine_y << 11) | (((bg.chr_map >> 1) + chr_name) & 0x07ff);
+                    let chr_data = self.vram.chr16(chr_index as usize);
+                    trace!("CHR Load: {:04X} => {:04X}", chr_index, chr_data);
+
+                    *tile = Tile {
+                        chr_data,
+                        flip_mask,
+                        priority,
+                        palette: ((tile_data & 0x1c00) >> 6),
+                    };
+                }
                 2 => todo!("256 color backgrounds"),
                 _ => unreachable!(),
             }
@@ -188,11 +210,11 @@ impl super::Ppu {
         let mut tile = tiles.next().unwrap();
 
         for pixel in pixels {
-            let color = (tile.chr_data >> (shift ^ tile.flip_mask)) & 0x03;
+            let color = color::<COLOR_DEPTH>(tile.chr_data >> (shift ^ tile.flip_mask));
 
             if color != 0 && tile.priority > pixel.priority {
                 *pixel = Pixel {
-                    color: self.cgram.color(tile.palette | color),
+                    color: self.cgram.color((tile.palette as usize) | color),
                     priority: tile.priority,
                 };
             }

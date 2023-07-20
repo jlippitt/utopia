@@ -5,7 +5,7 @@ pub const PIXEL_BUFFER_SIZE: usize = WIDTH >> 1;
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Tile {
-    pub chr_data: u16,
+    pub chr_data: u64,
     pub flip_mask: u16,
     pub priority: u8,
     pub palette: u16,

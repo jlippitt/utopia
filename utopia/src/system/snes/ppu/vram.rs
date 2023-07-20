@@ -28,8 +28,14 @@ impl Vram {
         self.data[address as usize]
     }
 
-    pub fn chr4(&self, index: u16) -> u16 {
-        self.chr_cache[index as usize]
+    pub fn chr4(&self, index: usize) -> u64 {
+        self.chr_cache[index] as u64
+    }
+
+    pub fn chr16(&self, index: usize) -> u64 {
+        let plane0 = self.chr_cache[index] as u64;
+        let plane1 = self.chr_cache[index + 1] as u64;
+        (plane1 << 16) | plane0
     }
 
     pub fn set_control(&mut self, value: u8) {
