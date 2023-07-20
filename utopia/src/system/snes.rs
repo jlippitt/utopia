@@ -5,6 +5,7 @@ use apu::Apu;
 use clock::{Clock, Event, FAST_CYCLES};
 use dma::Dma;
 use memory::{Page, TOTAL_PAGES};
+use ppu::Ppu;
 use registers::Registers;
 use std::error::Error;
 use std::fmt;
@@ -15,6 +16,7 @@ mod apu;
 mod clock;
 mod dma;
 mod memory;
+mod ppu;
 mod registers;
 mod wram;
 
@@ -71,6 +73,7 @@ pub struct Hardware {
     wram: Wram,
     regs: Registers,
     dma: Dma,
+    ppu: Ppu,
     apu: Apu,
 }
 
@@ -88,6 +91,7 @@ impl Hardware {
             wram: Wram::new(),
             regs: Registers::new(),
             dma: Dma::new(),
+            ppu: Ppu::new(),
             apu: Apu::new(ipl_rom),
         }
     }
@@ -173,7 +177,7 @@ impl Hardware {
 
     fn read_bus_b(&mut self, address: u8) -> u8 {
         self.mdr = match address & 0xc0 {
-            0x00 => todo!("PPU reads"),
+            0x00 => self.ppu.read(address),
             0x40 => {
                 self.apu.run_until(self.clock.cycles());
                 self.apu.read(address)
@@ -192,7 +196,7 @@ impl Hardware {
         self.mdr = value;
 
         match address & 0xc0 {
-            0x00 => (), // TODO: PPU writes
+            0x00 => self.ppu.write(address, value),
             0x40 => {
                 self.apu.run_until(self.clock.cycles());
                 self.apu.write(address, value);
