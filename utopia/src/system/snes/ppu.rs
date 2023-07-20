@@ -1,7 +1,7 @@
 pub use screen::{HEIGHT, WIDTH};
 
 use background::BackgroundLayer;
-use buffer::{Pixel, PixelBuffer};
+use buffer::{Pixel, PixelBuffer, TileBuffer, PIXEL_BUFFER_SIZE, TILE_BUFFER_SIZE};
 use cgram::Cgram;
 use screen::Screen;
 use tracing::warn;
@@ -16,10 +16,11 @@ mod vram;
 pub struct Ppu {
     vram: Vram,
     cgram: Cgram,
-    pixels_main: PixelBuffer,
     bg: [BackgroundLayer; 4],
     screen: Screen,
     scroll_regs: (u8, u8),
+    tiles: TileBuffer,
+    pixels: [PixelBuffer; 2],
 }
 
 impl Ppu {
@@ -27,7 +28,6 @@ impl Ppu {
         Self {
             vram: Vram::new(),
             cgram: Cgram::new(),
-            pixels_main: [Default::default(); WIDTH >> 1],
             bg: [
                 BackgroundLayer::new(1),
                 BackgroundLayer::new(2),
@@ -36,6 +36,11 @@ impl Ppu {
             ],
             screen: Screen::new(),
             scroll_regs: (0, 0),
+            tiles: [Default::default(); TILE_BUFFER_SIZE],
+            pixels: [
+                [Default::default(); PIXEL_BUFFER_SIZE],
+                [Default::default(); PIXEL_BUFFER_SIZE],
+            ],
         }
     }
 
@@ -87,13 +92,14 @@ impl Ppu {
     }
 
     pub fn draw_line(&mut self, line: u16) {
-        self.pixels_main.fill(Pixel {
+        self.pixels[0].fill(Pixel {
             color: self.cgram.color(0),
+            priority: 0,
         });
 
         // TODO: Video modes
         self.draw_bg::<0>(0, 4, 3, line);
 
-        self.screen.draw_lo_res(&self.pixels_main);
+        self.screen.draw_lo_res(&self.pixels[0]);
     }
 }

@@ -1,4 +1,5 @@
-use tracing::debug;
+use super::buffer::{Pixel, Tile};
+use tracing::{debug, trace};
 
 const MIRROR_MASK_32: u16 = 31;
 const MIRROR_MASK_64: u16 = 63;
@@ -88,12 +89,25 @@ impl BackgroundLayer {
 impl super::Ppu {
     pub(super) fn draw_bg<const COLOR_DEPTH: u8>(
         &mut self,
-        id: usize,
+        bg_index: usize,
         priority_high: u8,
         priority_low: u8,
         line: u16,
     ) {
-        let bg = &self.bg[id];
+        self.select_tiles::<COLOR_DEPTH>(bg_index, priority_high, priority_low, line);
+
+        // TODO: Screen controls
+        self.draw_lo_res::<COLOR_DEPTH>(bg_index, 0);
+    }
+
+    fn select_tiles<const COLOR_DEPTH: u8>(
+        &mut self,
+        bg_index: usize,
+        priority_high: u8,
+        priority_low: u8,
+        line: u16,
+    ) {
+        let bg = &self.bg[bg_index];
 
         let (coarse_y, mut fine_y) = {
             let pos_y = bg.scroll_y.wrapping_add(line) & bg.mirror_mask_y;
@@ -102,36 +116,45 @@ impl super::Ppu {
 
         let mut coarse_x = bg.scroll_x >> 3;
 
-        for _ in 0..34 {
-            let tile = {
+        for tile in &mut self.tiles {
+            let tile_data = {
                 let address = bg.tile_map
                     | ((coarse_y & 0x20) << bg.name_shift_y)
                     | ((coarse_x & 0x20) << NAME_SHIFT_32)
                     | ((coarse_y & 0x1f) << NAME_SHIFT_32)
                     | (coarse_x & 0x1f);
 
-                self.vram.data(address)
+                let value = self.vram.data(address);
+                trace!("Tile Load: {:04X} => {:04X}", address, value);
+                value
             };
 
-            if (tile & 0x8000) != 0 {
+            if (tile_data & 0x8000) != 0 {
                 fine_y ^= 7;
             }
 
-            let _flip_x = tile & 0x4000;
+            let flip_mask = if (tile_data & 0x4000) != 0 { 14 } else { 0 };
 
-            let _priority = if (tile & 0x2000) != 0 {
+            let priority = if (tile_data & 0x2000) != 0 {
                 priority_high
             } else {
                 priority_low
             };
 
-            let chr_name = tile & 0x03ff;
+            let chr_name = tile_data & 0x03ff;
 
             match COLOR_DEPTH {
                 0 => {
                     let chr_index = (fine_y << 12) | ((bg.chr_map + chr_name) & 0x0fff);
                     let chr_data = self.vram.chr4(chr_index);
-                    debug!("CHR: {:04X} => {:04X}", chr_index, chr_data);
+                    trace!("CHR Load: {:04X} => {:04X}", chr_index, chr_data);
+
+                    *tile = Tile {
+                        chr_data,
+                        flip_mask,
+                        priority,
+                        palette: ((tile_data & 0x1c00) >> 8),
+                    };
                 }
                 1 => todo!("16 color backgrounds"),
                 2 => todo!("256 color backgrounds"),
@@ -139,6 +162,35 @@ impl super::Ppu {
             }
 
             coarse_x = coarse_x.wrapping_add(1) & bg.mirror_mask_x;
+        }
+
+        trace!("BG{} Tiles: {:?}", bg.id, self.tiles);
+    }
+
+    fn draw_lo_res<const COLOR_DEPTH: u8>(&mut self, bg_index: usize, pixels_index: usize) {
+        let bg = &self.bg[bg_index];
+        let pixels = &mut self.pixels[pixels_index];
+
+        let mut shift = (bg.scroll_x & 7) << 1;
+        let mut tiles = self.tiles.into_iter();
+        let mut tile = tiles.next().unwrap();
+
+        for pixel in pixels {
+            let color = (tile.chr_data >> (shift ^ tile.flip_mask)) & 0x03;
+
+            if color != 0 && tile.priority > pixel.priority {
+                *pixel = Pixel {
+                    color: self.cgram.color(tile.palette | color),
+                    priority: tile.priority,
+                };
+            }
+
+            shift += 2;
+
+            if shift == 16 {
+                tile = tiles.next().unwrap();
+                shift = 0;
+            }
         }
     }
 }
