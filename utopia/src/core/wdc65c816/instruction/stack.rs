@@ -1,3 +1,4 @@
+use super::super::address_mode::{AddressMode, DirectIndirect};
 use super::super::{Bus, Core};
 use tracing::debug;
 
@@ -119,4 +120,29 @@ pub fn pld<const E: bool>(core: &mut Core<impl Bus>) {
     let high = core.pull::<E>();
     core.d = u16::from_le_bytes([low, high]);
     core.set_nz16(core.d);
+}
+
+pub fn pea<const E: bool>(core: &mut Core<impl Bus>) {
+    debug!("PEA addr");
+    let target = core.next_word();
+    core.push::<E>((target >> 8) as u8);
+    core.poll();
+    core.push::<E>(target as u8);
+}
+
+pub fn pei<const E: bool>(core: &mut Core<impl Bus>) {
+    debug!("PEI (dp)");
+    let target = DirectIndirect::<false>::resolve(core, true);
+    core.push::<E>((target >> 8) as u8);
+    core.poll();
+    core.push::<E>(target as u8);
+}
+
+pub fn per<const E: bool>(core: &mut Core<impl Bus>) {
+    debug!("PER label");
+    let offset = core.next_word();
+    let target = (core.pc as u16).wrapping_add(offset);
+    core.push::<E>((target >> 8) as u8);
+    core.poll();
+    core.push::<E>(target as u8);
 }

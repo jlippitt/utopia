@@ -166,8 +166,8 @@ impl<T: Bus> Core<T> {
             0x74 => instr::write::<M, addr::DirectX<E>, op::Stz>(self),
             0x94 => instr::write::<X, addr::DirectX<E>, op::Sty>(self),
             0xb4 => instr::read::<X, addr::DirectX<E>, op::Ldy>(self),
-            //0xd4 => instr::read::<addr::DirectX<E>, op::Nop>(self),
-            //0xf4 => instr::read::<addr::DirectX<E>, op::Nop>(self),
+            0xd4 => instr::pei::<E>(self),
+            0xf4 => instr::pea::<E>(self),
 
             // +0x08
             0x08 => instr::php::<E>(self),
@@ -295,6 +295,7 @@ impl<T: Bus> Core<T> {
 
             // +0x02
             0x22 => instr::jsl::<E>(self),
+            0x62 => instr::per::<E>(self),
             0x82 => instr::brl(self),
             0xa2 => instr::immediate::<X, op::Ldx>(self),
             0xc2 => instr::rep::<E>(self),
