@@ -86,6 +86,14 @@ impl<T: Bus> Core<T> {
         }
     }
 
+    pub fn bus(&self) -> &T {
+        &self.bus
+    }
+
+    pub fn bus_mut(&mut self) -> &mut T {
+        &mut self.bus
+    }
+
     pub fn step(&mut self) {
         match self.mode {
             Mode::Native11 => self.dispatch::<false, true, true>(),

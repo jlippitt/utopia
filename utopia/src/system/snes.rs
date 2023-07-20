@@ -50,7 +50,9 @@ impl System for Snes {
     }
 
     fn run_frame(&mut self, _joypad_state: &JoypadState) {
-        loop {
+        self.core.bus_mut().ready = false;
+
+        while !self.core.bus().ready {
             self.core.step();
             debug!("{}", self.core);
         }
@@ -61,6 +63,7 @@ pub struct Hardware {
     clock: Clock,
     mdr: u8,
     interrupt: Interrupt,
+    ready: bool,
     pages: [Page; TOTAL_PAGES],
     rom: MirrorVec<u8>,
     wram: Wram,
@@ -76,6 +79,7 @@ impl Hardware {
             clock: Clock::new(),
             mdr: 0,
             interrupt: 0,
+            ready: false,
             pages,
             rom: rom_data.into(),
             wram: Wram::new(),
@@ -93,6 +97,7 @@ impl Hardware {
                     let line = self.clock.line();
 
                     if line == VBLANK_LINE {
+                        self.ready = true;
                         self.regs.set_nmi_occurred(true);
 
                         if self.regs.nmi_raised() {
