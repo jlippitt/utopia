@@ -72,7 +72,7 @@ pub fn div(core: &mut Core<impl Bus>) {
         }
 
         if (result & 1) != 0 {
-            result = (result - divisor) & 0x0001_ffff;
+            result = (result.wrapping_sub(divisor)) & 0x0001_ffff;
         }
     }
 
