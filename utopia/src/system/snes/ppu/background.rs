@@ -63,7 +63,7 @@ impl BackgroundLayer {
     }
 
     pub fn set_chr_map(&mut self, value: u8) {
-        self.tile_map = (value as u16) << 8;
+        self.chr_map = (value as u16) << 8;
         debug!("BG{} CHR Map: {:04X}", self.id, self.chr_map);
     }
 
@@ -110,8 +110,8 @@ impl super::Ppu {
         let bg = &self.bg[bg_index];
 
         let (coarse_y, mut fine_y) = {
-            let pos_y = bg.scroll_y.wrapping_add(line) & bg.mirror_mask_y;
-            (pos_y >> 3, pos_y & 7)
+            let pos_y = bg.scroll_y.wrapping_add(line);
+            ((pos_y >> 3) & bg.mirror_mask_y, pos_y & 7)
         };
 
         let mut coarse_x = bg.scroll_x >> 3;
