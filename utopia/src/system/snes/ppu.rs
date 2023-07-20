@@ -4,6 +4,7 @@ use background::BackgroundLayer;
 use buffer::{Pixel, PixelBuffer, TileBuffer, PIXEL_BUFFER_SIZE, TILE_BUFFER_SIZE};
 use cgram::Cgram;
 use screen::Screen;
+use toggle::{ScreenToggle, Toggle};
 use tracing::warn;
 use vram::Vram;
 
@@ -11,11 +12,13 @@ mod background;
 mod buffer;
 mod cgram;
 mod screen;
+mod toggle;
 mod vram;
 
 pub struct Ppu {
     vram: Vram,
     cgram: Cgram,
+    enabled: [Toggle; 4],
     bg: [BackgroundLayer; 4],
     screen: Screen,
     scroll_regs: (u8, u8),
@@ -28,11 +31,17 @@ impl Ppu {
         Self {
             vram: Vram::new(),
             cgram: Cgram::new(),
+            enabled: [
+                Toggle::new("BG1"),
+                Toggle::new("BG2"),
+                Toggle::new("BG3"),
+                Toggle::new("BG4"),
+            ],
             bg: [
-                BackgroundLayer::new(1),
-                BackgroundLayer::new(2),
-                BackgroundLayer::new(3),
-                BackgroundLayer::new(4),
+                BackgroundLayer::new("BG1"),
+                BackgroundLayer::new("BG2"),
+                BackgroundLayer::new("BG3"),
+                BackgroundLayer::new("BG4"),
             ],
             screen: Screen::new(),
             scroll_regs: (0, 0),
@@ -83,6 +92,20 @@ impl Ppu {
             0x19 => self.vram.write_high(value),
             0x21 => self.cgram.set_address(value),
             0x22 => self.cgram.write(value),
+            0x2c => {
+                self.enabled[0].set(ScreenToggle::Main, (value & 0x01) != 0);
+                self.enabled[1].set(ScreenToggle::Main, (value & 0x02) != 0);
+                self.enabled[2].set(ScreenToggle::Main, (value & 0x04) != 0);
+                self.enabled[3].set(ScreenToggle::Main, (value & 0x08) != 0);
+                // TODO: OBJ layer
+            }
+            0x2d => {
+                self.enabled[0].set(ScreenToggle::Sub, (value & 0x01) != 0);
+                self.enabled[1].set(ScreenToggle::Sub, (value & 0x02) != 0);
+                self.enabled[2].set(ScreenToggle::Sub, (value & 0x04) != 0);
+                self.enabled[3].set(ScreenToggle::Sub, (value & 0x08) != 0);
+                // TODO: OBJ layer
+            }
             _ => warn!("Unmapped PPU write: {:02X} <= {:02X}", address, value),
         }
     }

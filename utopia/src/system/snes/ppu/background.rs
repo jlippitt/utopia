@@ -1,4 +1,5 @@
 use super::buffer::{Pixel, Tile};
+use super::toggle::ScreenToggle;
 use tracing::{debug, trace};
 
 const MIRROR_MASK_32: u16 = 31;
@@ -15,11 +16,11 @@ pub struct BackgroundLayer {
     chr_map: u16,
     scroll_x: u16,
     scroll_y: u16,
-    id: u32,
+    name: &'static str,
 }
 
 impl BackgroundLayer {
-    pub fn new(id: u32) -> Self {
+    pub fn new(name: &'static str) -> Self {
         Self {
             tile_map: 0,
             mirror_mask_x: MIRROR_MASK_32,
@@ -28,7 +29,7 @@ impl BackgroundLayer {
             chr_map: 0,
             scroll_x: 0,
             scroll_y: 0,
-            id,
+            name,
         }
     }
 
@@ -56,15 +57,15 @@ impl BackgroundLayer {
 
         self.tile_map = ((value & 0xfc) as u16) << 8;
 
-        debug!("BG{} Tile Map: {:04X}", self.id, self.tile_map);
-        debug!("BG{} Mirror Mask X: {}", self.id, self.mirror_mask_x as u16);
-        debug!("BG{} Mirror Mask Y: {}", self.id, self.mirror_mask_y as u16);
-        debug!("BG{} Name Shift Y: {}", self.id, self.name_shift_y as u16);
+        debug!("{} Tile Map: {:04X}", self.name, self.tile_map);
+        debug!("{} Mirror Mask X: {}", self.name, self.mirror_mask_x as u16);
+        debug!("{} Mirror Mask Y: {}", self.name, self.mirror_mask_y as u16);
+        debug!("{} Name Shift Y: {}", self.name, self.name_shift_y as u16);
     }
 
     pub fn set_chr_map(&mut self, value: u8) {
         self.chr_map = (value as u16) << 8;
-        debug!("BG{} CHR Map: {:04X}", self.id, self.chr_map);
+        debug!("{} CHR Map: {:04X}", self.name, self.chr_map);
     }
 
     pub fn set_scroll_x(&mut self, regs: &mut (u8, u8), value: u8) {
@@ -74,7 +75,7 @@ impl BackgroundLayer {
         regs.0 = value;
         regs.1 = value;
 
-        debug!("BG{} Scroll X: {}", self.id, self.scroll_x);
+        debug!("{} Scroll X: {}", self.name, self.scroll_x);
     }
 
     pub fn set_scroll_y(&mut self, regs: &mut (u8, u8), value: u8) {
@@ -82,7 +83,7 @@ impl BackgroundLayer {
 
         regs.0 = value;
 
-        debug!("BG{} Scroll Y: {}", self.id, self.scroll_y);
+        debug!("{} Scroll Y: {}", self.name, self.scroll_y);
     }
 }
 
@@ -94,10 +95,21 @@ impl super::Ppu {
         priority_low: u8,
         line: u16,
     ) {
+        let enabled = self.enabled[bg_index];
+
+        if !enabled.any_enabled() {
+            return;
+        }
+
         self.select_tiles::<COLOR_DEPTH>(bg_index, priority_high, priority_low, line);
 
-        // TODO: Screen controls
-        self.draw_lo_res::<COLOR_DEPTH>(bg_index, 0);
+        if enabled.screen_enabled(ScreenToggle::Main) {
+            self.draw_lo_res::<COLOR_DEPTH>(bg_index, 0);
+        }
+
+        if enabled.screen_enabled(ScreenToggle::Sub) {
+            self.draw_lo_res::<COLOR_DEPTH>(bg_index, 1);
+        }
     }
 
     fn select_tiles<const COLOR_DEPTH: u8>(
@@ -164,7 +176,7 @@ impl super::Ppu {
             coarse_x = coarse_x.wrapping_add(1) & bg.mirror_mask_x;
         }
 
-        trace!("BG{} Tiles: {:?}", bg.id, self.tiles);
+        trace!("{} Tiles: {:?}", bg.name, self.tiles);
     }
 
     fn draw_lo_res<const COLOR_DEPTH: u8>(&mut self, bg_index: usize, pixels_index: usize) {
