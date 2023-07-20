@@ -76,7 +76,6 @@ impl BackgroundLayer {
     pub fn set_chr_map(&mut self, value: u8) {
         let chr_address = (value as u16) << 12;
         debug!("{} CHR Map: {:04X}", self.name, chr_address);
-        self.chr_map = chr_address >> 3;
     }
 
     pub fn set_scroll_x(&mut self, regs: &mut (u8, u8), value: u8) {
@@ -168,7 +167,7 @@ impl super::Ppu {
 
             match COLOR_DEPTH {
                 0 => {
-                    let chr_index = (fine_y << 12) | ((bg.chr_map + chr_name) & 0x0fff);
+                    let chr_index = bg.chr_map.wrapping_add(chr_name << 3) | fine_y;
                     let chr_data = self.vram.chr4(chr_index as usize);
                     trace!("CHR Load: {:04X} => {:04X}", chr_index, chr_data);
 
@@ -180,7 +179,7 @@ impl super::Ppu {
                     };
                 }
                 1 => {
-                    let chr_index = (fine_y << 12) | ((bg.chr_map + (chr_name << 1)) & 0x0fff);
+                    let chr_index = bg.chr_map.wrapping_add(chr_name << 4) | fine_y;
                     let chr_data = self.vram.chr16(chr_index as usize);
                     trace!("CHR Load: {:04X} => {:08X}", chr_index, chr_data);
 

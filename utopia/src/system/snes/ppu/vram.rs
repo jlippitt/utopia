@@ -1,5 +1,5 @@
 use crate::util::MirrorVec;
-use tracing::debug;
+use tracing::{debug, trace};
 
 const VRAM_SIZE: usize = 32768;
 
@@ -33,9 +33,8 @@ impl Vram {
     }
 
     pub fn chr16(&self, index: usize) -> u64 {
-        assert!((index & 1) == 0);
         let plane0 = self.chr_cache[index] as u64;
-        let plane1 = self.chr_cache[index + 1] as u64;
+        let plane1 = self.chr_cache[index | 8] as u64;
         (plane1 << 16) | plane0
     }
 
@@ -99,8 +98,6 @@ impl Vram {
     }
 
     fn update_chr_cache(&mut self, address: usize, plane: u8, value: u16) {
-        let index = ((address << 12) | (address >> 3)) & 0x7fff;
-
         let chr_value = ((value & 0x01) << 14)
             | ((value & 0x02) << 11)
             | ((value & 0x04) << 8)
@@ -110,7 +107,15 @@ impl Vram {
             | ((value & 0x40) >> 4)
             | ((value & 0x80) >> 7);
 
-        self.chr_cache[index] =
-            (self.chr_cache[index] & !(PLANE_0_MASK << plane)) | (chr_value << plane);
+        self.chr_cache[address] =
+            (self.chr_cache[address] & !(PLANE_0_MASK << plane)) | (chr_value << plane);
+
+        trace!(
+            "CHR Cache Write (Plane {}): {:04X} <= {:02X} ({:04X})",
+            plane,
+            address,
+            value,
+            self.chr_cache[address]
+        );
     }
 }
