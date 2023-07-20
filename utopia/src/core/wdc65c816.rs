@@ -169,7 +169,7 @@ impl<T: Bus> Core<T> {
             // +0x04
             0x04 => instr::modify::<M, addr::Direct, op::Tsb>(self),
             0x24 => instr::read::<M, addr::Direct, op::Bit>(self),
-            //0x44 => instr::read::<addr::Direct, op::Nop>(self),
+            0x44 => instr::mvp::<X>(self),
             0x64 => instr::write::<M, addr::Direct, op::Stz>(self),
             0x84 => instr::write::<X, addr::Direct, op::Sty>(self),
             0xa4 => instr::read::<X, addr::Direct, op::Ldy>(self),
@@ -179,7 +179,7 @@ impl<T: Bus> Core<T> {
             // +0x14
             0x14 => instr::modify::<M, addr::Direct, op::Trb>(self),
             0x34 => instr::read::<M, addr::DirectX<E>, op::Bit>(self),
-            //0x54 => instr::read::<addr::DirectX<E>, op::Nop>(self),
+            0x54 => instr::mvn::<X>(self),
             0x74 => instr::write::<M, addr::DirectX<E>, op::Stz>(self),
             0x94 => instr::write::<X, addr::DirectX<E>, op::Sty>(self),
             0xb4 => instr::read::<X, addr::DirectX<E>, op::Ldy>(self),
@@ -469,8 +469,6 @@ impl<T: Bus> Core<T> {
             0xbf => instr::read::<M, addr::AbsoluteLongX, op::Lda>(self),
             0xdf => instr::read::<M, addr::AbsoluteLongX, op::Cmp>(self),
             0xff => instr::read::<M, addr::AbsoluteLongX, op::Sbc>(self),
-
-            opcode => todo!("WDC65c816 opcode {:02X}", opcode),
         }
     }
 
