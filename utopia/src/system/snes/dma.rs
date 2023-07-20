@@ -1,3 +1,4 @@
+use super::clock::SLOW_CYCLES;
 use tracing::{debug, warn};
 
 type Mode = ([u8; 4], usize);
@@ -54,12 +55,14 @@ impl DmaChannel {
 }
 
 pub struct Dma {
+    dma_enabled: u8,
     channels: [DmaChannel; 8],
 }
 
 impl Dma {
     pub fn new() -> Self {
         Self {
+            dma_enabled: 0,
             channels: [
                 DmaChannel::new(),
                 DmaChannel::new(),
@@ -71,6 +74,15 @@ impl Dma {
                 DmaChannel::new(),
             ],
         }
+    }
+
+    pub fn requested(&self) -> bool {
+        self.dma_enabled != 0
+    }
+
+    pub fn set_dma_enabled(&mut self, value: u8) {
+        self.dma_enabled = value;
+        debug!("DMA Enabled: {:08b}", self.dma_enabled);
     }
 
     pub fn read(&self, address: u8, prev_value: u8) -> u8 {
@@ -171,6 +183,81 @@ impl Dma {
                 debug!("DMA{} Unknown: {:02X}", id, channel.unknown);
             }
             _ => warn!("Unmapped DMA write: {:02X} <= {:02X}", address, value),
+        }
+    }
+}
+
+impl super::Hardware {
+    pub(super) fn transfer_dma(&mut self) {
+        // TODO: More accurate timing - but this will do for now
+        self.step(SLOW_CYCLES);
+
+        debug!("DMA Transfer Begin");
+
+        for id in 0..8 {
+            let mask = 1 << id;
+
+            if (self.dma.dma_enabled & mask) == 0 {
+                continue;
+            }
+
+            self.step(SLOW_CYCLES);
+            self.transfer_dma_for(id);
+        }
+
+        self.dma.dma_enabled = 0;
+
+        debug!("DMA Transfer End");
+    }
+
+    fn transfer_dma_for(&mut self, id: usize) {
+        let mut byte_index = 0;
+
+        loop {
+            self.step(SLOW_CYCLES);
+
+            let (port, address, reverse) = {
+                let channel = &self.dma.channels[id];
+                let port = channel.destination + channel.ctrl.mode.0[byte_index];
+                byte_index = byte_index.wrapping_add(1) & 3;
+                (port, channel.source, channel.ctrl.reverse)
+            };
+
+            if reverse {
+                let value = self.read_bus_b(port);
+                debug!(
+                    "DMA{} Read: {:02X} => {:02X} => {:06X}",
+                    id, port, value, address
+                );
+                self.write_bus_a(address, value);
+            } else {
+                let value = self.read_bus_a(address);
+                debug!(
+                    "DMA{} Write: {:02X} <= {:02X} <= {:06X}",
+                    id, port, value, address
+                );
+                self.write_bus_b(port, value);
+            }
+
+            let channel = &mut self.dma.channels[id];
+
+            if !channel.ctrl.fixed {
+                if channel.ctrl.decrement {
+                    channel.source =
+                        (channel.source & 0xffff_0000) | (channel.source.wrapping_sub(1) & 0xffff)
+                } else {
+                    channel.source =
+                        (channel.source & 0xffff_0000) | (channel.source.wrapping_add(1) & 0xffff)
+                }
+            }
+
+            let bytes_remaining = channel.indirect.wrapping_sub(1) & 0xffff;
+
+            channel.indirect = (channel.indirect & 0xffff_0000) | bytes_remaining;
+
+            if bytes_remaining == 0 {
+                break;
+            }
         }
     }
 }

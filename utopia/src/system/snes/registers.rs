@@ -58,6 +58,7 @@ impl super::Hardware {
                 self.regs.nmi_active = nmi_active;
                 debug!("NMI Active: {}", self.regs.nmi_active);
             }
+            0x0b => self.dma.set_dma_enabled(value),
             _ => (),
         }
     }

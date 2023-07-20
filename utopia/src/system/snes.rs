@@ -116,42 +116,7 @@ impl Hardware {
         }
     }
 
-    fn read_bus_b(&mut self, address: u8) -> u8 {
-        match address & 0xc0 {
-            0x00 => todo!("PPU reads"),
-            0x40 => {
-                self.apu.run_until(self.clock.cycles());
-                self.apu.read(address)
-            }
-            0x80 => self.wram.read_register(address, self.mdr),
-            _ => {
-                warn!("Unmapped Bus B read: {:02X}", address);
-                self.mdr
-            }
-        }
-    }
-
-    fn write_bus_b(&mut self, address: u8, value: u8) {
-        match address & 0xc0 {
-            0x00 => (), // TODO: PPU writes
-            0x40 => {
-                self.apu.run_until(self.clock.cycles());
-                self.apu.write(address, value);
-            }
-            0x80 => self.wram.write_register(address, value),
-            _ => warn!("Unmapped Bus B write: {:02X} <= {:02X}", address, value),
-        }
-    }
-}
-
-impl Bus for Hardware {
-    fn idle(&mut self) {
-        self.step(FAST_CYCLES);
-    }
-
-    fn read(&mut self, address: u32) -> u8 {
-        self.step(self.clock.cycles_for_address(address) - 4);
-
+    fn read_bus_a(&mut self, address: u32) -> u8 {
         self.mdr = match self.pages[(address >> 13) as usize] {
             Page::Rom(offset) => self.rom[(offset | (address & 0x1fff)) as usize],
             Page::Wram(offset) => self.wram[(offset | (address & 0x1fff)) as usize],
@@ -177,13 +142,10 @@ impl Bus for Hardware {
             }
         };
 
-        self.step(4);
-
         self.mdr
     }
 
-    fn write(&mut self, address: u32, value: u8) {
-        self.step(self.clock.cycles_for_address(address));
+    fn write_bus_a(&mut self, address: u32, value: u8) {
         self.mdr = value;
 
         match self.pages[(address >> 13) as usize] {
@@ -207,6 +169,67 @@ impl Bus for Hardware {
             },
             Page::OpenBus => warn!("Unmapped Bus A write: {:06X} <= {:02X}", address, value),
         }
+    }
+
+    fn read_bus_b(&mut self, address: u8) -> u8 {
+        self.mdr = match address & 0xc0 {
+            0x00 => todo!("PPU reads"),
+            0x40 => {
+                self.apu.run_until(self.clock.cycles());
+                self.apu.read(address)
+            }
+            0x80 => self.wram.read_register(address, self.mdr),
+            _ => {
+                warn!("Unmapped Bus B read: {:02X}", address);
+                self.mdr
+            }
+        };
+
+        self.mdr
+    }
+
+    fn write_bus_b(&mut self, address: u8, value: u8) {
+        self.mdr = value;
+
+        match address & 0xc0 {
+            0x00 => (), // TODO: PPU writes
+            0x40 => {
+                self.apu.run_until(self.clock.cycles());
+                self.apu.write(address, value);
+            }
+            0x80 => self.wram.write_register(address, value),
+            _ => warn!("Unmapped Bus B write: {:02X} <= {:02X}", address, value),
+        }
+    }
+}
+
+impl Bus for Hardware {
+    fn idle(&mut self) {
+        if self.dma.requested() {
+            self.transfer_dma();
+        }
+
+        self.step(FAST_CYCLES);
+    }
+
+    fn read(&mut self, address: u32) -> u8 {
+        if self.dma.requested() {
+            self.transfer_dma();
+        }
+
+        self.step(self.clock.cycles_for_address(address) - 4);
+        let value = self.read_bus_a(address);
+        self.step(4);
+        value
+    }
+
+    fn write(&mut self, address: u32, value: u8) {
+        if self.dma.requested() {
+            self.transfer_dma();
+        }
+
+        self.step(self.clock.cycles_for_address(address));
+        self.write_bus_a(address, value);
     }
 
     fn poll(&self) -> Interrupt {
