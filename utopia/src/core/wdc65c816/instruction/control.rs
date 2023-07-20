@@ -19,6 +19,29 @@ pub fn jmp_long(core: &mut Core<impl Bus>) {
     core.pc = u32::from_le_bytes([low, high, bank, 0]);
 }
 
+pub fn jmp_indirect(core: &mut Core<impl Bus>) {
+    debug!("JMP (addr)");
+    let low_address = core.next_word();
+    let low = core.read(low_address as u32);
+    core.poll();
+    let high_address = low_address.wrapping_add(1);
+    let high = core.read(high_address as u32);
+    let target = u16::from_le_bytes([low, high]);
+    core.pc = (core.pc & 0xffff0000) | (target as u32);
+}
+
+pub fn jmp_x_indirect(core: &mut Core<impl Bus>) {
+    debug!("JMP (addr,X)");
+    let low_address = core.next_word().wrapping_add(core.x);
+    core.idle();
+    let low = core.read((core.pc & 0xffff_0000) | low_address as u32);
+    core.poll();
+    let high_address = low_address.wrapping_add(1);
+    let high = core.read((core.pc & 0xffff_0000) | high_address as u32);
+    let target = u16::from_le_bytes([low, high]);
+    core.pc = (core.pc & 0xffff0000) | (target as u32);
+}
+
 pub fn jmp_indirect_long(core: &mut Core<impl Bus>) {
     debug!("JMP [addr]");
     let low_address = core.next_word();
@@ -40,6 +63,23 @@ pub fn jsr<const E: bool>(core: &mut Core<impl Bus>) {
     core.push::<E>((core.pc >> 8) as u8);
     core.poll();
     core.push::<E>(core.pc as u8);
+    core.pc = (core.pc & 0xffff0000) | (target as u32);
+}
+
+pub fn jsr_x_indirect<const E: bool>(core: &mut Core<impl Bus>) {
+    debug!("JSR (addr,X)");
+    let low_base = core.next_byte();
+    core.push::<E>((core.pc >> 8) as u8);
+    core.push::<E>(core.pc as u8);
+    let high_base: u8 = core.next_byte();
+    let base = u16::from_le_bytes([low_base, high_base]);
+    let low_address = base.wrapping_add(core.x);
+    core.idle();
+    let low = core.read((core.pc & 0xffff_0000) | low_address as u32);
+    core.poll();
+    let high_address = low_address.wrapping_add(1);
+    let high = core.read((core.pc & 0xffff_0000) | high_address as u32);
+    let target = u16::from_le_bytes([low, high]);
     core.pc = (core.pc & 0xffff0000) | (target as u32);
 }
 

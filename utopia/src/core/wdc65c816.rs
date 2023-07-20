@@ -193,7 +193,7 @@ impl<T: Bus> Core<T> {
             0x0c => instr::modify::<M, addr::Absolute, op::Tsb>(self),
             0x2c => instr::read::<M, addr::Absolute, op::Bit>(self),
             0x4c => instr::jmp(self),
-            //0x6c => instr::jmp_indirect(self),
+            0x6c => instr::jmp_indirect(self),
             0x8c => instr::write::<X, addr::Absolute, op::Sty>(self),
             0xac => instr::read::<X, addr::Absolute, op::Ldy>(self),
             0xcc => instr::read::<X, addr::Absolute, op::Cpy>(self),
@@ -203,11 +203,11 @@ impl<T: Bus> Core<T> {
             0x1c => instr::modify::<M, addr::Absolute, op::Trb>(self),
             0x3c => instr::read::<M, addr::AbsoluteX<X>, op::Bit>(self),
             0x5c => instr::jmp_long(self),
-            //0x7c => instr::read::<addr::AbsoluteX<X>, op::Nop>(self),
+            0x7c => instr::jmp_x_indirect(self),
             0x9c => instr::write::<M, addr::Absolute, op::Stz>(self),
             0xbc => instr::read::<X, addr::AbsoluteX<X>, op::Ldy>(self),
             0xdc => instr::jmp_indirect_long(self),
-            //0xfc => instr::read::<addr::AbsoluteX<X>, op::Nop>(self),
+            0xfc => instr::jsr_x_indirect::<E>(self),
 
             // Page 1: Accumulator Ops
 
