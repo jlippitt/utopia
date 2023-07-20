@@ -26,6 +26,14 @@ fn index_direct<const E: bool>(core: &Core<impl Bus>, base: u32, index: u16) -> 
     }
 }
 
+fn get_indirect<const E: bool>(core: &mut Core<impl Bus>, low_address: u32) -> u32 {
+    let low = core.read(low_address);
+    let high_address = index_direct::<E>(core, low_address, 1);
+    let high = core.read(high_address);
+    let target = u16::from_le_bytes([low, high]);
+    core.dbr | (target as u32)
+}
+
 pub trait AddressMode {
     const NAME: &'static str;
     const WRAP: u32;
@@ -140,11 +148,19 @@ impl<const E: bool> AddressMode for DirectIndirect<E> {
 
     fn resolve(core: &mut Core<impl Bus>, write: bool) -> u32 {
         let low_address = Direct::resolve(core, write);
-        let low = core.read(low_address);
-        let high_address = index_direct::<E>(core, low_address, 1);
-        let high = core.read(high_address);
-        let target = u16::from_le_bytes([low, high]);
-        core.dbr | (target as u32)
+        get_indirect::<E>(core, low_address)
+    }
+}
+
+pub struct DirectXIndirect<const E: bool>;
+
+impl<const E: bool> AddressMode for DirectXIndirect<E> {
+    const NAME: &'static str = "(dp,X)";
+    const WRAP: u32 = WRAP24;
+
+    fn resolve(core: &mut Core<impl Bus>, write: bool) -> u32 {
+        let low_address = DirectX::<E>::resolve(core, write);
+        get_indirect::<E>(core, low_address)
     }
 }
 

@@ -204,14 +204,14 @@ impl<T: Bus> Core<T> {
             // Page 1: Accumulator Ops
 
             // +0x01
-            //0x01 => instr::read::<addr::DirectXIndirect, op::Ora>(self),
-            //0x21 => instr::read::<addr::DirectXIndirect, op::And>(self),
-            //0x41 => instr::read::<addr::DirectXIndirect, op::Eor>(self),
-            //0x61 => instr::read::<addr::DirectXIndirect, op::Adc>(self),
-            //0x81 => instr::write::<addr::DirectXIndirect, op::Sta>(self),
-            //0xa1 => instr::read::<addr::DirectXIndirect, op::Lda>(self),
-            //0xc1 => instr::read::<addr::DirectXIndirect, op::Cmp>(self),
-            //0xe1 => instr::read::<addr::DirectXIndirect, op::Sbc>(self),
+            0x01 => instr::read::<M, addr::DirectXIndirect<E>, op::Ora>(self),
+            0x21 => instr::read::<M, addr::DirectXIndirect<E>, op::And>(self),
+            0x41 => instr::read::<M, addr::DirectXIndirect<E>, op::Eor>(self),
+            0x61 => instr::read::<M, addr::DirectXIndirect<E>, op::Adc>(self),
+            0x81 => instr::write::<M, addr::DirectXIndirect<E>, op::Sta>(self),
+            0xa1 => instr::read::<M, addr::DirectXIndirect<E>, op::Lda>(self),
+            0xc1 => instr::read::<M, addr::DirectXIndirect<E>, op::Cmp>(self),
+            0xe1 => instr::read::<M, addr::DirectXIndirect<E>, op::Sbc>(self),
 
             // +0x11
             0x11 => instr::read::<M, addr::DirectIndirectY<E, X>, op::Ora>(self),
