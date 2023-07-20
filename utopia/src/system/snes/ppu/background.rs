@@ -180,7 +180,7 @@ impl super::Ppu {
                     };
                 }
                 1 => {
-                    let chr_index = (fine_y << 11) | (((bg.chr_map >> 1) + chr_name) & 0x07ff);
+                    let chr_index = (fine_y << 12) | ((bg.chr_map + (chr_name << 1)) & 0x0fff);
                     let chr_data = self.vram.chr16(chr_index as usize);
                     trace!("CHR Load: {:04X} => {:04X}", chr_index, chr_data);
 
