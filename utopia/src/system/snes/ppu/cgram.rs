@@ -32,9 +32,9 @@ impl Cgram {
 
     pub fn write(&mut self, value: u8) {
         if self.high_byte {
-            let value = ((value as u16 & 0x7f) << 8) | (self.buffer as u16);
-            self.data[self.address as usize] = value;
-            debug!("CGRAM Write: {:02X} <= {:04X}", self.address, value);
+            let word_value = ((value as u16 & 0x7f) << 8) | (self.buffer as u16);
+            self.data[self.address as usize] = word_value;
+            debug!("CGRAM Write: {:02X} <= {:04X}", self.address, word_value);
             self.address = self.address.wrapping_add(1);
         } else {
             self.buffer = value;
