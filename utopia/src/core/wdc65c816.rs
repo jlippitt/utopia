@@ -130,7 +130,7 @@ impl<T: Bus> Core<T> {
             // Page 0: Control Ops
 
             // +0x00
-            //0x00 => instr::brk(self),
+            0x00 => instr::brk::<E>(self),
             0x20 => instr::jsr::<E>(self),
             0x40 => instr::rti::<E>(self),
             0x60 => instr::rts::<E>(self),
@@ -294,7 +294,9 @@ impl<T: Bus> Core<T> {
             // Page 2: Read-Modify-Write Ops
 
             // +0x02
+            0x02 => instr::cop::<E>(self),
             0x22 => instr::jsl::<E>(self),
+            0x42 => instr::wdm(self),
             0x62 => instr::per::<E>(self),
             0x82 => instr::brl(self),
             0xa2 => instr::immediate::<X, op::Ldx>(self),

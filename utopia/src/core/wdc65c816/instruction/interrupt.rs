@@ -1,10 +1,14 @@
 use super::super::{Bus, Core, IrqDisable};
 use tracing::debug;
 
+const NATIVE_COP_VECTOR: u16 = 0xffe4;
+const NATIVE_BRK_VECTOR: u16 = 0xffe6;
 const NATIVE_NMI_VECTOR: u16 = 0xffea;
 
+const EMULATION_COP_VECTOR: u16 = 0xfff4;
 const EMULATION_NMI_VECTOR: u16 = 0xfffa;
 const EMULATION_RESET_VECTOR: u16 = 0xfffc;
+const EMULATION_IRQ_VECTOR: u16 = 0xfffe;
 
 fn push_state<const E: bool>(core: &mut Core<impl Bus>, break_flag: bool) {
     if !E {
@@ -39,6 +43,7 @@ pub fn reset(core: &mut Core<impl Bus>) {
 pub fn nmi<const E: bool>(core: &mut Core<impl Bus>) {
     debug!("NMI");
     core.idle();
+    push_state::<E>(core, false);
 
     let vector = if E {
         EMULATION_NMI_VECTOR
@@ -46,6 +51,33 @@ pub fn nmi<const E: bool>(core: &mut Core<impl Bus>) {
         NATIVE_NMI_VECTOR
     };
 
-    push_state::<E>(core, false);
+    jump_to_vector(core, vector);
+}
+
+pub fn brk<const E: bool>(core: &mut Core<impl Bus>) {
+    debug!("BRK #const");
+    core.next_byte();
+    push_state::<E>(core, true);
+
+    let vector = if E {
+        EMULATION_IRQ_VECTOR
+    } else {
+        NATIVE_BRK_VECTOR
+    };
+
+    jump_to_vector(core, vector);
+}
+
+pub fn cop<const E: bool>(core: &mut Core<impl Bus>) {
+    debug!("COP #const");
+    core.next_byte();
+    push_state::<E>(core, true);
+
+    let vector = if E {
+        EMULATION_COP_VECTOR
+    } else {
+        NATIVE_COP_VECTOR
+    };
+
     jump_to_vector(core, vector);
 }

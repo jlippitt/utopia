@@ -7,6 +7,12 @@ pub fn nop(core: &mut Core<impl Bus>) {
     core.idle();
 }
 
+pub fn wdm(core: &mut Core<impl Bus>) {
+    debug!("WDM #const");
+    core.poll();
+    core.next_byte();
+}
+
 pub fn xba(core: &mut Core<impl Bus>) {
     debug!("XBA");
     core.poll();
