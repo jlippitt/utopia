@@ -6,22 +6,22 @@ pub const SLOW_CYCLES: u64 = 8;
 pub const EXTRA_SLOW_CYCLES: u64 = 12;
 
 // TODO: Interlace
-pub const TOTAL_LINES: u32 = 262;
+pub const TOTAL_LINES: u16 = 262;
 
 pub const CYCLES_PER_LINE: u64 = 1364;
 
-// TODO: More specific line types
-const LINE_EVENTS: [(u64, Event); 1] = [(CYCLES_PER_LINE, Event::NewLine)];
+const LINE_EVENTS: [(u64, Event); 2] = [(1112, Event::HBlank), (CYCLES_PER_LINE, Event::NewLine)];
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Event {
+    HBlank,
     NewLine,
 }
 
 pub struct Clock {
     cycles: u64,
     dot: u64,
-    line: u32,
+    line: u16,
     fast_rom_cycles: u64,
     next_event: (u64, Event),
     line_events: slice::Iter<'static, (u64, Event)>,
@@ -46,7 +46,7 @@ impl Clock {
         self.cycles + self.dot
     }
 
-    pub fn line(&self) -> u32 {
+    pub fn line(&self) -> u16 {
         self.line
     }
 

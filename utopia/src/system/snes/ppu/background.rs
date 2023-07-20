@@ -1,24 +1,16 @@
 use tracing::debug;
 
-#[repr(u16)]
-#[derive(Copy, Clone)]
-enum MirrorMask {
-    Mask32 = 31,
-    Mask64 = 63,
-}
+const MIRROR_MASK_32: u16 = 31;
+const MIRROR_MASK_64: u16 = 63;
 
-#[repr(u16)]
-#[derive(Copy, Clone)]
-enum NameShift {
-    Shift32 = 5,
-    Shift64 = 6,
-}
+const NAME_SHIFT_32: u16 = 5;
+const NAME_SHIFT_64: u16 = 6;
 
 pub struct BackgroundLayer {
     tile_map: u16,
-    mirror_mask_x: MirrorMask,
-    mirror_mask_y: MirrorMask,
-    name_shift_y: NameShift,
+    mirror_mask_x: u16,
+    mirror_mask_y: u16,
+    name_shift_y: u16,
     chr_map: u16,
     scroll_x: u16,
     scroll_y: u16,
@@ -29,9 +21,9 @@ impl BackgroundLayer {
     pub fn new(id: u32) -> Self {
         Self {
             tile_map: 0,
-            mirror_mask_x: MirrorMask::Mask32,
-            mirror_mask_y: MirrorMask::Mask32,
-            name_shift_y: NameShift::Shift32,
+            mirror_mask_x: MIRROR_MASK_32,
+            mirror_mask_y: MIRROR_MASK_32,
+            name_shift_y: NAME_SHIFT_32,
             chr_map: 0,
             scroll_x: 0,
             scroll_y: 0,
@@ -44,21 +36,21 @@ impl BackgroundLayer {
         let mirror_y = (value & 0x02) == 0;
 
         self.mirror_mask_x = if mirror_x {
-            MirrorMask::Mask32
+            MIRROR_MASK_32
         } else {
-            MirrorMask::Mask64
+            MIRROR_MASK_64
         };
 
         self.mirror_mask_y = if mirror_y {
-            MirrorMask::Mask32
+            MIRROR_MASK_32
         } else {
-            MirrorMask::Mask64
+            MIRROR_MASK_64
         };
 
         self.name_shift_y = if mirror_x || mirror_y {
-            NameShift::Shift32
+            NAME_SHIFT_32
         } else {
-            NameShift::Shift64
+            NAME_SHIFT_64
         };
 
         self.tile_map = ((value & 0xfc) as u16) << 8;
@@ -90,5 +82,62 @@ impl BackgroundLayer {
         regs.0 = value;
 
         debug!("BG{} Scroll Y: {}", self.id, self.scroll_y);
+    }
+}
+
+impl super::Ppu {
+    pub(super) fn draw_bg<const COLOR_DEPTH: u8>(
+        &mut self,
+        id: usize,
+        priority_high: u8,
+        priority_low: u8,
+        line: u16,
+    ) {
+        let bg = &self.bg[id];
+
+        let (coarse_y, mut fine_y) = {
+            let pos_y = bg.scroll_y.wrapping_add(line) & bg.mirror_mask_y;
+            (pos_y >> 3, pos_y & 7)
+        };
+
+        let mut coarse_x = bg.scroll_x >> 3;
+
+        for _ in 0..34 {
+            let tile = {
+                let address = bg.tile_map
+                    | ((coarse_y & 0x20) << bg.name_shift_y)
+                    | ((coarse_x & 0x20) << NAME_SHIFT_32)
+                    | ((coarse_y & 0x1f) << NAME_SHIFT_32)
+                    | (coarse_x & 0x1f);
+
+                self.vram.data(address)
+            };
+
+            if (tile & 0x8000) != 0 {
+                fine_y ^= 7;
+            }
+
+            let _flip_x = tile & 0x4000;
+
+            let _priority = if (tile & 0x2000) != 0 {
+                priority_high
+            } else {
+                priority_low
+            };
+
+            let chr_name = tile & 0x03ff;
+
+            match COLOR_DEPTH {
+                0 => {
+                    let chr_address = bg.chr_map | (chr_name << 4) | fine_y;
+                    debug!("CHR: {:04X}", chr_address);
+                }
+                1 => todo!("16 color backgrounds"),
+                2 => todo!("256 color backgrounds"),
+                _ => unreachable!(),
+            }
+
+            coarse_x = coarse_x.wrapping_add(1) & bg.mirror_mask_x;
+        }
     }
 }

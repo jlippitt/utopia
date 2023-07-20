@@ -25,7 +25,7 @@ const HEIGHT: usize = 448;
 const PIXELS: [u8; WIDTH * HEIGHT * 4] = [0; WIDTH * HEIGHT * 4];
 
 // TODO: Overscan
-const VBLANK_LINE: u32 = 225;
+const VBLANK_LINE: u16 = 225;
 
 pub struct Snes {
     core: Core<Hardware>,
@@ -101,6 +101,13 @@ impl Hardware {
 
         while let Some(event) = self.clock.event() {
             match event {
+                Event::HBlank => {
+                    let line = self.clock.line();
+
+                    if line > 0 && line < VBLANK_LINE {
+                        self.ppu.draw_line(line)
+                    }
+                }
                 Event::NewLine => {
                     let line = self.clock.line();
 

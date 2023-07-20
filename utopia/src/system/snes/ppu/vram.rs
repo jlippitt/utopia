@@ -20,6 +20,10 @@ impl Vram {
         }
     }
 
+    pub fn data(&self, address: u16) -> u16 {
+        self.data[address as usize]
+    }
+
     pub fn set_control(&mut self, value: u8) {
         if (value & 0x0c) != 0 {
             todo!("VRAM address remapping");
