@@ -101,3 +101,22 @@ pub fn plb<const E: bool>(core: &mut Core<impl Bus>) {
     core.dbr = (value as u32) << 16;
     core.set_nz8(value);
 }
+
+pub fn phd<const E: bool>(core: &mut Core<impl Bus>) {
+    debug!("PHD");
+    core.idle();
+    core.push::<E>((core.d >> 8) as u8);
+    core.poll();
+    core.push::<E>(core.d as u8);
+}
+
+pub fn pld<const E: bool>(core: &mut Core<impl Bus>) {
+    debug!("PLD");
+    core.idle();
+    core.idle();
+    let low = core.pull::<E>();
+    core.poll();
+    let high = core.pull::<E>();
+    core.d = u16::from_le_bytes([low, high]);
+    core.set_nz16(core.d);
+}
