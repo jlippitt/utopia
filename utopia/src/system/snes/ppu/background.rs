@@ -74,8 +74,8 @@ impl BackgroundLayer {
     }
 
     pub fn set_chr_map(&mut self, value: u8) {
-        let chr_address = (value as u16) << 12;
-        debug!("{} CHR Map: {:04X}", self.name, chr_address);
+        self.chr_map = (value as u16) << 12;
+        debug!("{} CHR Map: {:04X}", self.name, self.chr_map);
     }
 
     pub fn set_scroll_x(&mut self, regs: &mut (u8, u8), value: u8) {
