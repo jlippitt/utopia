@@ -10,6 +10,15 @@ pub fn jmp(core: &mut Core<impl Bus>) {
     core.pc = (core.pc & 0xffff0000) | (target as u32);
 }
 
+pub fn jmp_long(core: &mut Core<impl Bus>) {
+    debug!("JMP long");
+    let low = core.next_byte();
+    let high = core.next_byte();
+    core.poll();
+    let bank = core.next_byte();
+    core.pc = u32::from_le_bytes([low, high, bank, 0]);
+}
+
 pub fn jmp_indirect_long(core: &mut Core<impl Bus>) {
     debug!("JMP [addr]");
     let low_address = core.next_word();
