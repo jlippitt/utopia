@@ -3,6 +3,7 @@ use crate::core::wdc65c816::{Bus, Core, Interrupt, INT_NMI};
 use crate::util::MirrorVec;
 use apu::Apu;
 use clock::{Clock, Event, FAST_CYCLES};
+use dma::Dma;
 use memory::{Page, TOTAL_PAGES};
 use registers::Registers;
 use std::error::Error;
@@ -12,6 +13,7 @@ use wram::Wram;
 
 mod apu;
 mod clock;
+mod dma;
 mod memory;
 mod registers;
 mod wram;
@@ -68,6 +70,7 @@ pub struct Hardware {
     rom: MirrorVec<u8>,
     wram: Wram,
     regs: Registers,
+    dma: Dma,
     apu: Apu,
 }
 
@@ -84,6 +87,7 @@ impl Hardware {
             rom: rom_data.into(),
             wram: Wram::new(),
             regs: Registers::new(),
+            dma: Dma::new(),
             apu: Apu::new(ipl_rom),
         }
     }
@@ -161,7 +165,7 @@ impl Bus for Hardware {
             Page::InternalRegisters => match address & 0x1f00 {
                 0x0000 => 0, // TODO: NES-style joypads
                 0x0200 => self.read_register(address as u8, self.mdr),
-                0x0300 => todo!("DMA reads"),
+                0x0300 => self.dma.read(address as u8, self.mdr),
                 _ => {
                     warn!("Unmapped internal register read: {:06X}", address);
                     self.mdr
@@ -195,7 +199,7 @@ impl Bus for Hardware {
             Page::InternalRegisters => match address & 0x1f00 {
                 0x0000 => (), // TODO: NES-style joypads
                 0x0200 => self.write_register(address as u8, value),
-                0x0300 => (), // TODO: DMA
+                0x0300 => self.dma.write(address as u8, value),
                 _ => warn!(
                     "Unmapped external register write: {:06X} <= {:02X}",
                     address, value
