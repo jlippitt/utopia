@@ -11,7 +11,7 @@ const NAME_SHIFT_64: u16 = 6;
 fn color<const COLOR_DEPTH: u8>(chr: u64) -> usize {
     let mut color = chr & 0x03;
 
-    if COLOR_DEPTH > 1 {
+    if COLOR_DEPTH > 0 {
         color |= (chr >> 14) & 0x0c;
     }
 
@@ -182,7 +182,7 @@ impl super::Ppu {
                 1 => {
                     let chr_index = (fine_y << 12) | ((bg.chr_map + (chr_name << 1)) & 0x0fff);
                     let chr_data = self.vram.chr16(chr_index as usize);
-                    trace!("CHR Load: {:04X} => {:04X}", chr_index, chr_data);
+                    trace!("CHR Load: {:04X} => {:08X}", chr_index, chr_data);
 
                     *tile = Tile {
                         chr_data,

@@ -33,6 +33,7 @@ impl Vram {
     }
 
     pub fn chr16(&self, index: usize) -> u64 {
+        assert!((index & 1) == 0);
         let plane0 = self.chr_cache[index] as u64;
         let plane1 = self.chr_cache[index + 1] as u64;
         (plane1 << 16) | plane0
@@ -66,7 +67,7 @@ impl Vram {
     }
 
     pub fn write_low(&mut self, value: u8) {
-        let address = self.address as usize;
+        let address = self.address as usize & 0x7fff;
         self.data[address] = (self.data[address] & 0xff00) | (value as u16);
 
         debug!(
@@ -82,7 +83,7 @@ impl Vram {
     }
 
     pub fn write_high(&mut self, value: u8) {
-        let address = self.address as usize;
+        let address = self.address as usize & 0x7fff;
         self.data[address] = (self.data[address] & 0xff) | ((value as u16) << 8);
 
         debug!(
@@ -110,6 +111,6 @@ impl Vram {
             | ((value & 0x80) >> 7);
 
         self.chr_cache[index] =
-            self.chr_cache[index] & !(PLANE_0_MASK << plane) | (chr_value << plane);
+            (self.chr_cache[index] & !(PLANE_0_MASK << plane)) | (chr_value << plane);
     }
 }
