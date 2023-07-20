@@ -204,3 +204,30 @@ impl AddressMode for DirectIndirectLongY {
         base.wrapping_add(core.y as u32) & WRAP24
     }
 }
+
+pub struct StackRelative;
+
+impl AddressMode for StackRelative {
+    const NAME: &'static str = "sr,S";
+    const WRAP: u32 = WRAP16;
+
+    fn resolve(core: &mut Core<impl Bus>, _write: bool) -> u32 {
+        let offset = core.next_byte() as u16;
+        core.idle();
+        core.s.wrapping_add(offset) as u32
+    }
+}
+
+pub struct StackRelativeIndirectY;
+
+impl AddressMode for StackRelativeIndirectY {
+    const NAME: &'static str = "(sr,S),Y";
+    const WRAP: u32 = WRAP24;
+
+    fn resolve(core: &mut Core<impl Bus>, write: bool) -> u32 {
+        let low_address = StackRelative::resolve(core, write);
+        let indirect = get_indirect::<false>(core, low_address);
+        core.idle();
+        indirect.wrapping_add(core.y as u32)
+    }
+}

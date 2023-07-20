@@ -377,6 +377,26 @@ impl<T: Bus> Core<T> {
             0xbb => instr::tyx::<X>(self),
             0xfb => instr::xce(self),
 
+            // +0x03
+            0x03 => instr::read::<M, addr::StackRelative, op::Ora>(self),
+            0x23 => instr::read::<M, addr::StackRelative, op::And>(self),
+            0x43 => instr::read::<M, addr::StackRelative, op::Eor>(self),
+            0x63 => instr::read::<M, addr::StackRelative, op::Adc>(self),
+            0x83 => instr::write::<M, addr::StackRelative, op::Sta>(self),
+            0xa3 => instr::read::<M, addr::StackRelative, op::Lda>(self),
+            0xc3 => instr::read::<M, addr::StackRelative, op::Cmp>(self),
+            0xe3 => instr::read::<M, addr::StackRelative, op::Sbc>(self),
+
+            // +0x13
+            0x13 => instr::read::<M, addr::StackRelativeIndirectY, op::Ora>(self),
+            0x33 => instr::read::<M, addr::StackRelativeIndirectY, op::And>(self),
+            0x53 => instr::read::<M, addr::StackRelativeIndirectY, op::Eor>(self),
+            0x73 => instr::read::<M, addr::StackRelativeIndirectY, op::Adc>(self),
+            0x93 => instr::write::<M, addr::StackRelativeIndirectY, op::Sta>(self),
+            0xb3 => instr::read::<M, addr::StackRelativeIndirectY, op::Lda>(self),
+            0xd3 => instr::read::<M, addr::StackRelativeIndirectY, op::Cmp>(self),
+            0xf3 => instr::read::<M, addr::StackRelativeIndirectY, op::Sbc>(self),
+
             // +0x07
             0x07 => instr::read::<M, addr::DirectIndirectLong, op::Ora>(self),
             0x27 => instr::read::<M, addr::DirectIndirectLong, op::And>(self),
