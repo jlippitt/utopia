@@ -131,7 +131,7 @@ impl super::Ppu {
     ) {
         let bg = &self.bg[bg_index];
 
-        let (coarse_y, mut fine_y) = {
+        let (coarse_y, fine_y) = {
             let pos_y = bg.scroll_y.wrapping_add(line);
             ((pos_y >> 3) & bg.mirror_mask_y, pos_y & 7)
         };
@@ -151,9 +151,11 @@ impl super::Ppu {
                 value
             };
 
-            if (tile_data & 0x8000) != 0 {
-                fine_y ^= 7;
-            }
+            let fine_y = if (tile_data & 0x8000) != 0 {
+                fine_y ^ 7
+            } else {
+                fine_y
+            };
 
             let flip_mask = if (tile_data & 0x4000) != 0 { 14 } else { 0 };
 
