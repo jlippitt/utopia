@@ -5,7 +5,7 @@ use buffer::{Pixel, PixelBuffer, TileBuffer, PIXEL_BUFFER_SIZE, TILE_BUFFER_SIZE
 use cgram::Cgram;
 use screen::Screen;
 use toggle::{ScreenToggle, Toggle};
-use tracing::warn;
+use tracing::{debug, warn};
 use vram::Vram;
 
 mod background;
@@ -15,9 +15,18 @@ mod screen;
 mod toggle;
 mod vram;
 
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+enum Bg3Priority {
+    Low = 2,
+    High = 5,
+}
+
 pub struct Ppu {
     vram: Vram,
     cgram: Cgram,
+    bg_mode: u8,
+    bg3_priority: Bg3Priority,
     enabled: [Toggle; 4],
     bg: [BackgroundLayer; 4],
     screen: Screen,
@@ -31,6 +40,8 @@ impl Ppu {
         Self {
             vram: Vram::new(),
             cgram: Cgram::new(),
+            bg_mode: 0,
+            bg3_priority: Bg3Priority::Low,
             enabled: [
                 Toggle::new("BG1"),
                 Toggle::new("BG2"),
@@ -65,6 +76,20 @@ impl Ppu {
 
     pub fn write(&mut self, address: u8, value: u8) {
         match address {
+            0x05 => {
+                // TODO: 16x16 tiles
+
+                self.bg_mode = value & 0x07;
+
+                self.bg3_priority = if (value & 0x08) != 0 {
+                    Bg3Priority::High
+                } else {
+                    Bg3Priority::Low
+                };
+
+                debug!("BG Mode: {}", self.bg_mode);
+                debug!("BG3 Priority: {:?}", self.bg3_priority);
+            }
             0x07 => self.bg[0].set_tile_map(value),
             0x08 => self.bg[1].set_tile_map(value),
             0x09 => self.bg[2].set_tile_map(value),
@@ -120,8 +145,15 @@ impl Ppu {
             priority: 0,
         });
 
-        // TODO: Video modes
-        self.draw_bg::<0>(0, 4, 3, line);
+        match self.bg_mode {
+            0 => {
+                self.draw_bg::<0>(0, 4, 3, line);
+                self.draw_bg::<0>(1, 4, 3, line);
+                self.draw_bg::<0>(2, 2, 1, line);
+                self.draw_bg::<0>(3, 2, 1, line);
+            }
+            _ => panic!("Mode {} not yet implemented", self.bg_mode),
+        }
 
         self.screen.draw_lo_res(&self.pixels[0]);
     }
