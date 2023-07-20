@@ -56,6 +56,14 @@ pub fn jsl<const E: bool>(core: &mut Core<impl Bus>) {
     core.pc = u32::from_le_bytes([low, high, bank, 0]);
 }
 
+pub fn brl(core: &mut Core<impl Bus>) {
+    debug!("BRL label");
+    let offset = core.next_word();
+    core.poll();
+    core.idle();
+    core.pc = (core.pc & 0xffff_0000) | (core.pc.wrapping_add(offset as u32) & 0xffff);
+}
+
 pub fn rts<const E: bool>(core: &mut Core<impl Bus>) {
     debug!("RTS");
     core.idle();
