@@ -110,6 +110,26 @@ impl<T: Bus> Core<T> {
             0xd2 => instr::unary::<addr::Direct, op::Clr1<6>>(self),
             0xf2 => instr::unary::<addr::Direct, op::Clr1<7>>(self),
 
+            // +0x03
+            0x03 => instr::branch::<op::Bbs<0>>(self),
+            0x23 => instr::branch::<op::Bbs<1>>(self),
+            0x43 => instr::branch::<op::Bbs<2>>(self),
+            0x63 => instr::branch::<op::Bbs<3>>(self),
+            0x83 => instr::branch::<op::Bbs<4>>(self),
+            0xa3 => instr::branch::<op::Bbs<5>>(self),
+            0xc3 => instr::branch::<op::Bbs<6>>(self),
+            0xe3 => instr::branch::<op::Bbs<7>>(self),
+
+            // +0x13
+            0x13 => instr::branch::<op::Bbc<0>>(self),
+            0x33 => instr::branch::<op::Bbc<1>>(self),
+            0x53 => instr::branch::<op::Bbc<2>>(self),
+            0x73 => instr::branch::<op::Bbc<3>>(self),
+            0x93 => instr::branch::<op::Bbc<4>>(self),
+            0xb3 => instr::branch::<op::Bbc<5>>(self),
+            0xd3 => instr::branch::<op::Bbc<6>>(self),
+            0xf3 => instr::branch::<op::Bbc<7>>(self),
+
             // +0x04
             0x04 => instr::binary::<addr::A, addr::Direct, op::Or>(self),
             0x24 => instr::binary::<addr::A, addr::Direct, op::And>(self),

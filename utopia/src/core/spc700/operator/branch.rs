@@ -146,3 +146,49 @@ impl BranchOperator for DbnzDirect {
         result != 0
     }
 }
+
+pub struct Bbs<const BIT: u8>;
+
+impl<const BIT: u8> BranchOperator for Bbs<BIT> {
+    // There must be a better way of doing this... :(
+    const NAME: &'static str = unsafe {
+        std::str::from_utf8_unchecked(&[
+            'B' as u8,
+            'B' as u8,
+            'S' as u8,
+            ('0' as u8) + BIT,
+            ' ' as u8,
+            'd' as u8,
+            ',' as u8,
+        ])
+    };
+
+    fn apply(core: &mut Core<impl Bus>) -> bool {
+        let value = Direct::read(core);
+        core.idle();
+        value & (1 << BIT) != 0
+    }
+}
+
+pub struct Bbc<const BIT: u8>;
+
+impl<const BIT: u8> BranchOperator for Bbc<BIT> {
+    // There must be a better way of doing this... :(
+    const NAME: &'static str = unsafe {
+        std::str::from_utf8_unchecked(&[
+            'B' as u8,
+            'B' as u8,
+            'C' as u8,
+            ('0' as u8) + BIT,
+            ' ' as u8,
+            'd' as u8,
+            ',' as u8,
+        ])
+    };
+
+    fn apply(core: &mut Core<impl Bus>) -> bool {
+        let value = Direct::read(core);
+        core.idle();
+        value & (1 << BIT) == 0
+    }
+}
