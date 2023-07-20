@@ -1,5 +1,5 @@
 use super::super::address_mode::{ReadAddress, WriteAddress};
-use super::super::operator::{BinaryOperator, UnaryOperator};
+use super::super::operator::{BinaryOperator, BranchOperator, UnaryOperator};
 use super::super::{Bus, Core};
 use tracing::debug;
 
@@ -49,4 +49,19 @@ pub fn push<Addr: ReadAddress>(core: &mut Core<impl Bus>) {
     let value = Addr::read(core);
     core.push(value);
     core.idle();
+}
+
+pub fn branch<Op: BranchOperator>(core: &mut Core<impl Bus>) {
+    debug!("{} r", Op::NAME);
+    let condition = Op::apply(core);
+    let offset = core.next_byte();
+
+    if condition {
+        debug!("Branch taken");
+        core.pc = core.pc.wrapping_add(offset as i8 as i16 as u16);
+        core.idle();
+        core.idle();
+    } else {
+        debug!("Branch not taken");
+    }
 }
