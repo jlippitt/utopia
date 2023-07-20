@@ -20,6 +20,10 @@ impl Cgram {
         }
     }
 
+    pub fn color(&mut self, index: u8) -> u16 {
+        self.data[index as usize]
+    }
+
     pub fn set_address(&mut self, value: u8) {
         self.address = value;
         self.high_byte = false;

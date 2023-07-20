@@ -1,16 +1,24 @@
+pub use screen::{HEIGHT, WIDTH};
+
 use background::BackgroundLayer;
+use buffer::{Pixel, PixelBuffer};
 use cgram::Cgram;
+use screen::Screen;
 use tracing::warn;
 use vram::Vram;
 
 mod background;
+mod buffer;
 mod cgram;
+mod screen;
 mod vram;
 
 pub struct Ppu {
     vram: Vram,
     cgram: Cgram,
+    pixels_main: PixelBuffer,
     bg: [BackgroundLayer; 4],
+    screen: Screen,
     scroll_regs: (u8, u8),
 }
 
@@ -19,14 +27,20 @@ impl Ppu {
         Self {
             vram: Vram::new(),
             cgram: Cgram::new(),
+            pixels_main: [Default::default(); WIDTH >> 1],
             bg: [
                 BackgroundLayer::new(1),
                 BackgroundLayer::new(2),
                 BackgroundLayer::new(3),
                 BackgroundLayer::new(4),
             ],
+            screen: Screen::new(),
             scroll_regs: (0, 0),
         }
+    }
+
+    pub fn pixels(&self) -> &[u8] {
+        self.screen.pixels()
     }
 
     pub fn read(&mut self, address: u8) -> u8 {
@@ -68,8 +82,18 @@ impl Ppu {
         }
     }
 
+    pub fn start_frame(&mut self) {
+        self.screen.reset();
+    }
+
     pub fn draw_line(&mut self, line: u16) {
+        self.pixels_main.fill(Pixel {
+            color: self.cgram.color(0),
+        });
+
         // TODO: Video modes
         self.draw_bg::<0>(0, 4, 3, line);
+
+        self.screen.draw_lo_res(&self.pixels_main);
     }
 }

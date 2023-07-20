@@ -5,7 +5,7 @@ use apu::Apu;
 use clock::{Clock, Event, FAST_CYCLES};
 use dma::Dma;
 use memory::{Page, TOTAL_PAGES};
-use ppu::Ppu;
+use ppu::{Ppu, HEIGHT, WIDTH};
 use registers::Registers;
 use std::error::Error;
 use std::fmt;
@@ -19,10 +19,6 @@ mod memory;
 mod ppu;
 mod registers;
 mod wram;
-
-const WIDTH: usize = 512;
-const HEIGHT: usize = 448;
-const PIXELS: [u8; WIDTH * HEIGHT * 4] = [0; WIDTH * HEIGHT * 4];
 
 // TODO: Overscan
 const VBLANK_LINE: u16 = 225;
@@ -50,7 +46,7 @@ impl System for Snes {
     }
 
     fn pixels(&self) -> &[u8] {
-        &PIXELS
+        self.core.bus().ppu.pixels()
     }
 
     fn run_frame(&mut self, _joypad_state: &JoypadState) {
@@ -119,6 +115,7 @@ impl Hardware {
                             self.interrupt |= INT_NMI;
                         }
                     } else if line == 0 {
+                        self.ppu.start_frame();
                         self.regs.set_nmi_occurred(false);
                         self.interrupt &= !INT_NMI;
                     }
