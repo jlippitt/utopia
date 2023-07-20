@@ -14,6 +14,7 @@ pub struct Ppu {
     bg2: BackgroundLayer,
     bg3: BackgroundLayer,
     bg4: BackgroundLayer,
+    scroll_regs: (u8, u8),
 }
 
 impl Ppu {
@@ -25,6 +26,7 @@ impl Ppu {
             bg2: BackgroundLayer::new(2),
             bg3: BackgroundLayer::new(3),
             bg4: BackgroundLayer::new(4),
+            scroll_regs: (0, 0),
         }
     }
 
@@ -48,6 +50,14 @@ impl Ppu {
                 self.bg3.set_chr_map(value & 0x0f);
                 self.bg4.set_chr_map(value >> 4);
             }
+            0x0d => self.bg1.set_scroll_x(&mut self.scroll_regs, value),
+            0x0e => self.bg1.set_scroll_y(&mut self.scroll_regs, value),
+            0x0f => self.bg2.set_scroll_x(&mut self.scroll_regs, value),
+            0x10 => self.bg2.set_scroll_y(&mut self.scroll_regs, value),
+            0x11 => self.bg3.set_scroll_x(&mut self.scroll_regs, value),
+            0x12 => self.bg3.set_scroll_y(&mut self.scroll_regs, value),
+            0x13 => self.bg4.set_scroll_x(&mut self.scroll_regs, value),
+            0x14 => self.bg4.set_scroll_y(&mut self.scroll_regs, value),
             0x15 => self.vram.set_control(value),
             0x16 => self.vram.set_address_low(value),
             0x17 => self.vram.set_address_high(value),

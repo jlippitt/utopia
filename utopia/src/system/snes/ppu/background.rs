@@ -20,6 +20,8 @@ pub struct BackgroundLayer {
     mirror_mask_y: MirrorMask,
     name_shift_y: NameShift,
     chr_map: u16,
+    scroll_x: u16,
+    scroll_y: u16,
     id: u32,
 }
 
@@ -31,6 +33,8 @@ impl BackgroundLayer {
             mirror_mask_y: MirrorMask::Mask32,
             name_shift_y: NameShift::Shift32,
             chr_map: 0,
+            scroll_x: 0,
+            scroll_y: 0,
             id,
         }
     }
@@ -68,5 +72,23 @@ impl BackgroundLayer {
     pub fn set_chr_map(&mut self, value: u8) {
         self.tile_map = (value as u16) << 8;
         debug!("BG{} CHR Map: {:04X}", self.id, self.chr_map);
+    }
+
+    pub fn set_scroll_x(&mut self, regs: &mut (u8, u8), value: u8) {
+        self.scroll_x =
+            (((value & 0x03) as u16) << 8) | ((regs.0 & 0xf8) as u16) | ((regs.1 & 0x07) as u16);
+
+        regs.0 = value;
+        regs.1 = value;
+
+        debug!("BG{} Scroll X: {}", self.id, self.scroll_x);
+    }
+
+    pub fn set_scroll_y(&mut self, regs: &mut (u8, u8), value: u8) {
+        self.scroll_y = (((value & 0x03) as u16) << 8) | (regs.0 as u16);
+
+        regs.0 = value;
+
+        debug!("BG{} Scroll Y: {}", self.id, self.scroll_y);
     }
 }
