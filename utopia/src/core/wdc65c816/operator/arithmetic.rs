@@ -1,5 +1,6 @@
 use super::super::{Bus, Core};
 use super::ReadOperator;
+use tracing::warn;
 
 fn binary_add8(core: &mut Core<impl Bus>, rhs: u8) {
     let lhs = core.a as u8;
@@ -30,7 +31,7 @@ impl ReadOperator for Adc {
 
     fn apply8(core: &mut Core<impl Bus>, value: u8) {
         if core.flags.d {
-            todo!("Decimal mode");
+            warn!("Decimal mode not yet implemented");
         }
 
         binary_add8(core, value);
@@ -38,7 +39,7 @@ impl ReadOperator for Adc {
 
     fn apply16(core: &mut Core<impl Bus>, value: u16) {
         if core.flags.d {
-            todo!("Decimal mode");
+            warn!("Decimal mode not yet implemented");
         }
 
         binary_add16(core, value);
@@ -52,7 +53,7 @@ impl ReadOperator for Sbc {
 
     fn apply8(core: &mut Core<impl Bus>, value: u8) {
         if core.flags.d {
-            todo!("Decimal mode");
+            warn!("Decimal mode not yet implemented");
         }
 
         binary_add8(core, !value);
@@ -60,7 +61,7 @@ impl ReadOperator for Sbc {
 
     fn apply16(core: &mut Core<impl Bus>, value: u16) {
         if core.flags.d {
-            todo!("Decimal mode");
+            warn!("Decimal mode not yet implemented");
         }
 
         binary_add16(core, !value);
