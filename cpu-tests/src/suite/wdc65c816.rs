@@ -93,6 +93,9 @@ impl From<&State> for Core<Memory> {
             dbr: state.dbr,
             p: state.p,
             e: state.e != 0,
+            interrupt: 0,
+            waiting: false,
+            stopped: false,
         };
 
         let mut core = Core::new(memory);

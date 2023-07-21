@@ -61,6 +61,9 @@ pub struct State {
     pub pbr: u8,
     pub p: u8,
     pub e: bool,
+    pub interrupt: Interrupt,
+    pub waiting: bool,
+    pub stopped: bool,
 }
 
 pub struct Core<T: Bus> {
@@ -620,6 +623,9 @@ impl<T: Bus> Core<T> {
             } else {
                 self.flags_to_u8::<false>(true)
             },
+            interrupt: self.interrupt,
+            waiting: self.waiting,
+            stopped: self.stopped,
             e,
         }
     }
@@ -633,6 +639,9 @@ impl<T: Bus> Core<T> {
         self.s = state.s;
         self.pc = ((state.pbr as u32) << 16) | (state.pc as u32);
         self.dbr = (state.dbr as u32) << 16;
+        self.interrupt = state.interrupt;
+        self.waiting = state.waiting;
+        self.stopped = state.stopped;
 
         if state.e {
             self.flags_from_u8::<true>(state.p);
