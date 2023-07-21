@@ -250,6 +250,10 @@ impl<T: Bus> Core<T> {
             0xd9 => instr::write::<addr::DirectY, addr::X>(self),
             0xf9 => instr::binary::<addr::X, addr::DirectY, op::Mov>(self),
 
+            // +0x4a
+            0x4a => instr::and1(self),
+            0x6a => instr::and1_not(self),
+
             // +0x1a
             0x1a => instr::decw(self),
             0x3a => instr::incw(self),
