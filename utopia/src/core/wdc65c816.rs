@@ -20,7 +20,7 @@ enum IrqDisable {
     Set = INT_RESET | INT_NMI,
 }
 
-pub trait Bus: fmt::Display {
+pub trait Bus {
     fn idle(&mut self);
     fn read(&mut self, address: u32) -> u8;
     fn write(&mut self, address: u32, value: u8);
@@ -588,7 +588,7 @@ impl<T: Bus> Core<T> {
     }
 }
 
-impl<T: Bus> fmt::Display for Core<T> {
+impl<T: Bus + fmt::Display> fmt::Display for Core<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
