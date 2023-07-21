@@ -48,7 +48,7 @@ pub enum Mode {
     Emulation = 4,
 }
 
-//#[cfg(feature = "cpu-tests")]
+#[cfg(feature = "cpu-tests")]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct State {
     pub a: u16,
@@ -605,7 +605,7 @@ impl<T: Bus> Core<T> {
         self.flags.z = value;
     }
 
-    //#[cfg(feature = "cpu-tests")]
+    #[cfg(feature = "cpu-tests")]
     pub fn state(&self) -> State {
         let e = (self.mode as u8 & 0x04) != 0;
 
@@ -630,7 +630,7 @@ impl<T: Bus> Core<T> {
         }
     }
 
-    //#[cfg(feature = "cpu-tests")]
+    #[cfg(feature = "cpu-tests")]
     pub fn set_state(&mut self, state: &State) {
         self.a = state.a;
         self.x = state.x;
