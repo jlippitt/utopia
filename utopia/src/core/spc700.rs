@@ -253,6 +253,7 @@ impl<T: Bus> Core<T> {
             // +0x1a
             0x1a => instr::decw(self),
             0x3a => instr::incw(self),
+            0x5a => instr::cmpw(self),
             0x7a => instr::addw(self),
             0x9a => instr::subw(self),
             0xba => instr::movw_read(self),

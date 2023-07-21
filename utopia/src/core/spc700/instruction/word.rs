@@ -35,6 +35,25 @@ pub fn incw(core: &mut Core<impl Bus>) {
     core.flags.z = high_result | low_result;
 }
 
+pub fn cmpw(core: &mut Core<impl Bus>) {
+    debug!("CMPW YA, d");
+
+    let low_address = core.next_byte();
+    let low = core.read_direct(low_address);
+    let high_address = low_address.wrapping_add(1);
+    let high = core.read_direct(high_address);
+
+    let rhs = u16::from_le_bytes([low, high]);
+    let lhs = u16::from_le_bytes([core.a, core.y]);
+    let (result, borrow) = lhs.overflowing_sub(rhs);
+
+    let [result_low, result_high] = result.to_le_bytes();
+
+    core.flags.n = result_high;
+    core.flags.z = result_high | result_low;
+    core.flags.c = !borrow;
+}
+
 pub fn addw(core: &mut Core<impl Bus>) {
     debug!("ADDW YA, d");
 
