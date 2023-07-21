@@ -24,7 +24,7 @@ pub struct Test {
     name: String,
     initial: TestState,
     r#final: TestState,
-    cycles: Vec<(u32, Option<u8>, String)>,
+    cycles: Vec<(Option<u32>, Option<u8>, String)>,
 }
 
 #[derive(Debug)]
