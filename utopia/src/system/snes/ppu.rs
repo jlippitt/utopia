@@ -1,5 +1,6 @@
 pub use screen::{HEIGHT, WIDTH};
 
+use super::clock::Clock;
 use background::BackgroundLayer;
 use buffer::{Pixel, PixelBuffer, TileBuffer, PIXEL_BUFFER_SIZE, TILE_BUFFER_SIZE};
 use cgram::Cgram;
@@ -70,8 +71,15 @@ impl Ppu {
         self.screen.output()
     }
 
-    pub fn read(&mut self, address: u8) -> u8 {
+    pub fn read(&mut self, clock: &Clock, address: u8) -> u8 {
         match address {
+            0x3f => {
+                // TODO: PPU open bus
+                let mut value = 0x03;
+                value |= if clock.odd_frame() { 0x80 } else { 0 };
+                // TODO: External latch flag
+                value
+            }
             _ => panic!("Unmapped PPU read: {:02X}", address),
         }
     }

@@ -25,6 +25,7 @@ pub struct Clock {
     fast_rom_cycles: u64,
     next_event: (u64, Event),
     line_events: slice::Iter<'static, (u64, Event)>,
+    frame: u64,
 }
 
 impl Clock {
@@ -39,6 +40,7 @@ impl Clock {
             fast_rom_cycles: SLOW_CYCLES,
             next_event: *next_event,
             line_events,
+            frame: 0,
         }
     }
 
@@ -53,6 +55,10 @@ impl Clock {
     pub fn dot(&self) -> u64 {
         // TODO: 'Fat' dots
         self.line_cycles >> 2
+    }
+
+    pub fn odd_frame(&self) -> bool {
+        (self.frame & 1) != 0
     }
 
     pub fn add_cycles(&mut self, cycles: u64) {
@@ -70,6 +76,7 @@ impl Clock {
 
                 if self.line == TOTAL_LINES {
                     self.line = 0;
+                    self.frame += 1;
                 }
 
                 self.line_events = LINE_EVENTS.iter();
@@ -105,6 +112,13 @@ impl Clock {
 
 impl fmt::Display for Clock {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "V={} H={} T={}", self.line(), self.dot(), self.cycles())
+        write!(
+            f,
+            "F={} V={} H={} T={}",
+            self.frame,
+            self.line(),
+            self.dot(),
+            self.cycles()
+        )
     }
 }

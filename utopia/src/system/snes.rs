@@ -181,7 +181,7 @@ impl Hardware {
 
     fn read_bus_b(&mut self, address: u8) -> u8 {
         self.mdr = match address & 0xc0 {
-            0x00 => self.ppu.read(address),
+            0x00 => self.ppu.read(&self.clock, address),
             0x40 => {
                 self.apu.run_until(self.clock.cycles());
                 self.apu.read(address)
