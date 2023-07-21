@@ -198,7 +198,7 @@ impl super::Ppu {
                     };
                 }
                 2 => {
-                    let chr_index = bg.chr_map.wrapping_add(chr_name << 4) | fine_y;
+                    let chr_index = bg.chr_map.wrapping_add(chr_name << 5) | fine_y;
                     let chr_data = self.vram.chr256(chr_index as usize);
                     trace!("CHR Load: {:04X} => {:016X}", chr_index, chr_data);
 
