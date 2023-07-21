@@ -1,7 +1,7 @@
 use crate::util::MirrorVec;
 use tracing::debug;
 
-const CGRAM_SIZE: usize = 128;
+const CGRAM_SIZE: usize = 256;
 
 pub struct Cgram {
     data: MirrorVec<u16>,
