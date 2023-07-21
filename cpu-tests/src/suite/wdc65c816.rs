@@ -1,10 +1,11 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::error::Error;
-use utopia::core::wdc65c816::{Bus, Core, Interrupt, State as CoreState};
+use tracing::info;
+use utopia::core::wdc65c816::{Bus, Core, Interrupt, State};
 
 #[derive(Debug, Deserialize)]
-pub struct State {
+pub struct TestState {
     pc: u16,
     s: u16,
     p: u8,
@@ -21,8 +22,8 @@ pub struct State {
 #[derive(Debug, Deserialize)]
 pub struct Test {
     name: String,
-    initial: State,
-    r#final: State,
+    initial: TestState,
+    r#final: TestState,
     cycles: Vec<(u32, u8, String)>,
 }
 
@@ -70,19 +71,31 @@ pub fn parse(input: &str) -> Result<Vec<Test>, Box<dyn Error>> {
     Ok(tests)
 }
 
-pub fn run(test: &Test) {
-    println!("{:?}", test);
-    let mut core = Core::from(&test.initial);
-    println!("{:?}", core.state());
+pub fn run(test: &Test) -> bool {
+    let memory = Memory::new(&test.initial.ram);
+    let mut core = Core::new(memory);
+    let initial = State::from(&test.initial);
+    let expected = State::from(&test.r#final);
+    core.set_state(&initial);
     core.step();
-    println!("{:?}", core.state());
+    let actual = core.state();
+
+    if expected != actual {
+        info!("TEST {} {{", test.name);
+        info!("Initial: {:?}", initial);
+        info!("Expected: {:?}", expected);
+        info!("Actual: {:?}", actual);
+        info!("}}");
+        info!("");
+        return false;
+    }
+
+    true
 }
 
-impl From<&State> for Core<Memory> {
-    fn from(state: &State) -> Core<Memory> {
-        let memory = Memory::new(&state.ram);
-
-        let core_state = CoreState {
+impl From<&TestState> for State {
+    fn from(state: &TestState) -> State {
+        State {
             a: state.a,
             x: state.x,
             y: state.y,
@@ -96,10 +109,6 @@ impl From<&State> for Core<Memory> {
             interrupt: 0,
             waiting: false,
             stopped: false,
-        };
-
-        let mut core = Core::new(memory);
-        core.set_state(&core_state);
-        core
+        }
     }
 }
