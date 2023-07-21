@@ -251,6 +251,8 @@ impl<T: Bus> Core<T> {
             0xf9 => instr::binary::<addr::X, addr::DirectY, op::Mov>(self),
 
             // +0x4a
+            0x0a => instr::or1(self),
+            0x2a => instr::or1_not(self),
             0x4a => instr::and1(self),
             0x6a => instr::and1_not(self),
 
