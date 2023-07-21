@@ -141,7 +141,7 @@ impl super::Ppu {
             ((pos_y >> 3) & bg.mirror_mask_y, pos_y & 7)
         };
 
-        let mut coarse_x = bg.scroll_x >> 3;
+        let mut coarse_x = (bg.scroll_x >> 3) & bg.mirror_mask_x;
 
         for tile in &mut self.tiles {
             let tile_data = {
