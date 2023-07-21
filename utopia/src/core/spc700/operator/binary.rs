@@ -63,6 +63,7 @@ impl BinaryOperator for Adc {
         let overflow = (lhs ^ result) & (rhs ^ result);
         core.set_nz(result);
         core.flags.v = (overflow & 0x80) != 0;
+        core.flags.h = (carries & 0x10) != 0;
         core.flags.c = ((carries ^ overflow) & 0x80) != 0;
         result
     }
