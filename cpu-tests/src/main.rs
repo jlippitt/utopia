@@ -1,5 +1,6 @@
 use clap::Parser;
 use std::error::Error;
+use std::process::ExitCode;
 
 mod log;
 mod suite;
@@ -11,15 +12,19 @@ struct Args {
     path: String,
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<ExitCode, Box<dyn Error>> {
     let _guard = log::init()?;
 
     let args = Args::parse();
 
-    match args.suite.as_str() {
+    let all_passed = match args.suite.as_str() {
         "wdc65c816" => suite::run(&args.path)?,
-        _ => panic!("Test suite '{}' not found", args.suite),
-    }
+        _ => Err(format!("Test suite '{}' not found", args.suite))?,
+    };
 
-    Ok(())
+    Ok(if all_passed {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
+    })
 }
