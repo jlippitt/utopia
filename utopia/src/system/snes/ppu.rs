@@ -25,6 +25,7 @@ enum Bg3Priority {
 pub struct Ppu {
     vram: Vram,
     cgram: Cgram,
+    force_blank: bool,
     bg_mode: u8,
     bg3_priority: Bg3Priority,
     enabled: [Toggle; 4],
@@ -40,6 +41,7 @@ impl Ppu {
         Self {
             vram: Vram::new(),
             cgram: Cgram::new(),
+            force_blank: true,
             bg_mode: 0,
             bg3_priority: Bg3Priority::Low,
             enabled: [
@@ -65,7 +67,7 @@ impl Ppu {
     }
 
     pub fn pixels(&self) -> &[u8] {
-        self.screen.pixels()
+        self.screen.output()
     }
 
     pub fn read(&mut self, address: u8) -> u8 {
@@ -76,6 +78,11 @@ impl Ppu {
 
     pub fn write(&mut self, address: u8, value: u8) {
         match address {
+            0x00 => {
+                // TODO: Brightness
+                self.force_blank = (value & 0x80) != 0;
+                debug!("Force Blank: {}", self.force_blank);
+            }
             0x05 => {
                 // TODO: 16x16 tiles
 
@@ -140,6 +147,11 @@ impl Ppu {
     }
 
     pub fn draw_line(&mut self, line: u16) {
+        if self.force_blank {
+            self.screen.force_blank();
+            return;
+        }
+
         self.pixels[0].fill(Pixel {
             color: self.cgram.color(0),
             priority: 0,
