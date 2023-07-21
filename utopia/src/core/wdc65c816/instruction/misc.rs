@@ -1,4 +1,5 @@
 use super::super::{Bus, Core, Mode, EMULATION_STACK_PAGE};
+use std::mem;
 use tracing::{debug, warn};
 
 pub fn nop(core: &mut Core<impl Bus>) {
@@ -36,7 +37,7 @@ pub fn xce(core: &mut Core<impl Bus>) {
         core.y &= 0xff;
         core.s = EMULATION_STACK_PAGE | (core.s & 0xff);
     } else {
-        core.mode = Mode::Native11;
+        core.mode = unsafe { mem::transmute(core.mode as u8 & !0x04) };
     }
 }
 

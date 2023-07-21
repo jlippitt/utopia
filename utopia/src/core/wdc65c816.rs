@@ -408,26 +408,6 @@ impl<T: Bus> Core<T> {
             0xde => instr::modify::<M, addr::AbsoluteX<X>, op::Dec>(self),
             0xfe => instr::modify::<M, addr::AbsoluteX<X>, op::Inc>(self),
 
-            // +0x0b
-            0x0b => instr::phd::<E>(self),
-            0x2b => instr::pld::<E>(self),
-            0x4b => instr::phk::<E>(self),
-            0x6b => instr::rtl::<E>(self),
-            0x8b => instr::phb::<E>(self),
-            0xab => instr::plb::<E>(self),
-            0xcb => instr::wai(self),
-            0xeb => instr::xba(self),
-
-            // +0x1b
-            0x1b => instr::tcs::<E>(self),
-            0x3b => instr::tsc(self),
-            0x5b => instr::tcd(self),
-            0x7b => instr::tdc(self),
-            0x9b => instr::txy::<X>(self),
-            0xbb => instr::tyx::<X>(self),
-            0xdb => instr::stp(self),
-            0xfb => instr::xce(self),
-
             // +0x03
             0x03 => instr::read::<M, addr::StackRelative, op::Ora>(self),
             0x23 => instr::read::<M, addr::StackRelative, op::And>(self),
@@ -487,6 +467,26 @@ impl<T: Bus> Core<T> {
             0xbf => instr::read::<M, addr::AbsoluteLongX, op::Lda>(self),
             0xdf => instr::read::<M, addr::AbsoluteLongX, op::Cmp>(self),
             0xff => instr::read::<M, addr::AbsoluteLongX, op::Sbc>(self),
+
+            // +0x0b
+            0x0b => instr::phd::<E>(self),
+            0x2b => instr::pld::<E>(self),
+            0x4b => instr::phk::<E>(self),
+            0x6b => instr::rtl::<E>(self),
+            0x8b => instr::phb::<E>(self),
+            0xab => instr::plb::<E>(self),
+            0xcb => instr::wai(self),
+            0xeb => instr::xba(self),
+
+            // +0x1b
+            0x1b => instr::tcs::<E>(self),
+            0x3b => instr::tsc(self),
+            0x5b => instr::tcd(self),
+            0x7b => instr::tdc(self),
+            0x9b => instr::txy::<X>(self),
+            0xbb => instr::tyx::<X>(self),
+            0xdb => instr::stp(self),
+            0xfb => instr::xce(self),
         }
     }
 
