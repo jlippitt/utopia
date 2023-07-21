@@ -48,6 +48,21 @@ pub enum Mode {
     Emulation = 4,
 }
 
+//#[cfg(feature = "cpu-tests")]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct State {
+    pub a: u16,
+    pub x: u16,
+    pub y: u16,
+    pub d: u16,
+    pub s: u16,
+    pub pc: u16,
+    pub dbr: u8,
+    pub pbr: u8,
+    pub p: u8,
+    pub e: bool,
+}
+
 pub struct Core<T: Bus> {
     a: u16,
     x: u16,
@@ -585,6 +600,45 @@ impl<T: Bus> Core<T> {
     fn set_nz16(&mut self, value: u16) {
         self.flags.n = (value & 0x8000) != 0;
         self.flags.z = value;
+    }
+
+    //#[cfg(feature = "cpu-tests")]
+    pub fn state(&self) -> State {
+        let e = (self.mode as u8 & 0x04) != 0;
+
+        State {
+            a: self.a,
+            x: self.x,
+            y: self.y,
+            d: self.d,
+            s: self.s,
+            pc: self.pc as u16,
+            pbr: (self.pc >> 16) as u8,
+            dbr: (self.dbr >> 16) as u8,
+            p: if e {
+                self.flags_to_u8::<true>(true)
+            } else {
+                self.flags_to_u8::<false>(true)
+            },
+            e,
+        }
+    }
+
+    //#[cfg(feature = "cpu-tests")]
+    pub fn set_state(&mut self, state: &State) {
+        self.a = state.a;
+        self.x = state.x;
+        self.y = state.y;
+        self.d = state.d;
+        self.s = state.s;
+        self.pc = ((state.pbr as u32) << 16) | (state.pc as u32);
+        self.dbr = (state.dbr as u32) << 16;
+
+        if state.e {
+            self.flags_from_u8::<true>(state.p);
+        } else {
+            self.flags_from_u8::<false>(state.p);
+        }
     }
 }
 

@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::error::Error;
-use utopia::core::wdc65c816::{Bus, Core, Interrupt};
+use utopia::core::wdc65c816::{Bus, Core, Interrupt, State as CoreState};
 
 #[derive(Debug, Deserialize)]
 pub struct State {
@@ -72,6 +72,31 @@ pub fn parse(input: &str) -> Result<Vec<Test>, Box<dyn Error>> {
 
 pub fn run(test: &Test) {
     println!("{:?}", test);
-    let memory = Memory::new(&test.initial.ram);
-    println!("{:?}", memory);
+    let mut core = Core::from(&test.initial);
+    println!("{:?}", core.state());
+    core.step();
+    println!("{:?}", core.state());
+}
+
+impl From<&State> for Core<Memory> {
+    fn from(state: &State) -> Core<Memory> {
+        let memory = Memory::new(&state.ram);
+
+        let core_state = CoreState {
+            a: state.a,
+            x: state.x,
+            y: state.y,
+            d: state.d,
+            s: state.s,
+            pc: state.pc,
+            pbr: state.pbr,
+            dbr: state.dbr,
+            p: state.p,
+            e: state.a != 0,
+        };
+
+        let mut core = Core::new(memory);
+        core.set_state(&core_state);
+        core
+    }
 }
