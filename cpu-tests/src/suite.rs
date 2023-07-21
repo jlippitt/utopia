@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::fs;
+use std::path::Path;
 use tracing::{info, warn};
 
 mod wdc65c816;
@@ -37,7 +38,7 @@ pub fn run_path(path: &str) -> Result<u32, Box<dyn Error>> {
 }
 
 pub fn run_file(path: &str) -> Result<u32, Box<dyn Error>> {
-    info!("Running suite: {}", path);
+    let name = Path::new(path).file_name().unwrap().to_str().unwrap();
 
     let data = fs::read_to_string(path)?;
     let tests = wdc65c816::parse(&data)?;
@@ -52,10 +53,10 @@ pub fn run_file(path: &str) -> Result<u32, Box<dyn Error>> {
     }
 
     if failed == 0 {
-        info!("All test cases passed");
+        info!("PASSED: {}", name);
         Ok(0)
     } else {
-        warn!("{} FAILED TEST CASES!", failed);
+        warn!("FAILED: {} ({} failing test cases!)", name, failed);
         Ok(1)
     }
 }
