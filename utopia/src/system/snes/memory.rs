@@ -12,11 +12,29 @@ pub enum Page {
     OpenBus,
 }
 
-pub fn map() -> [Page; TOTAL_PAGES] {
+fn mirror(size: usize, index: usize) -> usize {
+    if size == 0 {
+        return 0;
+    }
+
+    if index < size {
+        return index;
+    }
+
+    let floor: usize = if index > 0 { 1 << index.ilog2() } else { 0 };
+
+    if size <= (index & floor) as usize {
+        return mirror(size, index - floor);
+    }
+
+    return floor + mirror(size - floor, index - floor);
+}
+
+pub fn map(rom_size: usize) -> [Page; TOTAL_PAGES] {
     let mut pages = [Page::OpenBus; TOTAL_PAGES];
 
     // Assume LoROM for now
-    map_lo_rom(&mut pages);
+    map_lo_rom(&mut pages, rom_size);
 
     // Map system pages
     map_system_pages(&mut pages, 0x00..=0x3f);
@@ -49,14 +67,14 @@ fn map_system_pages(pages: &mut [Page], banks: impl Iterator<Item = u8>) {
     }
 }
 
-fn map_lo_rom(pages: &mut [Page]) {
+fn map_lo_rom(pages: &mut [Page], rom_size: usize) {
     for bank in 0x00..=0x7f {
         let index = bank << 3;
-        let offset = (bank as u32) << 15;
-        pages[index | 4] = Page::Rom(offset | 0x0000);
-        pages[index | 5] = Page::Rom(offset | 0x2000);
-        pages[index | 6] = Page::Rom(offset | 0x4000);
-        pages[index | 7] = Page::Rom(offset | 0x6000);
+        let offset = (bank as usize) << 15;
+        pages[index | 4] = Page::Rom(mirror(rom_size, offset | 0x0000) as u32);
+        pages[index | 5] = Page::Rom(mirror(rom_size, offset | 0x2000) as u32);
+        pages[index | 6] = Page::Rom(mirror(rom_size, offset | 0x4000) as u32);
+        pages[index | 7] = Page::Rom(mirror(rom_size, offset | 0x6000) as u32);
     }
 
     pages.copy_within(0..(TOTAL_PAGES / 2), TOTAL_PAGES / 2);

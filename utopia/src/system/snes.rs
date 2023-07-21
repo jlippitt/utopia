@@ -75,7 +75,7 @@ pub struct Hardware {
 
 impl Hardware {
     pub fn new(rom_data: Vec<u8>, ipl_rom: Vec<u8>) -> Self {
-        let pages = memory::map();
+        let pages = memory::map(rom_data.len());
 
         Self {
             clock: Clock::new(),
@@ -83,7 +83,7 @@ impl Hardware {
             interrupt: 0,
             ready: false,
             pages,
-            rom: rom_data.into(),
+            rom: MirrorVec::resize(rom_data),
             wram: Wram::new(),
             regs: Registers::new(),
             dma: Dma::new(),

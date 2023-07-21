@@ -13,6 +13,17 @@ impl<T: Clone + Default> MirrorVec<T> {
         }
     }
 
+    pub fn resize(mut vec: Vec<T>) -> Self {
+        let new_size = vec.len().next_power_of_two();
+
+        vec.resize(new_size, T::default());
+
+        Self {
+            vec,
+            mask: Self::mask_for(new_size),
+        }
+    }
+
     fn mask_for(size: usize) -> usize {
         if size.is_power_of_two() {
             size - 1
