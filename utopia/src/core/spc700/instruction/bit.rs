@@ -42,3 +42,23 @@ pub fn eor1(core: &mut Core<impl Bus>) {
     core.idle();
     core.flags.c ^= (value & (1 << bit)) != 0;
 }
+
+pub fn tset1(core: &mut Core<impl Bus>) {
+    debug!("TSET1 !a");
+    let address = core.next_word();
+    let value = core.read(address);
+    core.read(address); // This happens a second time?
+    let result = value | core.a;
+    core.set_nz(core.a.wrapping_sub(value));
+    core.write(address, result);
+}
+
+pub fn tclr1(core: &mut Core<impl Bus>) {
+    debug!("TCLR1 !a");
+    let address = core.next_word();
+    let value = core.read(address);
+    core.read(address); // This happens a second time?
+    let result = value & !core.a;
+    core.set_nz(core.a.wrapping_sub(value));
+    core.write(address, result);
+}

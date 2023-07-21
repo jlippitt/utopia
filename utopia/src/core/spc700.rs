@@ -327,7 +327,9 @@ impl<T: Bus> Core<T> {
             0xfd => instr::binary::<addr::Y, addr::A, op::Mov>(self),
 
             // +0x0e
+            0x0e => instr::tset1(self),
             0x2e => instr::branch::<op::CbneDirect>(self),
+            0x4e => instr::tclr1(self),
             0x6e => instr::branch::<op::DbnzDirect>(self),
             0x8e => instr::pop::<addr::Psw>(self),
             0xae => instr::pop::<addr::A>(self),
