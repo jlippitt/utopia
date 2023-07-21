@@ -9,4 +9,6 @@ edition = "2021"
 clap = { version = "4.3.17", features = ["derive"] }
 serde = { version = "1.0.174", features = ["derive"] }
 serde_json = "1.0.103"
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 utopia = { path = "../utopia", features = ["cpu-tests"] }

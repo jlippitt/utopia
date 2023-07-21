@@ -92,7 +92,7 @@ impl From<&State> for Core<Memory> {
             pbr: state.pbr,
             dbr: state.dbr,
             p: state.p,
-            e: state.a != 0,
+            e: state.e != 0,
         };
 
         let mut core = Core::new(memory);
