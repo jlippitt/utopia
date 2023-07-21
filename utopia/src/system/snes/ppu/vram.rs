@@ -38,6 +38,14 @@ impl Vram {
         (plane1 << 16) | plane0
     }
 
+    pub fn chr256(&self, index: usize) -> u64 {
+        let plane0 = self.chr_cache[index] as u64;
+        let plane1 = self.chr_cache[index | 8] as u64;
+        let plane2 = self.chr_cache[index | 16] as u64;
+        let plane3 = self.chr_cache[index | 24] as u64;
+        (plane3 << 48) | (plane2 << 32) | (plane1 << 16) | plane0
+    }
+
     pub fn set_control(&mut self, value: u8) {
         if (value & 0x0c) != 0 {
             todo!("VRAM address remapping");

@@ -157,6 +157,10 @@ impl Ppu {
                 self.draw_bg::<1>(1, 4, 3, line);
                 self.draw_bg::<0>(2, self.bg3_priority as u8, 1, line);
             }
+            3 => {
+                self.draw_bg::<2>(0, 4, 2, line);
+                self.draw_bg::<1>(1, 3, 1, line);
+            }
             _ => panic!("Mode {} not yet implemented", self.bg_mode),
         }
 

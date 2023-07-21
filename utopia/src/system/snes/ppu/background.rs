@@ -13,6 +13,11 @@ fn color<const COLOR_DEPTH: u8>(chr: u64) -> usize {
 
     if COLOR_DEPTH > 0 {
         color |= (chr >> 14) & 0x0c;
+
+        if COLOR_DEPTH > 1 {
+            color |= (chr >> 28) & 0x30;
+            color |= (chr >> 42) & 0xc0;
+        }
     }
 
     color as usize
@@ -192,7 +197,18 @@ impl super::Ppu {
                         palette: ((tile_data & 0x1c00) >> 6),
                     };
                 }
-                2 => todo!("256 color backgrounds"),
+                2 => {
+                    let chr_index = bg.chr_map.wrapping_add(chr_name << 4) | fine_y;
+                    let chr_data = self.vram.chr256(chr_index as usize);
+                    trace!("CHR Load: {:04X} => {:016X}", chr_index, chr_data);
+
+                    *tile = Tile {
+                        chr_data,
+                        flip_mask,
+                        priority,
+                        palette: 0,
+                    };
+                }
                 _ => unreachable!(),
             }
 
