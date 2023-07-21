@@ -241,12 +241,12 @@ impl<T: Bus> Core<T> {
             0xe9 => instr::binary::<addr::X, addr::Absolute, op::Mov>(self),
 
             // +0x19
-            //0x19 => instr::binary::<addr::XIndirect, addr::YIndirect, op::Or>(self),
-            //0x39 => instr::binary::<addr::XIndirect, addr::YIndirect, op::And>(self),
-            //0x59 => instr::binary::<addr::XIndirect, addr::YIndirect, op::Eor>(self),
-            //0x79 => instr::compare::<addr::XIndirect, addr::YIndirect>(self),
-            //0x99 => instr::binary::<addr::XIndirect, addr::YIndirect, op::Adc>(self),
-            //0xb9 => instr::binary::<addr::XIndirect, addr::YIndirect, op::Sbc>(self),
+            0x19 => instr::binary::<addr::XIndirect, addr::YIndirect, op::Or>(self),
+            0x39 => instr::binary::<addr::XIndirect, addr::YIndirect, op::And>(self),
+            0x59 => instr::binary::<addr::XIndirect, addr::YIndirect, op::Eor>(self),
+            0x79 => instr::compare::<addr::XIndirect, addr::YIndirect>(self),
+            0x99 => instr::binary::<addr::XIndirect, addr::YIndirect, op::Adc>(self),
+            0xb9 => instr::binary::<addr::XIndirect, addr::YIndirect, op::Sbc>(self),
             0xd9 => instr::write::<addr::DirectY, addr::X>(self),
             0xf9 => instr::binary::<addr::X, addr::DirectY, op::Mov>(self),
 

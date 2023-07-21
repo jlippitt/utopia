@@ -226,3 +226,17 @@ impl Resolver for XIndirect {
         core.flags.p | (core.x as u16)
     }
 }
+
+pub struct YIndirect;
+
+impl Resolver for YIndirect {
+    const NAME: &'static str = "(Y)";
+
+    fn init(core: &mut Core<impl Bus>) {
+        core.read(core.pc);
+    }
+
+    fn resolve(core: &mut Core<impl Bus>) -> u16 {
+        core.flags.p | (core.y as u16)
+    }
+}
