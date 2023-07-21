@@ -8,4 +8,4 @@ cpu-tests = []
 
 [dependencies]
 enum_dispatch = "0.3.11"
-tracing = "0.1.37"
+tracing = { version = "0.1.37", features = ["release_max_level_info"] }
