@@ -34,3 +34,11 @@ pub fn and1_not(core: &mut Core<impl Bus>) {
     let value = core.read(address);
     core.flags.c &= (value & (1 << bit)) == 0;
 }
+
+pub fn eor1(core: &mut Core<impl Bus>) {
+    debug!("EOR1 C, m.b");
+    let (address, bit) = decode(core.next_word());
+    let value = core.read(address);
+    core.idle();
+    core.flags.c ^= (value & (1 << bit)) != 0;
+}

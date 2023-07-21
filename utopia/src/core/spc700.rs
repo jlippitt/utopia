@@ -255,6 +255,7 @@ impl<T: Bus> Core<T> {
             0x2a => instr::or1_not(self),
             0x4a => instr::and1(self),
             0x6a => instr::and1_not(self),
+            0x8a => instr::eor1(self),
 
             // +0x1a
             0x1a => instr::decw(self),
