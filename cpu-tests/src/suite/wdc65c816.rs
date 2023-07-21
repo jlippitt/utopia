@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::error::Error;
-use tracing::info;
+use tracing::{debug, info};
 use utopia::core::wdc65c816::{Bus, Core, Interrupt, State};
 
 #[derive(Debug, Deserialize)]
@@ -80,17 +80,16 @@ pub fn run(test: &Test) -> bool {
     core.step();
     let actual = core.state();
 
-    if expected != actual {
-        info!("TEST {} {{", test.name);
+    if expected == actual {
+        debug!("Passed: {}", test.name);
+        true
+    } else {
+        info!("Failed: {}", test.name);
         info!("Initial: {:?}", initial);
         info!("Expected: {:?}", expected);
         info!("Actual: {:?}", actual);
-        info!("}}");
-        info!("");
-        return false;
+        false
     }
-
-    true
 }
 
 impl From<&TestState> for State {

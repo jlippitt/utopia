@@ -228,6 +228,6 @@ impl AddressMode for StackRelativeIndirectY {
         let low_address = StackRelative::resolve(core, write);
         let indirect = get_indirect::<false>(core, low_address);
         core.idle();
-        indirect.wrapping_add(core.y as u32)
+        indirect.wrapping_add(core.y as u32) & WRAP24
     }
 }
