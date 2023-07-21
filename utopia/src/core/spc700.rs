@@ -299,7 +299,7 @@ impl<T: Bus> Core<T> {
             0xfc => instr::unary::<addr::Y, op::Inc>(self),
 
             // +0x0d
-            //0x0d => instr::push::<addr::Psw>(self),
+            0x0d => instr::push::<addr::Psw>(self),
             0x2d => instr::push::<addr::A>(self),
             0x4d => instr::push::<addr::X>(self),
             0x6d => instr::push::<addr::Y>(self),
@@ -321,7 +321,7 @@ impl<T: Bus> Core<T> {
             // +0x0e
             0x2e => instr::branch::<op::CbneDirect>(self),
             0x6e => instr::branch::<op::DbnzDirect>(self),
-            //0x8e => instr::pop::<addr::Psw>(self),
+            0x8e => instr::pop::<addr::Psw>(self),
             0xae => instr::pop::<addr::A>(self),
             0xce => instr::pop::<addr::X>(self),
             0xee => instr::pop::<addr::Y>(self),
