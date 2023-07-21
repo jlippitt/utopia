@@ -1,3 +1,4 @@
+use super::VBLANK_LINE;
 use crate::core::wdc65c816::INT_NMI;
 use tracing::debug;
 
@@ -73,6 +74,29 @@ impl super::Hardware {
                 value
             }
             0x11 => prev_value & 0x7f, // TODO: IRQ
+            0x12 => {
+                let line = self.clock.line();
+                let dot = self.clock.dot();
+
+                let mut value = prev_value & 0x3e;
+
+                if line >= VBLANK_LINE {
+                    // VBlank
+                    value |= 0x80;
+
+                    if line < (VBLANK_LINE + 3) {
+                        // Auto Joypad Read
+                        value |= 0x01;
+                    }
+                }
+
+                if dot > 274 || dot == 0 {
+                    // HBlank
+                    value |= 0x04;
+                }
+
+                value
+            }
             0x14 => self.regs.quotient as u8,
             0x15 => (self.regs.quotient >> 8) as u8,
             0x16 => self.regs.remainder as u8,
