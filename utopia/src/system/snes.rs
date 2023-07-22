@@ -129,7 +129,10 @@ impl Hardware {
                         self.regs.set_nmi_occurred(false);
                         self.interrupt &= !INT_NMI;
                     }
+
+                    self.clock.set_irq_cycle(self.regs.irq_cycle(line));
                 }
+                Event::Irq => self.interrupt |= registers::TIMER_IRQ,
             }
         }
     }

@@ -154,7 +154,7 @@ impl<T: Bus> Core<T> {
                 self.bus.acknowledge(INT_NMI);
                 instr::nmi::<E>(self);
             } else {
-                panic!("Interrupt not yet implemented");
+                instr::irq::<E>(self);
             }
 
             self.interrupt = 0;

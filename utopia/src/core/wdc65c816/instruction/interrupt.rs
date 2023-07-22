@@ -4,6 +4,7 @@ use tracing::debug;
 const NATIVE_COP_VECTOR: u16 = 0xffe4;
 const NATIVE_BRK_VECTOR: u16 = 0xffe6;
 const NATIVE_NMI_VECTOR: u16 = 0xffea;
+const NATIVE_IRQ_VECTOR: u16 = 0xffee;
 
 const EMULATION_COP_VECTOR: u16 = 0xfff4;
 const EMULATION_NMI_VECTOR: u16 = 0xfffa;
@@ -49,6 +50,20 @@ pub fn nmi<const E: bool>(core: &mut Core<impl Bus>) {
         EMULATION_NMI_VECTOR
     } else {
         NATIVE_NMI_VECTOR
+    };
+
+    jump_to_vector(core, vector);
+}
+
+pub fn irq<const E: bool>(core: &mut Core<impl Bus>) {
+    debug!("IRQ");
+    core.idle();
+    push_state::<E>(core, false);
+
+    let vector = if E {
+        EMULATION_IRQ_VECTOR
+    } else {
+        NATIVE_IRQ_VECTOR
     };
 
     jump_to_vector(core, vector);

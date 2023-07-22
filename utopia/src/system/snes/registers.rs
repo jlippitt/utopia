@@ -1,6 +1,8 @@
 use super::VBLANK_LINE;
-use crate::core::wdc65c816::INT_NMI;
+use crate::core::wdc65c816::{Interrupt, INT_NMI};
 use tracing::debug;
+
+pub const TIMER_IRQ: Interrupt = 0x04;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 enum IrqMode {
@@ -46,6 +48,27 @@ impl Registers {
         debug!("NMI Occurred: {}", self.nmi_occurred);
     }
 
+    pub fn irq_cycle(&self, line: u16) -> Option<u64> {
+        match self.irq_mode {
+            IrqMode::None => None,
+            IrqMode::V => {
+                if line == self.irq_y {
+                    Some(0)
+                } else {
+                    None
+                }
+            }
+            IrqMode::H => Some((self.irq_x as u64) << 2),
+            IrqMode::HV => {
+                if line == self.irq_y {
+                    Some((self.irq_x as u64) << 2)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
     pub fn multiply(&mut self, value: u8) {
         // TODO: Simulate hardware delay
         self.remainder = (self.multiplicand as u16) * (value as u16);
@@ -87,7 +110,16 @@ impl super::Hardware {
 
                 value
             }
-            0x11 => prev_value & 0x7f, // TODO: IRQ
+            0x11 => {
+                let mut value = prev_value & 0x7f;
+
+                if (self.interrupt & TIMER_IRQ) != 0 {
+                    self.interrupt &= !TIMER_IRQ;
+                    value |= 0x80;
+                }
+
+                value
+            }
             0x12 => {
                 let line = self.clock.line();
                 let dot = self.clock.dot();
@@ -104,9 +136,9 @@ impl super::Hardware {
                     }
                 }
 
-                if dot > 274 || dot == 0 {
+                if dot >= 274 || dot == 0 {
                     // HBlank
-                    value |= 0x04;
+                    value |= 0x40;
                 }
 
                 value
