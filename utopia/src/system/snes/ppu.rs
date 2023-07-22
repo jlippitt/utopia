@@ -4,6 +4,7 @@ use super::clock::Clock;
 use background::BackgroundLayer;
 use buffer::{Pixel, PixelBuffer, TileBuffer, PIXEL_BUFFER_SIZE, TILE_BUFFER_SIZE};
 use cgram::Cgram;
+use mode7::Mode7Settings;
 use screen::Screen;
 use toggle::{ScreenToggle, Toggle};
 use tracing::{debug, warn};
@@ -12,6 +13,7 @@ use vram::Vram;
 mod background;
 mod buffer;
 mod cgram;
+mod mode7;
 mod screen;
 mod toggle;
 mod vram;
@@ -31,6 +33,7 @@ pub struct Ppu {
     bg3_priority: Bg3Priority,
     enabled: [Toggle; 4],
     bg: [BackgroundLayer; 4],
+    mode7: Mode7Settings,
     screen: Screen,
     scroll_regs: (u8, u8),
     tiles: TileBuffer,
@@ -57,6 +60,7 @@ impl Ppu {
                 BackgroundLayer::new("BG3"),
                 BackgroundLayer::new("BG4"),
             ],
+            mode7: Mode7Settings::new(),
             screen: Screen::new(),
             scroll_regs: (0, 0),
             tiles: [Default::default(); TILE_BUFFER_SIZE],
@@ -117,8 +121,14 @@ impl Ppu {
                 self.bg[2].set_chr_map(value & 0x0f);
                 self.bg[3].set_chr_map(value >> 4);
             }
-            0x0d => self.bg[0].set_scroll_x(&mut self.scroll_regs, value),
-            0x0e => self.bg[0].set_scroll_y(&mut self.scroll_regs, value),
+            0x0d => {
+                self.bg[0].set_scroll_x(&mut self.scroll_regs, value);
+                //self.mode7.set_scroll_x(value);
+            }
+            0x0e => {
+                self.bg[0].set_scroll_y(&mut self.scroll_regs, value);
+                //self.mode7.set_scroll_y(value);
+            }
             0x0f => self.bg[1].set_scroll_x(&mut self.scroll_regs, value),
             0x10 => self.bg[1].set_scroll_y(&mut self.scroll_regs, value),
             0x11 => self.bg[2].set_scroll_x(&mut self.scroll_regs, value),
@@ -130,6 +140,13 @@ impl Ppu {
             0x17 => self.vram.set_address_high(value),
             0x18 => self.vram.write_low(value),
             0x19 => self.vram.write_high(value),
+            //0x1a => self.mode7.set_control(value),
+            0x1b => self.mode7.set_matrix_a(value),
+            0x1c => self.mode7.set_matrix_b(value),
+            0x1d => self.mode7.set_matrix_c(value),
+            0x1e => self.mode7.set_matrix_d(value),
+            //0x1f => self.mode7.set_center_x(value),
+            //0x20 => self.mode7.set_center_y(value),
             0x21 => self.cgram.set_address(value),
             0x22 => self.cgram.write(value),
             0x2c => {
