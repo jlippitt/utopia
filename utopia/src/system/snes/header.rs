@@ -17,7 +17,12 @@ pub struct Header {
 
 pub fn parse(rom: &[u8]) -> Header {
     let lo_rom = try_parse(Mapper::LoRom, &rom[0x0000..]);
-    let hi_rom = try_parse(Mapper::HiRom, &rom[0x8000..]);
+
+    let hi_rom = if rom.len() > 0x0001_0000 {
+        try_parse(Mapper::HiRom, &rom[0x8000..])
+    } else {
+        None
+    };
 
     match (lo_rom, hi_rom) {
         (Some(lo_rom), Some(hi_rom)) => {
