@@ -43,6 +43,13 @@ pub fn eor1(core: &mut Core<impl Bus>) {
     core.flags.c ^= (value & (1 << bit)) != 0;
 }
 
+pub fn mov1_read(core: &mut Core<impl Bus>) {
+    debug!("MOV1 C, m.b");
+    let (address, bit) = decode(core.next_word());
+    let value = core.read(address);
+    core.flags.c = (value & (1 << bit)) != 0;
+}
+
 pub fn tset1(core: &mut Core<impl Bus>) {
     debug!("TSET1 !a");
     let address = core.next_word();
