@@ -266,6 +266,7 @@ impl<T: Bus> Core<T> {
             0x9a => instr::subw(self),
             0xba => instr::movw_read(self),
             0xda => instr::movw_write(self),
+            0xfa => instr::mov_direct_direct(self),
 
             // +0x0b
             0x0b => instr::unary::<addr::Direct, op::Asl>(self),

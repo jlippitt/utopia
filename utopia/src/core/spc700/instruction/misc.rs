@@ -6,6 +6,14 @@ pub fn nop(core: &mut Core<impl Bus>) {
     core.read(core.pc);
 }
 
+pub fn mov_direct_direct(core: &mut Core<impl Bus>) {
+    debug!("MOV d, d");
+    let src_address = core.next_byte();
+    let value = core.read_direct(src_address);
+    let dst_address = core.next_byte();
+    core.write_direct(dst_address, value);
+}
+
 pub fn auto_inc_read(core: &mut Core<impl Bus>) {
     debug!("MOV A, (X)+");
     core.read(core.pc);
