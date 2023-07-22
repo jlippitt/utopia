@@ -82,7 +82,7 @@ fn try_parse(id: Mapper, rom: &[u8]) -> Option<Header> {
         }
     };
 
-    if rom_size != rom.len() {
+    if rom_size != rom.len().next_power_of_two() {
         trace!(
             "{:?}: ROM size in header does not match ROM file length",
             id
