@@ -2,9 +2,20 @@ use super::VBLANK_LINE;
 use crate::core::wdc65c816::INT_NMI;
 use tracing::debug;
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+enum IrqMode {
+    None,
+    H,
+    V,
+    HV,
+}
+
 pub struct Registers {
     nmi_occurred: bool,
     nmi_active: bool,
+    irq_mode: IrqMode,
+    irq_x: u16,
+    irq_y: u16,
     multiplicand: u8,
     dividend: u16,
     quotient: u16,
@@ -16,6 +27,9 @@ impl Registers {
         Self {
             nmi_occurred: false,
             nmi_active: false,
+            irq_mode: IrqMode::None,
+            irq_x: 0x01ff,
+            irq_y: 0x01ff,
             multiplicand: 0xff,
             dividend: 0xffff,
             quotient: 0xffff,
@@ -109,6 +123,8 @@ impl super::Hardware {
     pub(super) fn write_register(&mut self, address: u8, value: u8) {
         match address {
             0x00 => {
+                // TODO: Auto-joypad read
+
                 let nmi_active = (value & 0x80) != 0;
 
                 if !nmi_active {
@@ -118,7 +134,17 @@ impl super::Hardware {
                 }
 
                 self.regs.nmi_active = nmi_active;
+
+                self.regs.irq_mode = match value & 0x30 {
+                    0x00 => IrqMode::None,
+                    0x10 => IrqMode::H,
+                    0x20 => IrqMode::V,
+                    0x30 => IrqMode::HV,
+                    _ => unreachable!(),
+                };
+
                 debug!("NMI Active: {}", self.regs.nmi_active);
+                debug!("IRQ Mode: {:?}", self.regs.irq_mode);
             }
             0x02 => {
                 self.regs.multiplicand = value;
@@ -134,6 +160,22 @@ impl super::Hardware {
                 debug!("Dividend: {}", self.regs.dividend);
             }
             0x06 => self.regs.divide(value),
+            0x07 => {
+                self.regs.irq_x = (self.regs.irq_x & 0xff00) | (value as u16);
+                debug!("IRQ X: {}", self.regs.irq_x);
+            }
+            0x08 => {
+                self.regs.irq_x = (self.regs.irq_x & 0xff) | ((value as u16 & 0x01) << 8);
+                debug!("IRQ X: {}", self.regs.irq_x);
+            }
+            0x09 => {
+                self.regs.irq_y = (self.regs.irq_y & 0xff00) | (value as u16);
+                debug!("IRQ Y: {}", self.regs.irq_y);
+            }
+            0x0a => {
+                self.regs.irq_y = (self.regs.irq_y & 0xff) | ((value as u16 & 0x01) << 8);
+                debug!("IRQ Y: {}", self.regs.irq_y);
+            }
             0x0b => self.dma.set_dma_enabled(value),
             _ => (),
         }
