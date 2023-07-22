@@ -1,3 +1,4 @@
+use super::header::{Header, Mapper};
 use tracing::trace;
 
 pub const TOTAL_PAGES: usize = 2048;
@@ -5,7 +6,7 @@ pub const TOTAL_PAGES: usize = 2048;
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Page {
     Rom(u32),
-    //Sram(u32),
+    Sram(u32),
     Wram(u32),
     ExternalRegisters,
     InternalRegisters,
@@ -30,11 +31,13 @@ fn mirror(size: usize, index: usize) -> usize {
     return floor + mirror(size - floor, index - floor);
 }
 
-pub fn map(rom_size: usize) -> [Page; TOTAL_PAGES] {
+pub fn map(header: &Header) -> [Page; TOTAL_PAGES] {
     let mut pages = [Page::OpenBus; TOTAL_PAGES];
 
-    // Assume LoROM for now
-    map_lo_rom(&mut pages, rom_size);
+    match header.mapper {
+        Mapper::LoRom => map_lo_rom(&mut pages, header),
+        Mapper::HiRom => todo!("HiROM"),
+    }
 
     // Map system pages
     map_system_pages(&mut pages, 0x00..=0x3f);
@@ -67,7 +70,10 @@ fn map_system_pages(pages: &mut [Page], banks: impl Iterator<Item = u8>) {
     }
 }
 
-fn map_lo_rom(pages: &mut [Page], rom_size: usize) {
+fn map_lo_rom(pages: &mut [Page], header: &Header) {
+    let rom_size = header.rom_size;
+    let sram_size = header.sram_size;
+
     for bank in 0x00..=0x7f {
         let index = bank << 3;
         let offset = (bank as usize) << 15;
@@ -75,6 +81,17 @@ fn map_lo_rom(pages: &mut [Page], rom_size: usize) {
         pages[index | 5] = Page::Rom(mirror(rom_size, offset | 0x2000) as u32);
         pages[index | 6] = Page::Rom(mirror(rom_size, offset | 0x4000) as u32);
         pages[index | 7] = Page::Rom(mirror(rom_size, offset | 0x6000) as u32);
+    }
+
+    if sram_size > 0 {
+        for bank in 0x70..=0x7f {
+            let index = bank << 3;
+            let offset = ((bank - 0x70) as u32) << 15;
+            pages[index | 0] = Page::Sram(offset | 0x0000);
+            pages[index | 1] = Page::Sram(offset | 0x2000);
+            pages[index | 2] = Page::Sram(offset | 0x4000);
+            pages[index | 3] = Page::Sram(offset | 0x6000);
+        }
     }
 
     pages.copy_within(0..(TOTAL_PAGES / 2), TOTAL_PAGES / 2);

@@ -67,6 +67,7 @@ pub struct Hardware {
     ready: bool,
     pages: [Page; TOTAL_PAGES],
     rom: MirrorVec<u8>,
+    sram: MirrorVec<u8>,
     wram: Wram,
     regs: Registers,
     dma: Dma,
@@ -83,7 +84,7 @@ impl Hardware {
         info!("ROM Size: {}", header.rom_size);
         info!("SRAM Size: {}", header.sram_size);
 
-        let pages = memory::map(header.rom_size);
+        let pages = memory::map(&header);
 
         Self {
             clock: Clock::new(),
@@ -92,6 +93,7 @@ impl Hardware {
             ready: false,
             pages,
             rom: MirrorVec::resize(rom_data),
+            sram: MirrorVec::new(header.sram_size),
             wram: Wram::new(),
             regs: Registers::new(),
             dma: Dma::new(),
@@ -135,6 +137,7 @@ impl Hardware {
     fn read_bus_a(&mut self, address: u32) -> u8 {
         self.mdr = match self.pages[(address >> 13) as usize] {
             Page::Rom(offset) => self.rom[(offset | (address & 0x1fff)) as usize],
+            Page::Sram(offset) => self.sram[(offset | (address & 0x1fff)) as usize],
             Page::Wram(offset) => self.wram[(offset | (address & 0x1fff)) as usize],
             Page::ExternalRegisters => match address & 0x1f00 {
                 0x0100 => self.read_bus_b(address as u8),
@@ -166,6 +169,7 @@ impl Hardware {
 
         match self.pages[(address >> 13) as usize] {
             Page::Rom(..) => warn!("Write to ROM area: {:06X} <= {:02X}", address, value),
+            Page::Sram(offset) => self.sram[(offset | (address & 0x1fff)) as usize] = value,
             Page::Wram(offset) => self.wram[(offset | (address & 0x1fff)) as usize] = value,
             Page::ExternalRegisters => match address & 0x1f00 {
                 0x0100 => self.write_bus_b(address as u8, value),
