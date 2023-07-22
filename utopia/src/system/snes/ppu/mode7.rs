@@ -19,6 +19,18 @@ impl Mode7Settings {
         }
     }
 
+    pub fn multiply(&self) -> i32 {
+        let rhs = self.matrix_b >> 8;
+        let result = self.matrix_a * rhs;
+
+        debug!(
+            "Multiplication (Signed): {} * {} = {}",
+            self.matrix_a, rhs, result
+        );
+
+        result
+    }
+
     pub fn set_matrix_a(&mut self, value: u8) {
         self.matrix_a = (self.word_value(value) as i16) as i32;
         debug!("Mode 7 Matrix A: {}", self.matrix_a);

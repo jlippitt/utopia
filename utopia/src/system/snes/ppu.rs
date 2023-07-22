@@ -77,6 +77,9 @@ impl Ppu {
 
     pub fn read(&mut self, clock: &Clock, address: u8) -> u8 {
         match address {
+            0x34 => self.mode7.multiply() as u8,
+            0x35 => (self.mode7.multiply() >> 8) as u8,
+            0x36 => (self.mode7.multiply() >> 16) as u8,
             0x3f => {
                 // TODO: PPU open bus
                 let mut value = 0x03;
