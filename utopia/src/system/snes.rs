@@ -9,12 +9,13 @@ use ppu::{Ppu, HEIGHT, WIDTH};
 use registers::Registers;
 use std::error::Error;
 use std::fmt;
-use tracing::{debug, warn};
+use tracing::{debug, info, warn};
 use wram::Wram;
 
 mod apu;
 mod clock;
 mod dma;
+mod header;
 mod memory;
 mod ppu;
 mod registers;
@@ -75,7 +76,14 @@ pub struct Hardware {
 
 impl Hardware {
     pub fn new(rom_data: Vec<u8>, ipl_rom: Vec<u8>) -> Self {
-        let pages = memory::map(rom_data.len());
+        let header = header::parse(&rom_data);
+
+        info!("Title: {}", header.title);
+        info!("Mapper: {:?}", header.mapper);
+        info!("ROM Size: {}", header.rom_size);
+        info!("SRAM Size: {}", header.sram_size);
+
+        let pages = memory::map(header.rom_size);
 
         Self {
             clock: Clock::new(),
