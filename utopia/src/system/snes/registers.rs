@@ -131,6 +131,7 @@ impl super::Hardware {
             0x09 => self.clock.set_irq_y_low(value),
             0x0a => self.clock.set_irq_y_high(value),
             0x0b => self.dma.set_dma_enabled(value),
+            0x0c => self.dma.set_hdma_enabled(value),
             _ => (),
         }
     }

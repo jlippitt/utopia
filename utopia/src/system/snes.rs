@@ -110,8 +110,12 @@ impl Hardware {
                 Event::HBlank => {
                     let line = self.clock.line();
 
-                    if line > 0 && line < VBLANK_LINE {
-                        self.ppu.draw_line(line)
+                    if line < VBLANK_LINE {
+                        self.transfer_hdma();
+
+                        if line > 0 {
+                            self.ppu.draw_line(line)
+                        }
                     }
                 }
                 Event::NewLine => {
@@ -121,6 +125,7 @@ impl Hardware {
                         self.ready = true;
                         self.clock.set_nmi_occurred(&mut self.interrupt, true);
                     } else if line == 0 {
+                        self.init_hdma();
                         self.ppu.start_frame();
                         self.clock.set_nmi_occurred(&mut self.interrupt, false);
                         self.interrupt &= !INT_NMI;

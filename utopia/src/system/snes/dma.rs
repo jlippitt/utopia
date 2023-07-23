@@ -56,6 +56,8 @@ impl DmaChannel {
 
 pub struct Dma {
     dma_enabled: u8,
+    hdma_enabled: u8,
+    hdma_terminated: u8,
     channels: [DmaChannel; 8],
 }
 
@@ -63,6 +65,8 @@ impl Dma {
     pub fn new() -> Self {
         Self {
             dma_enabled: 0,
+            hdma_enabled: 0,
+            hdma_terminated: 0,
             channels: [
                 DmaChannel::new(),
                 DmaChannel::new(),
@@ -83,6 +87,11 @@ impl Dma {
     pub fn set_dma_enabled(&mut self, value: u8) {
         self.dma_enabled = value;
         debug!("DMA Enabled: {:08b}", self.dma_enabled);
+    }
+
+    pub fn set_hdma_enabled(&mut self, value: u8) {
+        self.hdma_enabled = value;
+        debug!("HDMA Enabled: {:08b}", self.hdma_enabled);
     }
 
     pub fn read(&self, address: u8, prev_value: u8) -> u8 {
@@ -168,11 +177,11 @@ impl Dma {
             }
             0x08 => {
                 channel.table = (channel.table & 0xff00) | (value as u16);
-                debug!("DMA{} Table: {:06X}", id, channel.table);
+                debug!("DMA{} Table: {:04X}", id, channel.table);
             }
             0x09 => {
                 channel.table = (channel.table & 0x00ff) | ((value as u16) << 8);
-                debug!("DMA{} Table: {:06X}", id, channel.table);
+                debug!("DMA{} Table: {:04X}", id, channel.table);
             }
             0x0a => {
                 channel.counter = value;
@@ -190,27 +199,56 @@ impl Dma {
 impl super::Hardware {
     pub(super) fn transfer_dma(&mut self) {
         // TODO: More accurate timing - but this will do for now
-        self.step(SLOW_CYCLES);
-
         debug!("DMA Transfer Begin");
+        self.step(SLOW_CYCLES);
+        self.iter_channels(self.dma.dma_enabled, |hw, id| {
+            hw.transfer_dma_for_channel(id)
+        });
+        self.dma.dma_enabled = 0;
+        debug!("DMA Transfer End");
+    }
 
-        for id in 0..8 {
+    pub(super) fn init_hdma(&mut self) {
+        if self.dma.hdma_enabled == 0 {
+            return;
+        }
+
+        // TODO: More accurate timing - but this will do for now
+        debug!("HDMA Init Begin");
+        self.step(SLOW_CYCLES);
+        self.dma.hdma_terminated = 0;
+        self.iter_channels(self.dma.hdma_enabled, |hw, id| hw.init_hdma_for_channel(id));
+        debug!("HDMA Init End");
+    }
+
+    pub(super) fn transfer_hdma(&mut self) {
+        let hdma_active = self.dma.hdma_enabled & !self.dma.hdma_terminated;
+
+        if hdma_active == 0 {
+            return;
+        }
+
+        // TODO: More accurate timing - but this will do for now
+        debug!("HDMA Transfer Begin");
+        self.step(SLOW_CYCLES);
+        self.iter_channels(hdma_active, |hw, id| hw.transfer_hdma_for_channel(id));
+        debug!("HDMA Transfer End");
+    }
+
+    fn iter_channels(&mut self, active: u8, callback: impl Fn(&mut Self, usize)) {
+        for id in 0..self.dma.channels.len() {
             let mask = 1 << id;
 
-            if (self.dma.dma_enabled & mask) == 0 {
+            if (active & mask) == 0 {
                 continue;
             }
 
             self.step(SLOW_CYCLES);
-            self.transfer_dma_for(id);
+            callback(self, id);
         }
-
-        self.dma.dma_enabled = 0;
-
-        debug!("DMA Transfer End");
     }
 
-    fn transfer_dma_for(&mut self, id: usize) {
+    fn transfer_dma_for_channel(&mut self, id: usize) {
         let mut byte_index = 0;
 
         loop {
@@ -259,5 +297,62 @@ impl super::Hardware {
                 break;
             }
         }
+    }
+
+    fn init_hdma_for_channel(&mut self, id: usize) {
+        {
+            let channel = &mut self.dma.channels[id];
+            channel.table = channel.source as u16;
+            debug!("DMA{} Table: {:04X}", id, channel.table);
+        }
+
+        let counter = self.next_table_byte(id);
+
+        {
+            let channel = &mut self.dma.channels[id];
+            channel.counter = counter;
+            debug!("DMA{} Counter: {:02X}", id, channel.counter);
+        }
+
+        if counter == 0 {
+            self.dma.hdma_terminated |= 1 << id;
+            debug!("DMA{} HDMA Terminated", id);
+            return;
+        }
+
+        if self.dma.channels[id].ctrl.hdma_indirect {
+            let indirect = self.next_table_word(id);
+
+            {
+                let channel = &mut self.dma.channels[id];
+                channel.indirect = (channel.indirect & 0xffff_0000) | (indirect as u32);
+                debug!("DMA{} Indirect: {:06X}", id, channel.indirect);
+            }
+        }
+    }
+
+    fn transfer_hdma_for_channel(&mut self, _id: usize) {
+        // TODO
+    }
+
+    fn next_table_byte(&mut self, id: usize) -> u8 {
+        let address = {
+            let channel = &mut self.dma.channels[id];
+            let address = (channel.source & 0xffff_0000) | (channel.table as u32);
+            channel.table = channel.table.wrapping_add(1);
+            address
+        };
+
+        let value = self.read_bus_a(address);
+
+        debug!("DMA{} Table Read: {:06X} => {:02X}", id, address, value);
+
+        value
+    }
+
+    fn next_table_word(&mut self, id: usize) -> u16 {
+        let low = self.next_table_byte(id);
+        let high = self.next_table_byte(id);
+        u16::from_le_bytes([low, high])
     }
 }
