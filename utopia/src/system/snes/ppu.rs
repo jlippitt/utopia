@@ -9,7 +9,7 @@ use screen::Screen;
 use toggle::{ScreenToggle, Toggle};
 use tracing::{debug, warn};
 use vram::Vram;
-use window::Window;
+use window::{Window, WindowMask};
 
 mod background;
 mod buffer;
@@ -37,6 +37,7 @@ pub struct Ppu {
     bg: [BackgroundLayer; 4],
     mode7: Mode7Settings,
     window: [Window; 2],
+    window_mask: [WindowMask; 4],
     screen: Screen,
     scroll_regs: (u8, u8),
     tiles: TileBuffer,
@@ -65,6 +66,12 @@ impl Ppu {
             ],
             mode7: Mode7Settings::new(),
             window: [Window::new("W1"), Window::new("W2")],
+            window_mask: [
+                WindowMask::new("BG1"),
+                WindowMask::new("BG2"),
+                WindowMask::new("BG3"),
+                WindowMask::new("BG4"),
+            ],
             screen: Screen::new(),
             scroll_regs: (0, 0),
             tiles: [Default::default(); TILE_BUFFER_SIZE],
@@ -156,23 +163,45 @@ impl Ppu {
             //0x20 => self.mode7.set_center_y(value),
             0x21 => self.cgram.set_address(value),
             0x22 => self.cgram.write(value),
+            0x23 => {
+                self.window_mask[0].set_control(value & 0x0f);
+                self.window_mask[1].set_control(value >> 4);
+            }
+            0x24 => {
+                self.window_mask[2].set_control(value & 0x0f);
+                self.window_mask[3].set_control(value >> 4);
+            }
+            0x25 => {
+                // TODO: OBJ
+                // TODO: Color Math
+            }
             0x26 => self.window[0].set_left(value),
             0x27 => self.window[0].set_right(value),
             0x28 => self.window[1].set_left(value),
             0x29 => self.window[1].set_right(value),
+            0x2a => {
+                self.window_mask[0].set_operator(value & 0x03);
+                self.window_mask[1].set_operator((value >> 2) & 0x03);
+                self.window_mask[2].set_operator((value >> 4) & 0x03);
+                self.window_mask[3].set_operator(value >> 6);
+            }
+            0x2b => {
+                // TODO: OBJ
+                // TODO: Color Math
+            }
             0x2c => {
                 self.enabled[0].set(ScreenToggle::Main, (value & 0x01) != 0);
                 self.enabled[1].set(ScreenToggle::Main, (value & 0x02) != 0);
                 self.enabled[2].set(ScreenToggle::Main, (value & 0x04) != 0);
                 self.enabled[3].set(ScreenToggle::Main, (value & 0x08) != 0);
-                // TODO: OBJ layer
+                // TODO: OBJ
             }
             0x2d => {
                 self.enabled[0].set(ScreenToggle::Sub, (value & 0x01) != 0);
                 self.enabled[1].set(ScreenToggle::Sub, (value & 0x02) != 0);
                 self.enabled[2].set(ScreenToggle::Sub, (value & 0x04) != 0);
                 self.enabled[3].set(ScreenToggle::Sub, (value & 0x08) != 0);
-                // TODO: OBJ layer
+                // TODO: OBJ
             }
             _ => warn!("Unmapped PPU write: {:02X} <= {:02X}", address, value),
         }
