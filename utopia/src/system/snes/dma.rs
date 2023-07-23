@@ -365,7 +365,7 @@ impl super::Hardware {
             channel.counter
         };
 
-        if counter == 0 {
+        if (counter & 0x7f) == 0 {
             self.reload_hdma(id);
         }
     }
