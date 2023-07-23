@@ -119,14 +119,10 @@ impl Hardware {
 
                     if line == VBLANK_LINE {
                         self.ready = true;
-                        self.regs.set_nmi_occurred(true);
-
-                        if self.regs.nmi_raised() {
-                            self.interrupt |= INT_NMI;
-                        }
+                        self.clock.set_nmi_occurred(&mut self.interrupt, true);
                     } else if line == 0 {
                         self.ppu.start_frame();
-                        self.regs.set_nmi_occurred(false);
+                        self.clock.set_nmi_occurred(&mut self.interrupt, false);
                         self.interrupt &= !INT_NMI;
                     }
 

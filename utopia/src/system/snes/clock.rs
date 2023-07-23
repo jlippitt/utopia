@@ -1,3 +1,4 @@
+use crate::core::wdc65c816::{Interrupt, INT_NMI};
 use std::fmt;
 use std::iter::Peekable;
 use std::slice;
@@ -46,12 +47,14 @@ fn irq_event(cycles: u64) -> LineEvent {
 pub struct Clock {
     line_cycles: u64,
     banked_cycles: u64,
-    line: u16,
     fast_rom_cycles: u64,
+    line: u16,
+    frame: u64,
     next_event: LineEvent,
     line_events: Peekable<slice::Iter<'static, LineEvent>>,
+    nmi_occurred: bool,
+    nmi_active: bool,
     irq_cycle: Option<u64>,
-    frame: u64,
 }
 
 impl Clock {
@@ -62,12 +65,14 @@ impl Clock {
         Self {
             line_cycles: 0,
             banked_cycles: 0,
-            line: 0,
             fast_rom_cycles: SLOW_CYCLES,
+            line: 0,
+            frame: 0,
             next_event: *next_event,
             line_events,
+            nmi_occurred: false,
+            nmi_active: false,
             irq_cycle: None,
-            frame: 0,
         }
     }
 
@@ -86,6 +91,32 @@ impl Clock {
 
     pub fn odd_frame(&self) -> bool {
         (self.frame & 1) != 0
+    }
+
+    pub fn nmi_occurred(&self) -> bool {
+        self.nmi_occurred
+    }
+
+    pub fn set_nmi_occurred(&mut self, interrupt: &mut Interrupt, nmi_occurred: bool) {
+        if nmi_occurred && self.nmi_active {
+            *interrupt |= INT_NMI;
+        } else {
+            *interrupt &= !INT_NMI;
+        }
+
+        self.nmi_occurred = nmi_occurred;
+        debug!("NMI Occurred: {}", self.nmi_occurred);
+    }
+
+    pub fn set_nmi_active(&mut self, interrupt: &mut Interrupt, nmi_active: bool) {
+        if nmi_active && !self.nmi_active && self.nmi_occurred {
+            *interrupt |= INT_NMI;
+        } else if !nmi_active {
+            *interrupt &= !INT_NMI;
+        }
+
+        self.nmi_active = nmi_active;
+        debug!("NMI Active: {}", self.nmi_active);
     }
 
     pub fn set_irq_cycle(&mut self, value: Option<u64>) {

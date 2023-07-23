@@ -13,8 +13,6 @@ enum IrqMode {
 }
 
 pub struct Registers {
-    nmi_occurred: bool,
-    nmi_active: bool,
     irq_mode: IrqMode,
     irq_x: u16,
     irq_y: u16,
@@ -27,8 +25,6 @@ pub struct Registers {
 impl Registers {
     pub fn new() -> Self {
         Self {
-            nmi_occurred: false,
-            nmi_active: false,
             irq_mode: IrqMode::None,
             irq_x: 0x01ff,
             irq_y: 0x01ff,
@@ -37,15 +33,6 @@ impl Registers {
             quotient: 0xffff,
             remainder: 0xffff,
         }
-    }
-
-    pub fn nmi_raised(&mut self) -> bool {
-        self.nmi_occurred && self.nmi_active
-    }
-
-    pub fn set_nmi_occurred(&mut self, nmi_occurred: bool) {
-        self.nmi_occurred = nmi_occurred;
-        debug!("NMI Occurred: {}", self.nmi_occurred);
     }
 
     pub fn irq_cycle(&self, line: u16) -> Option<u64> {
@@ -102,11 +89,12 @@ impl super::Hardware {
             0x10 => {
                 let mut value = (prev_value & 0x70) | 0x02;
 
-                if self.regs.nmi_occurred {
-                    self.regs.set_nmi_occurred(false);
+                if self.clock.nmi_occurred() {
                     self.interrupt &= !INT_NMI;
                     value |= 0x80;
                 }
+
+                self.clock.set_nmi_occurred(&mut self.interrupt, false);
 
                 value
             }
@@ -157,15 +145,8 @@ impl super::Hardware {
             0x00 => {
                 // TODO: Auto-joypad read
 
-                let nmi_active = (value & 0x80) != 0;
-
-                if !nmi_active {
-                    self.interrupt &= !INT_NMI;
-                } else if nmi_active && self.regs.nmi_occurred && !self.regs.nmi_active {
-                    self.interrupt |= INT_NMI;
-                }
-
-                self.regs.nmi_active = nmi_active;
+                self.clock
+                    .set_nmi_active(&mut self.interrupt, (value & 0x80) != 0);
 
                 self.regs.irq_mode = match value & 0x30 {
                     0x00 => IrqMode::None,
@@ -175,7 +156,6 @@ impl super::Hardware {
                     _ => unreachable!(),
                 };
 
-                debug!("NMI Active: {}", self.regs.nmi_active);
                 debug!("IRQ Mode: {:?}", self.regs.irq_mode);
             }
             0x02 => {
