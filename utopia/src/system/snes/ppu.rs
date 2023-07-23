@@ -7,6 +7,7 @@ use cgram::Cgram;
 use color_math::ColorMath;
 use mode7::Mode7Settings;
 use oam::Oam;
+use object::ObjectLayer;
 use screen::Screen;
 use toggle::Toggle;
 use tracing::{debug, warn};
@@ -19,6 +20,7 @@ mod cgram;
 mod color_math;
 mod mode7;
 mod oam;
+mod object;
 mod screen;
 mod toggle;
 mod vram;
@@ -37,6 +39,7 @@ pub struct Ppu {
     bg3_priority: Bg3Priority,
     enabled: [Toggle; 4],
     bg: [BackgroundLayer; 4],
+    obj: ObjectLayer,
     mode7: Mode7Settings,
     window: [Window; 2],
     window_enabled: [Toggle; 4],
@@ -69,6 +72,7 @@ impl Ppu {
                 BackgroundLayer::new("BG3"),
                 BackgroundLayer::new("BG4"),
             ],
+            obj: ObjectLayer::new(),
             mode7: Mode7Settings::new(),
             window: [Window::new("W1"), Window::new("W2")],
             window_enabled: [
@@ -126,6 +130,7 @@ impl Ppu {
                 debug!("Force Blank: {}", self.force_blank);
                 self.screen.set_brightness(value & 0x0f);
             }
+            0x01 => self.obj.set_control(value),
             0x02 => self.oam.set_address_low(value),
             0x03 => self.oam.set_address_high(value),
             0x04 => self.oam.write(value),
