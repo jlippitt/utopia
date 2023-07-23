@@ -134,7 +134,7 @@ impl Oam {
                 LAYER_OBJ_COLOR_MATH
             };
 
-            debug!("Sprite {} Name: {:02X}", id, sprite.x);
+            debug!("Sprite {} Name: {:02X}", id, sprite.name);
             debug!("Sprite {} Table: {}", id, sprite.table);
             debug!("Sprite {} Palette: {}", id, sprite.palette);
             debug!("Sprite {} Priority: {}", id, sprite.priority);
