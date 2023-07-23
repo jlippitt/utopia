@@ -124,10 +124,11 @@ impl Hardware {
                     if line == VBLANK_LINE {
                         self.ready = true;
                         self.clock.set_nmi_occurred(&mut self.interrupt, true);
+                        self.ppu.on_vblank_start();
                     } else if line == 0 {
-                        self.ppu.start_frame();
                         self.clock.set_nmi_occurred(&mut self.interrupt, false);
                         self.interrupt &= !INT_NMI;
+                        self.ppu.on_frame_start();
                         self.init_hdma();
                     }
                 }

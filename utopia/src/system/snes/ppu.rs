@@ -6,6 +6,7 @@ use buffer::{Pixel, PixelBuffer, TileBuffer, LAYER_BACKDROP, PIXEL_BUFFER_SIZE, 
 use cgram::Cgram;
 use color_math::ColorMath;
 use mode7::Mode7Settings;
+use oam::Oam;
 use screen::Screen;
 use toggle::Toggle;
 use tracing::{debug, warn};
@@ -17,6 +18,7 @@ mod buffer;
 mod cgram;
 mod color_math;
 mod mode7;
+mod oam;
 mod screen;
 mod toggle;
 mod vram;
@@ -30,8 +32,6 @@ enum Bg3Priority {
 }
 
 pub struct Ppu {
-    vram: Vram,
-    cgram: Cgram,
     force_blank: bool,
     bg_mode: u8,
     bg3_priority: Bg3Priority,
@@ -46,13 +46,14 @@ pub struct Ppu {
     scroll_regs: (u8, u8),
     tiles: TileBuffer,
     pixels: [PixelBuffer; 2],
+    vram: Vram,
+    cgram: Cgram,
+    oam: Oam,
 }
 
 impl Ppu {
     pub fn new() -> Self {
         Self {
-            vram: Vram::new(),
-            cgram: Cgram::new(),
             force_blank: true,
             bg_mode: 0,
             bg3_priority: Bg3Priority::Low,
@@ -92,6 +93,9 @@ impl Ppu {
                 [Default::default(); PIXEL_BUFFER_SIZE],
                 [Default::default(); PIXEL_BUFFER_SIZE],
             ],
+            vram: Vram::new(),
+            cgram: Cgram::new(),
+            oam: Oam::new(),
         }
     }
 
@@ -122,6 +126,9 @@ impl Ppu {
                 debug!("Force Blank: {}", self.force_blank);
                 self.screen.set_brightness(value & 0x0f);
             }
+            0x02 => self.oam.set_address_low(value),
+            0x03 => self.oam.set_address_high(value),
+            0x04 => self.oam.write(value),
             0x05 => {
                 // TODO: 16x16 tiles
 
@@ -240,8 +247,14 @@ impl Ppu {
         }
     }
 
-    pub fn start_frame(&mut self) {
+    pub fn on_frame_start(&mut self) {
         self.screen.reset();
+    }
+
+    pub fn on_vblank_start(&mut self) {
+        if !self.force_blank {
+            self.oam.reload_internal_address();
+        }
     }
 
     pub fn draw_line(&mut self, line: u16) {
