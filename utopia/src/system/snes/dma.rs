@@ -1,17 +1,44 @@
 use super::clock::SLOW_CYCLES;
 use tracing::{debug, warn};
 
-type Mode = ([u8; 4], usize);
+struct Mode {
+    offsets: [u8; 4],
+    len: usize,
+}
 
 const MODES: [Mode; 8] = [
-    ([0, 0, 0, 0], 1),
-    ([0, 1, 0, 1], 2),
-    ([0, 0, 0, 0], 2),
-    ([0, 0, 1, 1], 4),
-    ([0, 1, 2, 3], 4),
-    ([0, 1, 0, 1], 4),
-    ([0, 0, 0, 0], 2),
-    ([0, 0, 1, 1], 4),
+    Mode {
+        offsets: [0, 0, 0, 0],
+        len: 1,
+    },
+    Mode {
+        offsets: [0, 1, 0, 1],
+        len: 2,
+    },
+    Mode {
+        offsets: [0, 0, 0, 0],
+        len: 2,
+    },
+    Mode {
+        offsets: [0, 0, 1, 1],
+        len: 4,
+    },
+    Mode {
+        offsets: [0, 1, 2, 3],
+        len: 4,
+    },
+    Mode {
+        offsets: [0, 1, 0, 1],
+        len: 4,
+    },
+    Mode {
+        offsets: [0, 0, 0, 0],
+        len: 2,
+    },
+    Mode {
+        offsets: [0, 0, 1, 1],
+        len: 4,
+    },
 ];
 
 struct Control {
@@ -31,6 +58,7 @@ struct DmaChannel {
     table: u16,
     counter: u8,
     unknown: u8,
+    do_transfer: bool,
 }
 
 impl DmaChannel {
@@ -50,6 +78,7 @@ impl DmaChannel {
             table: 0xffff,
             counter: 0xff,
             unknown: 0xff,
+            do_transfer: false,
         }
     }
 }
@@ -252,30 +281,15 @@ impl super::Hardware {
         let mut byte_index = 0;
 
         loop {
-            self.step(SLOW_CYCLES);
-
             let (port, address, reverse) = {
                 let channel = &self.dma.channels[id];
-                let port = channel.destination + channel.ctrl.mode.0[byte_index];
+                let offset = channel.ctrl.mode.offsets[byte_index];
+                let port = channel.destination.wrapping_add(offset);
                 byte_index = byte_index.wrapping_add(1) & 3;
                 (port, channel.source, channel.ctrl.reverse)
             };
 
-            if reverse {
-                let value = self.read_bus_b(port);
-                debug!(
-                    "DMA{} Read: {:02X} => {:02X} => {:06X}",
-                    id, port, value, address
-                );
-                self.write_bus_a(address, value);
-            } else {
-                let value = self.read_bus_a(address);
-                debug!(
-                    "DMA{} Write: {:02X} <= {:02X} <= {:06X}",
-                    id, port, value, address
-                );
-                self.write_bus_b(port, value);
-            }
+            self.transfer_byte(id, port, address, reverse);
 
             let channel = &mut self.dma.channels[id];
 
@@ -306,6 +320,57 @@ impl super::Hardware {
             debug!("DMA{} Table: {:04X}", id, channel.table);
         }
 
+        self.reload_hdma(id);
+    }
+
+    fn transfer_hdma_for_channel(&mut self, id: usize) {
+        if self.dma.channels[id].do_transfer {
+            let mode = self.dma.channels[id].ctrl.mode;
+
+            for offset in &mode.offsets[0..mode.len] {
+                let (port, address, reverse) = {
+                    let channel = &mut self.dma.channels[id];
+
+                    let port = channel.destination.wrapping_add(*offset);
+
+                    let address = if channel.ctrl.hdma_indirect {
+                        let address = channel.indirect;
+
+                        channel.indirect = (channel.indirect & 0xffff_0000)
+                            | (channel.indirect.wrapping_add(1) & 0xffff);
+
+                        address
+                    } else {
+                        let address = (channel.source & 0xffff_0000) | (channel.table as u32);
+                        channel.table = channel.table.wrapping_add(1);
+                        address
+                    };
+
+                    (port, address, channel.ctrl.reverse)
+                };
+
+                self.transfer_byte(id, port, address, reverse);
+            }
+        }
+
+        let counter = {
+            let channel = &mut self.dma.channels[id];
+
+            channel.counter = channel.counter.wrapping_sub(1);
+            debug!("DMA{} Counter: {:02X}", id, channel.counter);
+
+            channel.do_transfer = (channel.counter & 0x80) != 0;
+            debug!("DMA{} Do Transfer: {}", id, channel.do_transfer);
+
+            channel.counter
+        };
+
+        if counter == 0 {
+            self.reload_hdma(id);
+        }
+    }
+
+    fn reload_hdma(&mut self, id: usize) {
         let counter = self.next_table_byte(id);
 
         {
@@ -329,10 +394,12 @@ impl super::Hardware {
                 debug!("DMA{} Indirect: {:06X}", id, channel.indirect);
             }
         }
-    }
 
-    fn transfer_hdma_for_channel(&mut self, _id: usize) {
-        // TODO
+        {
+            let channel = &mut self.dma.channels[id];
+            channel.do_transfer = true;
+            debug!("DMA{} Do Transfer: {}", id, channel.do_transfer);
+        }
     }
 
     fn next_table_byte(&mut self, id: usize) -> u8 {
@@ -342,6 +409,8 @@ impl super::Hardware {
             channel.table = channel.table.wrapping_add(1);
             address
         };
+
+        self.step(SLOW_CYCLES);
 
         let value = self.read_bus_a(address);
 
@@ -354,5 +423,25 @@ impl super::Hardware {
         let low = self.next_table_byte(id);
         let high = self.next_table_byte(id);
         u16::from_le_bytes([low, high])
+    }
+
+    fn transfer_byte(&mut self, id: usize, port: u8, address: u32, reverse: bool) {
+        self.step(SLOW_CYCLES);
+
+        if reverse {
+            let value = self.read_bus_b(port);
+            debug!(
+                "DMA{} Read: {:02X} => {:02X} => {:06X}",
+                id, port, value, address
+            );
+            self.write_bus_a(address, value);
+        } else {
+            let value = self.read_bus_a(address);
+            debug!(
+                "DMA{} Write: {:02X} <= {:02X} <= {:06X}",
+                id, port, value, address
+            );
+            self.write_bus_b(port, value);
+        }
     }
 }

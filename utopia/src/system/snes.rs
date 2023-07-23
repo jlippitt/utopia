@@ -125,10 +125,10 @@ impl Hardware {
                         self.ready = true;
                         self.clock.set_nmi_occurred(&mut self.interrupt, true);
                     } else if line == 0 {
-                        self.init_hdma();
                         self.ppu.start_frame();
                         self.clock.set_nmi_occurred(&mut self.interrupt, false);
                         self.interrupt &= !INT_NMI;
+                        self.init_hdma();
                     }
                 }
                 Event::Irq => self.interrupt |= TIMER_IRQ,
