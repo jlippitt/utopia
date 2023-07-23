@@ -1,11 +1,6 @@
 use tracing::debug;
 
-#[repr(u8)]
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum ScreenToggle {
-    Main = 0x01,
-    Sub = 0x02,
-}
+const BIT_NAME: [&'static str; 2] = ["Main Screen", "Sub-Screen"];
 
 #[derive(Copy, Clone)]
 pub struct Toggle {
@@ -18,21 +13,21 @@ impl Toggle {
         Self { enabled: 0, name }
     }
 
-    pub fn any_enabled(&self) -> bool {
+    pub fn any(&self) -> bool {
         self.enabled != 0
     }
 
-    pub fn screen_enabled(&self, screen: ScreenToggle) -> bool {
-        self.enabled & (screen as u8) != 0
+    pub fn has(&self, bit: usize) -> bool {
+        self.enabled & (1 << bit) != 0
     }
 
-    pub fn set(&mut self, screen: ScreenToggle, enabled: bool) {
+    pub fn set(&mut self, bit: usize, enabled: bool) {
         if enabled {
-            self.enabled |= screen as u8;
+            self.enabled |= 1 << bit;
         } else {
-            self.enabled &= !(screen as u8);
+            self.enabled &= !(1 << bit);
         }
 
-        debug!("{} {:?} Screen Enabled: {}", self.name, screen, enabled);
+        debug!("{} {} Enabled: {}", self.name, BIT_NAME[bit], enabled);
     }
 }

@@ -1,5 +1,5 @@
 use super::buffer::{Pixel, Tile};
-use super::toggle::ScreenToggle;
+use super::window::MASK_NONE;
 use tracing::{debug, trace};
 
 const MIRROR_MASK_32: u16 = 31;
@@ -112,18 +112,16 @@ impl super::Ppu {
     ) {
         let enabled = self.enabled[bg_index];
 
-        if !enabled.any_enabled() {
+        if !enabled.any() {
             return;
         }
 
         self.select_tiles::<COLOR_DEPTH>(bg_index, priority_high, priority_low, line);
 
-        if enabled.screen_enabled(ScreenToggle::Main) {
-            self.draw_lo_res::<COLOR_DEPTH>(bg_index, 0);
-        }
-
-        if enabled.screen_enabled(ScreenToggle::Sub) {
-            self.draw_lo_res::<COLOR_DEPTH>(bg_index, 1);
+        for bit in [0, 1] {
+            if enabled.has(bit) {
+                self.draw_lo_res::<COLOR_DEPTH>(bg_index, bit);
+            }
         }
     }
 
@@ -218,18 +216,24 @@ impl super::Ppu {
         trace!("{} Tiles: {:?}", bg.name, self.tiles);
     }
 
-    fn draw_lo_res<const COLOR_DEPTH: u8>(&mut self, bg_index: usize, pixels_index: usize) {
+    fn draw_lo_res<const COLOR_DEPTH: u8>(&mut self, bg_index: usize, pixel_buffer_index: usize) {
+        let mask = if self.window_enabled[bg_index].has(pixel_buffer_index) {
+            self.window_mask[bg_index].mask(&self.window)
+        } else {
+            &MASK_NONE
+        };
+
         let bg = &self.bg[bg_index];
-        let pixels = &mut self.pixels[pixels_index];
+        let pixels = &mut self.pixels[pixel_buffer_index];
 
         let mut shift = (bg.scroll_x & 7) << 1;
         let mut tiles = self.tiles.into_iter();
         let mut tile = tiles.next().unwrap();
 
-        for pixel in pixels {
+        for (index, pixel) in pixels.iter_mut().enumerate() {
             let color = color::<COLOR_DEPTH>(tile.chr_data >> (shift ^ tile.flip_mask));
 
-            if color != 0 && tile.priority > pixel.priority {
+            if color != 0 && !mask[index] && tile.priority > pixel.priority {
                 *pixel = Pixel {
                     color: self.cgram.color((tile.palette as usize) | color),
                     priority: tile.priority,

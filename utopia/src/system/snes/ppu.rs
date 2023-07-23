@@ -6,7 +6,7 @@ use buffer::{Pixel, PixelBuffer, TileBuffer, PIXEL_BUFFER_SIZE, TILE_BUFFER_SIZE
 use cgram::Cgram;
 use mode7::Mode7Settings;
 use screen::Screen;
-use toggle::{ScreenToggle, Toggle};
+use toggle::Toggle;
 use tracing::{debug, warn};
 use vram::Vram;
 use window::{Window, WindowMask};
@@ -182,10 +182,10 @@ impl Ppu {
                 // TODO: OBJ
                 // TODO: Color Math
             }
-            0x26 => self.window[0].set_left(value),
-            0x27 => self.window[0].set_right(value),
-            0x28 => self.window[1].set_left(value),
-            0x29 => self.window[1].set_right(value),
+            0x26 => self.update_window(|ppu| ppu.window[0].set_left(value)),
+            0x27 => self.update_window(|ppu| ppu.window[0].set_right(value)),
+            0x28 => self.update_window(|ppu| ppu.window[1].set_left(value)),
+            0x29 => self.update_window(|ppu| ppu.window[1].set_right(value)),
             0x2a => {
                 self.window_mask[0].set_operator(value & 0x03);
                 self.window_mask[1].set_operator((value >> 2) & 0x03);
@@ -197,31 +197,31 @@ impl Ppu {
                 // TODO: Color Math
             }
             0x2c => {
-                self.enabled[0].set(ScreenToggle::Main, (value & 0x01) != 0);
-                self.enabled[1].set(ScreenToggle::Main, (value & 0x02) != 0);
-                self.enabled[2].set(ScreenToggle::Main, (value & 0x04) != 0);
-                self.enabled[3].set(ScreenToggle::Main, (value & 0x08) != 0);
+                self.enabled[0].set(0, (value & 0x01) != 0);
+                self.enabled[1].set(0, (value & 0x02) != 0);
+                self.enabled[2].set(0, (value & 0x04) != 0);
+                self.enabled[3].set(0, (value & 0x08) != 0);
                 // TODO: OBJ
             }
             0x2d => {
-                self.enabled[0].set(ScreenToggle::Sub, (value & 0x01) != 0);
-                self.enabled[1].set(ScreenToggle::Sub, (value & 0x02) != 0);
-                self.enabled[2].set(ScreenToggle::Sub, (value & 0x04) != 0);
-                self.enabled[3].set(ScreenToggle::Sub, (value & 0x08) != 0);
+                self.enabled[0].set(1, (value & 0x01) != 0);
+                self.enabled[1].set(1, (value & 0x02) != 0);
+                self.enabled[2].set(1, (value & 0x04) != 0);
+                self.enabled[3].set(1, (value & 0x08) != 0);
                 // TODO: OBJ
             }
             0x2e => {
-                self.window_enabled[0].set(ScreenToggle::Main, (value & 0x01) != 0);
-                self.window_enabled[1].set(ScreenToggle::Main, (value & 0x02) != 0);
-                self.window_enabled[2].set(ScreenToggle::Main, (value & 0x04) != 0);
-                self.window_enabled[3].set(ScreenToggle::Main, (value & 0x08) != 0);
+                self.window_enabled[0].set(0, (value & 0x01) != 0);
+                self.window_enabled[1].set(0, (value & 0x02) != 0);
+                self.window_enabled[2].set(0, (value & 0x04) != 0);
+                self.window_enabled[3].set(0, (value & 0x08) != 0);
                 // TODO: OBJ
             }
             0x2f => {
-                self.window_enabled[0].set(ScreenToggle::Sub, (value & 0x01) != 0);
-                self.window_enabled[1].set(ScreenToggle::Sub, (value & 0x02) != 0);
-                self.window_enabled[2].set(ScreenToggle::Sub, (value & 0x04) != 0);
-                self.window_enabled[3].set(ScreenToggle::Sub, (value & 0x08) != 0);
+                self.window_enabled[0].set(1, (value & 0x01) != 0);
+                self.window_enabled[1].set(1, (value & 0x02) != 0);
+                self.window_enabled[2].set(1, (value & 0x04) != 0);
+                self.window_enabled[3].set(1, (value & 0x08) != 0);
                 // TODO: OBJ
             }
             _ => warn!("Unmapped PPU write: {:02X} <= {:02X}", address, value),
@@ -263,5 +263,13 @@ impl Ppu {
         }
 
         self.screen.draw_lo_res(&self.pixels[0]);
+    }
+
+    fn update_window(&mut self, callback: impl Fn(&mut Self) -> bool) {
+        if callback(self) {
+            for mask in &mut self.window_mask {
+                mask.mark_as_dirty();
+            }
+        }
     }
 }
