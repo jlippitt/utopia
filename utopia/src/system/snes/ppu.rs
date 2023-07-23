@@ -94,9 +94,9 @@ impl Ppu {
     pub fn write(&mut self, address: u8, value: u8) {
         match address {
             0x00 => {
-                // TODO: Brightness
                 self.force_blank = (value & 0x80) != 0;
                 debug!("Force Blank: {}", self.force_blank);
+                self.screen.set_brightness(value & 0x0f);
             }
             0x05 => {
                 // TODO: 16x16 tiles
