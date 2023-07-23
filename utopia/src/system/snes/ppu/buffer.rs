@@ -3,6 +3,8 @@ use super::WIDTH;
 pub const TILE_BUFFER_SIZE: usize = 34;
 pub const PIXEL_BUFFER_SIZE: usize = WIDTH >> 1;
 
+pub const LAYER_BACKDROP: u8 = 0x20;
+
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Tile {
     pub chr_data: u64,
@@ -17,6 +19,7 @@ pub type TileBuffer = [Tile; TILE_BUFFER_SIZE];
 pub struct Pixel {
     pub color: u16,
     pub priority: u8,
+    pub layer: u8,
 }
 
 pub type PixelBuffer = [Pixel; PIXEL_BUFFER_SIZE];

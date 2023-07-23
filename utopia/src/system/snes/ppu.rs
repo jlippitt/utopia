@@ -2,8 +2,9 @@ pub use screen::{HEIGHT, WIDTH};
 
 use super::clock::Clock;
 use background::BackgroundLayer;
-use buffer::{Pixel, PixelBuffer, TileBuffer, PIXEL_BUFFER_SIZE, TILE_BUFFER_SIZE};
+use buffer::{Pixel, PixelBuffer, TileBuffer, LAYER_BACKDROP, PIXEL_BUFFER_SIZE, TILE_BUFFER_SIZE};
 use cgram::Cgram;
+use color_math::ColorMath;
 use mode7::Mode7Settings;
 use screen::Screen;
 use toggle::Toggle;
@@ -14,6 +15,7 @@ use window::{Window, WindowMask};
 mod background;
 mod buffer;
 mod cgram;
+mod color_math;
 mod mode7;
 mod screen;
 mod toggle;
@@ -38,7 +40,8 @@ pub struct Ppu {
     mode7: Mode7Settings,
     window: [Window; 2],
     window_enabled: [Toggle; 4],
-    window_mask: [WindowMask; 4],
+    window_mask: [WindowMask; 6],
+    color_math: ColorMath,
     screen: Screen,
     scroll_regs: (u8, u8),
     tiles: TileBuffer,
@@ -78,7 +81,10 @@ impl Ppu {
                 WindowMask::new("BG2 Mask"),
                 WindowMask::new("BG3 Mask"),
                 WindowMask::new("BG4 Mask"),
+                WindowMask::new("OBJ Mask"),
+                WindowMask::new("Color Math Mask"),
             ],
+            color_math: ColorMath::new(),
             screen: Screen::new(),
             scroll_regs: (0, 0),
             tiles: [Default::default(); TILE_BUFFER_SIZE],
@@ -179,8 +185,8 @@ impl Ppu {
                 self.window_mask[3].set_control(value >> 4);
             }
             0x25 => {
-                // TODO: OBJ
-                // TODO: Color Math
+                self.window_mask[4].set_control(value & 0x0f);
+                self.window_mask[5].set_control(value >> 4);
             }
             0x26 => self.update_window(|ppu| ppu.window[0].set_left(value)),
             0x27 => self.update_window(|ppu| ppu.window[0].set_right(value)),
@@ -193,8 +199,8 @@ impl Ppu {
                 self.window_mask[3].set_operator(value >> 6);
             }
             0x2b => {
-                // TODO: OBJ
-                // TODO: Color Math
+                self.window_mask[4].set_operator(value & 0x03);
+                self.window_mask[5].set_operator((value >> 2) & 0x03);
             }
             0x2c => {
                 self.enabled[0].set(0, (value & 0x01) != 0);
@@ -224,6 +230,12 @@ impl Ppu {
                 self.window_enabled[3].set(1, (value & 0x08) != 0);
                 // TODO: OBJ
             }
+            0x30 => {
+                // TODO: Direct Color Mode
+                self.color_math.set_control(value);
+            }
+            0x31 => self.color_math.set_operator(value),
+            0x32 => self.color_math.set_fixed_color(value),
             _ => warn!("Unmapped PPU write: {:02X} <= {:02X}", address, value),
         }
     }
@@ -238,10 +250,15 @@ impl Ppu {
             return;
         }
 
-        self.pixels[0].fill(Pixel {
-            color: self.cgram.color(0),
-            priority: 0,
-        });
+        let backdrop_color = self.cgram.color(0);
+
+        for index in [0, 1] {
+            self.pixels[index].fill(Pixel {
+                color: backdrop_color,
+                priority: 0,
+                layer: LAYER_BACKDROP,
+            });
+        }
 
         match self.bg_mode {
             0 => {
@@ -261,6 +278,8 @@ impl Ppu {
             }
             _ => panic!("Mode {} not yet implemented", self.bg_mode),
         }
+
+        self.apply_color_math();
 
         self.screen.draw_lo_res(&self.pixels[0]);
     }

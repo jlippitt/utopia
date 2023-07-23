@@ -118,9 +118,9 @@ impl super::Ppu {
 
         self.select_tiles::<COLOR_DEPTH>(bg_index, priority_high, priority_low, line);
 
-        for bit in [0, 1] {
-            if enabled.has(bit) {
-                self.draw_lo_res::<COLOR_DEPTH>(bg_index, bit);
+        for pixel_buffer_index in [0, 1] {
+            if enabled.has(pixel_buffer_index) {
+                self.draw_lo_res::<COLOR_DEPTH>(bg_index, pixel_buffer_index);
             }
         }
     }
@@ -237,6 +237,7 @@ impl super::Ppu {
                 *pixel = Pixel {
                     color: self.cgram.color((tile.palette as usize) | color),
                     priority: tile.priority,
+                    layer: (1 << bg_index),
                 };
             }
 
