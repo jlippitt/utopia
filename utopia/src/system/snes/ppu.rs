@@ -9,6 +9,7 @@ use screen::Screen;
 use toggle::{ScreenToggle, Toggle};
 use tracing::{debug, warn};
 use vram::Vram;
+use window::Window;
 
 mod background;
 mod buffer;
@@ -17,6 +18,7 @@ mod mode7;
 mod screen;
 mod toggle;
 mod vram;
+mod window;
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -34,6 +36,7 @@ pub struct Ppu {
     enabled: [Toggle; 4],
     bg: [BackgroundLayer; 4],
     mode7: Mode7Settings,
+    window: [Window; 2],
     screen: Screen,
     scroll_regs: (u8, u8),
     tiles: TileBuffer,
@@ -61,6 +64,7 @@ impl Ppu {
                 BackgroundLayer::new("BG4"),
             ],
             mode7: Mode7Settings::new(),
+            window: [Window::new("W1"), Window::new("W2")],
             screen: Screen::new(),
             scroll_regs: (0, 0),
             tiles: [Default::default(); TILE_BUFFER_SIZE],
@@ -152,6 +156,10 @@ impl Ppu {
             //0x20 => self.mode7.set_center_y(value),
             0x21 => self.cgram.set_address(value),
             0x22 => self.cgram.write(value),
+            0x26 => self.window[0].set_left(value),
+            0x27 => self.window[0].set_right(value),
+            0x28 => self.window[1].set_left(value),
+            0x29 => self.window[1].set_right(value),
             0x2c => {
                 self.enabled[0].set(ScreenToggle::Main, (value & 0x01) != 0);
                 self.enabled[1].set(ScreenToggle::Main, (value & 0x02) != 0);
