@@ -13,6 +13,16 @@ pub const TOTAL_LINES: u16 = 262;
 
 pub const CYCLES_PER_LINE: u64 = 1364;
 
+pub const TIMER_IRQ: Interrupt = 0x04;
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+enum IrqMode {
+    None,
+    H,
+    V,
+    HV,
+}
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Event {
     HBlank,
@@ -54,6 +64,9 @@ pub struct Clock {
     line_events: Peekable<slice::Iter<'static, LineEvent>>,
     nmi_occurred: bool,
     nmi_active: bool,
+    irq_mode: IrqMode,
+    irq_x: u16,
+    irq_y: u16,
     irq_cycle: Option<u64>,
 }
 
@@ -72,6 +85,9 @@ impl Clock {
             line_events,
             nmi_occurred: false,
             nmi_active: false,
+            irq_mode: IrqMode::None,
+            irq_x: 0x01ff,
+            irq_y: 0x01ff,
             irq_cycle: None,
         }
     }
@@ -119,14 +135,46 @@ impl Clock {
         debug!("NMI Active: {}", self.nmi_active);
     }
 
-    pub fn set_irq_cycle(&mut self, value: Option<u64>) {
-        self.irq_cycle = value;
+    pub fn set_irq_mode(&mut self, interrupt: &mut Interrupt, value: u8) {
+        self.irq_mode = match value {
+            0 => IrqMode::None,
+            1 => IrqMode::H,
+            2 => IrqMode::V,
+            3 => IrqMode::HV,
+            _ => panic!("Invalid IRQ mode: {}", value),
+        };
 
-        if let Some(irq_cycle) = self.irq_cycle {
-            debug!("IRQ Cycle: {}", irq_cycle);
-        } else {
-            debug!("IRQ Cycle: None");
+        debug!("IRQ Mode: {:?}", self.irq_mode);
+
+        if self.irq_mode == IrqMode::None {
+            *interrupt &= !TIMER_IRQ;
         }
+
+        self.update_irq_cycle(false);
+    }
+
+    pub fn set_irq_x_low(&mut self, value: u8) {
+        self.irq_x = (self.irq_x & 0xff00) | (value as u16);
+        debug!("IRQ X: {}", self.irq_x);
+        self.update_irq_cycle(false);
+    }
+
+    pub fn set_irq_x_high(&mut self, value: u8) {
+        self.irq_x = (self.irq_x & 0xff) | ((value as u16 & 0x01) << 8);
+        debug!("IRQ X: {}", self.irq_x);
+        self.update_irq_cycle(false);
+    }
+
+    pub fn set_irq_y_low(&mut self, value: u8) {
+        self.irq_y = (self.irq_y & 0xff00) | (value as u16);
+        debug!("IRQ Y: {}", self.irq_y);
+        self.update_irq_cycle(false);
+    }
+
+    pub fn set_irq_y_high(&mut self, value: u8) {
+        self.irq_y = (self.irq_y & 0xff) | ((value as u16 & 0x01) << 8);
+        debug!("IRQ Y: {}", self.irq_y);
+        self.update_irq_cycle(false);
     }
 
     pub fn add_cycles(&mut self, cycles: u64) {
@@ -146,6 +194,8 @@ impl Clock {
                     self.line = 0;
                     self.frame += 1;
                 }
+
+                self.update_irq_cycle(true);
 
                 self.line_events = LINE_EVENTS.iter().peekable();
                 self.next_event().unwrap()
@@ -196,6 +246,33 @@ impl Clock {
         }
 
         None
+    }
+
+    fn update_irq_cycle(&mut self, end_of_line: bool) {
+        self.irq_cycle = match self.irq_mode {
+            IrqMode::None => None,
+            IrqMode::V => {
+                if self.line == self.irq_y {
+                    Some(0)
+                } else {
+                    None
+                }
+            }
+            IrqMode::H => Some((self.irq_x as u64) << 2),
+            IrqMode::HV => {
+                if self.line == self.irq_y {
+                    Some((self.irq_x as u64) << 2)
+                } else {
+                    None
+                }
+            }
+        };
+
+        // During mid-line updates, don't schedule an IRQ if we've already
+        // passed the cycle it would be on
+        if !end_of_line && self.irq_cycle >= Some(self.line_cycles) {
+            self.irq_cycle = None;
+        }
     }
 }
 

@@ -1,21 +1,8 @@
+use super::clock::TIMER_IRQ;
 use super::VBLANK_LINE;
-use crate::core::wdc65c816::{Interrupt, INT_NMI};
 use tracing::debug;
 
-pub const TIMER_IRQ: Interrupt = 0x04;
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-enum IrqMode {
-    None,
-    H,
-    V,
-    HV,
-}
-
 pub struct Registers {
-    irq_mode: IrqMode,
-    irq_x: u16,
-    irq_y: u16,
     multiplicand: u8,
     dividend: u16,
     quotient: u16,
@@ -25,34 +12,10 @@ pub struct Registers {
 impl Registers {
     pub fn new() -> Self {
         Self {
-            irq_mode: IrqMode::None,
-            irq_x: 0x01ff,
-            irq_y: 0x01ff,
             multiplicand: 0xff,
             dividend: 0xffff,
             quotient: 0xffff,
             remainder: 0xffff,
-        }
-    }
-
-    pub fn irq_cycle(&self, line: u16) -> Option<u64> {
-        match self.irq_mode {
-            IrqMode::None => None,
-            IrqMode::V => {
-                if line == self.irq_y {
-                    Some(0)
-                } else {
-                    None
-                }
-            }
-            IrqMode::H => Some((self.irq_x as u64) << 2),
-            IrqMode::HV => {
-                if line == self.irq_y {
-                    Some((self.irq_x as u64) << 2)
-                } else {
-                    None
-                }
-            }
         }
     }
 
@@ -90,7 +53,6 @@ impl super::Hardware {
                 let mut value = (prev_value & 0x70) | 0x02;
 
                 if self.clock.nmi_occurred() {
-                    self.interrupt &= !INT_NMI;
                     value |= 0x80;
                 }
 
@@ -144,19 +106,11 @@ impl super::Hardware {
         match address {
             0x00 => {
                 // TODO: Auto-joypad read
-
                 self.clock
                     .set_nmi_active(&mut self.interrupt, (value & 0x80) != 0);
 
-                self.regs.irq_mode = match value & 0x30 {
-                    0x00 => IrqMode::None,
-                    0x10 => IrqMode::H,
-                    0x20 => IrqMode::V,
-                    0x30 => IrqMode::HV,
-                    _ => unreachable!(),
-                };
-
-                debug!("IRQ Mode: {:?}", self.regs.irq_mode);
+                self.clock
+                    .set_irq_mode(&mut self.interrupt, (value >> 4) & 0x03);
             }
             0x02 => {
                 self.regs.multiplicand = value;
@@ -172,22 +126,10 @@ impl super::Hardware {
                 debug!("Dividend: {}", self.regs.dividend);
             }
             0x06 => self.regs.divide(value),
-            0x07 => {
-                self.regs.irq_x = (self.regs.irq_x & 0xff00) | (value as u16);
-                debug!("IRQ X: {}", self.regs.irq_x);
-            }
-            0x08 => {
-                self.regs.irq_x = (self.regs.irq_x & 0xff) | ((value as u16 & 0x01) << 8);
-                debug!("IRQ X: {}", self.regs.irq_x);
-            }
-            0x09 => {
-                self.regs.irq_y = (self.regs.irq_y & 0xff00) | (value as u16);
-                debug!("IRQ Y: {}", self.regs.irq_y);
-            }
-            0x0a => {
-                self.regs.irq_y = (self.regs.irq_y & 0xff) | ((value as u16 & 0x01) << 8);
-                debug!("IRQ Y: {}", self.regs.irq_y);
-            }
+            0x07 => self.clock.set_irq_x_low(value),
+            0x08 => self.clock.set_irq_x_high(value),
+            0x09 => self.clock.set_irq_y_low(value),
+            0x0a => self.clock.set_irq_y_high(value),
             0x0b => self.dma.set_dma_enabled(value),
             _ => (),
         }

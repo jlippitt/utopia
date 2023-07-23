@@ -2,7 +2,7 @@ use super::{BiosLoader, JoypadState, System};
 use crate::core::wdc65c816::{Bus, Core, Interrupt, INT_NMI};
 use crate::util::MirrorVec;
 use apu::Apu;
-use clock::{Clock, Event, FAST_CYCLES};
+use clock::{Clock, Event, FAST_CYCLES, TIMER_IRQ};
 use dma::Dma;
 use memory::{Page, TOTAL_PAGES};
 use ppu::{Ppu, HEIGHT, WIDTH};
@@ -125,10 +125,8 @@ impl Hardware {
                         self.clock.set_nmi_occurred(&mut self.interrupt, false);
                         self.interrupt &= !INT_NMI;
                     }
-
-                    self.clock.set_irq_cycle(self.regs.irq_cycle(line));
                 }
-                Event::Irq => self.interrupt |= registers::TIMER_IRQ,
+                Event::Irq => self.interrupt |= TIMER_IRQ,
             }
         }
     }
