@@ -60,10 +60,10 @@ impl WindowMask {
         self.w1_enabled = (value & 0x02) != 0;
         self.w2_inverted = (value & 0x04) != 0;
         self.w2_enabled = (value & 0x08) != 0;
-        debug!("{} Mask W1 Enabled: {}", self.name, self.w1_enabled);
-        debug!("{} Mask W1 Inverted: {}", self.name, self.w1_inverted);
-        debug!("{} Mask W2 Enabled: {}", self.name, self.w2_enabled);
-        debug!("{} Mask W2 Inverted: {}", self.name, self.w2_inverted);
+        debug!("{} W1 Enabled: {}", self.name, self.w1_enabled);
+        debug!("{} W1 Inverted: {}", self.name, self.w1_inverted);
+        debug!("{} W2 Enabled: {}", self.name, self.w2_enabled);
+        debug!("{} W2 Inverted: {}", self.name, self.w2_inverted);
     }
 
     pub fn set_operator(&mut self, value: u8) {
@@ -74,6 +74,6 @@ impl WindowMask {
             3 => Operator::Xnor,
             _ => panic!("Invalid window mask operator: {}", value),
         };
-        debug!("{} Mask Operator: {:?}", self.name, self.operator);
+        debug!("{} Operator: {:?}", self.name, self.operator);
     }
 }

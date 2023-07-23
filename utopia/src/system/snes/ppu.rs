@@ -37,6 +37,7 @@ pub struct Ppu {
     bg: [BackgroundLayer; 4],
     mode7: Mode7Settings,
     window: [Window; 2],
+    window_enabled: [Toggle; 4],
     window_mask: [WindowMask; 4],
     screen: Screen,
     scroll_regs: (u8, u8),
@@ -66,11 +67,17 @@ impl Ppu {
             ],
             mode7: Mode7Settings::new(),
             window: [Window::new("W1"), Window::new("W2")],
+            window_enabled: [
+                Toggle::new("BG1 Window"),
+                Toggle::new("BG2 Window"),
+                Toggle::new("BG3 Window"),
+                Toggle::new("BG4 Window"),
+            ],
             window_mask: [
-                WindowMask::new("BG1"),
-                WindowMask::new("BG2"),
-                WindowMask::new("BG3"),
-                WindowMask::new("BG4"),
+                WindowMask::new("BG1 Mask"),
+                WindowMask::new("BG2 Mask"),
+                WindowMask::new("BG3 Mask"),
+                WindowMask::new("BG4 Mask"),
             ],
             screen: Screen::new(),
             scroll_regs: (0, 0),
@@ -201,6 +208,20 @@ impl Ppu {
                 self.enabled[1].set(ScreenToggle::Sub, (value & 0x02) != 0);
                 self.enabled[2].set(ScreenToggle::Sub, (value & 0x04) != 0);
                 self.enabled[3].set(ScreenToggle::Sub, (value & 0x08) != 0);
+                // TODO: OBJ
+            }
+            0x2e => {
+                self.window_enabled[0].set(ScreenToggle::Main, (value & 0x01) != 0);
+                self.window_enabled[1].set(ScreenToggle::Main, (value & 0x02) != 0);
+                self.window_enabled[2].set(ScreenToggle::Main, (value & 0x04) != 0);
+                self.window_enabled[3].set(ScreenToggle::Main, (value & 0x08) != 0);
+                // TODO: OBJ
+            }
+            0x2f => {
+                self.window_enabled[0].set(ScreenToggle::Sub, (value & 0x01) != 0);
+                self.window_enabled[1].set(ScreenToggle::Sub, (value & 0x02) != 0);
+                self.window_enabled[2].set(ScreenToggle::Sub, (value & 0x04) != 0);
+                self.window_enabled[3].set(ScreenToggle::Sub, (value & 0x08) != 0);
                 // TODO: OBJ
             }
             _ => warn!("Unmapped PPU write: {:02X} <= {:02X}", address, value),
