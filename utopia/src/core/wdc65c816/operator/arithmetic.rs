@@ -100,18 +100,19 @@ fn decimal_add8<const SBC: bool>(core: &mut Core<impl Bus>, lhs: u8, rhs: u8) ->
         .wrapping_add((core.flags.c as u8) << 4);
 
     core.flags.v = ((lhs ^ result) & (rhs ^ result) & 0x80) != 0;
+    core.flags.c = result < lhs;
 
     if SBC {
         if result >= lhs {
             result = result.wrapping_sub(0x60);
         }
     } else {
-        if result > 0x9f {
-            result = result.wrapping_add(0x60);
+        if result > 0x9f || core.flags.c {
+            let (new_result, carry) = result.overflowing_add(0x60);
+            result = new_result;
+            core.flags.c |= carry;
         }
     }
-
-    core.flags.c = result < lhs;
 
     result
 }
@@ -177,18 +178,19 @@ fn decimal_add16<const SBC: bool>(core: &mut Core<impl Bus>, lhs: u16, rhs: u16)
         .wrapping_add((core.flags.c as u16) << 12);
 
     core.flags.v = ((lhs ^ result) & (rhs ^ result) & 0x8000) != 0;
+    core.flags.c = result < lhs;
 
     if SBC {
         if result >= lhs {
             result = result.wrapping_sub(0x6000);
         }
     } else {
-        if result > 0x9fff {
-            result = result.wrapping_add(0x6000);
+        if result > 0x9fff || core.flags.c {
+            let (new_result, carry) = result.overflowing_add(0x6000);
+            result = new_result;
+            core.flags.c |= carry;
         }
     }
-
-    core.flags.c = result < lhs;
 
     result
 }
