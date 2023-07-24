@@ -19,6 +19,7 @@ pub struct TestState {
     ram: Vec<(u32, u8)>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct Test {
     name: String,
@@ -33,7 +34,7 @@ pub struct Memory {
 }
 
 impl Memory {
-    pub fn new(ram: &[(u32, u8)]) -> Self {
+    fn new(ram: &[(u32, u8)]) -> Self {
         let mut map = HashMap::new();
 
         for (address, value) in ram {
@@ -41,6 +42,12 @@ impl Memory {
         }
 
         Self { map }
+    }
+
+    fn values(&self) -> Vec<(u32, u8)> {
+        let mut vec: Vec<(u32, u8)> = self.map.iter().map(|(k, v)| (*k, *v)).collect();
+        vec.sort();
+        vec
     }
 }
 
@@ -74,22 +81,44 @@ pub fn parse(input: &str) -> Result<Vec<Test>, Box<dyn Error>> {
 pub fn run(test: &Test) -> bool {
     let memory = Memory::new(&test.initial.ram);
     let mut core = Core::new(memory);
-    let initial = State::from(&test.initial);
-    let expected = State::from(&test.r#final);
-    core.set_state(&initial);
-    core.step();
-    let actual = core.state();
+    let core_initial = State::from(&test.initial);
 
-    if expected == actual {
+    core.set_state(&core_initial);
+    core.step();
+
+    let core_actual = core.state();
+    let core_expected = State::from(&test.r#final);
+
+    let ram_actual = core.bus().values();
+    let mut ram_expected = test.r#final.ram.clone();
+    ram_expected.sort();
+
+    let core_ok = core_actual == core_expected;
+    let ram_ok = ram_actual == ram_expected;
+
+    if core_ok && ram_ok {
         debug!("Passed: {}", test.name);
-        true
-    } else {
-        info!("Failed: {}", test.name);
-        info!("Initial: {:?}", initial);
-        info!("Expected: {:?}", expected);
-        info!("Actual: {:?}", actual);
-        false
+        return true;
     }
+
+    info!("Failed: {}", test.name);
+
+    if !core_ok {
+        info!("Core Initial: {:?}", core_initial);
+        info!("Core Expected: {:?}", core_expected);
+        info!("Core Actual: {:?}", core_actual);
+    }
+
+    if !ram_ok {
+        let mut ram_initial = test.initial.ram.clone();
+        ram_initial.sort();
+
+        info!("RAM Initial: {:?}", ram_initial);
+        info!("RAM Expected: {:?}", ram_expected);
+        info!("RAM Actual: {:?}", ram_actual);
+    }
+
+    false
 }
 
 impl From<&TestState> for State {
