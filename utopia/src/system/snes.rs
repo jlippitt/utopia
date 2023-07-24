@@ -4,6 +4,7 @@ use crate::util::MirrorVec;
 use apu::Apu;
 use clock::{Clock, Event, FAST_CYCLES, TIMER_IRQ};
 use dma::Dma;
+use joypad::Joypad;
 use memory::{Page, TOTAL_PAGES};
 use ppu::{Ppu, HEIGHT, WIDTH};
 use registers::Registers;
@@ -16,6 +17,7 @@ mod apu;
 mod clock;
 mod dma;
 mod header;
+mod joypad;
 mod memory;
 mod ppu;
 mod registers;
@@ -50,7 +52,8 @@ impl System for Snes {
         self.core.bus().ppu.pixels()
     }
 
-    fn run_frame(&mut self, _joypad_state: &JoypadState) {
+    fn run_frame(&mut self, joypad_state: &JoypadState) {
+        self.core.bus_mut().joypad.update(joypad_state);
         self.core.bus_mut().ready = false;
 
         while !self.core.bus().ready {
@@ -73,6 +76,7 @@ pub struct Hardware {
     dma: Dma,
     ppu: Ppu,
     apu: Apu,
+    joypad: Joypad,
 }
 
 impl Hardware {
@@ -99,6 +103,7 @@ impl Hardware {
             dma: Dma::new(),
             ppu: Ppu::new(),
             apu: Apu::new(ipl_rom),
+            joypad: Joypad::new(),
         }
     }
 
@@ -130,6 +135,9 @@ impl Hardware {
                         self.interrupt &= !INT_NMI;
                         self.ppu.on_frame_start();
                         self.init_hdma();
+                    } else if line == (VBLANK_LINE + 3) {
+                        // TODO: Actual timine for this
+                        self.joypad.perform_auto_read();
                     }
                 }
                 Event::Irq => self.interrupt |= TIMER_IRQ,
@@ -150,7 +158,7 @@ impl Hardware {
                 }
             },
             Page::InternalRegisters => match address & 0x1f00 {
-                0x0000 => 0, // TODO: NES-style joypads
+                0x0000 => self.joypad.read_serial(address as u8, self.mdr),
                 0x0200 => self.read_register(address as u8, self.mdr),
                 0x0300 => self.dma.read(address as u8, self.mdr),
                 _ => {
@@ -182,7 +190,7 @@ impl Hardware {
                 ),
             },
             Page::InternalRegisters => match address & 0x1f00 {
-                0x0000 => (), // TODO: NES-style joypads
+                0x0000 => self.joypad.write_serial(address as u8, value),
                 0x0200 => self.write_register(address as u8, value),
                 0x0300 => self.dma.write(address as u8, value),
                 _ => warn!(

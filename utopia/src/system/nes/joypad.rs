@@ -16,40 +16,16 @@ impl Joypad {
         }
     }
 
-    pub fn update(&mut self, joypad_state: &JoypadState) {
+    pub fn update(&mut self, new_state: &JoypadState) {
         self.current_state[0] = 0;
-
-        if joypad_state.a {
-            self.current_state[0] |= 0x01;
-        }
-
-        if joypad_state.b {
-            self.current_state[0] |= 0x02;
-        }
-
-        if joypad_state.select {
-            self.current_state[0] |= 0x04;
-        }
-
-        if joypad_state.start {
-            self.current_state[0] |= 0x08;
-        }
-
-        if joypad_state.up {
-            self.current_state[0] |= 0x10;
-        }
-
-        if joypad_state.down {
-            self.current_state[0] |= 0x20;
-        }
-
-        if joypad_state.left {
-            self.current_state[0] |= 0x40;
-        }
-
-        if joypad_state.right {
-            self.current_state[0] |= 0x80;
-        }
+        self.current_state[0] |= if new_state.a { 0x01 } else { 0 };
+        self.current_state[0] |= if new_state.b { 0x02 } else { 0 };
+        self.current_state[0] |= if new_state.select { 0x04 } else { 0 };
+        self.current_state[0] |= if new_state.start { 0x08 } else { 0 };
+        self.current_state[0] |= if new_state.up { 0x10 } else { 0 };
+        self.current_state[0] |= if new_state.down { 0x20 } else { 0 };
+        self.current_state[0] |= if new_state.left { 0x40 } else { 0 };
+        self.current_state[0] |= if new_state.right { 0x80 } else { 0 };
     }
 
     pub fn read_register(&mut self, address: u16, prev_value: u8) -> u8 {

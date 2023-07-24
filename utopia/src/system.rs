@@ -16,6 +16,10 @@ pub struct JoypadState {
     pub right: bool,
     pub a: bool,
     pub b: bool,
+    pub x: bool,
+    pub y: bool,
+    pub l: bool,
+    pub r: bool,
     pub select: bool,
     pub start: bool,
 }

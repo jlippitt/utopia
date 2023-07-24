@@ -81,7 +81,7 @@ impl super::Hardware {
                     value |= 0x80;
 
                     if line < (VBLANK_LINE + 3) {
-                        // Auto Joypad Read
+                        // Joypad Auto-Read
                         value |= 0x01;
                     }
                 }
@@ -97,7 +97,14 @@ impl super::Hardware {
             0x15 => (self.regs.quotient >> 8) as u8,
             0x16 => self.regs.remainder as u8,
             0x17 => (self.regs.remainder >> 8) as u8,
-            0x18..=0x1f => 0, // TODO: Auto joypad read
+            0x18 => self.joypad.auto_read_state_low(0),
+            0x19 => self.joypad.auto_read_state_high(0),
+            0x1a => self.joypad.auto_read_state_low(1),
+            0x1b => self.joypad.auto_read_state_high(1),
+            0x1c => self.joypad.auto_read_state_low(2),
+            0x1d => self.joypad.auto_read_state_high(2),
+            0x1e => self.joypad.auto_read_state_low(3),
+            0x1f => self.joypad.auto_read_state_high(3),
             _ => todo!("Register read {:02X}", address),
         }
     }
@@ -105,12 +112,13 @@ impl super::Hardware {
     pub(super) fn write_register(&mut self, address: u8, value: u8) {
         match address {
             0x00 => {
-                // TODO: Auto-joypad read
                 self.clock
                     .set_nmi_active(&mut self.interrupt, (value & 0x80) != 0);
 
                 self.clock
                     .set_irq_mode(&mut self.interrupt, (value >> 4) & 0x03);
+
+                self.joypad.set_auto_read_enabled((value & 0x01) != 0);
             }
             0x02 => {
                 self.regs.multiplicand = value;
