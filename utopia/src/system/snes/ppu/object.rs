@@ -236,9 +236,9 @@ impl super::Ppu {
                     pixel.color = self.cgram.color(tile.palette as usize + color as usize);
 
                     pixel.layer = if tile.palette >= 192 {
-                        LAYER_OBJ_NO_COLOR_MATH
-                    } else {
                         LAYER_OBJ_COLOR_MATH
+                    } else {
+                        LAYER_OBJ_NO_COLOR_MATH
                     };
                 }
 

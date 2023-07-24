@@ -90,6 +90,26 @@ impl<T: Bus> Core<T> {
             0xd0 => instr::branch::<op::Bne>(self),
             0xf0 => instr::branch::<op::Beq>(self),
 
+            // +0x01
+            //0x01 => instr::tcall(self, 0),
+            //0x21 => instr::tcall(self, 2),
+            //0x41 => instr::tcall(self, 4),
+            //0x61 => instr::tcall(self, 6),
+            //0x81 => instr::tcall(self, 8),
+            //0xa1 => instr::tcall(self, 10),
+            //0xc1 => instr::tcall(self, 12),
+            //0xe1 => instr::tcall(self, 14),
+
+            // +0x11
+            //0x11 => instr::tcall(self, 1),
+            //0x31 => instr::tcall(self, 3),
+            //0x51 => instr::tcall(self, 5),
+            //0x71 => instr::tcall(self, 7),
+            //0x91 => instr::tcall(self, 9),
+            //0xb1 => instr::tcall(self, 11),
+            //0xd1 => instr::tcall(self, 13),
+            //0xf1 => instr::tcall(self, 15),
+
             // +0x02
             0x02 => instr::unary::<addr::Direct, op::Set1<0>>(self),
             0x22 => instr::unary::<addr::Direct, op::Set1<1>>(self),
@@ -257,6 +277,8 @@ impl<T: Bus> Core<T> {
             0x6a => instr::and1_not(self),
             0x8a => instr::eor1(self),
             0xaa => instr::mov1_read(self),
+            //0xca => instr::mov1_write(self),
+            //0xea => instr::not1(self),
 
             // +0x1a
             0x1a => instr::decw(self),
@@ -344,23 +366,29 @@ impl<T: Bus> Core<T> {
             0x5e => instr::compare::<addr::Y, addr::Absolute>(self),
             0x7e => instr::compare::<addr::Y, addr::Direct>(self),
             0x9e => instr::div(self),
+            //0xbe => instr::das(self),
             0xde => instr::branch::<op::CbneDirectX>(self),
             0xfe => instr::branch::<op::DbnzY>(self),
 
             // +0x0f
+            //0x0f => instr::brk(self),
             0x2f => instr::branch::<op::Bra>(self),
+            //0x4f => instr::pcall(self),
             0x6f => instr::ret(self),
             0x8f => instr::write::<addr::Direct, addr::Immediate>(self),
             0xaf => instr::auto_inc_write(self),
             0xcf => instr::mul(self),
+            //0xef => instr::sleep(self),
 
             // +0x1f
             0x1f => instr::jmp_x_indirect(self),
             0x3f => instr::call(self),
             0x5f => instr::jmp(self),
+            //0x7f => instr::reti(self),
             0x9f => instr::xcn(self),
             0xbf => instr::auto_inc_read(self),
-
+            //0xdf => instr::daa(self),
+            //0xff => instr::stop(self),
             opcode => todo!("SPC700 opcode {:02X}", opcode),
         }
     }

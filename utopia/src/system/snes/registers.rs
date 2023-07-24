@@ -3,6 +3,7 @@ use super::VBLANK_LINE;
 use tracing::debug;
 
 pub struct Registers {
+    io_port: u8,
     multiplicand: u8,
     dividend: u16,
     quotient: u16,
@@ -12,6 +13,7 @@ pub struct Registers {
 impl Registers {
     pub fn new() -> Self {
         Self {
+            io_port: 0xff,
             multiplicand: 0xff,
             dividend: 0xffff,
             quotient: 0xffff,
@@ -93,6 +95,7 @@ impl super::Hardware {
 
                 value
             }
+            0x13 => self.regs.io_port,
             0x14 => self.regs.quotient as u8,
             0x15 => (self.regs.quotient >> 8) as u8,
             0x16 => self.regs.remainder as u8,
@@ -119,6 +122,11 @@ impl super::Hardware {
                     .set_irq_mode(&mut self.interrupt, (value >> 4) & 0x03);
 
                 self.joypad.set_auto_read_enabled((value & 0x01) != 0);
+            }
+            0x01 => {
+                // TODO: PPU Latch
+                self.regs.io_port = value;
+                debug!("IO Port: {:02X}", self.regs.io_port);
             }
             0x02 => {
                 self.regs.multiplicand = value;
