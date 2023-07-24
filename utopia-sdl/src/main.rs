@@ -58,13 +58,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut texture = video.create_texture(&texture_creator)?;
 
-    let mut joypad = Joypad::new();
+    let mut joypad = Joypad::new(&sdl_context)?;
 
     let mut event_pump = sdl_context.event_pump()?;
 
     'outer: loop {
         for event in event_pump.poll_iter() {
             match event {
+                Event::ControllerButtonDown { which, button, .. } => {
+                    joypad.button_event(which, button, true)
+                }
+                Event::ControllerButtonUp { which, button, .. } => {
+                    joypad.button_event(which, button, false)
+                }
                 Event::KeyDown {
                     scancode: Some(scancode),
                     ..
