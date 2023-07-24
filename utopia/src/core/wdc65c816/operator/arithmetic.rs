@@ -10,7 +10,11 @@ impl ReadOperator for Adc {
         let result = if core.flags.d {
             decimal_add8::<false>(core, core.a as u8, value)
         } else {
-            binary_add8(core, core.a as u8, value)
+            let result = (core.a as u8)
+                .wrapping_add(value)
+                .wrapping_add(core.flags.c as u8);
+            set_vc8(core, core.a as u8, value, result);
+            result
         };
 
         core.a = (core.a & 0xff00) | (result as u16);
@@ -21,7 +25,9 @@ impl ReadOperator for Adc {
         let result = if core.flags.d {
             decimal_add16::<false>(core, core.a, value)
         } else {
-            binary_add16(core, core.a, value)
+            let result = core.a.wrapping_add(value).wrapping_add(core.flags.c as u16);
+            set_vc16(core, core.a, value, result);
+            result
         };
 
         core.a = result;
@@ -38,7 +44,11 @@ impl ReadOperator for Sbc {
         let result = if core.flags.d {
             decimal_add8::<true>(core, core.a as u8, !value)
         } else {
-            binary_add8(core, core.a as u8, !value)
+            let result = (core.a as u8)
+                .wrapping_add(!value)
+                .wrapping_add(core.flags.c as u8);
+            set_vc8(core, core.a as u8, !value, result);
+            result
         };
 
         core.a = (core.a & 0xff00) | (result as u16);
@@ -49,7 +59,12 @@ impl ReadOperator for Sbc {
         let result = if core.flags.d {
             decimal_add16::<true>(core, core.a, !value)
         } else {
-            binary_add16(core, core.a, !value)
+            let result = core
+                .a
+                .wrapping_add(!value)
+                .wrapping_add(core.flags.c as u16);
+            set_vc16(core, core.a, !value, result);
+            result
         };
 
         core.a = result;
@@ -57,22 +72,18 @@ impl ReadOperator for Sbc {
     }
 }
 
-fn binary_add8(core: &mut Core<impl Bus>, lhs: u8, rhs: u8) -> u8 {
-    let result = lhs.wrapping_add(rhs).wrapping_add(core.flags.c as u8);
+fn set_vc8(core: &mut Core<impl Bus>, lhs: u8, rhs: u8, result: u8) {
     let carries = lhs ^ rhs ^ result;
     let overflow = (lhs ^ result) & (rhs ^ result);
     core.flags.v = (overflow & 0x80) != 0;
     core.flags.c = ((carries ^ overflow) & 0x80) != 0;
-    result
 }
 
-fn binary_add16(core: &mut Core<impl Bus>, lhs: u16, rhs: u16) -> u16 {
-    let result = lhs.wrapping_add(rhs).wrapping_add(core.flags.c as u16);
+fn set_vc16(core: &mut Core<impl Bus>, lhs: u16, rhs: u16, result: u16) {
     let carries = lhs ^ rhs ^ result;
     let overflow = (lhs ^ result) & (rhs ^ result);
     core.flags.v = (overflow & 0x8000) != 0;
     core.flags.c = ((carries ^ overflow) & 0x8000) != 0;
-    result
 }
 
 fn decimal_add8<const SBC: bool>(core: &mut Core<impl Bus>, lhs: u8, rhs: u8) -> u8 {
@@ -99,8 +110,7 @@ fn decimal_add8<const SBC: bool>(core: &mut Core<impl Bus>, lhs: u8, rhs: u8) ->
         .wrapping_add(rhs & 0xf0)
         .wrapping_add((core.flags.c as u8) << 4);
 
-    core.flags.v = ((lhs ^ result) & (rhs ^ result) & 0x80) != 0;
-    core.flags.c = result < lhs;
+    set_vc8(core, lhs, rhs, result);
 
     if SBC {
         if result >= lhs {
@@ -177,8 +187,7 @@ fn decimal_add16<const SBC: bool>(core: &mut Core<impl Bus>, lhs: u16, rhs: u16)
         .wrapping_add(rhs & 0xf000)
         .wrapping_add((core.flags.c as u16) << 12);
 
-    core.flags.v = ((lhs ^ result) & (rhs ^ result) & 0x8000) != 0;
-    core.flags.c = result < lhs;
+    set_vc16(core, lhs, rhs, result);
 
     if SBC {
         if result >= lhs {
