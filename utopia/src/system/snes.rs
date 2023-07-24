@@ -84,15 +84,14 @@ impl Hardware {
         let header = header::parse(&rom_data);
 
         info!("Title: {}", header.title);
-        info!("Mapper: {:?}", header.mapper);
-        info!("FastROM: {}", header.fast_rom);
+        info!("Map Mode: {:02X}", header.map_mode);
         info!("ROM Size: {}", header.rom_size);
         info!("SRAM Size: {}", header.sram_size);
 
         let pages = memory::map(&header);
 
         Self {
-            clock: Clock::new(header.fast_rom),
+            clock: Clock::new((header.map_mode & 0x10) != 0),
             mdr: 0,
             interrupt: 0,
             ready: false,

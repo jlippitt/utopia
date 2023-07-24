@@ -1,4 +1,4 @@
-use super::header::{Header, Mapper};
+use super::header::Header;
 use tracing::trace;
 
 pub const TOTAL_PAGES: usize = 2048;
@@ -34,9 +34,10 @@ fn mirror(size: usize, index: usize) -> usize {
 pub fn map(header: &Header) -> [Page; TOTAL_PAGES] {
     let mut pages = [Page::OpenBus; TOTAL_PAGES];
 
-    match header.mapper {
-        Mapper::LoRom => map_lo_rom(&mut pages, header),
-        Mapper::HiRom => todo!("HiROM"),
+    match header.map_mode & 0x0f {
+        0x00 => map_lo_rom(&mut pages, header),
+        0x01 => todo!("HiROM"),
+        _ => unimplemented!("Map Mode {:02X}", header.map_mode),
     }
 
     // Map system pages

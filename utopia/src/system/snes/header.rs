@@ -3,24 +3,23 @@ use tracing::trace;
 const BASE_SIZE: usize = 0x0400;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum Mapper {
+enum HeaderLocation {
     LoRom,
     HiRom,
 }
 
 pub struct Header {
     pub title: String,
-    pub mapper: Mapper,
-    pub fast_rom: bool,
+    pub map_mode: u8,
     pub rom_size: usize,
     pub sram_size: usize,
 }
 
 pub fn parse(rom: &[u8]) -> Header {
-    let lo_rom = try_parse(Mapper::LoRom, &rom[0x0000..]);
+    let lo_rom = try_parse(HeaderLocation::LoRom, &rom[0x0000..]);
 
     let hi_rom = if rom.len() > 0x0001_0000 {
-        try_parse(Mapper::HiRom, &rom[0x8000..])
+        try_parse(HeaderLocation::HiRom, &rom[0x8000..])
     } else {
         None
     };
@@ -50,16 +49,15 @@ pub fn parse(rom: &[u8]) -> Header {
             trace!("No valid header found. Using default.");
             Header {
                 title: String::new(),
-                mapper: Mapper::LoRom,
+                map_mode: 0x20,
                 rom_size: rom.len(),
                 sram_size: 0,
-                fast_rom: false,
             }
         }
     }
 }
 
-fn try_parse(id: Mapper, rom: &[u8]) -> Option<Header> {
+fn try_parse(id: HeaderLocation, rom: &[u8]) -> Option<Header> {
     let reset_vector = u16::from_le_bytes([rom[0x7ffc], rom[0x7ffd]]);
 
     if reset_vector < 0x8000 || reset_vector >= 0xffc0 {
@@ -72,8 +70,8 @@ fn try_parse(id: Mapper, rom: &[u8]) -> Option<Header> {
     }
 
     let expected_map_mode = match id {
-        Mapper::LoRom => 0x20,
-        Mapper::HiRom => 0x21,
+        HeaderLocation::LoRom => 0x20,
+        HeaderLocation::HiRom => 0x21,
     };
 
     let map_mode = rom[0x7fd5];
@@ -115,8 +113,7 @@ fn try_parse(id: Mapper, rom: &[u8]) -> Option<Header> {
 
     Some(Header {
         title,
-        mapper: id,
-        fast_rom: (map_mode & 0x10) != 0,
+        map_mode,
         rom_size,
         sram_size,
     })
