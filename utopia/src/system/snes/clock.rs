@@ -2,7 +2,7 @@ use crate::core::wdc65c816::{Interrupt, INT_NMI};
 use std::fmt;
 use std::iter::Peekable;
 use std::slice;
-use tracing::debug;
+use tracing::{debug, warn};
 
 pub const FAST_CYCLES: u64 = 6;
 pub const SLOW_CYCLES: u64 = 8;
@@ -58,6 +58,7 @@ pub struct Clock {
     line_cycles: u64,
     banked_cycles: u64,
     fast_rom_cycles: u64,
+    fast_rom_supported: bool,
     line: u16,
     frame: u64,
     next_event: LineEvent,
@@ -71,7 +72,7 @@ pub struct Clock {
 }
 
 impl Clock {
-    pub fn new() -> Self {
+    pub fn new(fast_rom_supported: bool) -> Self {
         let mut line_events = LINE_EVENTS.iter().peekable();
         let next_event = line_events.next().unwrap();
 
@@ -79,6 +80,7 @@ impl Clock {
             line_cycles: 0,
             banked_cycles: 0,
             fast_rom_cycles: SLOW_CYCLES,
+            fast_rom_supported,
             line: 0,
             frame: 0,
             next_event: *next_event,
@@ -175,6 +177,16 @@ impl Clock {
         self.irq_y = (self.irq_y & 0xff) | ((value as u16 & 0x01) << 8);
         debug!("IRQ Y: {}", self.irq_y);
         self.update_irq_cycle(false);
+    }
+
+    pub fn set_fast_rom_enabled(&mut self, enabled: bool) {
+        if enabled && !self.fast_rom_supported {
+            warn!("Attempted to enable FastROM, but it is not supported by this cartridge type");
+            return;
+        }
+
+        self.fast_rom_cycles = if enabled { FAST_CYCLES } else { SLOW_CYCLES };
+        debug!("FastROM Cycles: {}", self.fast_rom_cycles);
     }
 
     pub fn add_cycles(&mut self, cycles: u64) {

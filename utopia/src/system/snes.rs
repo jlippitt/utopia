@@ -85,13 +85,14 @@ impl Hardware {
 
         info!("Title: {}", header.title);
         info!("Mapper: {:?}", header.mapper);
+        info!("FastROM: {}", header.fast_rom);
         info!("ROM Size: {}", header.rom_size);
         info!("SRAM Size: {}", header.sram_size);
 
         let pages = memory::map(&header);
 
         Self {
-            clock: Clock::new(),
+            clock: Clock::new(header.fast_rom),
             mdr: 0,
             interrupt: 0,
             ready: false,

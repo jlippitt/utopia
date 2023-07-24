@@ -11,6 +11,7 @@ pub enum Mapper {
 pub struct Header {
     pub title: String,
     pub mapper: Mapper,
+    pub fast_rom: bool,
     pub rom_size: usize,
     pub sram_size: usize,
 }
@@ -52,6 +53,7 @@ pub fn parse(rom: &[u8]) -> Header {
                 mapper: Mapper::LoRom,
                 rom_size: rom.len(),
                 sram_size: 0,
+                fast_rom: false,
             }
         }
     }
@@ -74,7 +76,9 @@ fn try_parse(id: Mapper, rom: &[u8]) -> Option<Header> {
         Mapper::HiRom => 0x21,
     };
 
-    if (rom[0x7fd5] & 0x21) != expected_map_mode {
+    let map_mode = rom[0x7fd5];
+
+    if (map_mode & 0x21) != expected_map_mode {
         trace!("{:?}: Map mode {:02X} does not match", id, rom[0x7fd5]);
         return None;
     }
@@ -112,6 +116,7 @@ fn try_parse(id: Mapper, rom: &[u8]) -> Option<Header> {
     Some(Header {
         title,
         mapper: id,
+        fast_rom: (map_mode & 0x10) != 0,
         rom_size,
         sram_size,
     })
