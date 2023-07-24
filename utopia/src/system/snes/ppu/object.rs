@@ -1,7 +1,9 @@
+use super::buffer::Tile;
 use super::oam::TOTAL_SPRITES;
-use tracing::debug;
+use tracing::{debug, trace};
 
 const MAX_SPRITES_PER_LINE: usize = 32;
+const MAX_TILES_PER_LINE: usize = 34;
 
 pub const SIZE_X: [[u16; 2]; 8] = [
     [8, 16],
@@ -63,7 +65,8 @@ impl ObjectLayer {
 
 impl super::Ppu {
     pub(super) fn draw_obj(&mut self, line: u16) {
-        let _sprite_start_index = self.select_sprites(line);
+        let sprite_start_index = self.select_sprites(line);
+        let _tile_start_index = self.select_obj_tiles(line, sprite_start_index);
     }
 
     fn select_sprites(&mut self, line: u16) -> usize {
@@ -92,6 +95,7 @@ impl super::Ppu {
 
             if write_index == 0 {
                 // TODO: Range over flag
+                debug!("Line {}: Range Over", line);
                 break;
             }
 
@@ -103,6 +107,81 @@ impl super::Ppu {
 
         if count > 0 {
             debug!("Line {}: {} Sprites Selected", line, count);
+        }
+
+        write_index
+    }
+
+    fn select_obj_tiles(&mut self, line: u16, sprite_start_index: usize) -> usize {
+        let mut write_index = MAX_TILES_PER_LINE;
+
+        'outer: for sprite_index in &self.obj.selected_sprites[sprite_start_index..] {
+            let sprite = self.oam.sprite(*sprite_index);
+
+            let flipped_y = {
+                let pixel_y = line.wrapping_sub(sprite.y) & 255;
+
+                if sprite.flip_y {
+                    let size_y = self.obj.size_y[sprite.size as usize];
+                    pixel_y ^ size_y
+                } else {
+                    pixel_y
+                }
+            };
+
+            let size_x = self.obj.size_x[sprite.size as usize];
+            let flip_mask_x = if sprite.flip_x { size_x - 1 } else { 0 };
+
+            // Sprites at X=256 count as X=0 when testing whether tiles are on screen
+            let false_start_x = if sprite.x != 256 { sprite.x } else { 0 };
+
+            let chr_map = {
+                let name_offset = if sprite.table {
+                    self.obj.name_offset
+                } else {
+                    0
+                };
+
+                self.obj.name_base + name_offset
+            };
+
+            for pixel_x in (0..size_x).step_by(8) {
+                let flipped_x = pixel_x ^ flip_mask_x;
+                let false_pos_x = false_start_x + flipped_x;
+
+                if false_pos_x >= 256 && false_pos_x < 504 {
+                    continue;
+                }
+
+                if write_index == 0 {
+                    // TODO: Time over flag
+                    debug!("Line {}: Time Over", line);
+                    break 'outer;
+                }
+
+                let chr_x = ((flipped_x >> 3) + (sprite.name & 0x0f)) & 0x0f;
+                let chr_y = ((flipped_y >> 3) + (sprite.name >> 4)) & 0x0f;
+                let chr_index = chr_map + (chr_y << 8) + (chr_x << 4) + (flipped_y & 7);
+
+                let chr_data = self.vram.chr16(chr_index as usize);
+                trace!("CHR Load: {:04X} => {:04X}", chr_index, chr_data);
+
+                write_index -= 1;
+
+                self.tiles[write_index] = Tile {
+                    chr_data,
+                    flip_mask: if sprite.flip_x { 14 } else { 0 },
+                    priority: sprite.priority,
+                    palette: sprite.palette,
+                    pos_x: sprite.x + pixel_x,
+                };
+            }
+        }
+
+        let count = MAX_TILES_PER_LINE - write_index;
+
+        if count > 0 {
+            debug!("Line {}: {} Tiles Selected", line, count);
         }
 
         write_index

@@ -11,6 +11,7 @@ pub struct Tile {
     pub flip_mask: u16,
     pub priority: u8,
     pub palette: u16,
+    pub pos_x: u16,
 }
 
 pub type TileBuffer = [Tile; TILE_BUFFER_SIZE];

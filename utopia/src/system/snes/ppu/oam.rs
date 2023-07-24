@@ -6,7 +6,7 @@ pub const TOTAL_SPRITES: usize = 128;
 const LOWER_TABLE_SIZE: usize = 256;
 const UPPER_TABLE_SIZE: usize = 16;
 
-const SPRITE_PALETTE_OFFSET: u8 = 128;
+const SPRITE_PALETTE_OFFSET: u16 = 128;
 
 const LAYER_OBJ_COLOR_MATH: u8 = 0x10;
 const LAYER_OBJ_NO_COLOR_MATH: u8 = 0x40;
@@ -17,7 +17,7 @@ pub struct Sprite {
     pub y: u16,
     pub name: u16,
     pub table: bool,
-    pub palette: u8,
+    pub palette: u16,
     pub priority: u8,
     pub flip_x: bool,
     pub flip_y: bool,
@@ -136,7 +136,7 @@ impl Oam {
         } else {
             sprite.name = word_value & 0xff;
             sprite.table = (word_value & 0x0100) != 0;
-            sprite.palette = SPRITE_PALETTE_OFFSET + (((word_value & 0x0e00) >> 5) as u8);
+            sprite.palette = SPRITE_PALETTE_OFFSET + ((word_value & 0x0e00) >> 5);
             sprite.priority = ((word_value & 0x3000) >> 12) as u8 + 1;
             sprite.flip_x = (word_value & 0x4000) != 0;
             sprite.flip_y = (word_value & 0x8000) != 0;

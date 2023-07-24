@@ -1,4 +1,4 @@
-use super::buffer::{Pixel, Tile};
+use super::buffer::Pixel;
 use super::window::MASK_NONE;
 use tracing::{debug, trace};
 
@@ -116,16 +116,16 @@ impl super::Ppu {
             return;
         }
 
-        self.select_tiles::<COLOR_DEPTH>(bg_index, priority_high, priority_low, line);
+        self.select_bg_tiles::<COLOR_DEPTH>(bg_index, priority_high, priority_low, line);
 
         for pixel_buffer_index in [0, 1] {
             if enabled.has(pixel_buffer_index) {
-                self.draw_lo_res::<COLOR_DEPTH>(bg_index, pixel_buffer_index);
+                self.draw_bg_lo_res::<COLOR_DEPTH>(bg_index, pixel_buffer_index);
             }
         }
     }
 
-    fn select_tiles<const COLOR_DEPTH: u8>(
+    fn select_bg_tiles<const COLOR_DEPTH: u8>(
         &mut self,
         bg_index: usize,
         priority_high: u8,
@@ -160,9 +160,9 @@ impl super::Ppu {
                 fine_y
             };
 
-            let flip_mask = if (tile_data & 0x4000) != 0 { 14 } else { 0 };
+            tile.flip_mask = if (tile_data & 0x4000) != 0 { 14 } else { 0 };
 
-            let priority = if (tile_data & 0x2000) != 0 {
+            tile.priority = if (tile_data & 0x2000) != 0 {
                 priority_high
             } else {
                 priority_low
@@ -176,36 +176,24 @@ impl super::Ppu {
                     let chr_data = self.vram.chr4(chr_index as usize);
                     trace!("CHR Load: {:04X} => {:04X}", chr_index, chr_data);
 
-                    *tile = Tile {
-                        chr_data,
-                        flip_mask,
-                        priority,
-                        palette: ((tile_data & 0x1c00) >> 8),
-                    };
+                    tile.chr_data = chr_data;
+                    tile.palette = (tile_data & 0x1c00) >> 8;
                 }
                 1 => {
                     let chr_index = bg.chr_map.wrapping_add(chr_name << 4) | fine_y;
                     let chr_data = self.vram.chr16(chr_index as usize);
                     trace!("CHR Load: {:04X} => {:08X}", chr_index, chr_data);
 
-                    *tile = Tile {
-                        chr_data,
-                        flip_mask,
-                        priority,
-                        palette: ((tile_data & 0x1c00) >> 6),
-                    };
+                    tile.chr_data = chr_data;
+                    tile.palette = (tile_data & 0x1c00) >> 6;
                 }
                 2 => {
                     let chr_index = bg.chr_map.wrapping_add(chr_name << 5) | fine_y;
                     let chr_data = self.vram.chr256(chr_index as usize);
                     trace!("CHR Load: {:04X} => {:016X}", chr_index, chr_data);
 
-                    *tile = Tile {
-                        chr_data,
-                        flip_mask,
-                        priority,
-                        palette: 0,
-                    };
+                    tile.chr_data = chr_data;
+                    tile.palette = 0;
                 }
                 _ => unreachable!(),
             }
@@ -216,7 +204,11 @@ impl super::Ppu {
         trace!("{} Tiles: {:?}", bg.name, self.tiles);
     }
 
-    fn draw_lo_res<const COLOR_DEPTH: u8>(&mut self, bg_index: usize, pixel_buffer_index: usize) {
+    fn draw_bg_lo_res<const COLOR_DEPTH: u8>(
+        &mut self,
+        bg_index: usize,
+        pixel_buffer_index: usize,
+    ) {
         let mask = if self.window_enabled[bg_index].has(pixel_buffer_index) {
             self.window_mask[bg_index].mask(&self.window)
         } else {
