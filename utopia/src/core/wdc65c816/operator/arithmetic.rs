@@ -8,13 +8,9 @@ impl ReadOperator for Adc {
 
     fn apply8(core: &mut Core<impl Bus>, value: u8) {
         let result = if core.flags.d {
-            decimal_add8::<false>(core, core.a as u8, value)
+            decimal_add8::<false>(core, value as i32)
         } else {
-            let result = (core.a as u8)
-                .wrapping_add(value)
-                .wrapping_add(core.flags.c as u8);
-            set_vc8(core, core.a as u8, value, result);
-            result
+            binary_add8(core, value)
         };
 
         core.a = (core.a & 0xff00) | (result as u16);
@@ -23,11 +19,9 @@ impl ReadOperator for Adc {
 
     fn apply16(core: &mut Core<impl Bus>, value: u16) {
         let result = if core.flags.d {
-            decimal_add16::<false>(core, core.a, value)
+            decimal_add16::<false>(core, value as i32)
         } else {
-            let result = core.a.wrapping_add(value).wrapping_add(core.flags.c as u16);
-            set_vc16(core, core.a, value, result);
-            result
+            binary_add16(core, value)
         };
 
         core.a = result;
@@ -42,13 +36,9 @@ impl ReadOperator for Sbc {
 
     fn apply8(core: &mut Core<impl Bus>, value: u8) {
         let result = if core.flags.d {
-            decimal_add8::<true>(core, core.a as u8, !value)
+            decimal_add8::<true>(core, !value as i32)
         } else {
-            let result = (core.a as u8)
-                .wrapping_add(!value)
-                .wrapping_add(core.flags.c as u8);
-            set_vc8(core, core.a as u8, !value, result);
-            result
+            binary_add8(core, !value)
         };
 
         core.a = (core.a & 0xff00) | (result as u16);
@@ -57,14 +47,9 @@ impl ReadOperator for Sbc {
 
     fn apply16(core: &mut Core<impl Bus>, value: u16) {
         let result = if core.flags.d {
-            decimal_add16::<true>(core, core.a, !value)
+            decimal_add16::<true>(core, !value as i32)
         } else {
-            let result = core
-                .a
-                .wrapping_add(!value)
-                .wrapping_add(core.flags.c as u16);
-            set_vc16(core, core.a, !value, result);
-            result
+            binary_add16(core, !value)
         };
 
         core.a = result;
@@ -72,134 +57,128 @@ impl ReadOperator for Sbc {
     }
 }
 
-fn set_vc8(core: &mut Core<impl Bus>, lhs: u8, rhs: u8, result: u8) {
+fn binary_add8(core: &mut Core<impl Bus>, rhs: u8) -> u8 {
+    let lhs = core.a as u8;
+    let result = lhs.wrapping_add(rhs).wrapping_add(core.flags.c as u8);
     let carries = lhs ^ rhs ^ result;
     let overflow = (lhs ^ result) & (rhs ^ result);
     core.flags.v = (overflow & 0x80) != 0;
     core.flags.c = ((carries ^ overflow) & 0x80) != 0;
+    result
 }
 
-fn set_vc16(core: &mut Core<impl Bus>, lhs: u16, rhs: u16, result: u16) {
+fn binary_add16(core: &mut Core<impl Bus>, rhs: u16) -> u16 {
+    let lhs = core.a;
+    let result = lhs.wrapping_add(rhs).wrapping_add(core.flags.c as u16);
     let carries = lhs ^ rhs ^ result;
     let overflow = (lhs ^ result) & (rhs ^ result);
     core.flags.v = (overflow & 0x8000) != 0;
     core.flags.c = ((carries ^ overflow) & 0x8000) != 0;
+    result
 }
 
-fn decimal_add8<const SBC: bool>(core: &mut Core<impl Bus>, lhs: u8, rhs: u8) -> u8 {
+fn decimal_add8<const SBC: bool>(core: &mut Core<impl Bus>, rhs: i32) -> u8 {
+    let lhs = core.a as i32;
+
     // Digit 0
-    let mut result = (lhs & 0x0f)
-        .wrapping_add(rhs & 0x0f)
-        .wrapping_add(core.flags.c as u8);
+    let mut result = (lhs & 0x0f) + (rhs & 0x0f) + (core.flags.c as i32);
 
     if SBC {
         if result <= 0x0f {
-            result = result.wrapping_sub(0x06);
+            result -= 0x06;
         }
     } else {
         if result > 0x09 {
-            result = result.wrapping_add(0x06);
+            result += 0x06;
         }
     }
 
     core.flags.c = result > 0x0f;
 
     // Digit 1
-    result = (result & 0x0f)
-        .wrapping_add(lhs & 0xf0)
-        .wrapping_add(rhs & 0xf0)
-        .wrapping_add((core.flags.c as u8) << 4);
+    result = (result & 0x0f) + (lhs & 0xf0) + (rhs & 0xf0) + ((core.flags.c as i32) << 4);
 
-    set_vc8(core, lhs, rhs, result);
+    core.flags.v = ((lhs ^ result) & (rhs ^ result) & 0x80) != 0;
 
     if SBC {
-        if result >= lhs {
-            result = result.wrapping_sub(0x60);
+        if result <= 0xff {
+            result -= 0x60;
         }
     } else {
-        if result > 0x9f || core.flags.c {
-            let (new_result, carry) = result.overflowing_add(0x60);
-            result = new_result;
-            core.flags.c |= carry;
+        if result > 0x9f {
+            result += 0x60;
         }
     }
 
-    result
+    core.flags.c = result > 0xff;
+
+    result as u8
 }
 
-fn decimal_add16<const SBC: bool>(core: &mut Core<impl Bus>, lhs: u16, rhs: u16) -> u16 {
+fn decimal_add16<const SBC: bool>(core: &mut Core<impl Bus>, rhs: i32) -> u16 {
+    let lhs = core.a as i32;
+
     // Digit 0
-    let mut result = (lhs & 0x000f)
-        .wrapping_add(rhs & 0x000f)
-        .wrapping_add(core.flags.c as u16);
+    let mut result = (lhs & 0x000f) + (rhs & 0x000f) + (core.flags.c as i32);
 
     if SBC {
         if result <= 0x000f {
-            result = result.wrapping_sub(0x0006);
+            result -= 0x0006;
         }
     } else {
         if result > 0x0009 {
-            result = result.wrapping_add(0x0006);
+            result += 0x0006;
         }
     }
 
     core.flags.c = result > 0x000f;
 
     // Digit 1
-    result = (result & 0x000f)
-        .wrapping_add(lhs & 0x00f0)
-        .wrapping_add(rhs & 0x00f0)
-        .wrapping_add((core.flags.c as u16) << 4);
+    result = (result & 0x000f) + (lhs & 0x00f0) + (rhs & 0x00f0) + ((core.flags.c as i32) << 4);
 
     if SBC {
         if result <= 0x00ff {
-            result = result.wrapping_sub(0x0060);
+            result -= 0x0060;
         }
     } else {
         if result > 0x009f {
-            result = result.wrapping_add(0x0060);
+            result += 0x0060;
         }
     }
 
     core.flags.c = result > 0x00ff;
 
     // Digit 2
-    result = (result & 0x00ff)
-        .wrapping_add(lhs & 0x0f00)
-        .wrapping_add(rhs & 0x0f00)
-        .wrapping_add((core.flags.c as u16) << 8);
+    result = (result & 0x00ff) + (lhs & 0x0f00) + (rhs & 0x0f00) + ((core.flags.c as i32) << 8);
 
     if SBC {
         if result <= 0x0fff {
-            result = result.wrapping_sub(0x0600);
+            result -= 0x0600;
         }
     } else {
         if result > 0x09ff {
-            result = result.wrapping_add(0x0600);
+            result += 0x0600;
         }
     }
 
     core.flags.c = result > 0x0fff;
 
     // Digit 3
-    result = (result & 0x0fff)
-        .wrapping_add(lhs & 0xf000)
-        .wrapping_add(rhs & 0xf000)
-        .wrapping_add((core.flags.c as u16) << 12);
+    result = (result & 0x0fff) + (lhs & 0xf000) + (rhs & 0xf000) + ((core.flags.c as i32) << 12);
 
-    set_vc16(core, lhs, rhs, result);
+    core.flags.v = ((lhs ^ result) & (rhs ^ result) & 0x8000) != 0;
 
     if SBC {
-        if result >= lhs {
-            result = result.wrapping_sub(0x6000);
+        if result <= 0xffff {
+            result -= 0x6000;
         }
     } else {
-        if result > 0x9fff || core.flags.c {
-            let (new_result, carry) = result.overflowing_add(0x6000);
-            result = new_result;
-            core.flags.c |= carry;
+        if result > 0x9fff {
+            result += 0x6000;
         }
     }
 
-    result
+    core.flags.c = result > 0xffff;
+
+    result as u16
 }
