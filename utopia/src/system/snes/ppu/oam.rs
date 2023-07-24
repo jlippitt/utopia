@@ -1,9 +1,10 @@
 use crate::util::MirrorVec;
 use tracing::debug;
 
+pub const TOTAL_SPRITES: usize = 128;
+
 const LOWER_TABLE_SIZE: usize = 256;
 const UPPER_TABLE_SIZE: usize = 16;
-const TOTAL_SPRITES: usize = 128;
 
 const SPRITE_PALETTE_OFFSET: u8 = 128;
 
@@ -12,16 +13,16 @@ const LAYER_OBJ_NO_COLOR_MATH: u8 = 0x40;
 
 #[derive(Clone, Default, Debug)]
 pub struct Sprite {
-    x: u16,
-    y: u16,
-    name: u16,
-    table: bool,
-    palette: u8,
-    priority: u8,
-    flip_x: bool,
-    flip_y: bool,
-    layer: u8,
-    size: bool,
+    pub x: u16,
+    pub y: u16,
+    pub name: u16,
+    pub table: bool,
+    pub palette: u8,
+    pub priority: u8,
+    pub flip_x: bool,
+    pub flip_y: bool,
+    pub layer: u8,
+    pub size: bool,
 }
 
 pub struct Oam {
@@ -47,6 +48,18 @@ impl Oam {
             lower_table: [0; LOWER_TABLE_SIZE],
             upper_table: [0; UPPER_TABLE_SIZE],
         }
+    }
+
+    pub fn sprite_select_offset(&self) -> usize {
+        if self.priority_enabled {
+            (self.external_address as usize >> 1) & 0x7f
+        } else {
+            0
+        }
+    }
+
+    pub fn sprite(&mut self, index: usize) -> &Sprite {
+        &self.sprites[index]
     }
 
     pub fn reload_internal_address(&mut self) {

@@ -297,6 +297,8 @@ impl Ppu {
             _ => panic!("Mode {} not yet implemented", self.bg_mode),
         }
 
+        self.draw_obj(line - 1);
+
         self.apply_color_math();
 
         self.screen.draw_lo_res(&self.pixels[0]);
