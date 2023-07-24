@@ -83,7 +83,7 @@ impl Oam {
 
         if address < LOWER_TABLE_SIZE {
             if self.high_byte {
-                let word_value = ((value as u16 & 0x7f) << 8) | (self.buffer as u16);
+                let word_value = ((value as u16) << 8) | (self.buffer as u16);
 
                 self.lower_table[address] = word_value;
 
