@@ -1,31 +1,30 @@
 use sdl2::controller::{Button, GameController};
 use sdl2::keyboard::Scancode;
-use sdl2::Sdl;
+use sdl2::{GameControllerSubsystem, Sdl};
 use std::error::Error;
 use tracing::{info, warn};
 use utopia::JoypadState;
 
 pub struct Joypad {
+    subsystem: GameControllerSubsystem,
     state: JoypadState,
     controller: Option<GameController>,
 }
 
 impl Joypad {
     pub fn new(sdl_context: &Sdl) -> Result<Self, Box<dyn Error>> {
-        let game_controller = sdl_context.game_controller()?;
+        let subsystem = sdl_context.game_controller()?;
 
         let controller = 'controller: {
-            for id in 0..game_controller.num_joysticks()? {
-                if !game_controller.is_game_controller(id) {
+            for id in 0..subsystem.num_joysticks()? {
+                if !subsystem.is_game_controller(id) {
                     continue;
                 }
 
-                match game_controller.open(id) {
-                    Ok(controller) => {
-                        info!("Game controller connected");
-                        break 'controller Some(controller);
-                    }
-                    Err(error) => warn!("Failed to open game controller {}: {}", id, error),
+                let controller = open_controller(&subsystem, id);
+
+                if controller.is_some() {
+                    break 'controller controller;
                 }
             }
 
@@ -33,6 +32,7 @@ impl Joypad {
         };
 
         Ok(Self {
+            subsystem,
             state: Default::default(),
             controller,
         })
@@ -61,11 +61,7 @@ impl Joypad {
     }
 
     pub fn button_event(&mut self, id: u32, button: Button, pressed: bool) {
-        if !self
-            .controller
-            .as_ref()
-            .is_some_and(|c| c.instance_id() == id)
-        {
+        if !self.is_controller_connected(id) {
             return;
         }
 
@@ -83,6 +79,38 @@ impl Joypad {
             Button::Back => self.state.select = pressed,
             Button::Start => self.state.start = pressed,
             _ => (),
+        }
+    }
+
+    pub fn add_controller(&mut self, id: u32) {
+        if self.controller.is_none() {
+            self.controller = open_controller(&self.subsystem, id);
+        }
+    }
+
+    pub fn remove_controller(&mut self, id: u32) {
+        if self.is_controller_connected(id) {
+            info!("Game controller disconnected");
+            self.controller = None;
+        }
+    }
+
+    fn is_controller_connected(&self, id: u32) -> bool {
+        self.controller
+            .as_ref()
+            .is_some_and(|c| c.instance_id() == id)
+    }
+}
+
+fn open_controller(subsystem: &GameControllerSubsystem, id: u32) -> Option<GameController> {
+    match subsystem.open(id) {
+        Ok(controller) => {
+            info!("Game controller connected");
+            Some(controller)
+        }
+        Err(error) => {
+            warn!("Failed to open game controller {}: {}", id, error);
+            None
         }
     }
 }

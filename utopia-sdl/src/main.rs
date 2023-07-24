@@ -79,6 +79,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                     scancode: Some(scancode),
                     ..
                 } => joypad.key_event(scancode, false),
+                Event::ControllerDeviceAdded { which, .. } => joypad.add_controller(which),
+                Event::ControllerDeviceRemoved { which, .. } => joypad.remove_controller(which),
                 Event::Quit { .. } => break 'outer,
                 _ => (),
             }
