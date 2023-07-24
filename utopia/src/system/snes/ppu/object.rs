@@ -1,11 +1,17 @@
 use super::buffer::Tile;
 use super::oam::TOTAL_SPRITES;
+use super::window::MASK_NONE;
 use tracing::{debug, trace};
 
 const MAX_SPRITES_PER_LINE: usize = 32;
 const MAX_TILES_PER_LINE: usize = 34;
 
-pub const SIZE_X: [[u16; 2]; 8] = [
+const LAYER_INDEX: usize = 4;
+
+const LAYER_OBJ_COLOR_MATH: u8 = 0x10;
+const LAYER_OBJ_NO_COLOR_MATH: u8 = 0x40;
+
+const SIZE_X: [[u16; 2]; 8] = [
     [8, 16],
     [8, 32],
     [8, 64],
@@ -16,7 +22,7 @@ pub const SIZE_X: [[u16; 2]; 8] = [
     [16, 32],
 ];
 
-pub const SIZE_Y: [[u16; 2]; 8] = [
+const SIZE_Y: [[u16; 2]; 8] = [
     [8, 16],
     [8, 32],
     [8, 64],
@@ -65,8 +71,21 @@ impl ObjectLayer {
 
 impl super::Ppu {
     pub(super) fn draw_obj(&mut self, line: u16) {
+        let enabled = self.enabled[LAYER_INDEX];
+
+        if !enabled.any() {
+            return;
+        }
+
         let sprite_start_index = self.select_sprites(line);
-        let _tile_start_index = self.select_obj_tiles(line, sprite_start_index);
+
+        let tile_start_index = self.select_obj_tiles(line, sprite_start_index);
+
+        for pixel_buffer_index in [0, 1] {
+            if enabled.has(pixel_buffer_index) {
+                self.draw_obj_pixels(tile_start_index, pixel_buffer_index);
+            }
+        }
     }
 
     fn select_sprites(&mut self, line: u16) -> usize {
@@ -185,5 +204,47 @@ impl super::Ppu {
         }
 
         write_index
+    }
+
+    fn draw_obj_pixels(&mut self, tile_start_index: usize, pixel_buffer_index: usize) {
+        let mask = if self.window_enabled[LAYER_INDEX].has(pixel_buffer_index) {
+            self.window_mask[LAYER_INDEX].mask(&self.window)
+        } else {
+            &MASK_NONE
+        };
+
+        let pixels = &mut self.pixels[pixel_buffer_index];
+
+        for tile in &self.tiles[tile_start_index..MAX_TILES_PER_LINE] {
+            for pixel_x in 0..8 {
+                let pos_x = ((tile.pos_x + pixel_x) & 511) as usize;
+
+                if pos_x >= 256 || mask[pos_x] {
+                    continue;
+                }
+
+                let chr = tile.chr_data >> ((pixel_x << 1) ^ tile.flip_mask);
+                let color = (chr & 0x03) | ((chr >> 14) & 0x0c);
+
+                if color == 0 {
+                    continue;
+                }
+
+                let pixel = &mut pixels[pos_x];
+
+                if tile.priority >= pixel.priority {
+                    pixel.color = self.cgram.color(tile.palette as usize + color as usize);
+
+                    pixel.layer = if tile.palette >= 192 {
+                        LAYER_OBJ_NO_COLOR_MATH
+                    } else {
+                        LAYER_OBJ_COLOR_MATH
+                    };
+                }
+
+                // Nothing can cover a sprite pixel, even if it's hidden beneath the background
+                pixel.priority = 5;
+            }
+        }
     }
 }

@@ -8,9 +8,6 @@ const UPPER_TABLE_SIZE: usize = 16;
 
 const SPRITE_PALETTE_OFFSET: u16 = 128;
 
-const LAYER_OBJ_COLOR_MATH: u8 = 0x10;
-const LAYER_OBJ_NO_COLOR_MATH: u8 = 0x40;
-
 #[derive(Clone, Default, Debug)]
 pub struct Sprite {
     pub x: u16,
@@ -21,7 +18,6 @@ pub struct Sprite {
     pub priority: u8,
     pub flip_x: bool,
     pub flip_y: bool,
-    pub layer: u8,
     pub size: bool,
 }
 
@@ -141,19 +137,12 @@ impl Oam {
             sprite.flip_x = (word_value & 0x4000) != 0;
             sprite.flip_y = (word_value & 0x8000) != 0;
 
-            sprite.layer = if sprite.palette >= 192 {
-                LAYER_OBJ_NO_COLOR_MATH
-            } else {
-                LAYER_OBJ_COLOR_MATH
-            };
-
             debug!("Sprite {} Name: {:02X}", id, sprite.name);
             debug!("Sprite {} Table: {}", id, sprite.table);
             debug!("Sprite {} Palette: {}", id, sprite.palette);
             debug!("Sprite {} Priority: {}", id, sprite.priority);
             debug!("Sprite {} Flip X: {}", id, sprite.flip_x);
             debug!("Sprite {} Flip Y: {}", id, sprite.flip_y);
-            debug!("Sprite {} Layer: {:08b}", id, sprite.layer);
         }
     }
 

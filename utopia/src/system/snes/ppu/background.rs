@@ -120,7 +120,7 @@ impl super::Ppu {
 
         for pixel_buffer_index in [0, 1] {
             if enabled.has(pixel_buffer_index) {
-                self.draw_bg_lo_res::<COLOR_DEPTH>(bg_index, pixel_buffer_index);
+                self.draw_bg_pixels_lo_res::<COLOR_DEPTH>(bg_index, pixel_buffer_index);
             }
         }
     }
@@ -204,7 +204,7 @@ impl super::Ppu {
         trace!("{} Tiles: {:?}", bg.name, self.tiles);
     }
 
-    fn draw_bg_lo_res<const COLOR_DEPTH: u8>(
+    fn draw_bg_pixels_lo_res<const COLOR_DEPTH: u8>(
         &mut self,
         bg_index: usize,
         pixel_buffer_index: usize,

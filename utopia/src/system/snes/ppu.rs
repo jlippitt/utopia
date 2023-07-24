@@ -37,12 +37,12 @@ pub struct Ppu {
     force_blank: bool,
     bg_mode: u8,
     bg3_priority: Bg3Priority,
-    enabled: [Toggle; 4],
+    enabled: [Toggle; 5],
     bg: [BackgroundLayer; 4],
     obj: ObjectLayer,
     mode7: Mode7Settings,
     window: [Window; 2],
-    window_enabled: [Toggle; 4],
+    window_enabled: [Toggle; 5],
     window_mask: [WindowMask; 6],
     color_math: ColorMath,
     screen: Screen,
@@ -65,6 +65,7 @@ impl Ppu {
                 Toggle::new("BG2"),
                 Toggle::new("BG3"),
                 Toggle::new("BG4"),
+                Toggle::new("OBJ"),
             ],
             bg: [
                 BackgroundLayer::new("BG1"),
@@ -80,6 +81,7 @@ impl Ppu {
                 Toggle::new("BG2 Window"),
                 Toggle::new("BG3 Window"),
                 Toggle::new("BG4 Window"),
+                Toggle::new("OBJ Window"),
             ],
             window_mask: [
                 WindowMask::new("BG1 Mask"),
@@ -219,28 +221,28 @@ impl Ppu {
                 self.enabled[1].set(0, (value & 0x02) != 0);
                 self.enabled[2].set(0, (value & 0x04) != 0);
                 self.enabled[3].set(0, (value & 0x08) != 0);
-                // TODO: OBJ
+                self.enabled[4].set(0, (value & 0x10) != 0);
             }
             0x2d => {
                 self.enabled[0].set(1, (value & 0x01) != 0);
                 self.enabled[1].set(1, (value & 0x02) != 0);
                 self.enabled[2].set(1, (value & 0x04) != 0);
                 self.enabled[3].set(1, (value & 0x08) != 0);
-                // TODO: OBJ
+                self.enabled[4].set(1, (value & 0x10) != 0);
             }
             0x2e => {
                 self.window_enabled[0].set(0, (value & 0x01) != 0);
                 self.window_enabled[1].set(0, (value & 0x02) != 0);
                 self.window_enabled[2].set(0, (value & 0x04) != 0);
                 self.window_enabled[3].set(0, (value & 0x08) != 0);
-                // TODO: OBJ
+                self.window_enabled[4].set(0, (value & 0x10) != 0);
             }
             0x2f => {
                 self.window_enabled[0].set(1, (value & 0x01) != 0);
                 self.window_enabled[1].set(1, (value & 0x02) != 0);
                 self.window_enabled[2].set(1, (value & 0x04) != 0);
                 self.window_enabled[3].set(1, (value & 0x08) != 0);
-                // TODO: OBJ
+                self.window_enabled[4].set(1, (value & 0x10) != 0);
             }
             0x30 => {
                 // TODO: Direct Color Mode
