@@ -72,7 +72,7 @@ impl ColorMath {
     pub fn set_operator(&mut self, value: u8) {
         self.subtract = (value & 0x80) != 0;
         self.half = (value & 0x40) != 0;
-        self.lhs_mask = value & 0x30;
+        self.lhs_mask = value & 0x3f;
         debug!("Color Math Subtract: {}", self.subtract);
         debug!("Color Math Half: {}", self.half);
         debug!("Color Math LHS Mask: {:08b}", self.lhs_mask);
