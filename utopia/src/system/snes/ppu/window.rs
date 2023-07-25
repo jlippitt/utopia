@@ -121,10 +121,10 @@ impl WindowMask {
         let left = window.left as usize;
         let right = window.right as usize;
 
-        if left < right {
+        if left <= right {
             self.mask[0..left].fill(inverted);
-            self.mask[left..right].fill(!inverted);
-            self.mask[right..].fill(inverted);
+            self.mask[left..=right].fill(!inverted);
+            self.mask[(right + 1)..].fill(inverted);
         } else {
             self.mask.fill(inverted);
         }
@@ -140,7 +140,7 @@ impl WindowMask {
             index += 1;
         }
 
-        while index < right {
+        while index <= right {
             self.mask[index] = self.operator.apply(self.mask[index], !self.w2_inverted);
             index += 1;
         }
