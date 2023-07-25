@@ -164,11 +164,11 @@ impl Ppu {
             }
             0x0d => {
                 self.bg[0].set_scroll_x(&mut self.scroll_regs, value);
-                //self.mode7.set_scroll_x(value);
+                self.mode7.set_scroll_x(value);
             }
             0x0e => {
                 self.bg[0].set_scroll_y(&mut self.scroll_regs, value);
-                //self.mode7.set_scroll_y(value);
+                self.mode7.set_scroll_y(value);
             }
             0x0f => self.bg[1].set_scroll_x(&mut self.scroll_regs, value),
             0x10 => self.bg[1].set_scroll_y(&mut self.scroll_regs, value),
@@ -181,13 +181,13 @@ impl Ppu {
             0x17 => self.vram.set_address_high(value),
             0x18 => self.vram.write_low(value),
             0x19 => self.vram.write_high(value),
-            //0x1a => self.mode7.set_control(value),
+            0x1a => self.mode7.set_control(value),
             0x1b => self.mode7.set_matrix_a(value),
             0x1c => self.mode7.set_matrix_b(value),
             0x1d => self.mode7.set_matrix_c(value),
             0x1e => self.mode7.set_matrix_d(value),
-            //0x1f => self.mode7.set_center_x(value),
-            //0x20 => self.mode7.set_center_y(value),
+            0x1f => self.mode7.set_center_x(value),
+            0x20 => self.mode7.set_center_y(value),
             0x21 => self.cgram.set_address(value),
             0x22 => self.cgram.write(value),
             0x23 => {
