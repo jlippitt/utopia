@@ -141,7 +141,7 @@ impl super::Ppu {
                 let pixel_y = line.wrapping_sub(sprite.y) & 255;
 
                 if sprite.flip_y {
-                    let size_y = self.obj.size_y[sprite.size as usize];
+                    let size_y = self.obj.size_y[sprite.size as usize] - 1;
                     pixel_y ^ size_y
                 } else {
                     pixel_y
