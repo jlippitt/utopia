@@ -296,6 +296,10 @@ impl Ppu {
                 self.draw_bg::<2>(0, 4, 2, line);
                 self.draw_bg::<1>(1, 3, 1, line);
             }
+            7 => {
+                self.draw_mode7(0, line);
+                // TODO: Mode 7 EXT
+            }
             _ => panic!("Mode {} not yet implemented", self.bg_mode),
         }
 

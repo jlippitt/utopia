@@ -149,7 +149,7 @@ impl super::Ppu {
                     | ((coarse_y & 0x1f) << NAME_SHIFT_32)
                     | (coarse_x & 0x1f);
 
-                let value = self.vram.data(address);
+                let value = self.vram.data(address as usize);
                 trace!("Tile Load: {:04X} => {:04X}", address, value);
                 value
             };
@@ -229,7 +229,7 @@ impl super::Ppu {
                 *pixel = Pixel {
                     color: self.cgram.color((tile.palette as usize) | color),
                     priority: tile.priority,
-                    layer: (1 << bg_index),
+                    layer: 1 << bg_index,
                 };
             }
 

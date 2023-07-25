@@ -24,8 +24,8 @@ impl Vram {
         }
     }
 
-    pub fn data(&self, address: u16) -> u16 {
-        self.data[address as usize]
+    pub fn data(&self, address: usize) -> u16 {
+        self.data[address]
     }
 
     pub fn chr4(&self, index: usize) -> u64 {
