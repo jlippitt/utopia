@@ -137,8 +137,6 @@ impl Ppu {
             0x03 => self.oam.set_address_high(value),
             0x04 => self.oam.write(value),
             0x05 => {
-                // TODO: 16x16 tiles
-
                 self.bg_mode = value & 0x07;
 
                 self.bg3_priority = if (value & 0x08) != 0 {
@@ -149,6 +147,11 @@ impl Ppu {
 
                 debug!("BG Mode: {}", self.bg_mode);
                 debug!("BG3 Priority: {:?}", self.bg3_priority);
+
+                self.bg[0].set_tile_size((value & 0x10) != 0);
+                self.bg[1].set_tile_size((value & 0x20) != 0);
+                self.bg[2].set_tile_size((value & 0x40) != 0);
+                self.bg[3].set_tile_size((value & 0x80) != 0);
             }
             0x07 => self.bg[0].set_tile_map(value),
             0x08 => self.bg[1].set_tile_map(value),
