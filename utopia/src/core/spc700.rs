@@ -278,7 +278,7 @@ impl<T: Bus> Core<T> {
             0x8a => instr::eor1(self),
             0xaa => instr::mov1_read(self),
             //0xca => instr::mov1_write(self),
-            //0xea => instr::not1(self),
+            0xea => instr::not1(self),
 
             // +0x1a
             0x1a => instr::decw(self),

@@ -50,6 +50,13 @@ pub fn mov1_read(core: &mut Core<impl Bus>) {
     core.flags.c = (value & (1 << bit)) != 0;
 }
 
+pub fn not1(core: &mut Core<impl Bus>) {
+    debug!("NOT1 m.b");
+    let (address, bit) = decode(core.next_word());
+    let value = core.read(address);
+    core.write(address, value ^ (1 << bit));
+}
+
 pub fn tset1(core: &mut Core<impl Bus>) {
     debug!("TSET1 !a");
     let address = core.next_word();
