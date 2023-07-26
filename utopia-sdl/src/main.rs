@@ -1,7 +1,7 @@
 use bios::BiosLoader;
 use clap::Parser;
 use joypad::Joypad;
-use sdl2::event::Event;
+use sdl2::event::{Event, WindowEvent};
 use std::error::Error;
 use std::fs;
 use utopia::Options;
@@ -18,10 +18,13 @@ struct Args {
     rom_path: String,
 
     #[arg(short, long)]
-    skip_boot: bool,
+    full_screen: bool,
 
     #[arg(short, long)]
     disable_vsync: bool,
+
+    #[arg(short, long)]
+    skip_boot: bool,
 
     #[arg(short, long)]
     upscale: Option<u32>,
@@ -50,6 +53,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             clip_top: system.clip_top().try_into()?,
             clip_bottom: system.clip_bottom().try_into()?,
             upscale: args.upscale,
+            full_screen: args.full_screen,
             disable_vsync: args.disable_vsync,
         },
     )?;
@@ -81,6 +85,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 } => joypad.key_event(scancode, false),
                 Event::ControllerDeviceAdded { which, .. } => joypad.add_controller(which),
                 Event::ControllerDeviceRemoved { which, .. } => joypad.remove_controller(which),
+                Event::Window {
+                    win_event: WindowEvent::SizeChanged(_, _),
+                    ..
+                } => video.on_size_changed()?,
                 Event::Quit { .. } => break 'outer,
                 _ => (),
             }
