@@ -96,6 +96,8 @@ impl Joypad {
 
         // TODO: Actual timing for this
         self.auto_read_state = self.current_state;
+        self.polled_state = [0xffff, 0xffff, 0xffff, 0xffff];
+        self.latch = false;
         debug!("Joypad Auto-Read Complete");
     }
 
