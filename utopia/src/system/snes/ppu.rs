@@ -153,6 +153,13 @@ impl Ppu {
                 self.bg[2].set_tile_size((value & 0x40) != 0);
                 self.bg[3].set_tile_size((value & 0x80) != 0);
             }
+            0x06 => {
+                let mosaic_size = (value >> 4) + 1;
+                self.bg[0].set_mosaic((value & 0x01) != 0, mosaic_size);
+                self.bg[1].set_mosaic((value & 0x02) != 0, mosaic_size);
+                self.bg[2].set_mosaic((value & 0x04) != 0, mosaic_size);
+                self.bg[3].set_mosaic((value & 0x08) != 0, mosaic_size);
+            }
             0x07 => self.bg[0].set_tile_map(value),
             0x08 => self.bg[1].set_tile_map(value),
             0x09 => self.bg[2].set_tile_map(value),
@@ -259,6 +266,10 @@ impl Ppu {
 
     pub fn on_frame_start(&mut self) {
         self.screen.reset();
+        self.bg[0].reset_mosaic_counter();
+        self.bg[1].reset_mosaic_counter();
+        self.bg[2].reset_mosaic_counter();
+        self.bg[3].reset_mosaic_counter();
     }
 
     pub fn on_vblank_start(&mut self) {

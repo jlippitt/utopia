@@ -8,21 +8,6 @@ const TILE_MIRROR_64: u16 = 63;
 const TILE_SHIFT_32: u16 = 5;
 const TILE_SHIFT_64: u16 = 6;
 
-fn color<const COLOR_DEPTH: u8>(chr: u64) -> usize {
-    let mut color = chr & 0x03;
-
-    if COLOR_DEPTH > 0 {
-        color |= (chr >> 14) & 0x0c;
-
-        if COLOR_DEPTH > 1 {
-            color |= (chr >> 28) & 0x30;
-            color |= (chr >> 42) & 0xc0;
-        }
-    }
-
-    color as usize
-}
-
 pub struct BackgroundLayer {
     tile_size: bool,
     tile_map: u16,
@@ -32,6 +17,8 @@ pub struct BackgroundLayer {
     chr_map: u16,
     scroll_x: u16,
     scroll_y: u16,
+    mosaic_size: u16,
+    mosaic_y: u16,
     name: &'static str,
 }
 
@@ -46,6 +33,8 @@ impl BackgroundLayer {
             chr_map: 0,
             scroll_x: 0,
             scroll_y: 0,
+            mosaic_size: 1,
+            mosaic_y: 0,
             name,
         }
     }
@@ -53,6 +42,11 @@ impl BackgroundLayer {
     pub fn set_tile_size(&mut self, tile_size: bool) {
         self.tile_size = tile_size;
         debug!("{} Tile Size: {}", self.name, 8 << (self.tile_size as u32));
+    }
+
+    pub fn set_mosaic(&mut self, enabled: bool, size: u8) {
+        self.mosaic_size = if enabled { size as u16 } else { 1 };
+        debug!("{} Mosaic Size: {}", self.name, self.mosaic_size);
     }
 
     pub fn set_tile_map(&mut self, value: u8) {
@@ -107,6 +101,10 @@ impl BackgroundLayer {
 
         debug!("{} Scroll Y: {}", self.name, self.scroll_y);
     }
+
+    pub fn reset_mosaic_counter(&mut self) {
+        self.mosaic_y = 0;
+    }
 }
 
 impl super::Ppu {
@@ -139,10 +137,17 @@ impl super::Ppu {
         priority_low: u8,
         line: u16,
     ) {
-        let bg = &self.bg[bg_index];
+        let bg = &mut self.bg[bg_index];
 
         let (coarse_y, fine_y) = {
-            let pos_y = bg.scroll_y.wrapping_add(line);
+            let pos_y = bg.scroll_y.wrapping_add(line - bg.mosaic_y);
+
+            bg.mosaic_y += 1;
+
+            if bg.mosaic_y == bg.mosaic_size {
+                bg.mosaic_y = 0;
+            }
+
             (pos_y >> 3, pos_y & 7)
         };
 
@@ -238,12 +243,19 @@ impl super::Ppu {
         let bg = &self.bg[bg_index];
         let pixels = &mut self.pixels[pixel_buffer_index];
 
-        let mut shift = (bg.scroll_x & 7) << 1;
         let mut tiles = self.tiles.into_iter();
         let mut tile = tiles.next().unwrap();
+        let mut mosaic_x = 1;
+        let mut color = 0;
+        let mut shift = (bg.scroll_x & 7) << 1;
 
         for (index, pixel) in pixels.iter_mut().enumerate() {
-            let color = color::<COLOR_DEPTH>(tile.chr_data >> (shift ^ tile.flip_mask));
+            mosaic_x -= 1;
+
+            if mosaic_x == 0 {
+                mosaic_x = bg.mosaic_size;
+                color = pixel_color::<COLOR_DEPTH>(tile.chr_data >> (shift ^ tile.flip_mask));
+            }
 
             if color != 0 && !mask[index] && tile.priority > pixel.priority {
                 *pixel = Pixel {
@@ -261,4 +273,19 @@ impl super::Ppu {
             }
         }
     }
+}
+
+fn pixel_color<const COLOR_DEPTH: u8>(chr: u64) -> usize {
+    let mut color = chr & 0x03;
+
+    if COLOR_DEPTH > 0 {
+        color |= (chr >> 14) & 0x0c;
+
+        if COLOR_DEPTH > 1 {
+            color |= (chr >> 28) & 0x30;
+            color |= (chr >> 42) & 0xc0;
+        }
+    }
+
+    color as usize
 }
