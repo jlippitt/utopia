@@ -71,19 +71,15 @@ impl Screen {
         self.index = end;
     }
 
-    pub fn draw_lo_res(&mut self, pixels_main: &PixelBuffer) {
-        for pixel in pixels_main {
-            let color = pixel.color as usize;
-            let red = self.intensity[color & 31];
-            let green = self.intensity[(color >> 5) & 31];
-            let blue = self.intensity[(color >> 10) & 31];
-
+    pub fn draw_lo_res(&mut self, main_screen: &PixelBuffer) {
+        for pixel in main_screen {
+            let intensity = &self.intensity;
             let output = &mut self.output[self.index..(self.index + 8)];
 
+            let (red, green, blue) = rgb(intensity, pixel.color);
             output[0] = red;
             output[1] = green;
             output[2] = blue;
-
             output[4] = red;
             output[5] = green;
             output[6] = blue;
@@ -96,4 +92,42 @@ impl Screen {
 
         self.index += PITCH;
     }
+
+    pub fn draw_hi_res(&mut self, pixels: &[PixelBuffer; 2]) {
+        let [main_screen, sub_screen] = &pixels;
+
+        for (pixel_main, pixel_sub) in main_screen.iter().zip(sub_screen) {
+            let intensity = &self.intensity;
+            let output = &mut self.output[self.index..(self.index + 8)];
+
+            {
+                let (red, green, blue) = rgb(intensity, pixel_main.color);
+                output[0] = red;
+                output[1] = green;
+                output[2] = blue;
+            }
+
+            {
+                let (red, green, blue) = rgb(intensity, pixel_sub.color);
+                output[4] = red;
+                output[5] = green;
+                output[6] = blue;
+            }
+
+            self.index += 8;
+        }
+
+        self.output
+            .copy_within((self.index - PITCH)..self.index, self.index);
+
+        self.index += PITCH;
+    }
+}
+
+fn rgb(intensity: &IntensityTable, color: u16) -> (u8, u8, u8) {
+    let color = color as usize;
+    let red = intensity[color & 31];
+    let green = intensity[(color >> 5) & 31];
+    let blue = intensity[(color >> 10) & 31];
+    (red, green, blue)
 }

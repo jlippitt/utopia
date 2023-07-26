@@ -7,5 +7,6 @@ edition = "2021"
 cpu-tests = []
 
 [dependencies]
+bitflags = "2.3.3"
 enum_dispatch = "0.3.11"
 tracing = { version = "0.1.37", features = ["release_max_level_info"] }

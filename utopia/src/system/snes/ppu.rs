@@ -2,6 +2,7 @@ pub use screen::{HEIGHT, WIDTH};
 
 use super::clock::Clock;
 use background::BackgroundLayer;
+use bitflags::bitflags;
 use buffer::{Pixel, PixelBuffer, TileBuffer, LAYER_BACKDROP, PIXEL_BUFFER_SIZE, TILE_BUFFER_SIZE};
 use cgram::Cgram;
 use color_math::ColorMath;
@@ -33,10 +34,19 @@ enum Bg3Priority {
     High = 5,
 }
 
+bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+    struct HiRes: u8 {
+        // TODO: Pseudo hi-res
+        const BG_MODE = 0x01;
+    }
+}
+
 pub struct Ppu {
     force_blank: bool,
     bg_mode: u8,
     bg3_priority: Bg3Priority,
+    hi_res: HiRes,
     enabled: [Toggle; 5],
     bg: [BackgroundLayer; 4],
     obj: ObjectLayer,
@@ -60,6 +70,7 @@ impl Ppu {
             force_blank: true,
             bg_mode: 0,
             bg3_priority: Bg3Priority::Low,
+            hi_res: HiRes::empty(),
             enabled: [
                 Toggle::new("BG1"),
                 Toggle::new("BG2"),
@@ -145,8 +156,12 @@ impl Ppu {
                     Bg3Priority::Low
                 };
 
+                self.hi_res
+                    .set(HiRes::BG_MODE, self.bg_mode == 5 || self.bg_mode == 6);
+
                 debug!("BG Mode: {}", self.bg_mode);
                 debug!("BG3 Priority: {:?}", self.bg3_priority);
+                debug!("Hi Res: {:?}", self.hi_res);
 
                 self.bg[0].set_tile_size((value & 0x10) != 0);
                 self.bg[1].set_tile_size((value & 0x20) != 0);
@@ -296,19 +311,23 @@ impl Ppu {
 
         match self.bg_mode {
             0 => {
-                self.draw_bg::<0>(0, 4, 3, line);
-                self.draw_bg::<0>(1, 4, 3, line);
-                self.draw_bg::<0>(2, 2, 1, line);
-                self.draw_bg::<0>(3, 2, 1, line);
+                self.draw_bg::<0, false>(0, 4, 3, line);
+                self.draw_bg::<0, false>(1, 4, 3, line);
+                self.draw_bg::<0, false>(2, 2, 1, line);
+                self.draw_bg::<0, false>(3, 2, 1, line);
             }
             1 => {
-                self.draw_bg::<1>(0, 4, 3, line);
-                self.draw_bg::<1>(1, 4, 3, line);
-                self.draw_bg::<0>(2, self.bg3_priority as u8, 1, line);
+                self.draw_bg::<1, false>(0, 4, 3, line);
+                self.draw_bg::<1, false>(1, 4, 3, line);
+                self.draw_bg::<0, false>(2, self.bg3_priority as u8, 1, line);
             }
             3 => {
-                self.draw_bg::<2>(0, 4, 2, line);
-                self.draw_bg::<1>(1, 3, 1, line);
+                self.draw_bg::<2, false>(0, 4, 2, line);
+                self.draw_bg::<1, false>(1, 3, 1, line);
+            }
+            5 => {
+                self.draw_bg::<1, true>(0, 4, 2, line);
+                self.draw_bg::<0, true>(1, 3, 1, line);
             }
             7 => {
                 self.draw_mode7(0, line);
@@ -321,7 +340,11 @@ impl Ppu {
 
         self.apply_color_math();
 
-        self.screen.draw_lo_res(&self.pixels[0]);
+        if self.hi_res.is_empty() {
+            self.screen.draw_lo_res(&self.pixels[0]);
+        } else {
+            self.screen.draw_hi_res(&self.pixels);
+        }
     }
 
     fn update_window(&mut self, callback: impl Fn(&mut Self) -> bool) {
