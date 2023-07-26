@@ -53,7 +53,7 @@ impl Video {
             window_builder.position_centered();
         }
 
-        let window = window_builder.build()?;
+        let window = window_builder.allow_highdpi().build()?;
 
         let mut canvas_builder = window.into_canvas();
 
