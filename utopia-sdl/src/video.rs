@@ -201,8 +201,6 @@ fn calculate_target_rect(
         scaled_height,
     );
 
-    println!("{:?}, {:?}", display_bounds, rect);
-
     return Ok(rect);
 }
 
