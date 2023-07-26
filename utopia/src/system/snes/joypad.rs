@@ -78,7 +78,7 @@ impl Joypad {
 
         if self.latch && !latch {
             self.polled_state = self.current_state;
-            debug!("Joypad State Latched");
+            debug!("Joypad State Latched: {:04X}", self.polled_state[0]);
         }
 
         self.latch = latch;
@@ -104,7 +104,7 @@ impl Joypad {
             (self.current_state[index] & 0x8000) != 0
         } else {
             let result = (self.polled_state[index] & 0x8000) != 0;
-            self.polled_state[index] <<= 1;
+            self.polled_state[index] = (self.polled_state[index] << 1) | 0x0001;
             result
         }
     }
