@@ -6,6 +6,7 @@ use bitflags::bitflags;
 use buffer::{Pixel, PixelBuffer, TileBuffer, LAYER_BACKDROP, PIXEL_BUFFER_SIZE, TILE_BUFFER_SIZE};
 use cgram::Cgram;
 use color_math::ColorMath;
+use latch::Latch;
 use mode7::Mode7Settings;
 use oam::Oam;
 use object::ObjectLayer;
@@ -19,6 +20,7 @@ mod background;
 mod buffer;
 mod cgram;
 mod color_math;
+mod latch;
 mod mode7;
 mod oam;
 mod object;
@@ -56,12 +58,13 @@ pub struct Ppu {
     window_mask: [WindowMask; 6],
     color_math: ColorMath,
     screen: Screen,
-    scroll_regs: (u8, u8),
     tiles: TileBuffer,
     pixels: [PixelBuffer; 2],
     vram: Vram,
     cgram: Cgram,
     oam: Oam,
+    scroll_regs: (u8, u8),
+    latch: Latch,
 }
 
 impl Ppu {
@@ -104,7 +107,6 @@ impl Ppu {
             ],
             color_math: ColorMath::new(),
             screen: Screen::new(),
-            scroll_regs: (0, 0),
             tiles: [Default::default(); TILE_BUFFER_SIZE],
             pixels: [
                 [Default::default(); PIXEL_BUFFER_SIZE],
@@ -113,6 +115,8 @@ impl Ppu {
             vram: Vram::new(),
             cgram: Cgram::new(),
             oam: Oam::new(),
+            scroll_regs: (0, 0),
+            latch: Latch::new(),
         }
     }
 
@@ -125,11 +129,18 @@ impl Ppu {
             0x34 => self.mode7.multiply() as u8,
             0x35 => (self.mode7.multiply() >> 8) as u8,
             0x36 => (self.mode7.multiply() >> 16) as u8,
+            0x37 => {
+                self.latch.latch_counters(clock);
+                // TODO: PPU Open Bus
+                0
+            }
+            0x3c => self.latch.counter_x(), // TODO: PPU Open Bus
+            0x3d => self.latch.counter_y(), // TODO: PPU Open Bus
             0x3f => {
                 // TODO: PPU open bus
                 let mut value = 0x03;
                 value |= if clock.odd_frame() { 0x80 } else { 0 };
-                // TODO: External latch flag
+                value |= if self.latch.poll_status() { 0x40 } else { 0 };
                 value
             }
             _ => panic!("Unmapped PPU read: {:02X}", address),
@@ -291,6 +302,10 @@ impl Ppu {
         if !self.force_blank {
             self.oam.reload_internal_address();
         }
+    }
+
+    pub fn set_latch_enabled(&mut self, clock: &Clock, enabled: bool) {
+        self.latch.set_enabled(clock, enabled);
     }
 
     pub fn draw_line(&mut self, line: u16) {

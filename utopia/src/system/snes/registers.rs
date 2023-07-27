@@ -127,6 +127,7 @@ impl super::Hardware {
                 // TODO: PPU Latch
                 self.regs.io_port = value;
                 debug!("IO Port: {:02X}", self.regs.io_port);
+                self.ppu.set_latch_enabled(&self.clock, (value & 0x80) != 0);
             }
             0x02 => {
                 self.regs.multiplicand = value;
