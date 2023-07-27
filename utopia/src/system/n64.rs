@@ -1,6 +1,6 @@
 use super::System;
 use crate::core::mips::{Bus, Core, State};
-use crate::util::Primitive;
+use crate::util::{Primitive, ReadFacade};
 use crate::JoypadState;
 use std::error::Error;
 use tracing::info;
@@ -73,16 +73,31 @@ impl Hardware {
     }
 
     fn read_physical<T: Primitive>(&mut self, address: u32) -> T {
-        // TODO
-        Default::default()
+        match address >> 20 {
+            0x000..=0x03e => todo!("RDRAM"),
+            0x03f => todo!("RDRAM Registers"),
+            0x040 => todo!("RSP"),
+            0x041 => todo!("RDP Command Registers"),
+            0x042 => todo!("RDP Span Registers"),
+            0x043 => todo!("MIPS Interface"),
+            0x044 => todo!("Video Interface"),
+            0x045 => todo!("Audio Interface"),
+            0x046 => todo!("Peripheral Interface"),
+            0x047 => todo!("RDRAM Interface"),
+            0x048 => todo!("Serial Interface"),
+            0x080..=0x0ff => todo!("SRAM"),
+            0x010..=0x1fb => self.rom.read_be(address as usize),
+            0x1fc => todo!("Serial Bus"),
+            _ => panic!("Read from open bus: {:08X}", address),
+        }
     }
 }
 
 impl Bus for Hardware {
     fn read<T: Primitive>(&mut self, address: u32) -> T {
-        // TODO: Cache
         match address >> 29 {
-            4 | 5 => self.read_physical::<T>(address),
+            4 => self.read_physical(address - 0x8000_0000), // TODO: Cache
+            5 => self.read_physical(address - 0xa000_0000),
             _ => todo!("TLB"),
         }
     }

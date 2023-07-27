@@ -1,4 +1,4 @@
-use crate::util::Facade;
+use crate::util::ReadFacade;
 
 pub struct Header {
     pub title: String,

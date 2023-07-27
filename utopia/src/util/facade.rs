@@ -1,17 +1,20 @@
 use std::mem;
+use std::ops::Deref;
 
 pub trait Primitive: Copy + Clone + Default + Eq + PartialEq {
     fn from_be_slice(slice: &[u8]) -> Self;
 }
 
-pub trait Facade {
+pub trait ReadFacade {
     fn read_be<T: Primitive>(&self, index: usize) -> T;
 }
 
-impl Facade for [u8] {
-    fn read_be<T: Primitive>(&self, index: usize) -> T {
-        let bytes = &self[index..(index + mem::size_of::<T>())];
-        T::from_be_slice(bytes)
+pub trait WriteFacade: ReadFacade {}
+
+impl<T: Deref<Target = [u8]>> ReadFacade for T {
+    fn read_be<U: Primitive>(&self, index: usize) -> U {
+        let bytes = &self[index..(index + mem::size_of::<U>())];
+        U::from_be_slice(bytes)
     }
 }
 

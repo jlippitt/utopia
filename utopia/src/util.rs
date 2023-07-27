@@ -1,5 +1,5 @@
 pub use color::Rgb;
-pub use facade::{Facade, Primitive};
+pub use facade::{Primitive, ReadFacade, WriteFacade};
 pub use mirror_vec::MirrorVec;
 
 mod color;
