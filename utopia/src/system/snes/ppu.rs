@@ -134,6 +134,7 @@ impl Ppu {
                 // TODO: PPU Open Bus
                 0
             }
+            0x38 => self.oam.read(),
             0x3c => self.latch.counter_x(), // TODO: PPU Open Bus
             0x3d => self.latch.counter_y(), // TODO: PPU Open Bus
             0x3f => {

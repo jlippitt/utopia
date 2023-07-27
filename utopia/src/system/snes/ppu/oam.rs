@@ -78,6 +78,36 @@ impl Oam {
         debug!("OAM Priority Enabled: {}", self.priority_enabled);
     }
 
+    pub fn read(&mut self) -> u8 {
+        let address = self.internal_address as usize;
+
+        let value = if address < LOWER_TABLE_SIZE {
+            if self.high_byte {
+                let value = (self.lower_table[address] >> 8) as u8;
+                self.internal_address = self.internal_address.wrapping_add(1) & 0x01ff;
+                value
+            } else {
+                self.lower_table[address] as u8
+            }
+        } else {
+            let address = address & 15;
+
+            if self.high_byte {
+                let value = (self.upper_table[address] >> 8) as u8;
+                self.internal_address = self.internal_address.wrapping_add(1) & 0x01ff;
+                value
+            } else {
+                self.upper_table[address] as u8
+            }
+        };
+
+        debug!("OAM Read: {:02X} => {:02X}", address, value);
+
+        self.high_byte = !self.high_byte;
+
+        value
+    }
+
     pub fn write(&mut self, value: u8) {
         let address = self.internal_address as usize;
 
