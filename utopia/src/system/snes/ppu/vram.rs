@@ -8,6 +8,7 @@ const PLANE_0_MASK: u16 = 0x5555;
 pub struct Vram {
     data: MirrorVec<u16>,
     chr_cache: MirrorVec<u16>,
+    remap_mode: u8,
     address: u16,
     increment_high: bool,
     increment_amount: u16,
@@ -19,6 +20,7 @@ impl Vram {
         Self {
             data: MirrorVec::new(VRAM_SIZE),
             chr_cache: MirrorVec::new(VRAM_SIZE),
+            remap_mode: 0,
             address: 0,
             increment_high: false,
             increment_amount: 1,
@@ -49,9 +51,7 @@ impl Vram {
     }
 
     pub fn set_control(&mut self, value: u8) {
-        if (value & 0x0c) != 0 {
-            todo!("VRAM address remapping");
-        }
+        self.remap_mode = (value & 0x0c) >> 2;
 
         self.increment_amount = match value & 0x03 {
             0 => 1,
@@ -61,6 +61,7 @@ impl Vram {
 
         self.increment_high = (value & 0x80) != 0;
 
+        debug!("VRAM Remap Mode: {}", self.remap_mode);
         debug!("VRAM Increment Amount: {}", self.increment_amount);
         debug!("VRAM Increment High: {}", self.increment_high);
     }
@@ -100,8 +101,7 @@ impl Vram {
     }
 
     pub fn write_low(&mut self, value: u8) {
-        // TODO: Address remapping
-        let address = self.address as usize & 0x7fff;
+        let address = self.remap_address();
         self.data[address] = (self.data[address] & 0xff00) | (value as u16);
 
         debug!(
@@ -117,8 +117,7 @@ impl Vram {
     }
 
     pub fn write_high(&mut self, value: u8) {
-        // TODO: Address remapping
-        let address = self.address as usize & 0x7fff;
+        let address = self.remap_address();
         self.data[address] = (self.data[address] & 0xff) | ((value as u16) << 8);
 
         debug!(
@@ -133,9 +132,20 @@ impl Vram {
         }
     }
 
+    fn remap_address(&self) -> usize {
+        let address = self.address as usize;
+
+        match self.remap_mode {
+            0 => address & 0x7fff,
+            1 => (address & 0x7f00) | ((address << 3) & 0x00f8) | ((address >> 5) & 0x07),
+            2 => (address & 0x7e00) | ((address << 3) & 0x01f8) | ((address >> 6) & 0x07),
+            3 => (address & 0x7c00) | ((address << 3) & 0x03f8) | ((address >> 7) & 0x07),
+            _ => unreachable!(),
+        }
+    }
+
     fn prefetch(&mut self) {
-        // TODO: Address remapping
-        let address = self.address as usize & 0x7fff;
+        let address = self.remap_address();
         self.read_buffer = self.data[address];
         debug!("VRAM Read: {:04X} => {:04X}", address, self.read_buffer);
     }
