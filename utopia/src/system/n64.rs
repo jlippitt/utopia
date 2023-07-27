@@ -2,10 +2,12 @@ use super::System;
 use crate::core::mips::{Bus, Core, State};
 use crate::util::{Primitive, ReadFacade};
 use crate::JoypadState;
+use rsp::{Rsp, DMEM_SIZE};
 use std::error::Error;
 use tracing::info;
 
 mod header;
+mod rsp;
 
 const WIDTH: usize = 320;
 const HEIGHT: usize = 240;
@@ -64,19 +66,23 @@ impl System for N64 {
 }
 
 struct Hardware {
+    rsp: Rsp,
     rom: Vec<u8>,
 }
 
 impl Hardware {
-    pub fn new(rom_data: Vec<u8>) -> Self {
-        Self { rom: rom_data }
+    pub fn new(rom: Vec<u8>) -> Self {
+        Self {
+            rsp: Rsp::new(&rom[0..DMEM_SIZE]),
+            rom,
+        }
     }
 
     fn read_physical<T: Primitive>(&mut self, address: u32) -> T {
         match address >> 20 {
             0x000..=0x03e => todo!("RDRAM"),
             0x03f => todo!("RDRAM Registers"),
-            0x040 => todo!("RSP"),
+            0x040 => self.rsp.read(address),
             0x041 => todo!("RDP Command Registers"),
             0x042 => todo!("RDP Span Registers"),
             0x043 => todo!("MIPS Interface"),
