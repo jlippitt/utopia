@@ -11,6 +11,7 @@ use mode7::Mode7Settings;
 use oam::Oam;
 use object::ObjectLayer;
 use screen::Screen;
+use std::ops::RangeInclusive;
 use toggle::Toggle;
 use tracing::{debug, warn};
 use vram::Vram;
@@ -29,6 +30,9 @@ mod toggle;
 mod vram;
 mod window;
 
+const VISIBLE_RANGE_NORMAL: RangeInclusive<u16> = 1..=224;
+const VISIBLE_RANGE_OVERSCAN: RangeInclusive<u16> = 9..=232;
+
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 enum Bg3Priority {
@@ -45,6 +49,7 @@ bitflags! {
 }
 
 pub struct Ppu {
+    visible_range: RangeInclusive<u16>,
     force_blank: bool,
     bg_mode: u8,
     bg3_priority: Bg3Priority,
@@ -64,12 +69,14 @@ pub struct Ppu {
     cgram: Cgram,
     oam: Oam,
     scroll_regs: (u8, u8),
+    overscan: bool,
     latch: Latch,
 }
 
 impl Ppu {
     pub fn new() -> Self {
         Self {
+            visible_range: VISIBLE_RANGE_NORMAL,
             force_blank: true,
             bg_mode: 0,
             bg3_priority: Bg3Priority::Low,
@@ -116,6 +123,7 @@ impl Ppu {
             cgram: Cgram::new(),
             oam: Oam::new(),
             scroll_regs: (0, 0),
+            overscan: false,
             latch: Latch::new(),
         }
     }
@@ -297,10 +305,10 @@ impl Ppu {
                 }
 
                 self.hi_res.set(HiRes::PSEUDO_HI_RES, (value & 0x08) != 0);
+                debug!("Hi Res: {:?}", self.hi_res);
 
-                if (value & 0x04) != 0 {
-                    warn!("Overscan not yet implemented");
-                }
+                self.overscan = (value & 0x04) != 0;
+                debug!("Overscan: {}", self.overscan);
 
                 if (value & 0x02) != 0 {
                     warn!("OBJ Interlace not yet implemented");
@@ -309,14 +317,12 @@ impl Ppu {
                 if (value & 0x01) != 0 {
                     warn!("Screen Interlace not yet implemented");
                 }
-
-                debug!("Hi Res: {:?}", self.hi_res);
             }
             _ => warn!("Unmapped PPU write: {:02X} <= {:02X}", address, value),
         }
     }
 
-    pub fn on_frame_start(&mut self) {
+    pub fn on_frame_start(&mut self, clock: &mut Clock) {
         self.screen.reset();
 
         self.bg[0].reset_mosaic_counter();
@@ -327,6 +333,19 @@ impl Ppu {
         if !self.force_blank {
             self.obj.clear_flags();
         }
+
+        // We do all this at the start of the frame, instead of when the flag
+        // is set, because changing modes in the middle of a frame causes all
+        // sorts of problems
+        clock.set_overscan(self.overscan);
+
+        self.visible_range = if self.overscan {
+            VISIBLE_RANGE_OVERSCAN
+        } else {
+            VISIBLE_RANGE_NORMAL
+        };
+
+        debug!("Visible Range: {:?}", self.visible_range);
     }
 
     pub fn on_vblank_start(&mut self) {
@@ -340,6 +359,15 @@ impl Ppu {
     }
 
     pub fn draw_line(&mut self, line: u16) {
+        if !self.visible_range.contains(&line) {
+            // This line is hidden by overscan, so we only need to draw the
+            // object layer as this has side effects on register $213E
+            if !self.force_blank {
+                self.draw_obj(line - 1);
+            }
+            return;
+        }
+
         if self.force_blank {
             self.screen.force_blank();
             return;

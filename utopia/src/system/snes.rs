@@ -23,9 +23,6 @@ mod ppu;
 mod registers;
 mod wram;
 
-// TODO: Overscan
-const VBLANK_LINE: u16 = 225;
-
 pub struct Snes {
     core: Core<Hardware>,
 }
@@ -115,27 +112,27 @@ impl Hardware {
                 Event::HBlank => {
                     let line = self.clock.line();
 
-                    if line < VBLANK_LINE {
+                    if line < self.clock.vblank_line() {
                         self.transfer_hdma();
 
-                        if line > 0 {
-                            self.ppu.draw_line(line)
+                        if line >= 1 {
+                            self.ppu.draw_line(line);
                         }
                     }
                 }
                 Event::NewLine => {
                     let line = self.clock.line();
 
-                    if line == VBLANK_LINE {
+                    if line == self.clock.vblank_line() {
                         self.ready = true;
                         self.clock.set_nmi_occurred(&mut self.interrupt, true);
                         self.ppu.on_vblank_start();
                     } else if line == 0 {
                         self.clock.set_nmi_occurred(&mut self.interrupt, false);
                         self.interrupt &= !INT_NMI;
-                        self.ppu.on_frame_start();
+                        self.ppu.on_frame_start(&mut self.clock);
                         self.init_hdma();
-                    } else if line == (VBLANK_LINE + 3) {
+                    } else if line == (self.clock.vblank_line() + 3) {
                         // TODO: Actual timine for this
                         self.joypad.perform_auto_read();
                     }

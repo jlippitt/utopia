@@ -1,5 +1,4 @@
 use super::clock::TIMER_IRQ;
-use super::VBLANK_LINE;
 use tracing::debug;
 
 pub struct Registers {
@@ -75,14 +74,15 @@ impl super::Hardware {
             0x12 => {
                 let line = self.clock.line();
                 let dot = self.clock.dot();
+                let vblank_line = self.clock.vblank_line();
 
                 let mut value = prev_value & 0x3e;
 
-                if line >= VBLANK_LINE {
+                if line >= vblank_line {
                     // VBlank
                     value |= 0x80;
 
-                    if line < (VBLANK_LINE + 3) {
+                    if line < (vblank_line + 3) {
                         // Joypad Auto-Read
                         value |= 0x01;
                     }
