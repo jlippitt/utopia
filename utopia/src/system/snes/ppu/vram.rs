@@ -11,6 +11,7 @@ pub struct Vram {
     address: u16,
     increment_high: bool,
     increment_amount: u16,
+    read_buffer: u16,
 }
 
 impl Vram {
@@ -21,6 +22,7 @@ impl Vram {
             address: 0,
             increment_high: false,
             increment_amount: 1,
+            read_buffer: 0,
         }
     }
 
@@ -66,14 +68,39 @@ impl Vram {
     pub fn set_address_low(&mut self, value: u8) {
         self.address = (self.address & 0xff00) | (value as u16);
         debug!("VRAM Address: {:04X}", self.address);
+        self.prefetch();
     }
 
     pub fn set_address_high(&mut self, value: u8) {
         self.address = (self.address & 0xff) | ((value as u16) << 8);
         debug!("VRAM Address: {:04X}", self.address);
+        self.prefetch();
+    }
+
+    pub fn read_low(&mut self) -> u8 {
+        let value = self.read_buffer as u8;
+
+        if !self.increment_high {
+            self.prefetch();
+            self.address = self.address.wrapping_add(self.increment_amount);
+        }
+
+        value
+    }
+
+    pub fn read_high(&mut self) -> u8 {
+        let value = (self.read_buffer >> 8) as u8;
+
+        if self.increment_high {
+            self.prefetch();
+            self.address = self.address.wrapping_add(self.increment_amount);
+        }
+
+        value
     }
 
     pub fn write_low(&mut self, value: u8) {
+        // TODO: Address remapping
         let address = self.address as usize & 0x7fff;
         self.data[address] = (self.data[address] & 0xff00) | (value as u16);
 
@@ -90,6 +117,7 @@ impl Vram {
     }
 
     pub fn write_high(&mut self, value: u8) {
+        // TODO: Address remapping
         let address = self.address as usize & 0x7fff;
         self.data[address] = (self.data[address] & 0xff) | ((value as u16) << 8);
 
@@ -103,6 +131,13 @@ impl Vram {
         if self.increment_high {
             self.address = self.address.wrapping_add(self.increment_amount);
         }
+    }
+
+    fn prefetch(&mut self) {
+        // TODO: Address remapping
+        let address = self.address as usize & 0x7fff;
+        self.read_buffer = self.data[address];
+        debug!("VRAM Read: {:04X} => {:04X}", address, self.read_buffer);
     }
 
     fn update_chr_cache(&mut self, address: usize, plane: u8, value: u16) {
