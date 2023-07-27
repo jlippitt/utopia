@@ -39,8 +39,8 @@ enum Bg3Priority {
 bitflags! {
     #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     struct HiRes: u8 {
-        // TODO: Pseudo hi-res
         const BG_MODE = 0x01;
+        const PSEUDO_HI_RES = 0x02;
     }
 }
 
@@ -291,6 +291,27 @@ impl Ppu {
             }
             0x31 => self.color_math.set_operator(value),
             0x32 => self.color_math.set_fixed_color(value),
+            0x33 => {
+                if (value & 0x40) != 0 {
+                    warn!("Mode 7 EXTBG not yet implemented");
+                }
+
+                self.hi_res.set(HiRes::PSEUDO_HI_RES, (value & 0x08) != 0);
+
+                if (value & 0x04) != 0 {
+                    warn!("Overscan not yet implemented");
+                }
+
+                if (value & 0x02) != 0 {
+                    warn!("OBJ Interlace not yet implemented");
+                }
+
+                if (value & 0x01) != 0 {
+                    warn!("Screen Interlace not yet implemented");
+                }
+
+                debug!("Hi Res: {:?}", self.hi_res);
+            }
             _ => warn!("Unmapped PPU write: {:02X} <= {:02X}", address, value),
         }
     }
