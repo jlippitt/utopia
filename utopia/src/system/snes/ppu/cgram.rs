@@ -30,6 +30,27 @@ impl Cgram {
         debug!("CGRAM Address: {:02X}", self.address);
     }
 
+    pub fn read(&mut self) -> u8 {
+        let address = self.address as usize;
+
+        let value = if self.high_byte {
+            let value = (self.data[address] >> 8) as u8;
+            self.address = self.address.wrapping_add(1);
+            value
+        } else {
+            self.data[address] as u8
+        };
+
+        debug!(
+            "CGRAM Read: {:02X}.{} => {:02X}",
+            address, self.high_byte as u32, value
+        );
+
+        self.high_byte = !self.high_byte;
+
+        value
+    }
+
     pub fn write(&mut self, value: u8) {
         if self.high_byte {
             let word_value = ((value as u16 & 0x7f) << 8) | (self.buffer as u16);

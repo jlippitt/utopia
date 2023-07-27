@@ -101,7 +101,10 @@ impl Oam {
             }
         };
 
-        debug!("OAM Read: {:02X} => {:02X}", address, value);
+        debug!(
+            "OAM Read: {:02X}.{} => {:02X}",
+            address, self.high_byte as u32, value
+        );
 
         self.high_byte = !self.high_byte;
 
