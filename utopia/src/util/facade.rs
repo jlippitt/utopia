@@ -1,6 +1,6 @@
 use std::mem;
 
-pub trait Primitive {
+pub trait Primitive: Copy + Clone + Default + Eq + PartialEq {
     fn from_be_slice(slice: &[u8]) -> Self;
 }
 
