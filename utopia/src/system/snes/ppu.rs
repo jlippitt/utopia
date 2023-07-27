@@ -135,8 +135,9 @@ impl Ppu {
                 0
             }
             0x38 => self.oam.read(),
-            0x3c => self.latch.counter_x(), // TODO: PPU Open Bus
-            0x3d => self.latch.counter_y(), // TODO: PPU Open Bus
+            0x3c => self.latch.counter_x(),  // TODO: PPU Open Bus
+            0x3d => self.latch.counter_y(),  // TODO: PPU Open Bus
+            0x3e => self.obj.flags() | 0x01, // TODO: PPU Open Bus
             0x3f => {
                 // TODO: PPU open bus
                 let mut value = 0x03;
@@ -293,10 +294,15 @@ impl Ppu {
 
     pub fn on_frame_start(&mut self) {
         self.screen.reset();
+
         self.bg[0].reset_mosaic_counter();
         self.bg[1].reset_mosaic_counter();
         self.bg[2].reset_mosaic_counter();
         self.bg[3].reset_mosaic_counter();
+
+        if !self.force_blank {
+            self.obj.clear_flags();
+        }
     }
 
     pub fn on_vblank_start(&mut self) {

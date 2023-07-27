@@ -1,6 +1,7 @@
 use super::buffer::Tile;
 use super::oam::TOTAL_SPRITES;
 use super::window::MASK_NONE;
+use bitflags::bitflags;
 use tracing::{debug, trace};
 
 const MAX_SPRITES_PER_LINE: usize = 32;
@@ -33,12 +34,21 @@ const SIZE_Y: [[u16; 2]; 8] = [
     [32, 32],
 ];
 
+bitflags! {
+    #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+    struct Flags: u8 {
+        const TIME_OVER = 0x80;
+        const RANGE_OVER = 0x40;
+    }
+}
+
 pub struct ObjectLayer {
     name_base: u16,
     name_offset: u16,
     size_x: [u16; 2],
     size_y: [u16; 2],
     selected_sprites: [usize; MAX_SPRITES_PER_LINE],
+    flags: Flags,
 }
 
 impl ObjectLayer {
@@ -49,7 +59,17 @@ impl ObjectLayer {
             size_x: SIZE_X[0],
             size_y: SIZE_Y[0],
             selected_sprites: [0; MAX_SPRITES_PER_LINE],
+            flags: Flags::empty(),
         }
+    }
+
+    pub fn flags(&self) -> u8 {
+        self.flags.bits()
+    }
+
+    pub fn clear_flags(&mut self) {
+        self.flags = Flags::empty();
+        debug!("OBJ Flags Cleared");
     }
 
     pub fn set_control(&mut self, value: u8) {
@@ -113,7 +133,7 @@ impl super::Ppu {
             }
 
             if write_index == 0 {
-                // TODO: Range over flag
+                self.obj.flags.insert(Flags::RANGE_OVER);
                 debug!("Line {}: Range Over", line);
                 break;
             }
@@ -173,7 +193,7 @@ impl super::Ppu {
                 }
 
                 if write_index == 0 {
-                    // TODO: Time over flag
+                    self.obj.flags.insert(Flags::TIME_OVER);
                     debug!("Line {}: Time Over", line);
                     break 'outer;
                 }
