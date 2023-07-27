@@ -1,6 +1,5 @@
 use super::super::Clock;
 use tracing::debug;
-
 pub struct Latch {
     enabled: bool,
     latched: bool,
@@ -19,14 +18,12 @@ impl Latch {
     }
 
     pub fn set_enabled(&mut self, clock: &Clock, enabled: bool) {
-        let prev_enabled = self.enabled;
+        if !enabled && self.enabled {
+            self.latch_counters(clock);
+        }
 
         self.enabled = enabled;
         debug!("PPU Latch Enabled: {}", enabled);
-
-        if self.enabled && !prev_enabled {
-            self.latch_counters(clock);
-        }
     }
 
     pub fn latch_counters(&mut self, clock: &Clock) {
