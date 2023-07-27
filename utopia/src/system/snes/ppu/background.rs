@@ -113,6 +113,7 @@ impl super::Ppu {
         bg_index: usize,
         priority_high: u8,
         priority_low: u8,
+        palette_offset: u16,
         line: u16,
     ) {
         let enabled = self.enabled[bg_index];
@@ -121,7 +122,13 @@ impl super::Ppu {
             return;
         }
 
-        self.select_bg_tiles::<COLOR_DEPTH, HI_RES>(bg_index, priority_high, priority_low, line);
+        self.select_bg_tiles::<COLOR_DEPTH, HI_RES>(
+            bg_index,
+            priority_high,
+            priority_low,
+            palette_offset,
+            line,
+        );
 
         if HI_RES {
             self.draw_bg_pixels_hi_res::<COLOR_DEPTH>(bg_index);
@@ -140,6 +147,7 @@ impl super::Ppu {
         bg_index: usize,
         priority_high: u8,
         priority_low: u8,
+        palette_offset: u16,
         line: u16,
     ) {
         let bg = &mut self.bg[bg_index];
@@ -213,7 +221,7 @@ impl super::Ppu {
                     trace!("CHR Load: {:04X} => {:04X}", chr_index, chr_data);
 
                     tile.chr_data = chr_data;
-                    tile.palette = (tile_data & 0x1c00) >> 8;
+                    tile.palette = palette_offset + ((tile_data & 0x1c00) >> 8);
                 }
                 1 => {
                     let chr_index = bg.chr_map.wrapping_add(chr_name << 4) | fine_y;

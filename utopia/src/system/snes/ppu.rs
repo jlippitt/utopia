@@ -336,23 +336,23 @@ impl Ppu {
 
         match self.bg_mode {
             0 => {
-                self.draw_bg::<0, false>(0, 4, 3, line);
-                self.draw_bg::<0, false>(1, 4, 3, line);
-                self.draw_bg::<0, false>(2, 2, 1, line);
-                self.draw_bg::<0, false>(3, 2, 1, line);
+                self.draw_bg::<0, false>(0, 4, 3, 0, line);
+                self.draw_bg::<0, false>(1, 4, 3, 32, line);
+                self.draw_bg::<0, false>(2, 2, 1, 64, line);
+                self.draw_bg::<0, false>(3, 2, 1, 96, line);
             }
             1 => {
-                self.draw_bg::<1, false>(0, 4, 3, line);
-                self.draw_bg::<1, false>(1, 4, 3, line);
-                self.draw_bg::<0, false>(2, self.bg3_priority as u8, 1, line);
+                self.draw_bg::<1, false>(0, 4, 3, 0, line);
+                self.draw_bg::<1, false>(1, 4, 3, 0, line);
+                self.draw_bg::<0, false>(2, self.bg3_priority as u8, 1, 0, line);
             }
             3 => {
-                self.draw_bg::<2, false>(0, 4, 2, line);
-                self.draw_bg::<1, false>(1, 3, 1, line);
+                self.draw_bg::<2, false>(0, 4, 2, 0, line);
+                self.draw_bg::<1, false>(1, 3, 1, 0, line);
             }
             5 => {
-                self.draw_bg::<1, true>(0, 4, 2, line);
-                self.draw_bg::<0, true>(1, 3, 1, line);
+                self.draw_bg::<1, true>(0, 4, 2, 0, line);
+                self.draw_bg::<0, true>(1, 3, 1, 0, line);
             }
             7 => {
                 self.draw_mode7(0, line);
