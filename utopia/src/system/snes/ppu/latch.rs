@@ -1,5 +1,6 @@
 use super::super::Clock;
 use tracing::debug;
+
 pub struct Latch {
     enabled: bool,
     latched: bool,
