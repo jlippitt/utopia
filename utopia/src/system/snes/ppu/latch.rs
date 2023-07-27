@@ -4,10 +4,8 @@ use tracing::debug;
 pub struct Latch {
     enabled: bool,
     latched: bool,
-    counter_x: u16,
-    counter_y: u16,
-    high_byte_x: bool,
-    high_byte_y: bool,
+    counter: [u16; 2],
+    high_byte: [bool; 2],
 }
 
 impl Latch {
@@ -15,10 +13,8 @@ impl Latch {
         Self {
             enabled: true,
             latched: false,
-            counter_x: 0x01ff,
-            counter_y: 0x01ff,
-            high_byte_x: false,
-            high_byte_y: false,
+            counter: [0x01ff; 2],
+            high_byte: [false; 2],
         }
     }
 
@@ -39,33 +35,21 @@ impl Latch {
         }
 
         self.latched = true;
-        self.counter_x = clock.dot() as u16;
-        self.counter_y = clock.line();
+        self.counter[0] = clock.dot() as u16;
+        self.counter[1] = clock.line();
         debug!("PPU Counters Latched: {}", self.latched);
-        debug!("PPU Counter X: {}", self.counter_x);
-        debug!("PPU Counter Y: {}", self.counter_y);
+        debug!("PPU Counter X: {}", self.counter[0]);
+        debug!("PPU Counter Y: {}", self.counter[1]);
     }
 
-    pub fn counter_x(&mut self) -> u8 {
-        let value = if self.high_byte_x {
-            (self.counter_x >> 8) as u8
+    pub fn counter(&mut self, index: usize) -> u8 {
+        let value = if self.high_byte[index] {
+            (self.counter[index] >> 8) as u8
         } else {
-            self.counter_x as u8
+            self.counter[index] as u8
         };
 
-        self.high_byte_x = !self.high_byte_x;
-
-        value
-    }
-
-    pub fn counter_y(&mut self) -> u8 {
-        let value = if self.high_byte_y {
-            (self.counter_y >> 8) as u8
-        } else {
-            self.counter_y as u8
-        };
-
-        self.high_byte_y = !self.high_byte_y;
+        self.high_byte[index] = !self.high_byte[index];
 
         value
     }
@@ -73,13 +57,12 @@ impl Latch {
     pub fn poll_status(&mut self) -> bool {
         let latched = self.latched;
 
-        if self.enabled && self.latched {
+        if self.enabled {
             self.latched = false;
             debug!("PPU Counters Latched: {}", self.latched);
         }
 
-        self.high_byte_x = false;
-        self.high_byte_y = false;
+        self.high_byte = [false; 2];
 
         return latched;
     }

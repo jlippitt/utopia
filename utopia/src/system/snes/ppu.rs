@@ -146,8 +146,8 @@ impl Ppu {
             0x39 => self.vram.read_low(),
             0x3a => self.vram.read_high(),
             0x3b => self.cgram.read(),       // TODO: PPU Open Bus
-            0x3c => self.latch.counter_x(),  // TODO: PPU Open Bus
-            0x3d => self.latch.counter_y(),  // TODO: PPU Open Bus
+            0x3c => self.latch.counter(0),   // TODO: PPU Open Bus
+            0x3d => self.latch.counter(1),   // TODO: PPU Open Bus
             0x3e => self.obj.flags() | 0x01, // TODO: PPU Open Bus
             0x3f => {
                 // TODO: PPU open bus
