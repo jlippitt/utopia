@@ -30,11 +30,15 @@ impl N64 {
 
         let hw = Hardware::new(rom_data);
 
+        let mut regs: [u32; 32] = [0; 32];
+
+        regs[29] = 0xa4001ff0; // $SP
+
         let core = Core::new(
             hw,
             State {
                 pc: IPL3_START_ADDRESS,
-                ..Default::default()
+                regs,
             },
         );
 

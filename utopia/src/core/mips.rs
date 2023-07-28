@@ -22,13 +22,14 @@ pub struct Core<T: Bus> {
 #[derive(Clone, Default, Debug, Eq, PartialEq)]
 pub struct State {
     pub pc: u32,
+    pub regs: [u32; 32],
 }
 
 impl<T: Bus> Core<T> {
     pub fn new(bus: T, initial_state: State) -> Self {
         Self {
             pc: initial_state.pc,
-            regs: [0; 32],
+            regs: initial_state.regs,
             bus,
         }
     }
