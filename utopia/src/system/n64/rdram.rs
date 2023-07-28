@@ -63,7 +63,9 @@ impl DataReader for Registers {
 impl DataWriter for Registers {
     fn write(&mut self, address: u32, value: u32) {
         match address {
+            0x04 => (), // TODO: DeviceId (sounds important)
             0x08 => (), // Delay: Ignore
+            0x14 => (), // RefRow: Ignore
             _ => unimplemented!("RDRAM Register Write: {:08X} <= {:08X}", address, value),
         }
     }
