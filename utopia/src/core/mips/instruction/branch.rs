@@ -8,6 +8,7 @@ pub fn bne(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     );
 
     if core.get(rs) != core.get(rt) {
+        // TODO: Branch delay
         debug!("  Branch taken");
         let ivalue = value as i16 as i32 as u32;
         core.pc = core.pc.wrapping_add(ivalue);

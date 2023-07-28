@@ -36,18 +36,30 @@ impl<T: Bus> Core<T> {
     pub fn step(&mut self) {
         use instruction as instr;
 
+        assert!((self.pc & 3) == 0);
+
         let word = self.bus.read::<u32>(self.pc);
 
         match word >> 26 {
+            0o00 => self.special(word),
             0o05 => self.type_i(instr::bne, word),
             0o11 => self.type_i(instr::addiu, word),
             0o17 => self.type_i(instr::lui, word),
             0o20 => self.cop::<0>(word),
             0o43 => self.type_i(instr::lw, word),
-            opcode => unimplemented!("Opcode 0o{:02o}", opcode),
+            opcode => unimplemented!("Opcode 0o{:02o} ({:08X})", opcode, self.pc),
         }
 
         self.pc = self.pc.wrapping_add(4);
+    }
+
+    fn special(&mut self, word: u32) {
+        use instruction as instr;
+
+        match word & 0o77 {
+            0o00 => self.type_r(instr::sll, word),
+            function => unimplemented!("SPECIAL FN={:06b} ({:08X})", function, self.pc),
+        }
     }
 
     fn cop<const COP: usize>(&mut self, word: u32) {
@@ -55,15 +67,16 @@ impl<T: Bus> Core<T> {
 
         match (word >> 21) & 31 {
             0b00100 => self.type_r(instr::mtc::<COP>, word),
-            rs => unimplemented!("COP{} RS={:06b}", COP, rs),
+            rs => unimplemented!("COP{} RS={:06b} ({:08X})", COP, rs, self.pc),
         }
     }
 
-    fn type_r(&mut self, instr: impl Fn(&mut Core<T>, usize, usize, usize), word: u32) {
+    fn type_r(&mut self, instr: impl Fn(&mut Core<T>, usize, usize, usize, u32), word: u32) {
         let rs = ((word >> 21) & 31) as usize;
         let rt = ((word >> 16) & 31) as usize;
         let rd = ((word >> 11) & 31) as usize;
-        instr(self, rs, rt, rd);
+        let sa = (word >> 6) & 31;
+        instr(self, rs, rt, rd, sa);
     }
 
     fn type_i(&mut self, instr: impl Fn(&mut Core<T>, usize, usize, u32), word: u32) {

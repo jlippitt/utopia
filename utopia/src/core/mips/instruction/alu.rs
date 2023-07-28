@@ -11,3 +11,14 @@ pub fn addiu(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     let result = core.get(rs).wrapping_add(ivalue);
     core.set(rt, result);
 }
+
+pub fn sll(core: &mut Core<impl Bus>, _rs: usize, rt: usize, rd: usize, sa: u32) {
+    if rt == 0 && rd == 0 && sa == 0 {
+        debug!("{:08X} NOP", core.pc);
+    } else {
+        debug!("{:08X} SLL {}, {}, {}", core.pc, REGS[rd], REGS[rt], sa);
+    }
+
+    let result = core.get(rt) << sa;
+    core.set(rd, result);
+}
