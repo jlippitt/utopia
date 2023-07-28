@@ -108,6 +108,8 @@ impl<T: DataWriter> WriteFacade for T {
     }
 }
 
+impl<T: ReadFacade + WriteFacade> Facade for T {}
+
 impl<T: Deref<Target = [u8]>> DataReader for T {
     type Address = usize;
     type Value = u8;
