@@ -2,11 +2,13 @@ use super::System;
 use crate::core::mips::{Bus, Core, State};
 use crate::util::facade::{ReadFacade, Value};
 use crate::JoypadState;
+use rdram::Rdram;
 use rsp::{Rsp, DMEM_SIZE};
 use std::error::Error;
 use tracing::info;
 
 mod header;
+mod rdram;
 mod rsp;
 
 const WIDTH: usize = 320;
@@ -66,6 +68,7 @@ impl System for N64 {
 }
 
 struct Hardware {
+    rdram: Rdram,
     rsp: Rsp,
     rom: Vec<u8>,
 }
@@ -73,6 +76,7 @@ struct Hardware {
 impl Hardware {
     pub fn new(rom: Vec<u8>) -> Self {
         Self {
+            rdram: Rdram::new(),
             rsp: Rsp::new(&rom[0..DMEM_SIZE]),
             rom,
         }
@@ -89,7 +93,7 @@ impl Hardware {
             0x044 => todo!("Video Interface"),
             0x045 => todo!("Audio Interface"),
             0x046 => todo!("Peripheral Interface"),
-            0x047 => todo!("RDRAM Interface"),
+            0x047 => self.rdram.interface().read_be(address as usize),
             0x048 => todo!("Serial Interface"),
             0x080..=0x0ff => todo!("SRAM"),
             0x010..=0x1fb => self.rom.read_be(address as usize),
