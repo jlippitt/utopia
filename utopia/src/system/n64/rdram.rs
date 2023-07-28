@@ -27,9 +27,8 @@ impl Rdram {
     }
 
     pub fn read_register<T: Value>(&self, address: u32) -> T {
-        // Note: RDRAM registers are little-endian
         if address < 0x0008_0000 {
-            self.registers.read_le(address & 0x0007_ffff)
+            self.registers.read_be(address & 0x0007_ffff)
         } else {
             // Broadcast area is write-only
             T::default()
@@ -37,9 +36,8 @@ impl Rdram {
     }
 
     pub fn write_register<T: Value>(&mut self, address: u32, value: T) {
-        // Note: RDRAM registers are little-endian
         // TODO: How does broadcasting work?
-        self.registers.write_le(address & 0x0007_ffff, value);
+        self.registers.write_be(address & 0x0007_ffff, value);
     }
 
     pub fn read_interface<T: Value>(&self, address: u32) -> T {
@@ -56,6 +54,7 @@ impl DataReader for Registers {
     type Value = u32;
 
     fn read(&self, address: u32) -> u32 {
+        // TODO: RDRAM registers are little-endian
         match address {
             _ => unimplemented!("RDRAM Register Read: {:08X}", address),
         }
@@ -64,10 +63,11 @@ impl DataReader for Registers {
 
 impl DataWriter for Registers {
     fn write(&mut self, address: u32, value: u32) {
+        // RDRAM registers are little-endian
+        let value = value.swap_bytes();
+
         match address {
             0x04 => {
-                let value = value as u64;
-
                 let device_id = ((value & 0x0000_00fc) >> 2)
                     | ((value & 0x00ff_8000) >> 9)
                     | ((value & 0x8000_0000) >> 16);
