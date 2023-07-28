@@ -45,6 +45,7 @@ impl<T: Bus> Core<T> {
         match word >> 26 {
             0o00 => self.special(word),
             0o05 => self.type_i(instr::bne, word),
+            0o10 => self.type_i(instr::addi, word),
             0o11 => self.type_i(instr::addiu, word),
             0o15 => self.type_i(instr::ori, word),
             0o17 => self.type_i(instr::lui, word),
