@@ -63,6 +63,9 @@ impl DataReader for Registers {
 
 impl DataWriter for Registers {
     fn write(&mut self, address: u32, value: u32) {
+        // Mask the address (at least for now) to mirror registers
+        let address = address & 0x0000_03ff;
+
         // RDRAM registers are little-endian
         let value = value.swap_bytes();
 
