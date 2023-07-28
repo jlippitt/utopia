@@ -48,3 +48,13 @@ pub fn sll(core: &mut Core<impl Bus>, _rs: usize, rt: usize, rd: usize, sa: u32)
     let result = core.get(rt) << sa;
     core.set(rd, result);
 }
+
+pub fn or(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
+    debug!(
+        "{:08X} OR {}, {}, {}",
+        core.pc, REGS[rd], REGS[rt], REGS[rs]
+    );
+
+    let result = core.get(rs) | core.get(rt);
+    core.set(rd, result);
+}

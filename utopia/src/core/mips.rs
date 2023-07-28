@@ -69,7 +69,8 @@ impl<T: Bus> Core<T> {
 
         match word & 0o77 {
             0o00 => self.type_r(instr::sll, word),
-            function => unimplemented!("SPECIAL FN={:06b} ({:08X})", function, self.pc),
+            0o45 => self.type_r(instr::or, word),
+            function => unimplemented!("SPECIAL FN={:02o} ({:08X})", function, self.pc),
         }
     }
 
