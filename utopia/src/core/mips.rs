@@ -91,6 +91,10 @@ impl<T: Bus> Core<T> {
     }
 
     fn set(&mut self, reg: usize, value: u32) {
+        if reg == 0 {
+            return;
+        }
+
         self.regs[reg] = value;
         debug!("  {}: {:08X}", REGS[reg], value);
     }
