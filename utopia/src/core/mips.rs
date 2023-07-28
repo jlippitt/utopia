@@ -11,6 +11,7 @@ const REGS: [&str; 32] = [
 
 pub trait Bus {
     fn read<T: Value>(&mut self, address: u32) -> T;
+    fn write<T: Value>(&mut self, address: u32, value: T);
 }
 
 pub struct Core<T: Bus> {
@@ -48,6 +49,7 @@ impl<T: Bus> Core<T> {
             0o17 => self.type_i(instr::lui, word),
             0o20 => self.cop::<0>(word),
             0o43 => self.type_i(instr::lw, word),
+            0o53 => self.type_i(instr::sw, word),
             opcode => unimplemented!("Opcode 0o{:02o} ({:08X})", opcode, self.pc),
         }
 
@@ -105,5 +107,11 @@ impl<T: Bus> Core<T> {
         let value = self.bus.read(address);
         debug!("  [{:08X}] => {:08X}", address, value);
         value
+    }
+
+    fn write_word(&mut self, address: u32, value: u32) {
+        assert!((address & 3) == 0);
+        debug!("  [{:08X}] <= {:08X}", address, value);
+        self.bus.write(address, value);
     }
 }

@@ -88,21 +88,41 @@ impl Hardware {
 
     fn read_physical<T: Value>(&mut self, address: u32) -> T {
         match address >> 20 {
-            0x000..=0x03e => todo!("RDRAM"),
-            0x03f => todo!("RDRAM Registers"),
+            0x000..=0x03e => todo!("RDRAM Reads"),
+            0x03f => todo!("RDRAM Register Reads"),
             0x040 => self.rsp.read(address),
-            0x041 => todo!("RDP Command Registers"),
-            0x042 => todo!("RDP Span Registers"),
-            0x043 => todo!("MIPS Interface"),
-            0x044 => todo!("Video Interface"),
-            0x045 => todo!("Audio Interface"),
-            0x046 => todo!("Peripheral Interface"),
+            0x041 => todo!("RDP Command Register Reads"),
+            0x042 => todo!("RDP Span Register Reads"),
+            0x043 => todo!("MIPS Interface Reads"),
+            0x044 => todo!("Video Interface Reads"),
+            0x045 => todo!("Audio Interface Reads"),
+            0x046 => todo!("Peripheral Interface Reads"),
             0x047 => self.rdram.interface().read_be(address as usize),
-            0x048 => todo!("Serial Interface"),
-            0x080..=0x0ff => todo!("SRAM"),
+            0x048 => todo!("Serial Interface Reads"),
+            0x080..=0x0ff => todo!("SRAM Reads"),
             0x010..=0x1fb => self.rom.read_be(address as usize),
-            0x1fc => todo!("Serial Bus"),
+            0x1fc => todo!("Serial Bus Reads"),
             _ => panic!("Read from open bus: {:08X}", address),
+        }
+    }
+
+    fn write_physical<T: Value>(&mut self, address: u32, _value: T) {
+        match address >> 20 {
+            0x000..=0x03e => todo!("RDRAM Writes"),
+            0x03f => todo!("RDRAM Register Writes"),
+            0x040 => todo!("RSP Writes"),
+            0x041 => todo!("RDP Command Register Writes"),
+            0x042 => todo!("RDP Span Register Writes"),
+            0x043 => todo!("MIPS Interface Writes"),
+            0x044 => todo!("Video Interface Writes"),
+            0x045 => todo!("Audio Interface Writes"),
+            0x046 => todo!("Peripheral Interface Writes"),
+            0x047 => todo!("RDRAM Interface Writes"),
+            0x048 => todo!("Serial Interface Writes"),
+            0x080..=0x0ff => todo!("SRAM Writes"),
+            0x010..=0x1fb => panic!("Write to ROM area: {:08X}", address),
+            0x1fc => todo!("Serial Bus Writes"),
+            _ => panic!("Write to open bus: {:08X}", address),
         }
     }
 }
@@ -112,6 +132,14 @@ impl Bus for Hardware {
         match address >> 29 {
             4 => self.read_physical(address - 0x8000_0000), // TODO: Cache
             5 => self.read_physical(address - 0xa000_0000),
+            _ => todo!("TLB"),
+        }
+    }
+
+    fn write<T: Value>(&mut self, address: u32, value: T) {
+        match address >> 29 {
+            4 => self.write_physical(address - 0x8000_0000, value),
+            5 => self.write_physical(address - 0xa000_0000, value),
             _ => todo!("TLB"),
         }
     }
