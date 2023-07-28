@@ -39,11 +39,12 @@ impl<T: Bus> Core<T> {
         let word = self.bus.read::<u32>(self.pc);
 
         match word >> 26 {
-            0b001001 => self.type_i(instr::addiu, word),
-            0b001111 => self.type_i(instr::lui, word),
-            0b010000 => self.cop::<0>(word),
-            0b100011 => self.type_i(instr::lw, word),
-            opcode => unimplemented!("Opcode {:06b}", opcode),
+            0o05 => self.type_i(instr::bne, word),
+            0o11 => self.type_i(instr::addiu, word),
+            0o17 => self.type_i(instr::lui, word),
+            0o20 => self.cop::<0>(word),
+            0o43 => self.type_i(instr::lw, word),
+            opcode => unimplemented!("Opcode 0o{:02o}", opcode),
         }
 
         self.pc = self.pc.wrapping_add(4);
@@ -54,7 +55,7 @@ impl<T: Bus> Core<T> {
 
         match (word >> 21) & 31 {
             0b00100 => self.type_r(instr::mtc::<COP>, word),
-            rs => unimplemented!("COP{} RS: {:06b}", COP, rs),
+            rs => unimplemented!("COP{} RS={:06b}", COP, rs),
         }
     }
 
