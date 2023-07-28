@@ -1,5 +1,6 @@
-use num_traits::{FromBytes, FromPrimitive, NumCast, PrimInt, ToPrimitive, WrappingAdd};
+use num_traits::{FromBytes, FromPrimitive, NumCast, PrimInt, ToBytes, ToPrimitive, WrappingAdd};
 use std::fmt;
+use std::mem;
 use std::ops::{Deref, DerefMut};
 
 pub trait Address:
@@ -15,6 +16,7 @@ pub trait Address:
     + FromPrimitive
     + ToPrimitive
     + FromBytes
+    + ToBytes
     + WrappingAdd
     + fmt::Debug
     + fmt::Display
@@ -26,11 +28,15 @@ pub trait Address:
     const MASK: usize;
 
     fn from_address<T: Address>(other: T) -> Self {
-        Self::from(other).unwrap()
+        if Self::BITS >= T::BITS {
+            Self::from(other).unwrap()
+        } else {
+            unsafe { mem::transmute_copy::<T, Self>(&other) }
+        }
     }
 
     fn from_value<T: Value>(other: T) -> Self {
-        Self::from(other).unwrap()
+        Self::from_address(other)
     }
 
     fn from_be_slice<'a>(other: &'a [u8]) -> Self
@@ -39,6 +45,14 @@ pub trait Address:
         &'a <Self as FromBytes>::Bytes: From<&'a [u8]>,
     {
         Self::from_be_bytes(other.try_into().unwrap())
+    }
+
+    fn from_le_slice<'a>(other: &'a [u8]) -> Self
+    where
+        &'a <Self as FromBytes>::Bytes: 'a,
+        &'a <Self as FromBytes>::Bytes: From<&'a [u8]>,
+    {
+        Self::from_le_bytes(other.try_into().unwrap())
     }
 }
 
