@@ -52,6 +52,7 @@ impl<T: Bus> Core<T> {
 
         match word >> 26 {
             0o00 => self.special(word),
+            0o03 => self.type_j(instr::jal, word),
             0o05 => self.type_i(instr::bne, word),
             0o10 => self.type_i(instr::addi, word),
             0o11 => self.type_i(instr::addiu, word),
@@ -96,6 +97,11 @@ impl<T: Bus> Core<T> {
         let rt = ((word >> 16) & 31) as usize;
         let value = word & 0xffff;
         instr(self, rs, rt, value);
+    }
+
+    fn type_j(&mut self, instr: impl Fn(&mut Core<T>, u32), word: u32) {
+        let value = word & 0x03ff_ffff;
+        instr(self, value);
     }
 
     fn get(&self, reg: usize) -> u32 {
