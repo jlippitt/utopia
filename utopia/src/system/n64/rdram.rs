@@ -1,7 +1,9 @@
 use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
 use tracing::debug;
 
-pub struct Registers {}
+pub struct Registers {
+    device_id: u64,
+}
 
 pub struct Interface {
     ri_mode: u8,
@@ -16,7 +18,7 @@ pub struct Rdram {
 impl Rdram {
     pub fn new() -> Self {
         Self {
-            registers: Registers {},
+            registers: Registers { device_id: 0 },
             interface: Interface {
                 ri_mode: 0,
                 ri_select: 0,
@@ -63,7 +65,15 @@ impl DataReader for Registers {
 impl DataWriter for Registers {
     fn write(&mut self, address: u32, value: u32) {
         match address {
-            0x04 => (), // TODO: DeviceId (sounds important)
+            0x04 => {
+                let value = value as u64;
+
+                self.device_id = ((value & 0x0000_00fc) << 17)
+                    | ((value & 0x00ff_8000) << 11)
+                    | ((value & 0x8000_0000) << 4);
+
+                debug!("Device ID: {:010X}", self.device_id);
+            }
             0x08 => (), // Delay: Ignore
             0x14 => (), // RefRow: Ignore
             _ => unimplemented!("RDRAM Register Write: {:08X} <= {:08X}", address, value),
