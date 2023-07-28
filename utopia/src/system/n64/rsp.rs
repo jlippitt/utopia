@@ -1,4 +1,4 @@
-use crate::util::{Primitive, ReadFacade};
+use crate::util::facade::{ReadFacade, Value};
 
 pub const DMEM_SIZE: usize = 4096;
 
@@ -20,7 +20,7 @@ impl Rsp {
         Self { ram }
     }
 
-    pub fn read<T: Primitive>(&self, address: u32) -> T {
+    pub fn read<T: Value>(&self, address: u32) -> T {
         if address & 0x1_0000 < 0x4_0000 {
             self.ram.read_be(address as usize & (RAM_SIZE - 1))
         } else {

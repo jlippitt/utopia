@@ -1,6 +1,6 @@
 use super::System;
 use crate::core::mips::{Bus, Core, State};
-use crate::util::{Primitive, ReadFacade};
+use crate::util::facade::{ReadFacade, Value};
 use crate::JoypadState;
 use rsp::{Rsp, DMEM_SIZE};
 use std::error::Error;
@@ -78,7 +78,7 @@ impl Hardware {
         }
     }
 
-    fn read_physical<T: Primitive>(&mut self, address: u32) -> T {
+    fn read_physical<T: Value>(&mut self, address: u32) -> T {
         match address >> 20 {
             0x000..=0x03e => todo!("RDRAM"),
             0x03f => todo!("RDRAM Registers"),
@@ -100,7 +100,7 @@ impl Hardware {
 }
 
 impl Bus for Hardware {
-    fn read<T: Primitive>(&mut self, address: u32) -> T {
+    fn read<T: Value>(&mut self, address: u32) -> T {
         match address >> 29 {
             4 => self.read_physical(address - 0x8000_0000), // TODO: Cache
             5 => self.read_physical(address - 0xa000_0000),

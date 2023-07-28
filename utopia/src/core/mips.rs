@@ -1,4 +1,4 @@
-use crate::util::Primitive;
+use crate::util::facade::Value;
 use tracing::debug;
 
 mod instruction;
@@ -10,7 +10,7 @@ const REGS: [&str; 32] = [
 ];
 
 pub trait Bus {
-    fn read<T: Primitive>(&mut self, address: u32) -> T;
+    fn read<T: Value>(&mut self, address: u32) -> T;
 }
 
 pub struct Core<T: Bus> {
