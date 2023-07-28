@@ -16,6 +16,7 @@ pub trait Bus {
 
 pub struct Core<T: Bus> {
     pc: u32,
+    next: [u32; 2],
     regs: [u32; 32],
     bus: T,
 }
@@ -28,8 +29,11 @@ pub struct State {
 
 impl<T: Bus> Core<T> {
     pub fn new(bus: T, initial_state: State) -> Self {
+        let pc = initial_state.pc;
+
         Self {
-            pc: initial_state.pc,
+            pc: 0,
+            next: [pc, pc.wrapping_add(4)],
             regs: initial_state.regs,
             bus,
         }
@@ -37,6 +41,10 @@ impl<T: Bus> Core<T> {
 
     pub fn step(&mut self) {
         use instruction as instr;
+
+        self.pc = self.next[0];
+        self.next[0] = self.next[1];
+        self.next[1] = self.next[1].wrapping_add(4);
 
         assert!((self.pc & 3) == 0);
 
@@ -54,8 +62,6 @@ impl<T: Bus> Core<T> {
             0o53 => self.type_i(instr::sw, word),
             opcode => unimplemented!("Opcode {:02o} ({:08X})", opcode, self.pc),
         }
-
-        self.pc = self.pc.wrapping_add(4);
     }
 
     fn special(&mut self, word: u32) {
