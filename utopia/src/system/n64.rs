@@ -2,12 +2,14 @@ use super::System;
 use crate::core::mips::{Bus, Core, State};
 use crate::util::facade::{ReadFacade, Value, WriteFacade};
 use crate::JoypadState;
+use mips::MipsInterface;
 use rdram::Rdram;
 use rsp::{Rsp, DMEM_SIZE};
 use std::error::Error;
 use tracing::info;
 
 mod header;
+mod mips;
 mod rdram;
 mod rsp;
 
@@ -79,6 +81,7 @@ impl System for N64 {
 struct Hardware {
     rdram: Rdram,
     rsp: Rsp,
+    mips_interface: MipsInterface,
     rom: Vec<u8>,
 }
 
@@ -87,6 +90,7 @@ impl Hardware {
         Self {
             rdram: Rdram::new(),
             rsp: Rsp::new(&rom[0..DMEM_SIZE]),
+            mips_interface: MipsInterface::new(),
             rom,
         }
     }
@@ -98,7 +102,7 @@ impl Hardware {
             0x040 => self.rsp.read(address & 0x000f_ffff),
             0x041 => todo!("RDP Command Register Reads"),
             0x042 => todo!("RDP Span Register Reads"),
-            0x043 => todo!("MIPS Interface Reads"),
+            0x043 => self.mips_interface.read_be(address as usize & 0x000f_ffff),
             0x044 => todo!("Video Interface Reads"),
             0x045 => todo!("Audio Interface Reads"),
             0x046 => todo!("Peripheral Interface Reads"),
@@ -121,7 +125,9 @@ impl Hardware {
             0x040 => self.rsp.write(address & 0x000f_ffff, value),
             0x041 => todo!("RDP Command Register Writes"),
             0x042 => todo!("RDP Span Register Writes"),
-            0x043 => todo!("MIPS Interface Writes"),
+            0x043 => self
+                .mips_interface
+                .write_be(address as usize & 0x000f_ffff, value),
             0x044 => todo!("Video Interface Writes"),
             0x045 => todo!("Audio Interface Writes"),
             0x046 => todo!("Peripheral Interface Writes"),
