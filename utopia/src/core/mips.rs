@@ -1,5 +1,7 @@
 use crate::util::Primitive;
 
+mod instruction;
+
 pub trait Bus {
     fn read<T: Primitive>(&mut self, address: u32) -> T;
 }
@@ -23,8 +25,22 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn step(&mut self) {
-        let opcode = self.bus.read::<u32>(self.pc);
-        panic!("{:08X}: {:08X}", self.pc, opcode);
-        //self.pc = self.pc.wrapping_add(1);
+        let word = self.bus.read::<u32>(self.pc);
+
+        match word >> 26 {
+            0b010000 => self.cop::<0>(word),
+            opcode => unimplemented!("Opcode {:06b}", opcode),
+        }
+
+        self.pc = self.pc.wrapping_add(1);
+    }
+
+    fn cop<const COP: usize>(&mut self, word: u32) {
+        use instruction as instr;
+
+        match (word >> 21) & 31 {
+            0b00100 => instr::mtc::<COP>(self, word),
+            rs => unimplemented!("COP{} RS: {:06b}", COP, rs),
+        }
     }
 }
