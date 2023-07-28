@@ -3,6 +3,17 @@ use tracing::debug;
 
 pub fn lui(core: &mut Core<impl Bus>, _rs: usize, rt: usize, value: u32) {
     debug!("{:08X} LUI {}, 0x{:04X}", core.pc, REGS[rt], value);
-    core.regs[rt] = value << 16;
-    debug!("  {}: {:08X}", REGS[rt], core.regs[rt]);
+    core.set(rt, value << 16);
+}
+
+pub fn lw(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+    debug!(
+        "{:08X} LW {}, {}({})",
+        core.pc, REGS[rt], value as i16, REGS[rs]
+    );
+
+    let ivalue = value as i16 as i32 as u32;
+    let address = core.get(rs).wrapping_add(ivalue);
+    let result = core.read_word(address);
+    core.set(rt, result);
 }

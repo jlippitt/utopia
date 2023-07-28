@@ -8,6 +8,6 @@ pub fn addiu(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     );
 
     let ivalue = value as i16 as i32 as u32;
-    let result = core.get(rs) + ivalue;
+    let result = core.get(rs).wrapping_add(ivalue);
     core.set(rt, result);
 }

@@ -42,6 +42,7 @@ impl<T: Bus> Core<T> {
             0b001001 => self.type_i(instr::addiu, word),
             0b001111 => self.type_i(instr::lui, word),
             0b010000 => self.cop::<0>(word),
+            0b100011 => self.type_i(instr::lw, word),
             opcode => unimplemented!("Opcode {:06b}", opcode),
         }
 
@@ -78,5 +79,12 @@ impl<T: Bus> Core<T> {
     fn set(&mut self, reg: usize, value: u32) {
         self.regs[reg] = value;
         debug!("  {}: {:08X}", REGS[reg], value);
+    }
+
+    fn read_word(&mut self, address: u32) -> u32 {
+        assert!((address & 3) == 0);
+        let value = self.bus.read(address);
+        debug!("  [{:08X}] => {:08X}", address, value);
+        value
     }
 }
