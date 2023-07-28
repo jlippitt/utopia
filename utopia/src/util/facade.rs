@@ -1,6 +1,6 @@
 use num_traits::{FromBytes, FromPrimitive, NumCast, PrimInt, ToPrimitive};
 use std::fmt;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 pub trait Address:
     Copy
@@ -47,7 +47,9 @@ pub trait ReadFacade {
     fn read_be<T: Value>(&self, index: usize) -> T;
 }
 
-pub trait WriteFacade {}
+pub trait WriteFacade {
+    fn write_be<T: Value>(&mut self, index: usize, value: T);
+}
 
 pub trait Facade: ReadFacade + WriteFacade {}
 
@@ -87,12 +89,37 @@ impl<T: DataReader> ReadFacade for T {
     }
 }
 
+impl<T: DataWriter> WriteFacade for T {
+    fn write_be<U: Value>(&mut self, index: usize, value: U) {
+        if U::BITS < T::Value::BITS {
+            todo!("Inexact writes");
+        } else if U::BITS > T::Value::BITS {
+            let mask = ((U::BITS / T::Value::BITS) - 1) as usize;
+
+            for chunk_index in 0..((U::BITS / T::Value::BITS) as usize) {
+                let address = index.wrapping_add(chunk_index) & T::Address::MASK;
+                let chunk = T::Value::from_value(value >> (8 * (chunk_index ^ mask)));
+                self.write(T::Address::from_address(address), chunk);
+            }
+        } else {
+            let address = T::Address::from_address(index);
+            self.write(address, T::Value::from_value(value));
+        }
+    }
+}
+
 impl<T: Deref<Target = [u8]>> DataReader for T {
     type Address = usize;
     type Value = u8;
 
     fn read(&self, address: Self::Address) -> Self::Value {
         self[address]
+    }
+}
+
+impl<T: DerefMut<Target = [u8]>> DataWriter for T {
+    fn write(&mut self, address: Self::Address, value: Self::Value) {
+        self[address] = value;
     }
 }
 

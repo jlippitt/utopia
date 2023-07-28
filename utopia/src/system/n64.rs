@@ -30,8 +30,13 @@ impl N64 {
 
         let hw = Hardware::new(rom_data);
 
-        let mut regs: [u32; 32] = [0; 32];
+        let mut regs: [u32; 32] = Default::default();
 
+        regs[19] = 0; // $S3
+        regs[20] = 1; // $S4
+        regs[21] = 0; // $S5
+        regs[22] = 0x3f; // $S6
+        regs[23] = 0; // $S7
         regs[29] = 0xa4001ff0; // $SP
 
         let core = Core::new(
@@ -106,11 +111,11 @@ impl Hardware {
         }
     }
 
-    fn write_physical<T: Value>(&mut self, address: u32, _value: T) {
+    fn write_physical<T: Value>(&mut self, address: u32, value: T) {
         match address >> 20 {
             0x000..=0x03e => todo!("RDRAM Writes"),
             0x03f => todo!("RDRAM Register Writes"),
-            0x040 => todo!("RSP Writes"),
+            0x040 => self.rsp.write(address, value),
             0x041 => todo!("RDP Command Register Writes"),
             0x042 => todo!("RDP Span Register Writes"),
             0x043 => todo!("MIPS Interface Writes"),

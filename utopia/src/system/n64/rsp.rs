@@ -1,4 +1,4 @@
-use crate::util::facade::{ReadFacade, Value};
+use crate::util::facade::{ReadFacade, Value, WriteFacade};
 
 pub const DMEM_SIZE: usize = 4096;
 
@@ -23,6 +23,14 @@ impl Rsp {
     pub fn read<T: Value>(&self, address: u32) -> T {
         if address & 0x1_0000 < 0x4_0000 {
             self.ram.read_be(address as usize & (RAM_SIZE - 1))
+        } else {
+            todo!("RSP Registers");
+        }
+    }
+
+    pub fn write<T: Value>(&mut self, address: u32, value: T) {
+        if address & 0x1_0000 < 0x4_0000 {
+            self.ram.write_be(address as usize & (RAM_SIZE - 1), value);
         } else {
             todo!("RSP Registers");
         }
