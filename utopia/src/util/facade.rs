@@ -1,4 +1,4 @@
-use num_traits::{FromBytes, FromPrimitive, NumCast, PrimInt, ToBytes, ToPrimitive, WrappingAdd};
+use num_traits::{FromPrimitive, NumCast, PrimInt, ToPrimitive, WrappingAdd};
 use std::fmt;
 use std::mem;
 use std::ops::{Deref, DerefMut};
@@ -15,8 +15,6 @@ pub trait Address:
     + NumCast
     + FromPrimitive
     + ToPrimitive
-    + FromBytes
-    + ToBytes
     + WrappingAdd
     + fmt::Debug
     + fmt::Display
@@ -37,22 +35,6 @@ pub trait Address:
 
     fn from_value<T: Value>(other: T) -> Self {
         Self::from_address(other)
-    }
-
-    fn from_be_slice<'a>(other: &'a [u8]) -> Self
-    where
-        &'a <Self as FromBytes>::Bytes: 'a,
-        &'a <Self as FromBytes>::Bytes: From<&'a [u8]>,
-    {
-        Self::from_be_bytes(other.try_into().unwrap())
-    }
-
-    fn from_le_slice<'a>(other: &'a [u8]) -> Self
-    where
-        &'a <Self as FromBytes>::Bytes: 'a,
-        &'a <Self as FromBytes>::Bytes: From<&'a [u8]>,
-    {
-        Self::from_le_bytes(other.try_into().unwrap())
     }
 }
 
