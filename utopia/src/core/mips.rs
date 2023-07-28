@@ -59,7 +59,7 @@ impl<T: Bus> Core<T> {
     fn type_i(&mut self, instr: impl Fn(&mut Core<T>, usize, usize, u32), word: u32) {
         let rs = ((word >> 21) & 31) as usize;
         let rt = ((word >> 16) & 31) as usize;
-        let value = word & 0xff;
+        let value = word & 0xffff;
         instr(self, rs, rt, value);
     }
 }
