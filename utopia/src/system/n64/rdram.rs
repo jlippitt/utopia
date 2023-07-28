@@ -2,7 +2,7 @@ use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade
 use tracing::debug;
 
 pub struct Registers {
-    device_id: u64,
+    device_id: u16,
 }
 
 pub struct Interface {
@@ -68,11 +68,12 @@ impl DataWriter for Registers {
             0x04 => {
                 let value = value as u64;
 
-                self.device_id = ((value & 0x0000_00fc) << 17)
-                    | ((value & 0x00ff_8000) << 11)
-                    | ((value & 0x8000_0000) << 4);
+                let device_id = ((value & 0x0000_00fc) >> 2)
+                    | ((value & 0x00ff_8000) >> 9)
+                    | ((value & 0x8000_0000) >> 16);
 
-                debug!("Device ID: {:010X}", self.device_id);
+                self.device_id = device_id as u16;
+                debug!("Device ID: {:04X}", self.device_id);
             }
             0x08 => (), // Delay: Ignore
             0x14 => (), // RefRow: Ignore
