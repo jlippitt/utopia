@@ -12,6 +12,16 @@ pub fn addiu(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     core.set(rt, result);
 }
 
+pub fn ori(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+    debug!(
+        "{:08X} ORI {}, {}, 0x{:04X}",
+        core.pc, REGS[rt], REGS[rs], value,
+    );
+
+    let result = core.get(rs) | value;
+    core.set(rt, result);
+}
+
 pub fn sll(core: &mut Core<impl Bus>, _rs: usize, rt: usize, rd: usize, sa: u32) {
     if rt == 0 && rd == 0 && sa == 0 {
         debug!("{:08X} NOP", core.pc);

@@ -46,11 +46,12 @@ impl<T: Bus> Core<T> {
             0o00 => self.special(word),
             0o05 => self.type_i(instr::bne, word),
             0o11 => self.type_i(instr::addiu, word),
+            0o15 => self.type_i(instr::ori, word),
             0o17 => self.type_i(instr::lui, word),
             0o20 => self.cop::<0>(word),
             0o43 => self.type_i(instr::lw, word),
             0o53 => self.type_i(instr::sw, word),
-            opcode => unimplemented!("Opcode 0o{:02o} ({:08X})", opcode, self.pc),
+            opcode => unimplemented!("Opcode {:02o} ({:08X})", opcode, self.pc),
         }
 
         self.pc = self.pc.wrapping_add(4);
