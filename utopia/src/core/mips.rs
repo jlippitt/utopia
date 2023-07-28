@@ -1,6 +1,13 @@
 use crate::util::Primitive;
+use tracing::debug;
 
 mod instruction;
+
+const REGS: [&str; 32] = [
+    "$ZERO", "$AT", "$V0", "$V1", "$A0", "$A1", "$A2", "$A3", "$T0", "$T1", "$T2", "$T3", "$T4",
+    "$T5", "$T6", "$T7", "$S0", "$S1", "$S2", "$S3", "$S4", "$S5", "$S6", "$S7", "$T8", "$T9",
+    "$K0", "$K1", "$GP", "$SP", "$FP", "$RA",
+];
 
 pub trait Bus {
     fn read<T: Primitive>(&mut self, address: u32) -> T;
@@ -32,6 +39,7 @@ impl<T: Bus> Core<T> {
         let word = self.bus.read::<u32>(self.pc);
 
         match word >> 26 {
+            0b001001 => self.type_i(instr::addiu, word),
             0b001111 => self.type_i(instr::lui, word),
             0b010000 => self.cop::<0>(word),
             opcode => unimplemented!("Opcode {:06b}", opcode),
@@ -61,5 +69,14 @@ impl<T: Bus> Core<T> {
         let rt = ((word >> 16) & 31) as usize;
         let value = word & 0xffff;
         instr(self, rs, rt, value);
+    }
+
+    fn get(&self, reg: usize) -> u32 {
+        self.regs[reg]
+    }
+
+    fn set(&mut self, reg: usize, value: u32) {
+        self.regs[reg] = value;
+        debug!("  {}: {:08X}", REGS[reg], value);
     }
 }
