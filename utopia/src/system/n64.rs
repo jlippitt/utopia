@@ -102,17 +102,14 @@ impl Hardware {
             0x040 => self.rsp.read(address & 0x000f_ffff),
             0x041 => todo!("RDP Command Register Reads"),
             0x042 => todo!("RDP Span Register Reads"),
-            0x043 => self.mips_interface.read_be(address as usize & 0x000f_ffff),
+            0x043 => self.mips_interface.read_be(address & 0x000f_ffff),
             0x044 => todo!("Video Interface Reads"),
             0x045 => todo!("Audio Interface Reads"),
             0x046 => todo!("Peripheral Interface Reads"),
-            0x047 => self
-                .rdram
-                .interface()
-                .read_be(address as usize & 0x000f_ffff),
+            0x047 => self.rdram.interface().read_be(address & 0x000f_ffff),
             0x048 => todo!("Serial Interface Reads"),
             0x080..=0x0ff => todo!("SRAM Reads"),
-            0x010..=0x1fb => self.rom.read_be(address as usize),
+            0x100..=0x1fb => self.rom.read_be((address & 0x0fff_ffff) as usize),
             0x1fc => todo!("Serial Bus Reads"),
             _ => panic!("Read from open bus: {:08X}", address),
         }
@@ -125,19 +122,17 @@ impl Hardware {
             0x040 => self.rsp.write(address & 0x000f_ffff, value),
             0x041 => todo!("RDP Command Register Writes"),
             0x042 => todo!("RDP Span Register Writes"),
-            0x043 => self
-                .mips_interface
-                .write_be(address as usize & 0x000f_ffff, value),
+            0x043 => self.mips_interface.write_be(address & 0x000f_ffff, value),
             0x044 => todo!("Video Interface Writes"),
             0x045 => todo!("Audio Interface Writes"),
             0x046 => todo!("Peripheral Interface Writes"),
             0x047 => self
                 .rdram
                 .interface_mut()
-                .write_be(address as usize & 0x000f_ffff, value),
+                .write_be(address & 0x000f_ffff, value),
             0x048 => todo!("Serial Interface Writes"),
             0x080..=0x0ff => todo!("SRAM Writes"),
-            0x010..=0x1fb => panic!("Write to ROM area: {:08X}", address),
+            0x100..=0x1fb => panic!("Write to ROM area: {:08X}", address),
             0x1fc => todo!("Serial Bus Writes"),
             _ => panic!("Write to open bus: {:08X}", address),
         }

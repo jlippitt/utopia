@@ -1,4 +1,4 @@
-use num_traits::{FromBytes, FromPrimitive, NumCast, PrimInt, ToPrimitive};
+use num_traits::{FromBytes, FromPrimitive, NumCast, PrimInt, ToPrimitive, WrappingAdd};
 use std::fmt;
 use std::ops::{Deref, DerefMut};
 
@@ -15,6 +15,7 @@ pub trait Address:
     + FromPrimitive
     + ToPrimitive
     + FromBytes
+    + WrappingAdd
     + fmt::Debug
     + fmt::Display
     + fmt::LowerHex
@@ -44,14 +45,13 @@ pub trait Address:
 pub trait Value: Address {}
 
 pub trait ReadFacade {
-    fn read_be<T: Value>(&self, index: usize) -> T;
+    type Address: Address;
+    fn read_be<T: Value>(&self, address: Self::Address) -> T;
 }
 
-pub trait WriteFacade {
-    fn write_be<T: Value>(&mut self, index: usize, value: T);
+pub trait WriteFacade: ReadFacade {
+    fn write_be<T: Value>(&mut self, address: Self::Address, value: T);
 }
-
-pub trait Facade: ReadFacade + WriteFacade {}
 
 pub trait DataReader {
     type Address: Address;
@@ -64,51 +64,48 @@ pub trait DataWriter: DataReader {
 }
 
 impl<T: DataReader> ReadFacade for T {
-    fn read_be<U: Value>(&self, index: usize) -> U {
+    type Address = T::Address;
+
+    fn read_be<U: Value>(&self, address: Self::Address) -> U {
         if U::BITS < T::Value::BITS {
-            let address = T::Address::from_address(index);
             let value = self.read(address);
-            let mask = ((T::Value::BITS / U::BITS) - 1) as usize;
-            let shift = 8 * ((index & mask) ^ mask);
+            let mask = Self::Address::from_value((T::Value::BITS / U::BITS) - 1);
+            let shift = (((address & mask) ^ mask) << 3).to_usize().unwrap();
             U::from_value(value >> shift)
         } else if U::BITS > T::Value::BITS {
             let mask = ((U::BITS / T::Value::BITS) - 1) as usize;
             let mut result: U = Default::default();
 
             for chunk_index in 0..((U::BITS / T::Value::BITS) as usize) {
-                let address = index.wrapping_add(chunk_index) & T::Address::MASK;
-                let value = self.read(T::Address::from_address(address));
-                result = result | (U::from_value(value) << (8 * (chunk_index ^ mask)));
+                let chunk_address = address.wrapping_add(&Address::from_address(chunk_index));
+                let chunk = self.read(T::Address::from_address(chunk_address));
+                result = result | (U::from_value(chunk) << ((chunk_index ^ mask) << 3));
             }
 
             result
         } else {
-            let address = T::Address::from_address(index);
             U::from_value(self.read(address))
         }
     }
 }
 
 impl<T: DataWriter> WriteFacade for T {
-    fn write_be<U: Value>(&mut self, index: usize, value: U) {
+    fn write_be<U: Value>(&mut self, address: Self::Address, value: U) {
         if U::BITS < T::Value::BITS {
             todo!("Inexact writes");
         } else if U::BITS > T::Value::BITS {
             let mask = ((U::BITS / T::Value::BITS) - 1) as usize;
 
             for chunk_index in 0..((U::BITS / T::Value::BITS) as usize) {
-                let address = index.wrapping_add(chunk_index) & T::Address::MASK;
+                let chunk_address = address.wrapping_add(&Address::from_address(chunk_index));
                 let chunk = T::Value::from_value(value >> (8 * (chunk_index ^ mask)));
-                self.write(T::Address::from_address(address), chunk);
+                self.write(T::Address::from_address(chunk_address), chunk);
             }
         } else {
-            let address = T::Address::from_address(index);
             self.write(address, T::Value::from_value(value));
         }
     }
 }
-
-impl<T: ReadFacade + WriteFacade> Facade for T {}
 
 impl<T: Deref<Target = [u8]>> DataReader for T {
     type Address = usize;
