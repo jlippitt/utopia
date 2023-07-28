@@ -98,7 +98,7 @@ impl Hardware {
     fn read_physical<T: Value>(&mut self, address: u32) -> T {
         match address >> 20 {
             0x000..=0x03e => todo!("RDRAM Reads"),
-            0x03f => todo!("RDRAM Register Reads"),
+            0x03f => self.rdram.read_register(address & 0x000f_ffff),
             0x040 => self.rsp.read(address & 0x000f_ffff),
             0x041 => todo!("RDP Command Register Reads"),
             0x042 => todo!("RDP Span Register Reads"),
@@ -106,7 +106,7 @@ impl Hardware {
             0x044 => todo!("Video Interface Reads"),
             0x045 => todo!("Audio Interface Reads"),
             0x046 => todo!("Peripheral Interface Reads"),
-            0x047 => self.rdram.interface().read_be(address & 0x000f_ffff),
+            0x047 => self.rdram.read_interface(address & 0x000f_ffff),
             0x048 => todo!("Serial Interface Reads"),
             0x080..=0x0ff => todo!("SRAM Reads"),
             0x100..=0x1fb => self.rom.read_be((address & 0x0fff_ffff) as usize),
@@ -118,7 +118,7 @@ impl Hardware {
     fn write_physical<T: Value>(&mut self, address: u32, value: T) {
         match address >> 20 {
             0x000..=0x03e => todo!("RDRAM Writes"),
-            0x03f => todo!("RDRAM Register Writes"),
+            0x03f => self.rdram.write_register(address & 0x000f_ffff, value),
             0x040 => self.rsp.write(address & 0x000f_ffff, value),
             0x041 => todo!("RDP Command Register Writes"),
             0x042 => todo!("RDP Span Register Writes"),
@@ -126,10 +126,7 @@ impl Hardware {
             0x044 => todo!("Video Interface Writes"),
             0x045 => todo!("Audio Interface Writes"),
             0x046 => todo!("Peripheral Interface Writes"),
-            0x047 => self
-                .rdram
-                .interface_mut()
-                .write_be(address & 0x000f_ffff, value),
+            0x047 => self.rdram.write_interface(address & 0x000f_ffff, value),
             0x048 => todo!("Serial Interface Writes"),
             0x080..=0x0ff => todo!("SRAM Writes"),
             0x100..=0x1fb => panic!("Write to ROM area: {:08X}", address),

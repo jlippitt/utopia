@@ -1,5 +1,7 @@
-use crate::util::facade::{DataReader, DataWriter};
+use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
 use tracing::debug;
+
+pub struct Registers {}
 
 pub struct Interface {
     ri_mode: u8,
@@ -7,12 +9,14 @@ pub struct Interface {
 }
 
 pub struct Rdram {
+    registers: Registers,
     interface: Interface,
 }
 
 impl Rdram {
     pub fn new() -> Self {
         Self {
+            registers: Registers {},
             interface: Interface {
                 ri_mode: 0,
                 ri_select: 0,
@@ -20,12 +24,48 @@ impl Rdram {
         }
     }
 
-    pub fn interface(&self) -> &Interface {
-        &self.interface
+    pub fn read_register<T: Value>(&self, address: u32) -> T {
+        // Note: RDRAM registers are little-endian
+        if address < 0x0008_0000 {
+            self.registers.read_le(address & 0x0007_ffff)
+        } else {
+            // Broadcast area is write-only
+            T::default()
+        }
     }
 
-    pub fn interface_mut(&mut self) -> &mut Interface {
-        &mut self.interface
+    pub fn write_register<T: Value>(&mut self, address: u32, value: T) {
+        // Note: RDRAM registers are little-endian
+        // TODO: How does broadcasting work?
+        self.registers.write_le(address & 0x0007_ffff, value);
+    }
+
+    pub fn read_interface<T: Value>(&self, address: u32) -> T {
+        self.interface.read_be(address)
+    }
+
+    pub fn write_interface<T: Value>(&mut self, address: u32, value: T) {
+        self.interface.write_be(address, value);
+    }
+}
+
+impl DataReader for Registers {
+    type Address = u32;
+    type Value = u32;
+
+    fn read(&self, address: u32) -> u32 {
+        match address {
+            _ => unimplemented!("RDRAM Register Read: {:08X}", address),
+        }
+    }
+}
+
+impl DataWriter for Registers {
+    fn write(&mut self, address: u32, value: u32) {
+        match address {
+            0x08 => (), // Delay: Ignore
+            _ => unimplemented!("RDRAM Register Write: {:08X} <= {:08X}", address, value),
+        }
     }
 }
 
