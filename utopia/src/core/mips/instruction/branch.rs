@@ -10,15 +10,26 @@ pub fn branch<Op: BranchOperator, const LIKELY: bool>(
 ) {
     let offset = (value as i16 as i32) << 2;
 
-    debug!(
-        "{:08X} {}{} {}, {}, {}",
-        core.pc,
-        Op::NAME,
-        if LIKELY { "L" } else { "" },
-        REGS[rt],
-        REGS[rs],
-        offset
-    );
+    if Op::UNARY {
+        debug!(
+            "{:08X} {}{} {}, {}",
+            core.pc,
+            Op::NAME,
+            if LIKELY { "L" } else { "" },
+            REGS[rs],
+            offset
+        );
+    } else {
+        debug!(
+            "{:08X} {}{} {}, {}, {}",
+            core.pc,
+            Op::NAME,
+            if LIKELY { "L" } else { "" },
+            REGS[rs],
+            REGS[rt],
+            offset
+        );
+    }
 
     if Op::apply(core.get(rs), core.get(rt)) {
         debug!("  Branch taken");
