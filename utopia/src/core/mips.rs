@@ -81,7 +81,7 @@ impl<T: Bus> Core<T> {
             0o50 => self.type_i(instr::sb, word),
             0o53 => self.type_i(instr::sw, word),
             0o57 => self.type_i(instr::cache, word),
-            opcode => unimplemented!("Opcode {:02o} ({:08X})", opcode, self.pc),
+            opcode => unimplemented!("Opcode {:02o} ({:08X}: {:08X})", opcode, self.pc, word),
         }
     }
 
@@ -106,7 +106,12 @@ impl<T: Bus> Core<T> {
             0o46 => self.type_r(instr::xor, word),
             0o52 => self.type_r(instr::slt, word),
             0o53 => self.type_r(instr::sltu, word),
-            function => unimplemented!("SPECIAL FN={:02o} ({:08X})", function, self.pc),
+            function => unimplemented!(
+                "SPECIAL FN={:02o} ({:08X}: {:08X})",
+                function,
+                self.pc,
+                word,
+            ),
         }
     }
 
@@ -123,7 +128,7 @@ impl<T: Bus> Core<T> {
             0b10001 => self.type_i(instr::branch::<op::Bgez, true, false>, word),
             0b10010 => self.type_i(instr::branch::<op::Bltz, true, true>, word),
             0b10011 => self.type_i(instr::branch::<op::Bgez, true, true>, word),
-            rt => unimplemented!("REGIMM RT={:05b} ({:08X})", rt, self.pc),
+            rt => unimplemented!("REGIMM RT={:05b} ({:08X}: {:08X})", rt, self.pc, word),
         }
     }
     fn cop<const COP: usize>(&mut self, word: u32) {
@@ -131,7 +136,7 @@ impl<T: Bus> Core<T> {
 
         match (word >> 21) & 31 {
             0b00100 => self.type_r(instr::mtc::<COP>, word),
-            rs => unimplemented!("COP{} RS={:05b} ({:08X})", COP, rs, self.pc),
+            rs => unimplemented!("COP{} RS={:05b} ({:08X}: {:08X})", COP, rs, self.pc, word),
         }
     }
 
