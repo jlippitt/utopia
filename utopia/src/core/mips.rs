@@ -2,6 +2,7 @@ use crate::util::facade::Value;
 use tracing::debug;
 
 mod instruction;
+mod operator;
 
 const REGS: [&str; 32] = [
     "$ZERO", "$AT", "$V0", "$V1", "$A0", "$A1", "$A2", "$A3", "$T0", "$T1", "$T2", "$T3", "$T4",
@@ -41,6 +42,7 @@ impl<T: Bus> Core<T> {
 
     pub fn step(&mut self) {
         use instruction as instr;
+        use operator as op;
 
         self.pc = self.next[0];
         self.next[0] = self.next[1];
@@ -53,13 +55,14 @@ impl<T: Bus> Core<T> {
         match word >> 26 {
             0o00 => self.special(word),
             0o03 => self.type_j(instr::jal, word),
-            0o05 => self.type_i(instr::bne, word),
+            0o05 => self.type_i(instr::branch::<op::Bne, false>, word),
             0o10 => self.type_i(instr::addi, word),
             0o11 => self.type_i(instr::addiu, word),
             0o12 => self.type_i(instr::slti, word),
             0o15 => self.type_i(instr::ori, word),
             0o17 => self.type_i(instr::lui, word),
             0o20 => self.cop::<0>(word),
+            0o24 => self.type_i(instr::branch::<op::Beq, true>, word),
             0o43 => self.type_i(instr::lw, word),
             0o53 => self.type_i(instr::sw, word),
             opcode => unimplemented!("Opcode {:02o} ({:08X})", opcode, self.pc),
