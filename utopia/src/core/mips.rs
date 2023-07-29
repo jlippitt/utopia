@@ -75,6 +75,7 @@ impl<T: Bus> Core<T> {
             0o26 => self.type_i(instr::branch::<op::Blez, true>, word),
             0o27 => self.type_i(instr::branch::<op::Bgtz, true>, word),
             0o43 => self.type_i(instr::lw, word),
+            0o44 => self.type_i(instr::lbu, word),
             0o50 => self.type_i(instr::sb, word),
             0o53 => self.type_i(instr::sw, word),
             opcode => unimplemented!("Opcode {:02o} ({:08X})", opcode, self.pc),
@@ -140,6 +141,12 @@ impl<T: Bus> Core<T> {
 
         self.regs[reg] = value;
         debug!("  {}: {:08X}", REGS[reg], value);
+    }
+
+    fn read_byte(&mut self, address: u32) -> u8 {
+        let value = self.bus.read(address);
+        debug!("  [{:08X}] => {:02X}", address, value);
+        value
     }
 
     fn read_word(&mut self, address: u32) -> u32 {
