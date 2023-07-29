@@ -33,7 +33,10 @@ impl DataWriter for MipsInterface {
                 self.mi_mode = (value as u16) & 0x3fff;
                 debug!("MI_MODE: {:04X}", value);
             }
-            _ => unimplemented!("RDRAM Interface Write: {:08X} <= {:08X}", address, value),
+            0x0c => {
+                // TODO: MI_MASK
+            }
+            _ => unimplemented!("MIPS Interface Write: {:08X} <= {:08X}", address, value),
         }
     }
 }

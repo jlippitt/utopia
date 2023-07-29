@@ -78,6 +78,11 @@ impl DataWriter for PeripheralInterface {
                     len: value & 0x00ff_ffff,
                 });
             }
+            0x10 => {
+                // PI_STATUS
+                // TODO: Clear interrupt
+                // TODO: Reset DMA controller
+            }
             _ => unimplemented!(
                 "Peripheral Interface Write: {:08X} <= {:08X}",
                 address,

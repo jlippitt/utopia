@@ -2,18 +2,22 @@ use super::System;
 use crate::core::mips::{Bus, Core, State};
 use crate::util::facade::{ReadFacade, Value, WriteFacade};
 use crate::JoypadState;
+use audio::AudioInterface;
 use mips::MipsInterface;
 use peripheral::{Dma, DmaRequest, PeripheralInterface};
 use rdram::Rdram;
 use rsp::{Rsp, DMEM_SIZE};
+use serial::SerialInterface;
 use std::error::Error;
 use tracing::{debug, info};
 
+mod audio;
 mod header;
 mod mips;
 mod peripheral;
 mod rdram;
 mod rsp;
+mod serial;
 
 const WIDTH: usize = 320;
 const HEIGHT: usize = 240;
@@ -85,7 +89,9 @@ struct Hardware {
     rdram: Rdram,
     rsp: Rsp,
     mips: MipsInterface,
+    audio: AudioInterface,
     peripheral: PeripheralInterface,
+    serial: SerialInterface,
     rom: Vec<u8>,
 }
 
@@ -95,7 +101,9 @@ impl Hardware {
             rdram: Rdram::new(),
             rsp: Rsp::new(&rom[0..DMEM_SIZE]),
             mips: MipsInterface::new(),
+            audio: AudioInterface::new(),
             peripheral: PeripheralInterface::new(),
+            serial: SerialInterface::new(),
             rom,
         }
     }
@@ -109,10 +117,10 @@ impl Hardware {
             0x042 => todo!("RDP Span Register Reads"),
             0x043 => self.mips.read_be(address & 0x000f_ffff),
             0x044 => todo!("Video Interface Reads"),
-            0x045 => todo!("Audio Interface Reads"),
+            0x045 => self.audio.read_be(address & 0x000f_ffff),
             0x046 => self.peripheral.read_be(address & 0x000f_ffff),
             0x047 => self.rdram.read_interface(address & 0x000f_ffff),
-            0x048 => todo!("Serial Interface Reads"),
+            0x048 => self.serial.read_be(address & 0x000f_ffff),
             0x080..=0x0ff => todo!("SRAM Reads"),
             0x100..=0x1fb => self.rom.read_be((address & 0x0fff_ffff) as usize),
             0x1fc => todo!("Serial Bus Reads"),
@@ -129,7 +137,7 @@ impl Hardware {
             0x042 => todo!("RDP Span Register Writes"),
             0x043 => self.mips.write_be(address & 0x000f_ffff, value),
             0x044 => todo!("Video Interface Writes"),
-            0x045 => todo!("Audio Interface Writes"),
+            0x045 => self.audio.write_be(address & 0x000f_ffff, value),
             0x046 => {
                 self.peripheral.write_be(address & 0x000f_ffff, value);
 
@@ -140,7 +148,7 @@ impl Hardware {
                 }
             }
             0x047 => self.rdram.write_interface(address & 0x000f_ffff, value),
-            0x048 => todo!("Serial Interface Writes"),
+            0x048 => self.serial.write_be(address & 0x000f_ffff, value),
             0x080..=0x0ff => todo!("SRAM Writes"),
             0x100..=0x1fb => panic!("Write to ROM area: {:08X}", address),
             0x1fc => todo!("Serial Bus Writes"),
