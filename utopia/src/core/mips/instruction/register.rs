@@ -73,6 +73,6 @@ pub fn slt(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32)
         "{:08X} SLT {}, {}, {}",
         core.pc, REGS[rd], REGS[rs], REGS[rt]
     );
-    let result = (core.get(rs) as i32).wrapping_sub(rt as i32);
+    let result = (core.get(rs) as i32).wrapping_sub(core.get(rt) as i32);
     core.set(rd, (result < 0) as u32);
 }
