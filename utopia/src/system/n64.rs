@@ -97,7 +97,7 @@ impl Hardware {
 
     fn read_physical<T: Value>(&mut self, address: u32) -> T {
         match address >> 20 {
-            0x000..=0x03e => todo!("RDRAM Reads"),
+            0x000..=0x03e => self.rdram.read_data(address),
             0x03f => self.rdram.read_register(address & 0x000f_ffff),
             0x040 => self.rsp.read(address & 0x000f_ffff),
             0x041 => todo!("RDP Command Register Reads"),
@@ -117,7 +117,7 @@ impl Hardware {
 
     fn write_physical<T: Value>(&mut self, address: u32, value: T) {
         match address >> 20 {
-            0x000..=0x03e => todo!("RDRAM Writes"),
+            0x000..=0x03e => self.rdram.write_data(address, value),
             0x03f => self.rdram.write_register(address & 0x000f_ffff, value),
             0x040 => self.rsp.write(address & 0x000f_ffff, value),
             0x041 => todo!("RDP Command Register Writes"),

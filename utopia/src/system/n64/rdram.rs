@@ -1,6 +1,10 @@
 use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
 use tracing::debug;
 
+// TODO: Eventually we will support 8MB, but this in theory makes it easier to
+// spot memory mapping issues early on
+const RDRAM_SIZE: usize = 1024 * 1024 * 4;
+
 pub struct Registers {
     device_id: u16,
 }
@@ -11,6 +15,7 @@ pub struct Interface {
 }
 
 pub struct Rdram {
+    data: Vec<u8>,
     registers: Registers,
     interface: Interface,
 }
@@ -18,12 +23,21 @@ pub struct Rdram {
 impl Rdram {
     pub fn new() -> Self {
         Self {
+            data: vec![0; RDRAM_SIZE],
             registers: Registers { device_id: 0 },
             interface: Interface {
                 ri_mode: 0,
                 ri_select: 0,
             },
         }
+    }
+
+    pub fn read_data<T: Value>(&self, address: u32) -> T {
+        self.data.read_be(address as usize)
+    }
+
+    pub fn write_data<T: Value>(&mut self, address: u32, value: T) {
+        self.data.write_be(address as usize, value);
     }
 
     pub fn read_register<T: Value>(&self, address: u32) -> T {
