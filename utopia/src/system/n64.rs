@@ -140,7 +140,7 @@ impl Hardware {
 impl Bus for Hardware {
     fn read<T: Value>(&mut self, address: u32) -> T {
         match address >> 29 {
-            //4 => self.read_physical(address - 0x8000_0000),
+            4 => self.read_physical(address - 0x8000_0000), // TODO: Caching
             5 => self.read_physical(address - 0xa000_0000),
             _ => todo!("TLB"),
         }
@@ -148,7 +148,7 @@ impl Bus for Hardware {
 
     fn write<T: Value>(&mut self, address: u32, value: T) {
         match address >> 29 {
-            //4 => self.write_physical(address - 0x8000_0000, value),
+            4 => self.write_physical(address - 0x8000_0000, value), // TODO: Caching
             5 => self.write_physical(address - 0xa000_0000, value),
             _ => todo!("TLB"),
         }
