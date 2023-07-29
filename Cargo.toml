@@ -4,6 +4,7 @@ members = [
     "utopia",
     "utopia-sdl",
     "cpu-tests",
+    "disasm",
 ]
 
 [profile.dev]
