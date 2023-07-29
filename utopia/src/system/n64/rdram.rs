@@ -13,6 +13,7 @@ pub struct Registers {
 pub struct Interface {
     ri_mode: u8,
     ri_select: u8,
+    ri_refresh: u32,
 }
 
 pub struct Rdram {
@@ -32,6 +33,7 @@ impl Rdram {
             interface: Interface {
                 ri_mode: 0,
                 ri_select: 0,
+                ri_refresh: 0,
             },
         }
     }
@@ -125,6 +127,7 @@ impl DataReader for Interface {
         match address {
             0x00 => self.ri_mode as u32,
             0x0c => self.ri_select as u32,
+            0x10 => self.ri_refresh,
             _ => unimplemented!("RDRAM Interface Read: {:08X}", address),
         }
     }
@@ -142,6 +145,10 @@ impl DataWriter for Interface {
             0x0c => {
                 self.ri_select = value as u8;
                 debug!("RI_SELECT: {:02X}", value);
+            }
+            0x10 => {
+                self.ri_refresh = value & 0x001f_ffff;
+                debug!("RI_REFRESH: {:08X}", value);
             }
             _ => unimplemented!("RDRAM Interface Write: {:08X} <= {:08X}", address, value),
         }
