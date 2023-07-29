@@ -59,6 +59,7 @@ impl<T: Bus> Core<T> {
             0o10 => self.type_i(instr::addi, word),
             0o11 => self.type_i(instr::addiu, word),
             0o12 => self.type_i(instr::slti, word),
+            0o14 => self.type_i(instr::andi, word),
             0o15 => self.type_i(instr::ori, word),
             0o17 => self.type_i(instr::lui, word),
             0o20 => self.cop::<0>(word),

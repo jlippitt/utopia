@@ -39,6 +39,16 @@ pub fn slti(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     core.set(rt, (result < 0) as u32);
 }
 
+pub fn andi(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+    debug!(
+        "{:08X} ANDI {}, {}, 0x{:04X}",
+        core.pc, REGS[rt], REGS[rs], value,
+    );
+
+    let result = core.get(rs) & value;
+    core.set(rt, result);
+}
+
 pub fn ori(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     debug!(
         "{:08X} ORI {}, {}, 0x{:04X}",
