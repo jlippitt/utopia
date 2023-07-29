@@ -68,6 +68,10 @@ impl DataReader for Hardware {
 impl DataWriter for Hardware {
     fn write(&mut self, address: Self::Address, value: Self::Value) {
         match address {
+            0x0004_0010 => {
+                // SP_STATUS
+                // We don't need to deal with this yet
+            }
             0x0008_0000 => {
                 self.pc = value & 0x0ffc;
                 debug!("RSP Program Counter: {:08X}", self.pc);
