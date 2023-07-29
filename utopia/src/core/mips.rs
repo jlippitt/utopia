@@ -93,7 +93,9 @@ impl<T: Bus> Core<T> {
             0o31 => self.type_r(instr::multu, word),
             0o41 => self.type_r(instr::addu, word),
             0o43 => self.type_r(instr::subu, word),
+            0o44 => self.type_r(instr::and, word),
             0o45 => self.type_r(instr::or, word),
+            0o46 => self.type_r(instr::xor, word),
             function => unimplemented!("SPECIAL FN={:02o} ({:08X})", function, self.pc),
         }
     }
