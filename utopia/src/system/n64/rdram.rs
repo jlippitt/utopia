@@ -7,6 +7,7 @@ const RDRAM_SIZE: usize = 1024 * 1024 * 4;
 
 pub struct Registers {
     device_id: u16,
+    mode: u32,
 }
 
 pub struct Interface {
@@ -24,7 +25,10 @@ impl Rdram {
     pub fn new() -> Self {
         Self {
             data: vec![0; RDRAM_SIZE],
-            registers: Registers { device_id: 0 },
+            registers: Registers {
+                device_id: 0,
+                mode: 0,
+            },
             interface: Interface {
                 ri_mode: 0,
                 ri_select: 0,
@@ -68,10 +72,16 @@ impl DataReader for Registers {
     type Value = u32;
 
     fn read(&self, address: u32) -> u32 {
-        // TODO: RDRAM registers are little-endian
-        match address {
+        // Mask the address (at least for now) to mirror registers
+        let address = address & 0x0000_03ff;
+
+        let value = match address {
+            0x0c => self.mode,
             _ => unimplemented!("RDRAM Register Read: {:08X}", address),
-        }
+        };
+
+        // RDRAM registers are little-endian
+        value.swap_bytes()
     }
 }
 
@@ -90,10 +100,17 @@ impl DataWriter for Registers {
                     | ((value & 0x8000_0000) >> 16);
 
                 self.device_id = device_id as u16;
-                debug!("Device ID: {:04X}", self.device_id);
+                debug!("RDRAM Device ID: {:04X}", self.device_id);
             }
             0x08 => (), // Delay: Ignore
-            0x0c => (), // Mode: Ignore for now
+            0x0c => {
+                self.mode = value & 0xc0c0c0ef;
+
+                // Some fields are inverted when read back
+                self.mode ^= 0xc0c0c040;
+
+                debug!("RDRAM Mode: {:08X}", self.mode);
+            }
             0x14 => (), // RefRow: Ignore
             _ => unimplemented!("RDRAM Register Write: {:08X} <= {:08X}", address, value),
         }
