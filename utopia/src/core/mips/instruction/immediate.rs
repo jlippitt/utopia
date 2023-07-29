@@ -35,8 +35,19 @@ pub fn slti(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     );
 
     let ivalue = value as i16 as i32;
-    let result = (core.get(rs) as i32).wrapping_sub(ivalue);
-    core.set(rt, (result < 0) as u32);
+    let result = (core.get(rs) as i32) < ivalue;
+    core.set(rt, result as u32);
+}
+
+pub fn sltiu(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+    debug!(
+        "{:08X} SLTIU {}, {}, {}",
+        core.pc, REGS[rt], REGS[rs], value as i16
+    );
+
+    let ivalue = value as i16 as i32 as u32;
+    let result = core.get(rs) < ivalue;
+    core.set(rt, result as u32);
 }
 
 pub fn andi(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {

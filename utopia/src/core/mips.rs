@@ -66,6 +66,7 @@ impl<T: Bus> Core<T> {
             0o10 => self.type_i(instr::addi, word),
             0o11 => self.type_i(instr::addiu, word),
             0o12 => self.type_i(instr::slti, word),
+            0o13 => self.type_i(instr::sltiu, word),
             0o14 => self.type_i(instr::andi, word),
             0o15 => self.type_i(instr::ori, word),
             0o16 => self.type_i(instr::xori, word),
@@ -102,6 +103,7 @@ impl<T: Bus> Core<T> {
             0o45 => self.type_r(instr::or, word),
             0o46 => self.type_r(instr::xor, word),
             0o52 => self.type_r(instr::slt, word),
+            0o53 => self.type_r(instr::sltu, word),
             function => unimplemented!("SPECIAL FN={:02o} ({:08X})", function, self.pc),
         }
     }
