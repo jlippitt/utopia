@@ -18,6 +18,24 @@ pub fn srl(core: &mut Core<impl Bus>, _rs: usize, rt: usize, rd: usize, sa: u32)
     core.set(rd, result);
 }
 
+pub fn sllv(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
+    debug!(
+        "{:08X} SLLV {}, {}, {}",
+        core.pc, REGS[rd], REGS[rt], REGS[rs]
+    );
+    let result = core.get(rt) << (core.get(rs) & 31);
+    core.set(rd, result);
+}
+
+pub fn srlv(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
+    debug!(
+        "{:08X} SRLV {}, {}, {}",
+        core.pc, REGS[rd], REGS[rt], REGS[rs]
+    );
+    let result = core.get(rt) >> (core.get(rs) & 31);
+    core.set(rd, result);
+}
+
 pub fn add(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
     debug!(
         "{:08X} ADD {}, {}, {}",

@@ -91,6 +91,8 @@ impl<T: Bus> Core<T> {
         match word & 0o77 {
             0o00 => self.type_r(instr::sll, word),
             0o02 => self.type_r(instr::srl, word),
+            0o04 => self.type_r(instr::sllv, word),
+            0o06 => self.type_r(instr::srlv, word),
             0o10 => self.type_r(instr::jr, word),
             0o20 => self.type_r(instr::mfhi, word),
             0o22 => self.type_r(instr::mflo, word),
