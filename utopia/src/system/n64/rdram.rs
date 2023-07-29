@@ -79,6 +79,7 @@ impl DataWriter for Registers {
                 debug!("Device ID: {:04X}", self.device_id);
             }
             0x08 => (), // Delay: Ignore
+            0x0c => (), // Mode: Ignore for now
             0x14 => (), // RefRow: Ignore
             _ => unimplemented!("RDRAM Register Write: {:08X} <= {:08X}", address, value),
         }
