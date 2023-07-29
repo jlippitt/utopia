@@ -25,5 +25,11 @@ pub fn branch<Op: BranchOperator, const LIKELY: bool>(
         core.next[1] = core.next[0].wrapping_add(offset as u32);
     } else {
         debug!("  Branch not taken");
+
+        if LIKELY {
+            // Skip the delay slot
+            core.next[0] = core.next[1];
+            core.next[1] = core.next[1].wrapping_add(4);
+        }
     }
 }
