@@ -80,6 +80,12 @@ pub fn sll(core: &mut Core<impl Bus>, _rs: usize, rt: usize, rd: usize, sa: u32)
     core.set(rd, result);
 }
 
+pub fn srl(core: &mut Core<impl Bus>, _rs: usize, rt: usize, rd: usize, sa: u32) {
+    debug!("{:08X} SRL {}, {}, {}", core.pc, REGS[rd], REGS[rt], sa);
+    let result = core.get(rt) >> sa;
+    core.set(rd, result);
+}
+
 pub fn or(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
     debug!(
         "{:08X} OR {}, {}, {}",
