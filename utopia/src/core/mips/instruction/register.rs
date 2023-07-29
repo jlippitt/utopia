@@ -18,6 +18,16 @@ pub fn srl(core: &mut Core<impl Bus>, _rs: usize, rt: usize, rd: usize, sa: u32)
     core.set(rd, result);
 }
 
+pub fn addu(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
+    debug!(
+        "{:08X} ADDU {}, {}, {}",
+        core.pc, REGS[rd], REGS[rs], REGS[rt]
+    );
+
+    let result = core.get(rs).wrapping_add(core.get(rt));
+    core.set(rd, result);
+}
+
 pub fn subu(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
     debug!(
         "{:08X} SUBU {}, {}, {}",

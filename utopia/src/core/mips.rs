@@ -75,6 +75,7 @@ impl<T: Bus> Core<T> {
             0o26 => self.type_i(instr::branch::<op::Blez, true>, word),
             0o27 => self.type_i(instr::branch::<op::Bgtz, true>, word),
             0o43 => self.type_i(instr::lw, word),
+            0o50 => self.type_i(instr::sb, word),
             0o53 => self.type_i(instr::sw, word),
             opcode => unimplemented!("Opcode {:02o} ({:08X})", opcode, self.pc),
         }
@@ -90,6 +91,7 @@ impl<T: Bus> Core<T> {
             0o20 => self.type_r(instr::mfhi, word),
             0o22 => self.type_r(instr::mflo, word),
             0o31 => self.type_r(instr::multu, word),
+            0o41 => self.type_r(instr::addu, word),
             0o43 => self.type_r(instr::subu, word),
             0o45 => self.type_r(instr::or, word),
             function => unimplemented!("SPECIAL FN={:02o} ({:08X})", function, self.pc),
@@ -143,6 +145,11 @@ impl<T: Bus> Core<T> {
         let value = self.bus.read(address);
         debug!("  [{:08X}] => {:08X}", address, value);
         value
+    }
+
+    fn write_byte(&mut self, address: u32, value: u8) {
+        debug!("  [{:08X}] <= {:02X}", address, value);
+        self.bus.write(address, value);
     }
 
     fn write_word(&mut self, address: u32, value: u32) {
