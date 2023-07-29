@@ -57,6 +57,7 @@ impl<T: Bus> Core<T> {
 
         match word >> 26 {
             0o00 => self.special(word),
+            0o01 => self.regimm(word),
             0o03 => self.type_j(instr::jal, word),
             0o04 => self.type_i(instr::branch::<op::Beq, false>, word),
             0o05 => self.type_i(instr::branch::<op::Bne, false>, word),
@@ -101,12 +102,24 @@ impl<T: Bus> Core<T> {
         }
     }
 
+    fn regimm(&mut self, word: u32) {
+        use instruction as instr;
+        use operator as op;
+
+        match (word >> 16) & 31 {
+            0b00000 => self.type_i(instr::branch::<op::Bltz, false>, word),
+            0b00001 => self.type_i(instr::branch::<op::Bgez, false>, word),
+            0b00010 => self.type_i(instr::branch::<op::Bltz, true>, word),
+            0b00011 => self.type_i(instr::branch::<op::Bgez, true>, word),
+            rt => unimplemented!("REGIMM RT={:05b} ({:08X})", rt, self.pc),
+        }
+    }
     fn cop<const COP: usize>(&mut self, word: u32) {
         use instruction as instr;
 
         match (word >> 21) & 31 {
             0b00100 => self.type_r(instr::mtc::<COP>, word),
-            rs => unimplemented!("COP{} RS={:06b} ({:08X})", COP, rs, self.pc),
+            rs => unimplemented!("COP{} RS={:05b} ({:08X})", COP, rs, self.pc),
         }
     }
 

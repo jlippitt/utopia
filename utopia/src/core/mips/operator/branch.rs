@@ -33,7 +33,7 @@ impl BranchOperator for Blez {
     const UNARY: bool = true;
 
     fn apply(rs: u32, _rt: u32) -> bool {
-        rs <= 0
+        (rs as i32) <= 0
     }
 }
 
@@ -44,6 +44,28 @@ impl BranchOperator for Bgtz {
     const UNARY: bool = true;
 
     fn apply(rs: u32, _rt: u32) -> bool {
-        rs > 0
+        (rs as i32) > 0
+    }
+}
+
+pub struct Bltz;
+
+impl BranchOperator for Bltz {
+    const NAME: &'static str = "BLTZ";
+    const UNARY: bool = true;
+
+    fn apply(rs: u32, _rt: u32) -> bool {
+        (rs as i32) < 0
+    }
+}
+
+pub struct Bgez;
+
+impl BranchOperator for Bgez {
+    const NAME: &'static str = "BGEZ";
+    const UNARY: bool = true;
+
+    fn apply(rs: u32, _rt: u32) -> bool {
+        (rs as i32) >= 0
     }
 }
