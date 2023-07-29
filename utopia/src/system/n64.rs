@@ -3,13 +3,15 @@ use crate::core::mips::{Bus, Core, State};
 use crate::util::facade::{ReadFacade, Value, WriteFacade};
 use crate::JoypadState;
 use mips::MipsInterface;
+use peripheral::{Dma, DmaRequest, PeripheralInterface};
 use rdram::Rdram;
 use rsp::{Rsp, DMEM_SIZE};
 use std::error::Error;
-use tracing::info;
+use tracing::{debug, info};
 
 mod header;
 mod mips;
+mod peripheral;
 mod rdram;
 mod rsp;
 
@@ -82,7 +84,8 @@ impl System for N64 {
 struct Hardware {
     rdram: Rdram,
     rsp: Rsp,
-    mips_interface: MipsInterface,
+    mips: MipsInterface,
+    peripheral: PeripheralInterface,
     rom: Vec<u8>,
 }
 
@@ -91,7 +94,8 @@ impl Hardware {
         Self {
             rdram: Rdram::new(),
             rsp: Rsp::new(&rom[0..DMEM_SIZE]),
-            mips_interface: MipsInterface::new(),
+            mips: MipsInterface::new(),
+            peripheral: PeripheralInterface::new(),
             rom,
         }
     }
@@ -103,10 +107,10 @@ impl Hardware {
             0x040 => self.rsp.read(address & 0x000f_ffff),
             0x041 => todo!("RDP Command Register Reads"),
             0x042 => todo!("RDP Span Register Reads"),
-            0x043 => self.mips_interface.read_be(address & 0x000f_ffff),
+            0x043 => self.mips.read_be(address & 0x000f_ffff),
             0x044 => todo!("Video Interface Reads"),
             0x045 => todo!("Audio Interface Reads"),
-            0x046 => todo!("Peripheral Interface Reads"),
+            0x046 => self.peripheral.read_be(address & 0x000f_ffff),
             0x047 => self.rdram.read_interface(address & 0x000f_ffff),
             0x048 => todo!("Serial Interface Reads"),
             0x080..=0x0ff => todo!("SRAM Reads"),
@@ -123,10 +127,18 @@ impl Hardware {
             0x040 => self.rsp.write(address & 0x000f_ffff, value),
             0x041 => todo!("RDP Command Register Writes"),
             0x042 => todo!("RDP Span Register Writes"),
-            0x043 => self.mips_interface.write_be(address & 0x000f_ffff, value),
+            0x043 => self.mips.write_be(address & 0x000f_ffff, value),
             0x044 => todo!("Video Interface Writes"),
             0x045 => todo!("Audio Interface Writes"),
-            0x046 => todo!("Peripheral Interface Writes"),
+            0x046 => {
+                self.peripheral.write_be(address & 0x000f_ffff, value);
+
+                match self.peripheral.dma_requested() {
+                    Dma::None => (),
+                    //Dma::Read(..) => todo!("DMA reads"),
+                    Dma::Write(request) => self.write_dma(request),
+                }
+            }
             0x047 => self.rdram.write_interface(address & 0x000f_ffff, value),
             0x048 => todo!("Serial Interface Writes"),
             0x080..=0x0ff => todo!("SRAM Writes"),
@@ -134,6 +146,28 @@ impl Hardware {
             0x1fc => todo!("Serial Bus Writes"),
             _ => panic!("Write to open bus: {:08X}", address),
         }
+    }
+
+    fn write_dma(&mut self, request: DmaRequest) {
+        // TODO: As most transfers will have lengths divisible by 4, this can be
+        // better optimised. As (presumably) cart_address can only be ROM or
+        // SRAM and dram_address is always RDRAM (possibly registers, though?),
+        // we could also try talking directly to the components to save some
+        // cycles.
+
+        for index in 0..=request.len {
+            let value: u8 = self.read_physical(request.cart_address.wrapping_add(index));
+            self.write_physical(request.dram_address.wrapping_add(index), value);
+        }
+
+        self.peripheral.finish_dma();
+
+        debug!(
+            "DMA: {} bytes written from {:08X} to {:08X}",
+            request.len + 1,
+            request.cart_address,
+            request.dram_address
+        )
     }
 }
 
