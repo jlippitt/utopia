@@ -79,6 +79,7 @@ impl<T: Bus> Core<T> {
             0o44 => self.type_i(instr::lbu, word),
             0o50 => self.type_i(instr::sb, word),
             0o53 => self.type_i(instr::sw, word),
+            0o57 => self.type_i(instr::cache, word),
             opcode => unimplemented!("Opcode {:02o} ({:08X})", opcode, self.pc),
         }
     }
