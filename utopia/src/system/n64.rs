@@ -46,6 +46,7 @@ impl N64 {
             State {
                 pc: IPL3_START_ADDRESS,
                 regs,
+                ..Default::default()
             },
         );
 

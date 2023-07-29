@@ -19,6 +19,7 @@ pub struct Core<T: Bus> {
     pc: u32,
     next: [u32; 2],
     regs: [u32; 32],
+    hi_lo: u64,
     bus: T,
 }
 
@@ -26,6 +27,7 @@ pub struct Core<T: Bus> {
 pub struct State {
     pub pc: u32,
     pub regs: [u32; 32],
+    pub hi_lo: u64,
 }
 
 impl<T: Bus> Core<T> {
@@ -36,6 +38,7 @@ impl<T: Bus> Core<T> {
             pc: 0,
             next: [pc, pc.wrapping_add(4)],
             regs: initial_state.regs,
+            hi_lo: 0,
             bus,
         }
     }
@@ -84,6 +87,9 @@ impl<T: Bus> Core<T> {
             0o00 => self.type_r(instr::sll, word),
             0o02 => self.type_r(instr::srl, word),
             0o10 => self.type_r(instr::jr, word),
+            0o20 => self.type_r(instr::mfhi, word),
+            0o22 => self.type_r(instr::mflo, word),
+            0o31 => self.type_r(instr::multu, word),
             0o43 => self.type_r(instr::subu, word),
             0o45 => self.type_r(instr::or, word),
             function => unimplemented!("SPECIAL FN={:02o} ({:08X})", function, self.pc),

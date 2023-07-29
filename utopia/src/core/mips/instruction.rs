@@ -3,6 +3,7 @@ pub use control::*;
 pub use cop::*;
 pub use immediate::*;
 pub use load::*;
+pub use mul_div::*;
 pub use register::*;
 pub use store::*;
 
@@ -11,5 +12,6 @@ mod control;
 mod cop;
 mod immediate;
 mod load;
+mod mul_div;
 mod register;
 mod store;
