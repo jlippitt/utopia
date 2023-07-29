@@ -18,6 +18,21 @@ pub fn srl(core: &mut Core<impl Bus>, _rs: usize, rt: usize, rd: usize, sa: u32)
     core.set(rd, result);
 }
 
+pub fn add(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
+    debug!(
+        "{:08X} ADD {}, {}, {}",
+        core.pc, REGS[rd], REGS[rs], REGS[rt]
+    );
+
+    let (result, overflow) = (core.get(rs) as i32).overflowing_add(core.get(rt) as i32);
+
+    if overflow {
+        todo!("Overflow exceptions");
+    }
+
+    core.set(rd, result as u32);
+}
+
 pub fn addu(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
     debug!(
         "{:08X} ADDU {}, {}, {}",
@@ -26,6 +41,21 @@ pub fn addu(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32
 
     let result = core.get(rs).wrapping_add(core.get(rt));
     core.set(rd, result);
+}
+
+pub fn sub(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
+    debug!(
+        "{:08X} SUB {}, {}, {}",
+        core.pc, REGS[rd], REGS[rs], REGS[rt]
+    );
+
+    let (result, overflow) = (core.get(rs) as i32).overflowing_sub(core.get(rt) as i32);
+
+    if overflow {
+        todo!("Overflow exceptions");
+    }
+
+    core.set(rd, result as u32);
 }
 
 pub fn subu(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
