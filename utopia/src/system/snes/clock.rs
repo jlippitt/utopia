@@ -8,10 +8,10 @@ pub const FAST_CYCLES: u64 = 6;
 pub const SLOW_CYCLES: u64 = 8;
 pub const EXTRA_SLOW_CYCLES: u64 = 12;
 
-pub const TOTAL_LINES: u16 = 262;
-pub const CYCLES_PER_LINE: u64 = 1364;
-
 pub const TIMER_IRQ: Interrupt = 0x04;
+
+const TOTAL_LINES: u16 = 262;
+const CYCLES_PER_LINE: u64 = 1364;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 enum IrqMode {
@@ -213,7 +213,7 @@ impl Clock {
                 self.line_cycles -= CYCLES_PER_LINE;
                 self.line += 1;
 
-                if self.line == TOTAL_LINES {
+                if self.line == self.total_lines {
                     self.line = 0;
                     self.frame += 1;
                     self.total_lines = TOTAL_LINES;
