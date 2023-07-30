@@ -1,5 +1,5 @@
 use super::clock::TIMER_IRQ;
-use tracing::debug;
+use tracing::{debug, warn};
 
 pub struct Registers {
     io_port: u8,
@@ -108,7 +108,10 @@ impl super::Hardware {
             0x1d => self.joypad.auto_read_state_high(2),
             0x1e => self.joypad.auto_read_state_low(3),
             0x1f => self.joypad.auto_read_state_high(3),
-            _ => todo!("Register read {:02X}", address),
+            _ => {
+                warn!("Unmapped Register Read {:02X}", address);
+                prev_value
+            }
         }
     }
 
