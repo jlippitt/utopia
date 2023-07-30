@@ -441,6 +441,16 @@ impl Ppu {
                 self.draw_bg::<1, 0, true>(0, 4, 2, 0, line);
                 self.draw_bg::<0, 0, true>(1, 3, 1, 0, line);
             }
+            6 => {
+                let line = if interlace {
+                    (line << 1) + (odd_frame as u16)
+                } else {
+                    line
+                };
+
+                self.select_bg_offsets::<true>(2);
+                self.draw_bg::<1, 0x2000, true>(0, 4, 2, 0, line);
+            }
             7 => {
                 self.draw_mode7(0, line);
                 // TODO: Mode 7 EXT

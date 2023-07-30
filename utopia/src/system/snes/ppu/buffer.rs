@@ -1,7 +1,7 @@
 use super::WIDTH;
 
-pub const TILE_BUFFER_SIZE: usize = 67;
-pub const OFFSET_BUFFER_SIZE: usize = TILE_BUFFER_SIZE / 2;
+pub const TILE_BUFFER_SIZE: usize = 65;
+pub const OFFSET_BUFFER_SIZE: usize = 33;
 pub const PIXEL_BUFFER_SIZE: usize = WIDTH >> 1;
 
 pub const LAYER_BACKDROP: u8 = 0x20;

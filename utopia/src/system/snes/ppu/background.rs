@@ -209,7 +209,7 @@ impl super::Ppu {
         let (tile_width, tile_count) = if HI_RES {
             (true, self.tiles.len())
         } else {
-            (bg.tile_size, self.tiles.len() / 2)
+            (bg.tile_size, (self.tiles.len() / 2) + 1)
         };
 
         let mosaic_line = {
