@@ -13,6 +13,8 @@ pub struct Mode7Settings {
     center_y: i32,
     scroll_x: i32,
     scroll_y: i32,
+    flip_x: bool,
+    flip_y: u16,
     transparency_fill: bool,
     tile_zero_fill: bool,
     write_buffer: u8,
@@ -29,6 +31,8 @@ impl Mode7Settings {
             center_y: 0,
             scroll_x: 0,
             scroll_y: 0,
+            flip_x: false,
+            flip_y: 0,
             transparency_fill: false,
             tile_zero_fill: false,
             write_buffer: 0,
@@ -48,12 +52,12 @@ impl Mode7Settings {
     }
 
     pub fn set_control(&mut self, value: u8) {
-        if (value & 0x03) != 0 {
-            todo!("Mode 7 flipping");
-        }
-
+        self.flip_x = (value & 0x01) != 0;
+        self.flip_y = if (value & 0x02) != 0 { 255 } else { 0 };
         self.transparency_fill = (value & 0xc0) == 0x80;
         self.tile_zero_fill = (value & 0xc0) == 0xc0;
+        debug!("Mode 7 Flip X: {}", self.flip_x);
+        debug!("Mode 7 Flip Y: {}", self.flip_y);
         debug!("Mode 7 Transparency Fill: {}", self.transparency_fill);
         debug!("Mode 7 Tile Zero Fill: {}", self.tile_zero_fill);
     }
@@ -111,12 +115,12 @@ impl super::Ppu {
 
         for pixel_buffer_index in [0, 1] {
             if enabled.has(pixel_buffer_index) {
-                self.draw_mode7_pixels(bg_index, pixel_buffer_index, line as i32);
+                self.draw_mode7_pixels(bg_index, pixel_buffer_index, line);
             }
         }
     }
 
-    fn draw_mode7_pixels(&mut self, bg_index: usize, pixel_buffer_index: usize, line: i32) {
+    fn draw_mode7_pixels(&mut self, bg_index: usize, pixel_buffer_index: usize, line: u16) {
         let mask = if self.window_enabled[bg_index].has(pixel_buffer_index) {
             self.window_mask[bg_index].mask(&self.window)
         } else {
@@ -127,16 +131,25 @@ impl super::Ppu {
 
         let offset_x = clip_13(self.mode7.scroll_x - self.mode7.center_x);
         let offset_y = clip_13(self.mode7.scroll_y - self.mode7.center_y);
+        let flipped_y = (line ^ self.mode7.flip_y) as i32;
 
         let mut pos_x = ((self.mode7.matrix_a * offset_x) & !63)
             + ((self.mode7.matrix_b * offset_y) & !63)
-            + ((self.mode7.matrix_b * line) & !63)
+            + ((self.mode7.matrix_b * flipped_y) & !63)
             + (self.mode7.center_x << 8);
 
         let mut pos_y = ((self.mode7.matrix_c * offset_x) & !63)
             + ((self.mode7.matrix_d * offset_y) & !63)
-            + ((self.mode7.matrix_d * line) & !63)
+            + ((self.mode7.matrix_d * flipped_y) & !63)
             + (self.mode7.center_y << 8);
+
+        let (increment_x, increment_y) = if self.mode7.flip_x {
+            pos_x += self.mode7.matrix_a * 255;
+            pos_y += self.mode7.matrix_c * 255;
+            (-self.mode7.matrix_a, -self.mode7.matrix_c)
+        } else {
+            (self.mode7.matrix_a, self.mode7.matrix_c)
+        };
 
         for (index, pixel) in pixels.iter_mut().enumerate() {
             let pixel_x = (pos_x >> 8) as usize;
@@ -166,8 +179,8 @@ impl super::Ppu {
                 }
             }
 
-            pos_x += self.mode7.matrix_a;
-            pos_y += self.mode7.matrix_c;
+            pos_x += increment_x;
+            pos_y += increment_y;
         }
     }
 }
