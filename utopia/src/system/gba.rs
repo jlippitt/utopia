@@ -1,7 +1,9 @@
 use super::System;
 use crate::core::arm7tdmi::{Bus, Core};
+use crate::util::MirrorVec;
 use crate::JoypadState;
 use std::error::Error;
+use tracing::info;
 
 const WIDTH: usize = 240;
 const HEIGHT: usize = 160;
@@ -41,11 +43,18 @@ impl System for GameBoyAdvance {
     }
 }
 
-struct Hardware {}
+struct Hardware {
+    _rom: MirrorVec<u8>,
+}
 
 impl Hardware {
-    pub fn new(_rom_data: Vec<u8>) -> Self {
-        Self {}
+    pub fn new(rom_data: Vec<u8>) -> Self {
+        let title = String::from_utf8_lossy(&rom_data[0xa0..=0xab]).into_owned();
+        info!("Title: {}", title);
+
+        Self {
+            _rom: rom_data.into(),
+        }
     }
 }
 
