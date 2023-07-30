@@ -1,4 +1,5 @@
 use gb::GameBoy;
+use gba::GameBoyAdvance;
 use n64::N64;
 use nes::Nes;
 use snes::Snes;
@@ -6,6 +7,7 @@ use std::error::Error;
 use std::path::Path;
 
 mod gb;
+mod gba;
 mod n64;
 mod nes;
 mod snes;
@@ -62,6 +64,7 @@ pub fn create(
 
     Ok(match extension {
         "gb" => Box::new(GameBoy::new(rom_data, bios_loader, options.skip_boot)?),
+        "gba" => Box::new(GameBoyAdvance::new(rom_data)?),
         "nes" => Box::new(Nes::new(rom_data)?),
         "sfc" | "smc" => Box::new(Snes::new(rom_data, bios_loader)?),
         "z64" => Box::new(N64::new(rom_data)?),
