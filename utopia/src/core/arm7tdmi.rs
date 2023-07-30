@@ -66,8 +66,22 @@ impl<T: Bus> Core<T> {
 
     fn apply_condition(&self, word: u32) -> (&'static str, bool) {
         match word >> 28 {
+            0b0000 => ("EQ", self.flags.z),
+            0b0001 => ("NE", !self.flags.z),
+            0b0010 => ("CS", self.flags.c),
+            0b0011 => ("CC", !self.flags.c),
+            0b0100 => ("MI", self.flags.n),
+            0b0101 => ("PL", !self.flags.n),
+            0b0110 => ("VS", self.flags.v),
+            0b0111 => ("VC", !self.flags.v),
+            0b1000 => ("HI", !self.flags.z && self.flags.c),
+            0b1001 => ("LS", self.flags.z || !self.flags.c),
+            0b1010 => ("GE", self.flags.n == self.flags.v),
+            0b1011 => ("LT", self.flags.n != self.flags.v),
+            0b1100 => ("GT", !self.flags.z && self.flags.n == self.flags.v),
+            0b1101 => ("LE", self.flags.z || self.flags.n != self.flags.z),
             0b1110 => ("", true),
-            code => panic!("Condition not yet implemented: {:04b}", code),
+            code => unimplemented!("Condition code {:04b}", code),
         }
     }
 
