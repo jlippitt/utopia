@@ -143,6 +143,25 @@ impl super::Ppu {
         }
     }
 
+    pub(super) fn select_bg_offsets_half(&mut self, bg_index: usize) {
+        let bg = &mut self.bg[bg_index];
+
+        let coarse_x = bg.scroll_x >> 3;
+        let coarse_y = bg.scroll_y >> 3;
+
+        for (index, offset) in self.offsets.iter_mut().enumerate() {
+            let value = bg.load_tile(&self.vram, coarse_x + index as u16, coarse_y, bg.tile_size);
+
+            if (value & 0x8000) != 0 {
+                offset.x = 0;
+                offset.y = value;
+            } else {
+                offset.x = value;
+                offset.y = 0;
+            }
+        }
+    }
+
     pub(super) fn draw_bg<const COLOR_DEPTH: u8, const OFFSET_MASK: u16, const HI_RES: bool>(
         &mut self,
         bg_index: usize,

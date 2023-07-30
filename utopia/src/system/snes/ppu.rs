@@ -426,6 +426,11 @@ impl Ppu {
                 self.draw_bg::<2, 0, false>(0, 4, 2, 0, line);
                 self.draw_bg::<1, 0, false>(1, 3, 1, 0, line);
             }
+            4 => {
+                self.select_bg_offsets_half(2);
+                self.draw_bg::<2, 0x2000, false>(0, 4, 2, 0, line);
+                self.draw_bg::<0, 0x4000, false>(1, 3, 1, 0, line);
+            }
             5 => {
                 let line = if interlace {
                     (line << 1) + (odd_frame as u16)
