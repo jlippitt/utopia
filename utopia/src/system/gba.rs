@@ -1,5 +1,6 @@
 use super::System;
 use crate::core::arm7tdmi::{Bus, Core};
+use crate::util::facade::Value;
 use crate::util::MirrorVec;
 use crate::JoypadState;
 use std::error::Error;
@@ -58,4 +59,19 @@ impl Hardware {
     }
 }
 
-impl Bus for Hardware {}
+impl Bus for Hardware {
+    fn read<T: Value>(&mut self, address: u32) -> T {
+        match address >> 24 {
+            0x00 => todo!("BIOS Reads"),
+            0x02 => todo!("EWRAM Reads"),
+            0x03 => todo!("IWRAM Reads"),
+            0x04 => todo!("I/O Register Reads"),
+            0x05 => todo!("Palette RAM Reads"),
+            0x06 => todo!("VRAM Reads"),
+            0x07 => todo!("OAM Reads"),
+            0x08..=0x0d => todo!("ROM Reads"),
+            0xe0 => todo!("SRAM Reads"),
+            _ => panic!("Unmapped Read: {:08X}", address),
+        }
+    }
+}
