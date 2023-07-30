@@ -64,7 +64,7 @@ pub fn create(
 
     Ok(match extension {
         "gb" => Box::new(GameBoy::new(rom_data, bios_loader, options.skip_boot)?),
-        "gba" => Box::new(GameBoyAdvance::new(rom_data)?),
+        "gba" => Box::new(GameBoyAdvance::new(rom_data, bios_loader)?),
         "nes" => Box::new(Nes::new(rom_data)?),
         "sfc" | "smc" => Box::new(Snes::new(rom_data, bios_loader)?),
         "z64" => Box::new(N64::new(rom_data)?),

@@ -1,7 +1,6 @@
-use super::System;
+use super::{BiosLoader, System};
 use crate::core::arm7tdmi::{Bus, Core};
-use crate::util::facade::Value;
-use crate::util::MirrorVec;
+use crate::util::facade::{ReadFacade, Value};
 use crate::JoypadState;
 use std::error::Error;
 use tracing::info;
@@ -15,8 +14,9 @@ pub struct GameBoyAdvance {
 }
 
 impl GameBoyAdvance {
-    pub fn new(rom_data: Vec<u8>) -> Result<Self, Box<dyn Error>> {
-        let hw = Hardware::new(rom_data);
+    pub fn new(rom: Vec<u8>, bios_loader: &impl BiosLoader) -> Result<Self, Box<dyn Error>> {
+        let bios = bios_loader.load("gba_bios")?;
+        let hw = Hardware::new(rom, bios);
         let core = Core::new(hw);
         Ok(GameBoyAdvance { core })
     }
@@ -45,31 +45,29 @@ impl System for GameBoyAdvance {
 }
 
 struct Hardware {
-    _rom: MirrorVec<u8>,
+    rom: Vec<u8>,
+    bios: Vec<u8>,
 }
 
 impl Hardware {
-    pub fn new(rom_data: Vec<u8>) -> Self {
-        let title = String::from_utf8_lossy(&rom_data[0xa0..=0xab]).into_owned();
+    pub fn new(rom: Vec<u8>, bios: Vec<u8>) -> Self {
+        let title = String::from_utf8_lossy(&rom[0xa0..=0xab]).into_owned();
         info!("Title: {}", title);
-
-        Self {
-            _rom: rom_data.into(),
-        }
+        Self { rom, bios }
     }
 }
 
 impl Bus for Hardware {
     fn read<T: Value>(&mut self, address: u32) -> T {
         match address >> 24 {
-            0x00 => todo!("BIOS Reads"),
+            0x00 => self.bios.read_le(address as usize),
             0x02 => todo!("EWRAM Reads"),
             0x03 => todo!("IWRAM Reads"),
             0x04 => todo!("I/O Register Reads"),
             0x05 => todo!("Palette RAM Reads"),
             0x06 => todo!("VRAM Reads"),
             0x07 => todo!("OAM Reads"),
-            0x08..=0x0d => todo!("ROM Reads"),
+            0x08..=0x0d => self.rom.read_le(address as usize & 0x01ff_ffff),
             0xe0 => todo!("SRAM Reads"),
             _ => panic!("Unmapped Read: {:08X}", address),
         }
