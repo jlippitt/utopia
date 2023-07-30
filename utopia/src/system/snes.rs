@@ -116,7 +116,11 @@ impl Hardware {
                         self.transfer_hdma();
 
                         if line >= 1 {
-                            self.ppu.draw_line(line);
+                            self.ppu.draw_line(
+                                line,
+                                self.clock.interlace(),
+                                self.clock.odd_frame(),
+                            );
                         }
                     }
                 }
@@ -220,7 +224,7 @@ impl Hardware {
         self.mdr = value;
 
         match address & 0xc0 {
-            0x00 => self.ppu.write(address, value),
+            0x00 => self.ppu.write(&mut self.clock, address, value),
             0x40 => {
                 self.apu.run_until(self.clock.cycles());
                 self.apu.write(address, value);

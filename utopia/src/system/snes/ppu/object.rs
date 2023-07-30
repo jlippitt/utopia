@@ -47,6 +47,7 @@ pub struct ObjectLayer {
     name_offset: u16,
     size_x: [u16; 2],
     size_y: [u16; 2],
+    interlace: bool,
     selected_sprites: [usize; MAX_SPRITES_PER_LINE],
     flags: Flags,
 }
@@ -58,6 +59,7 @@ impl ObjectLayer {
             name_offset: 0,
             size_x: SIZE_X[0],
             size_y: SIZE_Y[0],
+            interlace: false,
             selected_sprites: [0; MAX_SPRITES_PER_LINE],
             flags: Flags::empty(),
         }
@@ -87,10 +89,15 @@ impl ObjectLayer {
             self.size_x[0], self.size_y[0], self.size_x[1], self.size_y[1]
         )
     }
+
+    pub fn set_interlace(&mut self, interlace: bool) {
+        self.interlace = interlace;
+        debug!("OBJ Interlace: {}", interlace);
+    }
 }
 
 impl super::Ppu {
-    pub(super) fn draw_obj(&mut self, line: u16) {
+    pub(super) fn draw_obj(&mut self, line: u16, odd_frame: bool) {
         let enabled = self.enabled[LAYER_INDEX];
 
         if !enabled.any() {
@@ -99,7 +106,7 @@ impl super::Ppu {
 
         let sprite_start_index = self.select_sprites(line);
 
-        let tile_start_index = self.select_obj_tiles(line, sprite_start_index);
+        let tile_start_index = self.select_obj_tiles(line, odd_frame, sprite_start_index);
 
         for pixel_buffer_index in [0, 1] {
             if enabled.has(pixel_buffer_index) {
@@ -117,7 +124,8 @@ impl super::Ppu {
             let sprite = self.oam.sprite(sprite_index);
 
             let start_y = sprite.y;
-            let end_y = sprite.y + self.obj.size_y[sprite.size as usize];
+            let size_y = self.obj.size_y[sprite.size as usize] >> self.obj.interlace as u32;
+            let end_y = start_y + size_y;
 
             // Determine if sprite is on the current line
             if (start_y > line || end_y <= line) && end_y <= (line + 256) {
@@ -151,7 +159,7 @@ impl super::Ppu {
         write_index
     }
 
-    fn select_obj_tiles(&mut self, line: u16, sprite_start_index: usize) -> usize {
+    fn select_obj_tiles(&mut self, line: u16, odd_frame: bool, sprite_start_index: usize) -> usize {
         let mut write_index = MAX_TILES_PER_LINE;
 
         'outer: for sprite_index in &self.obj.selected_sprites[sprite_start_index..] {
@@ -160,11 +168,17 @@ impl super::Ppu {
             let flipped_y = {
                 let pixel_y = line.wrapping_sub(sprite.y) & 255;
 
-                if sprite.flip_y {
-                    let size_y = self.obj.size_y[sprite.size as usize] - 1;
-                    pixel_y ^ size_y
+                let interlaced_y = if self.obj.interlace {
+                    (pixel_y << 1) + (odd_frame as u16)
                 } else {
                     pixel_y
+                };
+
+                if sprite.flip_y {
+                    let size_y = self.obj.size_y[sprite.size as usize] - 1;
+                    interlaced_y ^ size_y
+                } else {
+                    interlaced_y
                 }
             };
 

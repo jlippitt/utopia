@@ -65,12 +65,6 @@ impl Screen {
         debug!("Brightness: {}", value);
     }
 
-    pub fn force_blank(&mut self) {
-        let end = self.index + PITCH * 2;
-        self.output[self.index..end].fill(0);
-        self.index = end;
-    }
-
     pub fn draw_lo_res(&mut self, main_screen: &PixelBuffer) {
         for pixel in main_screen {
             let intensity = &self.intensity;
@@ -86,11 +80,6 @@ impl Screen {
 
             self.index += 8;
         }
-
-        self.output
-            .copy_within((self.index - PITCH)..self.index, self.index);
-
-        self.index += PITCH;
     }
 
     pub fn draw_hi_res(&mut self, pixels: &[PixelBuffer; 2]) {
@@ -116,7 +105,19 @@ impl Screen {
 
             self.index += 8;
         }
+    }
 
+    pub fn force_blank(&mut self) {
+        let end = self.index + PITCH;
+        self.output[self.index..end].fill(0);
+        self.index = end;
+    }
+
+    pub fn skip_line(&mut self) {
+        self.index += PITCH;
+    }
+
+    pub fn duplicate_line(&mut self) {
         self.output
             .copy_within((self.index - PITCH)..self.index, self.index);
 

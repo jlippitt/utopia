@@ -165,7 +165,7 @@ impl Ppu {
         }
     }
 
-    pub fn write(&mut self, address: u8, value: u8) {
+    pub fn write(&mut self, clock: &mut Clock, address: u8, value: u8) {
         match address {
             0x00 => {
                 self.force_blank = (value & 0x80) != 0;
@@ -305,22 +305,18 @@ impl Ppu {
             0x31 => self.color_math.set_operator(value),
             0x32 => self.color_math.set_fixed_color(value),
             0x33 => {
-                if (value & 0x40) != 0 {
-                    warn!("Mode 7 EXTBG not yet implemented");
-                }
+                clock.set_interlace((value & 0x01) != 0);
 
-                self.hi_res.set(HiRes::PSEUDO_HI_RES, (value & 0x08) != 0);
-                debug!("Hi Res: {:?}", self.hi_res);
+                self.obj.set_interlace((value & 0x02) != 0);
 
                 self.overscan = (value & 0x04) != 0;
                 debug!("Overscan: {}", self.overscan);
 
-                if (value & 0x02) != 0 {
-                    warn!("OBJ Interlace not yet implemented");
-                }
+                self.hi_res.set(HiRes::PSEUDO_HI_RES, (value & 0x08) != 0);
+                debug!("Hi Res: {:?}", self.hi_res);
 
-                if (value & 0x01) != 0 {
-                    warn!("Screen Interlace not yet implemented");
+                if (value & 0x40) != 0 {
+                    todo!("Mode 7 EXTBG");
                 }
             }
             _ => warn!("Unmapped PPU write: {:02X} <= {:02X}", address, value),
@@ -363,21 +359,34 @@ impl Ppu {
         self.latch.set_enabled(clock, enabled);
     }
 
-    pub fn draw_line(&mut self, line: u16) {
+    pub fn draw_line(&mut self, line: u16, interlace: bool, odd_frame: bool) {
         if !self.visible_range.contains(&line) {
             // This line is hidden by overscan, so we only need to draw the
             // object layer as this has side effects on register $213E
             if !self.force_blank {
-                self.draw_obj(line - 1);
+                self.draw_obj(line - 1, odd_frame);
             }
             return;
         }
 
-        if self.force_blank {
-            self.screen.force_blank();
-            return;
+        if interlace && odd_frame {
+            self.screen.skip_line();
         }
 
+        if self.force_blank {
+            self.screen.force_blank();
+        } else {
+            self.draw_layers(line, interlace, odd_frame);
+        }
+
+        if !interlace {
+            self.screen.duplicate_line();
+        } else if !odd_frame {
+            self.screen.skip_line();
+        }
+    }
+
+    fn draw_layers(&mut self, line: u16, interlace: bool, odd_frame: bool) {
         let backdrop_color = self.cgram.color(0);
 
         for index in [0, 1] {
@@ -410,6 +419,12 @@ impl Ppu {
                 self.draw_bg::<1, 0, false>(1, 3, 1, 0, line);
             }
             5 => {
+                let line = if interlace {
+                    (line << 1) + (odd_frame as u16)
+                } else {
+                    line
+                };
+
                 self.draw_bg::<1, 0, true>(0, 4, 2, 0, line);
                 self.draw_bg::<0, 0, true>(1, 3, 1, 0, line);
             }
@@ -420,7 +435,7 @@ impl Ppu {
             _ => panic!("Mode {} not yet implemented", self.bg_mode),
         }
 
-        self.draw_obj(line - 1);
+        self.draw_obj(line - 1, odd_frame);
 
         self.apply_color_math();
 
