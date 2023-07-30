@@ -3,7 +3,10 @@ pub use screen::{HEIGHT, WIDTH};
 use super::clock::Clock;
 use background::BackgroundLayer;
 use bitflags::bitflags;
-use buffer::{Pixel, PixelBuffer, TileBuffer, LAYER_BACKDROP, PIXEL_BUFFER_SIZE, TILE_BUFFER_SIZE};
+use buffer::{
+    OffsetBuffer, Pixel, PixelBuffer, TileBuffer, LAYER_BACKDROP, OFFSET_BUFFER_SIZE,
+    PIXEL_BUFFER_SIZE, TILE_BUFFER_SIZE,
+};
 use cgram::Cgram;
 use color_math::ColorMath;
 use latch::Latch;
@@ -63,6 +66,7 @@ pub struct Ppu {
     window_mask: [WindowMask; 6],
     color_math: ColorMath,
     screen: Screen,
+    offsets: OffsetBuffer,
     tiles: TileBuffer,
     pixels: [PixelBuffer; 2],
     vram: Vram,
@@ -114,6 +118,7 @@ impl Ppu {
             ],
             color_math: ColorMath::new(),
             screen: Screen::new(),
+            offsets: [Default::default(); OFFSET_BUFFER_SIZE],
             tiles: [Default::default(); TILE_BUFFER_SIZE],
             pixels: [
                 [Default::default(); PIXEL_BUFFER_SIZE],
@@ -385,23 +390,28 @@ impl Ppu {
 
         match self.bg_mode {
             0 => {
-                self.draw_bg::<0, false>(0, 4, 3, 0, line);
-                self.draw_bg::<0, false>(1, 4, 3, 32, line);
-                self.draw_bg::<0, false>(2, 2, 1, 64, line);
-                self.draw_bg::<0, false>(3, 2, 1, 96, line);
+                self.draw_bg::<0, 0, false>(0, 4, 3, 0, line);
+                self.draw_bg::<0, 0, false>(1, 4, 3, 32, line);
+                self.draw_bg::<0, 0, false>(2, 2, 1, 64, line);
+                self.draw_bg::<0, 0, false>(3, 2, 1, 96, line);
             }
             1 => {
-                self.draw_bg::<1, false>(0, 4, 3, 0, line);
-                self.draw_bg::<1, false>(1, 4, 3, 0, line);
-                self.draw_bg::<0, false>(2, self.bg3_priority as u8, 1, 0, line);
+                self.draw_bg::<1, 0, false>(0, 4, 3, 0, line);
+                self.draw_bg::<1, 0, false>(1, 4, 3, 0, line);
+                self.draw_bg::<0, 0, false>(2, self.bg3_priority as u8, 1, 0, line);
+            }
+            2 => {
+                self.select_bg_offsets::<false>(2);
+                self.draw_bg::<1, 0x2000, false>(0, 4, 2, 0, line);
+                self.draw_bg::<1, 0x4000, false>(1, 3, 1, 0, line);
             }
             3 => {
-                self.draw_bg::<2, false>(0, 4, 2, 0, line);
-                self.draw_bg::<1, false>(1, 3, 1, 0, line);
+                self.draw_bg::<2, 0, false>(0, 4, 2, 0, line);
+                self.draw_bg::<1, 0, false>(1, 3, 1, 0, line);
             }
             5 => {
-                self.draw_bg::<1, true>(0, 4, 2, 0, line);
-                self.draw_bg::<0, true>(1, 3, 1, 0, line);
+                self.draw_bg::<1, 0, true>(0, 4, 2, 0, line);
+                self.draw_bg::<0, 0, true>(1, 3, 1, 0, line);
             }
             7 => {
                 self.draw_mode7(0, line);

@@ -1,4 +1,5 @@
 use super::buffer::Pixel;
+use super::vram::Vram;
 use super::window::MASK_NONE;
 use tracing::{debug, trace};
 
@@ -105,10 +106,44 @@ impl BackgroundLayer {
     pub fn reset_mosaic_counter(&mut self) {
         self.mosaic_y = 0;
     }
+
+    fn load_tile(&self, vram: &Vram, coarse_x: u16, coarse_y: u16, tile_width: bool) -> u16 {
+        let tile_y = (coarse_y >> (self.tile_size as u32)) & self.tile_mirror_y;
+        let tile_x = (coarse_x >> (tile_width as u32)) & self.tile_mirror_x;
+
+        let address = self.tile_map
+            | ((tile_y & 0x20) << self.tile_shift_y)
+            | ((tile_x & 0x20) << TILE_SHIFT_32)
+            | ((tile_y & 0x1f) << TILE_SHIFT_32)
+            | (tile_x & 0x1f);
+
+        let value = vram.data(address as usize);
+        trace!("Tile Load: {:04X} => {:04X}", address, value);
+        value
+    }
 }
 
 impl super::Ppu {
-    pub(super) fn draw_bg<const COLOR_DEPTH: u8, const HI_RES: bool>(
+    pub(super) fn select_bg_offsets<const HI_RES: bool>(&mut self, bg_index: usize) {
+        let bg = &mut self.bg[bg_index];
+        let tile_width = HI_RES || bg.tile_size;
+
+        let coarse_x = bg.scroll_x >> 3;
+        let coarse_y = bg.scroll_y >> 3;
+
+        for (index, offset) in self.offsets.iter_mut().enumerate() {
+            offset.x = bg.load_tile(&self.vram, coarse_x + index as u16, coarse_y, tile_width);
+
+            offset.y = bg.load_tile(
+                &self.vram,
+                coarse_x + index as u16,
+                coarse_y + 1,
+                tile_width,
+            );
+        }
+    }
+
+    pub(super) fn draw_bg<const COLOR_DEPTH: u8, const OFFSET_MASK: u16, const HI_RES: bool>(
         &mut self,
         bg_index: usize,
         priority_high: u8,
@@ -122,7 +157,7 @@ impl super::Ppu {
             return;
         }
 
-        self.select_bg_tiles::<COLOR_DEPTH, HI_RES>(
+        self.select_bg_tiles::<COLOR_DEPTH, OFFSET_MASK, HI_RES>(
             bg_index,
             priority_high,
             priority_low,
@@ -142,7 +177,7 @@ impl super::Ppu {
         }
     }
 
-    fn select_bg_tiles<const COLOR_DEPTH: u8, const HI_RES: bool>(
+    fn select_bg_tiles<const COLOR_DEPTH: u8, const OFFSET_MASK: u16, const HI_RES: bool>(
         &mut self,
         bg_index: usize,
         priority_high: u8,
@@ -158,8 +193,8 @@ impl super::Ppu {
             (bg.tile_size, self.tiles.len() / 2)
         };
 
-        let (coarse_y, fine_y) = {
-            let pos_y = bg.scroll_y.wrapping_add(line - bg.mosaic_y);
+        let mosaic_line = {
+            let mosaic_y = bg.mosaic_y;
 
             bg.mosaic_y += 1;
 
@@ -167,26 +202,21 @@ impl super::Ppu {
                 bg.mosaic_y = 0;
             }
 
-            (pos_y >> 3, pos_y & 7)
+            line - mosaic_y
         };
 
-        let mut coarse_x = bg.scroll_x >> 3;
+        let mut scroll_x = bg.scroll_x;
+        let mut scroll_y = bg.scroll_y;
 
-        for tile in &mut self.tiles[0..tile_count] {
-            let tile_data = {
-                let tile_y = (coarse_y >> (bg.tile_size as u32)) & bg.tile_mirror_y;
-                let tile_x = (coarse_x >> (tile_width as u32)) & bg.tile_mirror_x;
-
-                let address = bg.tile_map
-                    | ((tile_y & 0x20) << bg.tile_shift_y)
-                    | ((tile_x & 0x20) << TILE_SHIFT_32)
-                    | ((tile_y & 0x1f) << TILE_SHIFT_32)
-                    | (tile_x & 0x1f);
-
-                let value = self.vram.data(address as usize);
-                trace!("Tile Load: {:04X} => {:04X}", address, value);
-                value
+        for (index, tile) in self.tiles[0..tile_count].iter_mut().enumerate() {
+            let (coarse_y, fine_y) = {
+                let pos_y = scroll_y.wrapping_add(mosaic_line);
+                (pos_y >> 3, pos_y & 7)
             };
+
+            let coarse_x = (scroll_x >> 3) + index as u16;
+
+            let tile_data = bg.load_tile(&self.vram, coarse_x, coarse_y, tile_width);
 
             let mut name_y = coarse_y & (bg.tile_size as u16);
 
@@ -242,7 +272,21 @@ impl super::Ppu {
                 _ => unreachable!(),
             }
 
-            coarse_x += 1;
+            if OFFSET_MASK != 0 {
+                let offset = self.offsets[index >> (tile_width as u32)];
+
+                if (offset.x & OFFSET_MASK) != 0 {
+                    scroll_x = offset.x & 0x03ff;
+                } else {
+                    scroll_x = bg.scroll_x;
+                }
+
+                if (offset.y & OFFSET_MASK) != 0 {
+                    scroll_y = offset.y & 0x03ff;
+                } else {
+                    scroll_y = bg.scroll_y;
+                }
+            }
         }
 
         trace!("{} Tiles: {:?}", bg.name, self.tiles);
