@@ -4,6 +4,14 @@ use tracing::debug;
 mod instruction;
 mod operator;
 
+#[rustfmt::skip]
+const REGS: [&'static str; 16] = [
+    "R0", "R1", "R2", "R3",
+    "R4", "R5", "R6", "R7",
+    "R8", "R9", "R10", "R11",
+    "R12", "SP", "LR", "PC",
+];
+
 pub trait Bus {
     fn read<T: Value>(&mut self, address: u32) -> T;
 }
