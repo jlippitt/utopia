@@ -112,7 +112,7 @@ impl Hardware {
                 Event::HBlank => {
                     let line = self.clock.line();
 
-                    if line < self.clock.vblank_line() {
+                    if line < self.ppu.vblank_line() {
                         self.transfer_hdma();
 
                         if line >= 1 {
@@ -127,16 +127,16 @@ impl Hardware {
                 Event::NewLine => {
                     let line = self.clock.line();
 
-                    if line == self.clock.vblank_line() {
+                    if line == self.ppu.vblank_line() {
                         self.ready = true;
                         self.clock.set_nmi_occurred(&mut self.interrupt, true);
                         self.ppu.on_vblank_start();
                     } else if line == 0 {
                         self.clock.set_nmi_occurred(&mut self.interrupt, false);
                         self.interrupt &= !INT_NMI;
-                        self.ppu.on_frame_start(&mut self.clock);
+                        self.ppu.on_frame_start();
                         self.init_hdma();
-                    } else if line == (self.clock.vblank_line() + 3) {
+                    } else if line == (self.ppu.vblank_line() + 3) {
                         // TODO: Actual timine for this
                         self.joypad.perform_auto_read();
                     }

@@ -33,6 +33,9 @@ mod toggle;
 mod vram;
 mod window;
 
+const VBLANK_LINE_NORMAL: u16 = 225;
+const VBLANK_LINE_OVERSCAN: u16 = 240;
+
 const VISIBLE_RANGE_NORMAL: RangeInclusive<u16> = 1..=224;
 const VISIBLE_RANGE_OVERSCAN: RangeInclusive<u16> = 9..=232;
 
@@ -52,6 +55,7 @@ bitflags! {
 }
 
 pub struct Ppu {
+    vblank_line: u16,
     visible_range: RangeInclusive<u16>,
     force_blank: bool,
     bg_mode: u8,
@@ -80,6 +84,7 @@ pub struct Ppu {
 impl Ppu {
     pub fn new() -> Self {
         Self {
+            vblank_line: VBLANK_LINE_NORMAL,
             visible_range: VISIBLE_RANGE_NORMAL,
             force_blank: true,
             bg_mode: 0,
@@ -131,6 +136,10 @@ impl Ppu {
             overscan: false,
             latch: Latch::new(),
         }
+    }
+
+    pub fn vblank_line(&self) -> u16 {
+        self.vblank_line
     }
 
     pub fn pixels(&self) -> &[u8] {
@@ -323,7 +332,7 @@ impl Ppu {
         }
     }
 
-    pub fn on_frame_start(&mut self, clock: &mut Clock) {
+    pub fn on_frame_start(&mut self) {
         self.screen.reset();
 
         self.bg[0].reset_mosaic_counter();
@@ -338,14 +347,13 @@ impl Ppu {
         // We do all this at the start of the frame, instead of when the flag
         // is set, because changing modes in the middle of a frame causes all
         // sorts of problems
-        clock.set_overscan(self.overscan);
-
-        self.visible_range = if self.overscan {
-            VISIBLE_RANGE_OVERSCAN
+        (self.vblank_line, self.visible_range) = if self.overscan {
+            (VBLANK_LINE_OVERSCAN, VISIBLE_RANGE_OVERSCAN)
         } else {
-            VISIBLE_RANGE_NORMAL
+            (VBLANK_LINE_NORMAL, VISIBLE_RANGE_NORMAL)
         };
 
+        debug!("VBlank Line: {}", self.vblank_line);
         debug!("Visible Range: {:?}", self.visible_range);
     }
 

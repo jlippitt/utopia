@@ -74,7 +74,7 @@ impl super::Hardware {
             0x12 => {
                 let line = self.clock.line();
                 let dot = self.clock.dot();
-                let vblank_line = self.clock.vblank_line();
+                let vblank_line = self.ppu.vblank_line();
 
                 let mut value = prev_value & 0x3e;
 

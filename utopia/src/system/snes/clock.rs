@@ -8,11 +8,7 @@ pub const FAST_CYCLES: u64 = 6;
 pub const SLOW_CYCLES: u64 = 8;
 pub const EXTRA_SLOW_CYCLES: u64 = 12;
 
-// TODO: Interlace
-pub const VBLANK_LINE_NORMAL: u16 = 225;
-pub const VBLANK_LINE_OVERSCAN: u16 = 240;
 pub const TOTAL_LINES: u16 = 262;
-
 pub const CYCLES_PER_LINE: u64 = 1364;
 
 pub const TIMER_IRQ: Interrupt = 0x04;
@@ -64,9 +60,8 @@ pub struct Clock {
     next_event: LineEvent,
     line_events: Peekable<slice::Iter<'static, LineEvent>>,
     line: u16,
-    interlace: bool,
-    vblank_line: u16,
     total_lines: u16,
+    interlace: bool,
     frame: u64,
     nmi_occurred: bool,
     nmi_active: bool,
@@ -89,9 +84,8 @@ impl Clock {
             next_event: *next_event,
             line_events,
             line: 0,
-            interlace: false,
-            vblank_line: VBLANK_LINE_NORMAL,
             total_lines: TOTAL_LINES,
+            interlace: false,
             frame: 0,
             nmi_occurred: false,
             nmi_active: false,
@@ -123,10 +117,6 @@ impl Clock {
         (self.frame & 1) != 0
     }
 
-    pub fn vblank_line(&self) -> u16 {
-        self.vblank_line
-    }
-
     pub fn nmi_occurred(&self) -> bool {
         self.nmi_occurred
     }
@@ -134,15 +124,6 @@ impl Clock {
     pub fn set_interlace(&mut self, interlace: bool) {
         self.interlace = interlace;
         debug!("Screen Interlace: {}", self.interlace);
-    }
-
-    pub fn set_overscan(&mut self, overscan: bool) {
-        self.vblank_line = if overscan {
-            VBLANK_LINE_OVERSCAN
-        } else {
-            VBLANK_LINE_NORMAL
-        };
-        debug!("VBlank Line: {}", self.vblank_line);
     }
 
     pub fn set_nmi_occurred(&mut self, interrupt: &mut Interrupt, nmi_occurred: bool) {
