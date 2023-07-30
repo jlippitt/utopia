@@ -63,6 +63,7 @@ impl<T: Bus> Core<T> {
 
         match (word >> 20) & 0xff {
             0x35 => instr::compare_immediate::<op::Cmp>(self, pc, word),
+            0x3a => instr::move_immediate::<op::Mov, false>(self, pc, word),
             0xa0 => instr::branch::<false>(self, pc, word),
             opcode => todo!(
                 "ARM7 Opcode {0:02X} [{0:08b}] (PC: {1:08X})",
@@ -95,10 +96,19 @@ impl<T: Bus> Core<T> {
 
     fn get(&self, reg: u32) -> u32 {
         if reg == 15 {
-            todo!("PC fetch");
+            todo!("PC get");
         }
 
         self.regs[reg as usize]
+    }
+
+    fn set(&mut self, reg: u32, value: u32) {
+        if reg == 15 {
+            todo!("PC set");
+        }
+
+        self.regs[reg as usize] = value;
+        debug!("  {}: {:08X}", REGS[reg as usize], value);
     }
 
     fn set_nz(&mut self, value: u32) {
