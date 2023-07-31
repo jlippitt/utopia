@@ -19,4 +19,10 @@ pub fn bx(core: &mut Core<impl Bus>, pc: u32, word: u32) {
     let target = core.get(rn);
     core.pc = target & 0xffff_fffe;
     core.cpsr.t = (target & 0x0000_0001) != 0;
+
+    if core.cpsr.t {
+        debug!("  Thumb Mode");
+    } else {
+        debug!("  ARM Mode");
+    }
 }
