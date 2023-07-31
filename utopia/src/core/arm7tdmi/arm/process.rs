@@ -16,7 +16,7 @@ pub fn binary_immediate<Op: BinaryOperator, const SET_FLAGS: bool>(
     let value = immediate_value(word);
 
     debug!(
-        "{:08X} {}{} {}, {}, #{:08X}",
+        "{:08X} {}{} {}, {}, #0x{:08X}",
         pc,
         Op::NAME,
         if SET_FLAGS { "S" } else { "" },
@@ -43,7 +43,7 @@ pub fn move_immediate<Op: MoveOperator, const SET_FLAGS: bool>(
     let value = immediate_value(word);
 
     debug!(
-        "{:08X} {}{} {}, #{:08X}",
+        "{:08X} {}{} {}, #0x{:08X}",
         pc,
         Op::NAME,
         if SET_FLAGS { "S" } else { "" },
@@ -64,7 +64,7 @@ pub fn compare_immediate<Op: ComparisonOperator>(core: &mut Core<impl Bus>, pc: 
     let rn = ((word >> 16) & 15) as usize;
     let value = immediate_value(word);
 
-    debug!("{:08X} {} {}, #{:08X}", pc, Op::NAME, REGS[rn], value);
+    debug!("{:08X} {} {}, #0x{:08X}", pc, Op::NAME, REGS[rn], value);
 
     Op::apply(core, core.get(rn), value);
 }
