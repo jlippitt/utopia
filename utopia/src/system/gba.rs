@@ -1,9 +1,9 @@
 use super::{BiosLoader, System};
 use crate::core::arm7tdmi::{Bus, Core};
-use crate::util::facade::{DataReader, ReadFacade, Value};
+use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
 use crate::JoypadState;
 use std::error::Error;
-use tracing::info;
+use tracing::{debug, info, warn};
 
 const WIDTH: usize = 240;
 const HEIGHT: usize = 160;
@@ -68,10 +68,25 @@ impl DataReader for Hardware {
     type Address = u32;
     type Value = u8;
 
-    fn read(&self, address: Self::Address) -> Self::Value {
+    fn read(&self, address: u32) -> u8 {
         match address {
             0x0300 => self.post_boot_flag,
             _ => todo!("I/O Register Read: {:08X}", address),
+        }
+    }
+}
+
+impl DataWriter for Hardware {
+    fn write(&mut self, address: u32, value: u8) {
+        match address {
+            0x0300 => {
+                self.post_boot_flag = value;
+                debug!("Post-Boot Flag: {:02X}", self.post_boot_flag);
+            }
+            _ => warn!(
+                "not yet implemented: I/O Register Write: {:08X} <= {:02X}",
+                address, value
+            ),
         }
     }
 }
@@ -96,6 +111,28 @@ impl Bus for Hardware {
             0x08..=0x0d => self.rom.read_le(address as usize & 0x01ff_ffff),
             0xe0 => todo!("SRAM Reads"),
             _ => panic!("Unmapped Read: {:08X}", address),
+        }
+    }
+
+    fn write<T: Value>(&mut self, address: u32, value: T) {
+        match address >> 24 {
+            0x00 => panic!("Write to BIOS area: {:08X} <= {:08X}", address, value),
+            0x02 => todo!("EWRAM Writes"),
+            0x03 => todo!("IWRAM Writes"),
+            0x04 => match address & 0x00ff_ffff {
+                0x0000..=0x005f => todo!("LCD Register Writes"),
+                0x0060..=0x00af => todo!("Audio Register Writes"),
+                0x00b0..=0x00ff => todo!("DMA Register Writes"),
+                0x0100..=0x011f => todo!("Timer Register Writes"),
+                0x0120..=0x01ff => todo!("Serial Register Writes"),
+                address => self.write_le(address, value),
+            },
+            0x05 => todo!("Palette RAM Writes"),
+            0x06 => todo!("VRAM Writes"),
+            0x07 => todo!("OAM Writes"),
+            0x08..=0x0d => panic!("Write to ROM area: {:08X} <= {:08X}", address, value),
+            0xe0 => todo!("SRAM Writes"),
+            _ => panic!("Unmapped Write: {:08X} <= {:08X}", address, value),
         }
     }
 }

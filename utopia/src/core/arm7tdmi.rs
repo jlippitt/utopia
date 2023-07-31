@@ -14,6 +14,7 @@ const REGS: [&'static str; 16] = [
 
 pub trait Bus {
     fn read<T: Value>(&mut self, address: u32) -> T;
+    fn write<T: Value>(&mut self, address: u32, value: T);
 }
 
 #[derive(Clone, Default)]
@@ -74,41 +75,41 @@ impl<T: Bus> Core<T> {
 
             0x3a => instr::move_immediate::<op::Mov, false>(self, pc, word),
 
-            //0x40 => instr::str_immediate::<0b000>(self, pc, word),
-            0x41 => instr::ldr_immediate::<0b000>(self, pc, word),
-            //0x42 => instr::str_immediate::<0b001>(self, pc, word),
-            0x43 => instr::ldr_immediate::<0b001>(self, pc, word),
-            //0x44 => instr::strb_immediate::<0b000>(self, pc, word),
-            0x45 => instr::ldrb_immediate::<0b000>(self, pc, word),
-            //0x46 => instr::strb_immediate::<0b001>(self, pc, word),
-            0x47 => instr::ldrb_immediate::<0b001>(self, pc, word),
+            0x40 => instr::str_immediate::<false, 0b000>(self, pc, word),
+            0x41 => instr::ldr_immediate::<false, 0b000>(self, pc, word),
+            0x42 => instr::str_immediate::<false, 0b001>(self, pc, word),
+            0x43 => instr::ldr_immediate::<false, 0b001>(self, pc, word),
+            0x44 => instr::str_immediate::<true, 0b000>(self, pc, word),
+            0x45 => instr::ldr_immediate::<true, 0b000>(self, pc, word),
+            0x46 => instr::str_immediate::<true, 0b001>(self, pc, word),
+            0x47 => instr::ldr_immediate::<true, 0b001>(self, pc, word),
 
-            //0x48 => instr::str_immediate::<0b010>(self, pc, word),
-            0x49 => instr::ldr_immediate::<0b010>(self, pc, word),
-            //0x4a => instr::str_immediate::<0b011>(self, pc, word),
-            0x4b => instr::ldr_immediate::<0b011>(self, pc, word),
-            //0x4c => instr::strb_immediate::<0b010>(self, pc, word),
-            0x4d => instr::ldrb_immediate::<0b010>(self, pc, word),
-            //0x4e => instr::strb_immediate::<0b011>(self, pc, word),
-            0x4f => instr::ldrb_immediate::<0b011>(self, pc, word),
+            0x48 => instr::str_immediate::<false, 0b010>(self, pc, word),
+            0x49 => instr::ldr_immediate::<false, 0b010>(self, pc, word),
+            0x4a => instr::str_immediate::<false, 0b011>(self, pc, word),
+            0x4b => instr::ldr_immediate::<false, 0b011>(self, pc, word),
+            0x4c => instr::str_immediate::<true, 0b010>(self, pc, word),
+            0x4d => instr::ldr_immediate::<true, 0b010>(self, pc, word),
+            0x4e => instr::str_immediate::<true, 0b011>(self, pc, word),
+            0x4f => instr::ldr_immediate::<true, 0b011>(self, pc, word),
 
-            //0x50 => instr::str_immediate::<0b100>(self, pc, word),
-            0x51 => instr::ldr_immediate::<0b100>(self, pc, word),
-            //0x52 => instr::str_immediate::<0b101>(self, pc, word),
-            0x53 => instr::ldr_immediate::<0b101>(self, pc, word),
-            //0x54 => instr::strb_immediate::<0b100>(self, pc, word),
-            0x55 => instr::ldrb_immediate::<0b100>(self, pc, word),
-            //0x56 => instr::strb_immediate::<0b101>(self, pc, word),
-            0x57 => instr::ldrb_immediate::<0b101>(self, pc, word),
+            0x50 => instr::str_immediate::<false, 0b100>(self, pc, word),
+            0x51 => instr::ldr_immediate::<false, 0b100>(self, pc, word),
+            0x52 => instr::str_immediate::<false, 0b101>(self, pc, word),
+            0x53 => instr::ldr_immediate::<false, 0b101>(self, pc, word),
+            0x54 => instr::str_immediate::<true, 0b100>(self, pc, word),
+            0x55 => instr::ldr_immediate::<true, 0b100>(self, pc, word),
+            0x56 => instr::str_immediate::<true, 0b101>(self, pc, word),
+            0x57 => instr::ldr_immediate::<true, 0b101>(self, pc, word),
 
-            //0x58 => instr::str_immediate::<0b110>(self, pc, word),
-            0x59 => instr::ldr_immediate::<0b110>(self, pc, word),
-            //0x5a => instr::str_immediate::<0b111>(self, pc, word),
-            0x5b => instr::ldr_immediate::<0b111>(self, pc, word),
-            //0x5c => instr::strb_immediate::<0b110>(self, pc, word),
-            0x5d => instr::ldrb_immediate::<0b110>(self, pc, word),
-            //0x5e => instr::strb_immediate::<0b111>(self, pc, word),
-            0x5f => instr::ldrb_immediate::<0b111>(self, pc, word),
+            0x58 => instr::str_immediate::<false, 0b110>(self, pc, word),
+            0x59 => instr::ldr_immediate::<false, 0b110>(self, pc, word),
+            0x5a => instr::str_immediate::<false, 0b111>(self, pc, word),
+            0x5b => instr::ldr_immediate::<false, 0b111>(self, pc, word),
+            0x5c => instr::str_immediate::<true, 0b110>(self, pc, word),
+            0x5d => instr::ldr_immediate::<true, 0b110>(self, pc, word),
+            0x5e => instr::str_immediate::<true, 0b111>(self, pc, word),
+            0x5f => instr::ldr_immediate::<true, 0b111>(self, pc, word),
             0xa0 => instr::branch::<false>(self, pc, word),
 
             opcode => todo!(
@@ -150,6 +151,16 @@ impl<T: Bus> Core<T> {
         let value = self.bus.read(address);
         debug!("  [{:08X}] => {:08X}", address, value);
         value
+    }
+
+    fn write_byte(&mut self, address: u32, value: u8) {
+        debug!("  [{:08X}] <= {:02X}", address, value);
+        self.bus.write(address, value);
+    }
+
+    fn write_word(&mut self, address: u32, value: u32) {
+        debug!("  [{:08X}] <= {:08X}", address, value);
+        self.bus.write(address, value);
     }
 
     fn get(&self, reg: usize) -> u32 {

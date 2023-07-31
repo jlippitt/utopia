@@ -39,36 +39,56 @@ fn resolve<const PUW: u8>(core: &mut Core<impl Bus>, rn: usize, offset: u32) -> 
     address
 }
 
-pub fn ldr_immediate<const PUW: u8>(core: &mut Core<impl Bus>, pc: u32, word: u32) {
+pub fn ldr_immediate<const BYTE: bool, const PUW: u8>(
+    core: &mut Core<impl Bus>,
+    pc: u32,
+    word: u32,
+) {
     let rn = ((word >> 16) & 15) as usize;
     let rd = ((word >> 12) & 15) as usize;
     let offset = word & 0x0000_0fff;
 
     debug!(
-        "{:08X} LDR {}, {}",
+        "{:08X} LDR{} {}, {}",
         pc,
+        if BYTE { "B" } else { "" },
         REGS[rd],
         format_immediate::<PUW>(rn, offset),
     );
 
     let address = resolve::<PUW>(core, rn, offset);
-    let result = core.read_word(address);
+
+    let result = if BYTE {
+        core.read_byte(address) as u32
+    } else {
+        core.read_word(address)
+    };
+
     core.set(rd, result);
 }
 
-pub fn ldrb_immediate<const PUW: u8>(core: &mut Core<impl Bus>, pc: u32, word: u32) {
+pub fn str_immediate<const BYTE: bool, const PUW: u8>(
+    core: &mut Core<impl Bus>,
+    pc: u32,
+    word: u32,
+) {
     let rn = ((word >> 16) & 15) as usize;
     let rd = ((word >> 12) & 15) as usize;
     let offset = word & 0x0000_0fff;
 
     debug!(
-        "{:08X} LDRB {}, {}",
+        "{:08X} STR{} {}, {}",
         pc,
+        if BYTE { "B" } else { "" },
         REGS[rd],
         format_immediate::<PUW>(rn, offset),
     );
 
     let address = resolve::<PUW>(core, rn, offset);
-    let result = core.read_byte(address);
-    core.set(rd, result as u32);
+
+    if BYTE {
+        core.write_byte(address, core.get(rd) as u8);
+    } else {
+        core.write_word(address, core.get(rd));
+    }
 }
