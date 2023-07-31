@@ -104,6 +104,11 @@ impl<T: Bus> Core<T> {
             return;
         }
 
+        if (word & 0x0e00_0010) == 0x0000_0010 {
+            self.special(word);
+            return;
+        }
+
         match (word >> 20) & 0xff {
             0x12 => instr::msr_register::<false>(self, pc, word),
             0x16 => instr::msr_register::<true>(self, pc, word),
@@ -178,6 +183,16 @@ impl<T: Bus> Core<T> {
 
             opcode => todo!(
                 "ARM7 Opcode {0:02X} [{0:08b}] (PC: {1:08X})",
+                opcode,
+                self.pc
+            ),
+        }
+    }
+
+    fn special(&mut self, word: u32) {
+        match (word >> 20) & 0x1f {
+            opcode => todo!(
+                "ARM7 Special Opcode {0:02X} [{0:08b}] (PC: {1:08X})",
                 opcode,
                 self.pc
             ),
