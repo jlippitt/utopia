@@ -1,8 +1,9 @@
 use crate::util::facade::Value;
 use tracing::debug;
 
-mod instruction;
+mod arm;
 mod operator;
+mod thumb;
 
 #[rustfmt::skip]
 const REGS: [&'static str; 16] = [
@@ -88,121 +89,10 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn step(&mut self) {
-        use instruction as instr;
-        use operator as op;
-
         if self.cpsr.t {
-            todo!("Thumb mode");
-        }
-
-        assert!((self.pc & 3) == 0);
-
-        let pc = self.pc;
-        let word = self.bus.read::<u32>(self.pc);
-        self.pc = self.pc.wrapping_add(4);
-
-        let (name, result) = self.apply_condition(word);
-
-        if !result {
-            debug!("{:08X}: ({}: Skipped)", self.pc, name);
-            return;
-        }
-
-        if (word & 0x0e00_0010) == 0x0000_0010 {
-            self.special(pc, word);
-            return;
-        }
-
-        match (word >> 20) & 0xff {
-            0x12 => instr::msr_register::<false>(self, pc, word),
-            0x16 => instr::msr_register::<true>(self, pc, word),
-
-            //0x20 => instr::binary_immediate::<op::And, false>(self, pc, word),
-            //0x21 => instr::binary_immediate::<op::And, true>(self, pc, word),
-            //0x22 => instr::binary_immediate::<op::Eor, false>(self, pc, word),
-            //0x23 => instr::binary_immediate::<op::Eor, true>(self, pc, word),
-            //0x24 => instr::binary_immediate::<op::Sub, false>(self, pc, word),
-            //0x25 => instr::binary_immediate::<op::Sub, true>(self, pc, word),
-            //0x26 => instr::binary_immediate::<op::Rsb, false>(self, pc, word),
-            //0x27 => instr::binary_immediate::<op::Rsb, true>(self, pc, word),
-            0x28 => instr::binary_immediate::<op::Add, false>(self, pc, word),
-            0x29 => instr::binary_immediate::<op::Add, true>(self, pc, word),
-            0x2a => instr::binary_immediate::<op::Adc, false>(self, pc, word),
-            0x2b => instr::binary_immediate::<op::Adc, true>(self, pc, word),
-            //0x2c => instr::binary_immediate::<op::Sbc, false>(self, pc, word),
-            //0x2d => instr::binary_immediate::<op::Sbc, true>(self, pc, word),
-            //0x2e => instr::binary_immediate::<op::Rsc, false>(self, pc, word),
-            //0x2f => instr::binary_immediate::<op::Rsc, true>(self, pc, word),
-            0x31 => instr::compare_immediate::<op::Tst>(self, pc, word),
-            0x33 => instr::compare_immediate::<op::Teq>(self, pc, word),
-            0x35 => instr::compare_immediate::<op::Cmp>(self, pc, word),
-            0x37 => instr::compare_immediate::<op::Cmn>(self, pc, word),
-
-            //0x38 => instr::binary_immediate::<op::Or, false>(self, pc, word),
-            //0x39 => instr::binary_immediate::<op::Or, true>(self, pc, word),
-            0x3a => instr::move_immediate::<op::Mov, false>(self, pc, word),
-            0x3b => instr::move_immediate::<op::Mov, true>(self, pc, word),
-            //0x3c => instr::binary_immediate::<op::Bic, false>(self, pc, word),
-            //0x3d => instr::binary_immediate::<op::Bic, true>(self, pc, word),
-            //0x3e => instr::move_immediate::<op::Mvn, false>(self, pc, word),
-            //0x3f => instr::move_immediate::<op::Mvn, true>(self, pc, word),
-            0x40 => instr::str_immediate::<false, 0b000>(self, pc, word),
-            0x41 => instr::ldr_immediate::<false, 0b000>(self, pc, word),
-            0x42 => instr::str_immediate::<false, 0b001>(self, pc, word),
-            0x43 => instr::ldr_immediate::<false, 0b001>(self, pc, word),
-            0x44 => instr::str_immediate::<true, 0b000>(self, pc, word),
-            0x45 => instr::ldr_immediate::<true, 0b000>(self, pc, word),
-            0x46 => instr::str_immediate::<true, 0b001>(self, pc, word),
-            0x47 => instr::ldr_immediate::<true, 0b001>(self, pc, word),
-
-            0x48 => instr::str_immediate::<false, 0b010>(self, pc, word),
-            0x49 => instr::ldr_immediate::<false, 0b010>(self, pc, word),
-            0x4a => instr::str_immediate::<false, 0b011>(self, pc, word),
-            0x4b => instr::ldr_immediate::<false, 0b011>(self, pc, word),
-            0x4c => instr::str_immediate::<true, 0b010>(self, pc, word),
-            0x4d => instr::ldr_immediate::<true, 0b010>(self, pc, word),
-            0x4e => instr::str_immediate::<true, 0b011>(self, pc, word),
-            0x4f => instr::ldr_immediate::<true, 0b011>(self, pc, word),
-
-            0x50 => instr::str_immediate::<false, 0b100>(self, pc, word),
-            0x51 => instr::ldr_immediate::<false, 0b100>(self, pc, word),
-            0x52 => instr::str_immediate::<false, 0b101>(self, pc, word),
-            0x53 => instr::ldr_immediate::<false, 0b101>(self, pc, word),
-            0x54 => instr::str_immediate::<true, 0b100>(self, pc, word),
-            0x55 => instr::ldr_immediate::<true, 0b100>(self, pc, word),
-            0x56 => instr::str_immediate::<true, 0b101>(self, pc, word),
-            0x57 => instr::ldr_immediate::<true, 0b101>(self, pc, word),
-
-            0x58 => instr::str_immediate::<false, 0b110>(self, pc, word),
-            0x59 => instr::ldr_immediate::<false, 0b110>(self, pc, word),
-            0x5a => instr::str_immediate::<false, 0b111>(self, pc, word),
-            0x5b => instr::ldr_immediate::<false, 0b111>(self, pc, word),
-            0x5c => instr::str_immediate::<true, 0b110>(self, pc, word),
-            0x5d => instr::ldr_immediate::<true, 0b110>(self, pc, word),
-            0x5e => instr::str_immediate::<true, 0b111>(self, pc, word),
-            0x5f => instr::ldr_immediate::<true, 0b111>(self, pc, word),
-
-            0xa0..=0xaf => instr::branch::<false>(self, pc, word),
-            0xb0..=0xbf => instr::branch::<true>(self, pc, word),
-
-            opcode => todo!(
-                "ARM7 Opcode {0:02X} [{0:08b}] (PC: {1:08X})",
-                opcode,
-                self.pc
-            ),
-        }
-    }
-
-    fn special(&mut self, pc: u32, word: u32) {
-        use instruction as instr;
-
-        match (word >> 20) & 0x1f {
-            0x12 => instr::bx(self, pc, word),
-            opcode => todo!(
-                "ARM7 Special Opcode {0:02X} [{0:08b}] (PC: {1:08X})",
-                opcode,
-                self.pc
-            ),
+            thumb::dispatch(self);
+        } else {
+            arm::dispatch(self);
         }
     }
 
@@ -305,7 +195,7 @@ impl<T: Bus> Core<T> {
         debug!("  CPSR: {:08X}", self.cpsr_to_u32());
     }
 
-    fn spsr_to_u32(&self) -> u32 {
+    fn _spsr_to_u32(&self) -> u32 {
         match self.cpsr.m {
             Mode::Fiq => self.spsr.fiq,
             Mode::Irq => self.spsr.irq,

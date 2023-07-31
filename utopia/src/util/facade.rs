@@ -150,6 +150,13 @@ impl Address for u8 {
 
 impl Value for u8 {}
 
+impl Address for u16 {
+    const BITS: u32 = u16::BITS;
+    const MASK: usize = u16::MAX as usize;
+}
+
+impl Value for u16 {}
+
 impl Address for u32 {
     const BITS: u32 = u32::BITS;
     const MASK: usize = u32::MAX as usize;
