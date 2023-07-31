@@ -100,11 +100,7 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0xa0..=0xaf => branch::<false>(core, pc, word),
         0xb0..=0xbf => branch::<true>(core, pc, word),
 
-        opcode => todo!(
-            "ARM7 Opcode {0:02X} [{0:08b}] (PC: {1:08X})",
-            opcode,
-            core.pc
-        ),
+        opcode => todo!("ARM7 Opcode {0:02X} [{0:08b}] (PC: {1:08X})", opcode, pc),
     }
 }
 
@@ -114,7 +110,7 @@ fn dispatch_special(core: &mut Core<impl Bus>, pc: u32, word: u32) {
         opcode => todo!(
             "ARM7 Special Opcode {0:02X} [{0:08b}] (PC: {1:08X})",
             opcode,
-            core.pc
+            pc
         ),
     }
 }
