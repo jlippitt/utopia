@@ -17,6 +17,19 @@ pub trait Bus {
     fn write<T: Value>(&mut self, address: u32, value: T);
 }
 
+#[repr(u8)]
+#[derive(Copy, Clone, Default, Debug, Eq, PartialEq)]
+enum Mode {
+    User = 0b10000,
+    Fiq = 0b10001,
+    Irq = 0b10010,
+    Supervisor = 0b10011,
+    Abort = 0b10111,
+    Undefined = 0b11011,
+    #[default]
+    System = 0b11111,
+}
+
 #[derive(Clone, Default)]
 struct Psr {
     n: bool,
@@ -26,7 +39,26 @@ struct Psr {
     i: bool,
     f: bool,
     t: bool,
-    m: u8,
+    m: Mode,
+}
+
+#[derive(Clone, Default)]
+struct Spsr {
+    spsr_fiq: Psr,
+    spsr_svc: Psr,
+    spsr_abt: Psr,
+    spsr_irq: Psr,
+    spsr_und: Psr,
+}
+
+#[derive(Clone, Default)]
+struct Bank {
+    usr: [u32; 7],
+    fiq: [u32; 7],
+    svc: [u32; 2],
+    abt: [u32; 2],
+    irq: [u32; 2],
+    und: [u32; 2],
 }
 
 pub struct Core<T: Bus> {
@@ -34,7 +66,8 @@ pub struct Core<T: Bus> {
     pc: u32,
     regs: [u32; 16],
     cpsr: Psr,
-    spsr: Psr,
+    spsr: Spsr,
+    bank: Bank,
 }
 
 impl<T: Bus> Core<T> {
@@ -45,6 +78,7 @@ impl<T: Bus> Core<T> {
             regs: [0; 16],
             cpsr: Default::default(),
             spsr: Default::default(),
+            bank: Default::default(),
         }
     }
 
@@ -183,7 +217,12 @@ impl<T: Bus> Core<T> {
     }
 
     fn get_psr<const SUPER: bool>(&self) -> u32 {
-        let psr = if SUPER { &self.spsr } else { &self.cpsr };
+        let psr = if SUPER {
+            todo!("SPSR registers")
+        } else {
+            &self.cpsr
+        };
+
         let mut value = psr.m as u32;
         value |= if psr.n { 0x8000_0000 } else { 0 };
         value |= if psr.z { 0x4000_0000 } else { 0 };
@@ -197,7 +236,7 @@ impl<T: Bus> Core<T> {
 
     fn set_psr<const SUPER: bool>(&mut self, value: u32, control: bool) {
         let psr = if SUPER {
-            &mut self.spsr
+            todo!("SPSR registers")
         } else {
             &mut self.cpsr
         };
@@ -211,7 +250,17 @@ impl<T: Bus> Core<T> {
             psr.i = (value & 0x80) != 0;
             psr.f = (value & 0x40) != 0;
             psr.t = (value & 0x20) != 0;
-            psr.m = value as u8 & 0x1f;
+
+            self.set_mode(match value & 0x1f {
+                0b10000 => Mode::User,
+                0b10001 => Mode::Fiq,
+                0b10010 => Mode::Irq,
+                0b10011 => Mode::Supervisor,
+                0b10111 => Mode::Abort,
+                0b11011 => Mode::Undefined,
+                0b11111 => Mode::System,
+                mode => panic!("Invalid mode set: {:05b}", mode),
+            });
         }
 
         debug!(
@@ -234,5 +283,60 @@ impl<T: Bus> Core<T> {
         self.cpsr.c = ((carries ^ overflow) & 0x8000_0000) != 0;
         self.cpsr.v = (overflow & 0x8000_0000) != 0;
         result
+    }
+
+    fn set_mode(&mut self, mode: Mode) {
+        if mode == self.cpsr.m {
+            return;
+        }
+
+        debug!("  Mode: {:?}", mode);
+        debug!("  Stored: {:X?}", &self.regs[8..=14]);
+
+        match self.cpsr.m {
+            Mode::User | Mode::System => self.bank.usr.copy_from_slice(&self.regs[8..=14]),
+            Mode::Fiq => self.bank.fiq.copy_from_slice(&self.regs[8..=14]),
+            Mode::Irq => {
+                self.bank.usr[0..=4].copy_from_slice(&self.regs[8..=12]);
+                self.bank.irq.copy_from_slice(&self.regs[13..=14]);
+            }
+            Mode::Supervisor => {
+                self.bank.usr[0..=4].copy_from_slice(&self.regs[8..=12]);
+                self.bank.svc.copy_from_slice(&self.regs[13..=14]);
+            }
+            Mode::Abort => {
+                self.bank.usr[0..=4].copy_from_slice(&self.regs[8..=12]);
+                self.bank.abt.copy_from_slice(&self.regs[13..=14]);
+            }
+            Mode::Undefined => {
+                self.bank.usr[0..=4].copy_from_slice(&self.regs[8..=12]);
+                self.bank.und.copy_from_slice(&self.regs[13..=14]);
+            }
+        }
+
+        self.cpsr.m = mode;
+
+        match self.cpsr.m {
+            Mode::User | Mode::System => self.regs[8..=14].copy_from_slice(&self.bank.usr),
+            Mode::Fiq => self.regs[8..=14].copy_from_slice(&self.bank.fiq),
+            Mode::Irq => {
+                self.regs[8..=12].copy_from_slice(&self.bank.usr[0..=4]);
+                self.regs[13..=14].copy_from_slice(&self.bank.irq);
+            }
+            Mode::Supervisor => {
+                self.regs[8..=12].copy_from_slice(&self.bank.usr[0..=4]);
+                self.regs[13..=14].copy_from_slice(&self.bank.svc);
+            }
+            Mode::Abort => {
+                self.regs[8..=12].copy_from_slice(&self.bank.usr[0..=4]);
+                self.regs[13..=14].copy_from_slice(&self.bank.abt);
+            }
+            Mode::Undefined => {
+                self.regs[8..=12].copy_from_slice(&self.bank.usr[0..=4]);
+                self.regs[13..=14].copy_from_slice(&self.bank.und);
+            }
+        }
+
+        debug!("  Loaded: {:X?}", &self.regs[8..=14]);
     }
 }
