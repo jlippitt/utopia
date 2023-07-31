@@ -63,8 +63,46 @@ impl<T: Bus> Core<T> {
 
         match (word >> 20) & 0xff {
             0x35 => instr::compare_immediate::<op::Cmp>(self, pc, word),
+
             0x3a => instr::move_immediate::<op::Mov, false>(self, pc, word),
+
+            //0x40 => instr::str_immediate::<0b000>(self, pc, word),
+            0x41 => instr::ldr_immediate::<0b000>(self, pc, word),
+            //0x42 => instr::str_immediate::<0b001>(self, pc, word),
+            0x43 => instr::ldr_immediate::<0b001>(self, pc, word),
+            //0x44 => instr::strb_immediate::<0b000>(self, pc, word),
+            0x45 => instr::ldrb_immediate::<0b000>(self, pc, word),
+            //0x46 => instr::strb_immediate::<0b001>(self, pc, word),
+            0x47 => instr::ldrb_immediate::<0b001>(self, pc, word),
+
+            //0x48 => instr::str_immediate::<0b010>(self, pc, word),
+            0x49 => instr::ldr_immediate::<0b010>(self, pc, word),
+            //0x4a => instr::str_immediate::<0b011>(self, pc, word),
+            0x4b => instr::ldr_immediate::<0b011>(self, pc, word),
+            //0x4c => instr::strb_immediate::<0b010>(self, pc, word),
+            0x4d => instr::ldrb_immediate::<0b010>(self, pc, word),
+            //0x4e => instr::strb_immediate::<0b011>(self, pc, word),
+            0x4f => instr::ldrb_immediate::<0b011>(self, pc, word),
+
+            //0x50 => instr::str_immediate::<0b100>(self, pc, word),
+            0x51 => instr::ldr_immediate::<0b100>(self, pc, word),
+            //0x52 => instr::str_immediate::<0b101>(self, pc, word),
+            0x53 => instr::ldr_immediate::<0b101>(self, pc, word),
+            //0x54 => instr::strb_immediate::<0b100>(self, pc, word),
+            0x55 => instr::ldrb_immediate::<0b100>(self, pc, word),
+            //0x56 => instr::strb_immediate::<0b101>(self, pc, word),
+            0x57 => instr::ldrb_immediate::<0b101>(self, pc, word),
+
+            //0x58 => instr::str_immediate::<0b110>(self, pc, word),
+            0x59 => instr::ldr_immediate::<0b110>(self, pc, word),
+            //0x5a => instr::str_immediate::<0b111>(self, pc, word),
+            0x5b => instr::ldr_immediate::<0b111>(self, pc, word),
+            //0x5c => instr::strb_immediate::<0b110>(self, pc, word),
+            0x5d => instr::ldrb_immediate::<0b110>(self, pc, word),
+            //0x5e => instr::strb_immediate::<0b111>(self, pc, word),
+            0x5f => instr::ldrb_immediate::<0b111>(self, pc, word),
             0xa0 => instr::branch::<false>(self, pc, word),
+
             opcode => todo!(
                 "ARM7 Opcode {0:02X} [{0:08b}] (PC: {1:08X})",
                 opcode,
@@ -94,21 +132,33 @@ impl<T: Bus> Core<T> {
         }
     }
 
-    fn get(&self, reg: u32) -> u32 {
+    fn get(&self, reg: usize) -> u32 {
         if reg == 15 {
             todo!("PC get");
         }
 
-        self.regs[reg as usize]
+        self.regs[reg]
     }
 
-    fn set(&mut self, reg: u32, value: u32) {
+    fn set(&mut self, reg: usize, value: u32) {
         if reg == 15 {
             todo!("PC set");
         }
 
-        self.regs[reg as usize] = value;
-        debug!("  {}: {:08X}", REGS[reg as usize], value);
+        self.regs[reg] = value;
+        debug!("  {}: {:08X}", REGS[reg], value);
+    }
+
+    fn read_byte(&mut self, address: u32) -> u8 {
+        let value = self.bus.read(address);
+        debug!("  [{:08X}] => {:02X}", address, value);
+        value
+    }
+
+    fn read_word(&mut self, address: u32) -> u32 {
+        let value = self.bus.read(address);
+        debug!("  [{:08X}] => {:08X}", address, value);
+        value
     }
 
     fn set_nz(&mut self, value: u32) {

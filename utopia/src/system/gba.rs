@@ -1,6 +1,6 @@
 use super::{BiosLoader, System};
 use crate::core::arm7tdmi::{Bus, Core};
-use crate::util::facade::{ReadFacade, Value};
+use crate::util::facade::{DataReader, ReadFacade, Value};
 use crate::JoypadState;
 use std::error::Error;
 use tracing::info;
@@ -47,13 +47,32 @@ impl System for GameBoyAdvance {
 struct Hardware {
     rom: Vec<u8>,
     bios: Vec<u8>,
+    post_boot_flag: u8,
 }
 
 impl Hardware {
     pub fn new(rom: Vec<u8>, bios: Vec<u8>) -> Self {
         let title = String::from_utf8_lossy(&rom[0xa0..=0xab]).into_owned();
+
         info!("Title: {}", title);
-        Self { rom, bios }
+
+        Self {
+            rom,
+            bios,
+            post_boot_flag: 0,
+        }
+    }
+}
+
+impl DataReader for Hardware {
+    type Address = u32;
+    type Value = u8;
+
+    fn read(&self, address: Self::Address) -> Self::Value {
+        match address {
+            0x0300 => self.post_boot_flag,
+            _ => todo!("I/O Register Read: {:08X}", address),
+        }
     }
 }
 
@@ -63,7 +82,14 @@ impl Bus for Hardware {
             0x00 => self.bios.read_le(address as usize),
             0x02 => todo!("EWRAM Reads"),
             0x03 => todo!("IWRAM Reads"),
-            0x04 => todo!("I/O Register Reads"),
+            0x04 => match address & 0x00ff_ffff {
+                0x0000..=0x005f => todo!("LCD Register Reads"),
+                0x0060..=0x00af => todo!("Audio Register Reads"),
+                0x00b0..=0x00ff => todo!("DMA Register Reads"),
+                0x0100..=0x011f => todo!("Timer Register Reads"),
+                0x0120..=0x01ff => todo!("Serial Register Reads"),
+                address => self.read_le(address),
+            },
             0x05 => todo!("Palette RAM Reads"),
             0x06 => todo!("VRAM Reads"),
             0x07 => todo!("OAM Reads"),
