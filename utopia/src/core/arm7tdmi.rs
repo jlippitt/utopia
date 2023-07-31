@@ -110,7 +110,9 @@ impl<T: Bus> Core<T> {
             0x5d => instr::ldr_immediate::<true, 0b110>(self, pc, word),
             0x5e => instr::str_immediate::<true, 0b111>(self, pc, word),
             0x5f => instr::ldr_immediate::<true, 0b111>(self, pc, word),
-            0xa0 => instr::branch::<false>(self, pc, word),
+
+            0xa0..=0xaf => instr::branch::<false>(self, pc, word),
+            0xb0..=0xbf => instr::branch::<true>(self, pc, word),
 
             opcode => todo!(
                 "ARM7 Opcode {0:02X} [{0:08b}] (PC: {1:08X})",
