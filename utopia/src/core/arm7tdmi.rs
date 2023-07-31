@@ -16,18 +16,24 @@ pub trait Bus {
     fn read<T: Value>(&mut self, address: u32) -> T;
 }
 
-struct Flags {
+#[derive(Clone, Default)]
+struct Psr {
     n: bool,
     z: bool,
     c: bool,
     v: bool,
+    i: bool,
+    f: bool,
+    t: bool,
+    m: u8,
 }
 
 pub struct Core<T: Bus> {
     bus: T,
     pc: u32,
     regs: [u32; 16],
-    flags: Flags,
+    cpsr: Psr,
+    spsr: Psr,
 }
 
 impl<T: Bus> Core<T> {
@@ -36,12 +42,8 @@ impl<T: Bus> Core<T> {
             bus,
             pc: 0,
             regs: [0; 16],
-            flags: Flags {
-                n: false,
-                z: false,
-                c: false,
-                v: false,
-            },
+            cpsr: Default::default(),
+            spsr: Default::default(),
         }
     }
 
@@ -63,6 +65,8 @@ impl<T: Bus> Core<T> {
         }
 
         match (word >> 20) & 0xff {
+            0x12 => instr::msr_register::<false>(self, pc, word),
+
             0x31 => instr::compare_immediate::<op::Tst>(self, pc, word),
             0x33 => instr::compare_immediate::<op::Teq>(self, pc, word),
             0x35 => instr::compare_immediate::<op::Cmp>(self, pc, word),
@@ -117,23 +121,35 @@ impl<T: Bus> Core<T> {
 
     fn apply_condition(&self, word: u32) -> (&'static str, bool) {
         match word >> 28 {
-            0b0000 => ("EQ", self.flags.z),
-            0b0001 => ("NE", !self.flags.z),
-            0b0010 => ("CS", self.flags.c),
-            0b0011 => ("CC", !self.flags.c),
-            0b0100 => ("MI", self.flags.n),
-            0b0101 => ("PL", !self.flags.n),
-            0b0110 => ("VS", self.flags.v),
-            0b0111 => ("VC", !self.flags.v),
-            0b1000 => ("HI", !self.flags.z && self.flags.c),
-            0b1001 => ("LS", self.flags.z || !self.flags.c),
-            0b1010 => ("GE", self.flags.n == self.flags.v),
-            0b1011 => ("LT", self.flags.n != self.flags.v),
-            0b1100 => ("GT", !self.flags.z && self.flags.n == self.flags.v),
-            0b1101 => ("LE", self.flags.z || self.flags.n != self.flags.z),
+            0b0000 => ("EQ", self.cpsr.z),
+            0b0001 => ("NE", !self.cpsr.z),
+            0b0010 => ("CS", self.cpsr.c),
+            0b0011 => ("CC", !self.cpsr.c),
+            0b0100 => ("MI", self.cpsr.n),
+            0b0101 => ("PL", !self.cpsr.n),
+            0b0110 => ("VS", self.cpsr.v),
+            0b0111 => ("VC", !self.cpsr.v),
+            0b1000 => ("HI", !self.cpsr.z && self.cpsr.c),
+            0b1001 => ("LS", self.cpsr.z || !self.cpsr.c),
+            0b1010 => ("GE", self.cpsr.n == self.cpsr.v),
+            0b1011 => ("LT", self.cpsr.n != self.cpsr.v),
+            0b1100 => ("GT", !self.cpsr.z && self.cpsr.n == self.cpsr.v),
+            0b1101 => ("LE", self.cpsr.z || self.cpsr.n != self.cpsr.z),
             0b1110 => ("", true),
             code => unimplemented!("Condition code {:04b}", code),
         }
+    }
+
+    fn read_byte(&mut self, address: u32) -> u8 {
+        let value = self.bus.read(address);
+        debug!("  [{:08X}] => {:02X}", address, value);
+        value
+    }
+
+    fn read_word(&mut self, address: u32) -> u32 {
+        let value = self.bus.read(address);
+        debug!("  [{:08X}] => {:08X}", address, value);
+        value
     }
 
     fn get(&self, reg: usize) -> u32 {
@@ -153,21 +169,48 @@ impl<T: Bus> Core<T> {
         debug!("  {}: {:08X}", REGS[reg], value);
     }
 
-    fn read_byte(&mut self, address: u32) -> u8 {
-        let value = self.bus.read(address);
-        debug!("  [{:08X}] => {:02X}", address, value);
+    fn get_psr<const SUPER: bool>(&self) -> u32 {
+        let psr = if SUPER { &self.spsr } else { &self.cpsr };
+        let mut value = psr.m as u32;
+        value |= if psr.n { 0x8000_0000 } else { 0 };
+        value |= if psr.z { 0x4000_0000 } else { 0 };
+        value |= if psr.c { 0x2000_0000 } else { 0 };
+        value |= if psr.v { 0x1000_0000 } else { 0 };
+        value |= if psr.i { 0x80 } else { 0 };
+        value |= if psr.f { 0x40 } else { 0 };
+        value |= if psr.t { 0x20 } else { 0 };
         value
     }
 
-    fn read_word(&mut self, address: u32) -> u32 {
-        let value = self.bus.read(address);
-        debug!("  [{:08X}] => {:08X}", address, value);
-        value
+    fn set_psr<const SUPER: bool>(&mut self, value: u32, control: bool) {
+        let psr = if SUPER {
+            &mut self.spsr
+        } else {
+            &mut self.cpsr
+        };
+
+        psr.n = (value & 0x8000_0000) != 0;
+        psr.z = (value & 0x4000_0000) != 0;
+        psr.c = (value & 0x2000_0000) != 0;
+        psr.v = (value & 0x1000_0000) != 0;
+
+        if control {
+            psr.i = (value & 0x80) != 0;
+            psr.f = (value & 0x40) != 0;
+            psr.t = (value & 0x20) != 0;
+            psr.m = value as u8 & 0x1f;
+        }
+
+        debug!(
+            "  {}PSR: {:08X}",
+            if SUPER { 'S' } else { 'C' },
+            self.get_psr::<SUPER>()
+        )
     }
 
     fn set_nz(&mut self, value: u32) {
-        self.flags.n = (value & 0x8000_0000) != 0;
-        self.flags.z = value == 0;
+        self.cpsr.n = (value & 0x8000_0000) != 0;
+        self.cpsr.z = value == 0;
     }
 
     fn add_with_carry(&mut self, lhs: u32, rhs: u32, carry: bool) -> u32 {
@@ -175,8 +218,8 @@ impl<T: Bus> Core<T> {
         let carries = lhs ^ rhs ^ result;
         let overflow = (lhs ^ result) & (rhs ^ result);
         self.set_nz(result);
-        self.flags.c = ((carries ^ overflow) & 0x8000_0000) != 0;
-        self.flags.v = (overflow & 0x8000_0000) != 0;
+        self.cpsr.c = ((carries ^ overflow) & 0x8000_0000) != 0;
+        self.cpsr.v = (overflow & 0x8000_0000) != 0;
         result
     }
 }

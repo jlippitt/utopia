@@ -40,3 +40,18 @@ pub fn compare_immediate<Op: ComparisonOperator>(core: &mut Core<impl Bus>, pc: 
 
     Op::apply(core, core.get(rn), value);
 }
+
+pub fn msr_register<const SUPER: bool>(core: &mut Core<impl Bus>, pc: u32, word: u32) {
+    let rm = (word & 15) as usize;
+    let control = (word & 0x0001_0000) != 0;
+
+    debug!(
+        "{:08X} MSR {}PSR_F{}, {}",
+        pc,
+        if SUPER { "S" } else { "C" },
+        if control { "C" } else { "" },
+        REGS[rm],
+    );
+
+    core.set_psr::<SUPER>(core.get(rm), control);
+}
