@@ -59,10 +59,14 @@ impl<T: Bus> Core<T> {
 
         if !result {
             debug!("{:08X}: ({}: Skipped)", self.pc, name);
+            return;
         }
 
         match (word >> 20) & 0xff {
+            0x31 => instr::compare_immediate::<op::Tst>(self, pc, word),
+            0x33 => instr::compare_immediate::<op::Teq>(self, pc, word),
             0x35 => instr::compare_immediate::<op::Cmp>(self, pc, word),
+            0x37 => instr::compare_immediate::<op::Cmn>(self, pc, word),
 
             0x3a => instr::move_immediate::<op::Mov, false>(self, pc, word),
 

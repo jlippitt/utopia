@@ -15,6 +15,26 @@ pub trait ComparisonOperator {
     fn apply(core: &mut Core<impl Bus>, lhs: u32, rhs: u32);
 }
 
+pub struct Tst;
+
+impl ComparisonOperator for Tst {
+    const NAME: &'static str = "TST";
+
+    fn apply(core: &mut Core<impl Bus>, lhs: u32, rhs: u32) {
+        core.set_nz(lhs & rhs);
+    }
+}
+
+pub struct Teq;
+
+impl ComparisonOperator for Teq {
+    const NAME: &'static str = "TEQ";
+
+    fn apply(core: &mut Core<impl Bus>, lhs: u32, rhs: u32) {
+        core.set_nz(lhs ^ rhs);
+    }
+}
+
 pub struct Cmp;
 
 impl ComparisonOperator for Cmp {
@@ -22,6 +42,16 @@ impl ComparisonOperator for Cmp {
 
     fn apply(core: &mut Core<impl Bus>, lhs: u32, rhs: u32) {
         core.add_with_carry(lhs, !rhs, true);
+    }
+}
+
+pub struct Cmn;
+
+impl ComparisonOperator for Cmn {
+    const NAME: &'static str = "CMN";
+
+    fn apply(core: &mut Core<impl Bus>, lhs: u32, rhs: u32) {
+        core.add_with_carry(lhs, rhs, false);
     }
 }
 
