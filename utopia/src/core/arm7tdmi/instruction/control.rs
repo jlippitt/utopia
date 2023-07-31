@@ -1,4 +1,4 @@
-use super::super::{Bus, Core};
+use super::super::{Bus, Core, REGS};
 use tracing::debug;
 
 pub fn branch<const LINK: bool>(core: &mut Core<impl Bus>, pc: u32, word: u32) {
@@ -11,4 +11,12 @@ pub fn branch<const LINK: bool>(core: &mut Core<impl Bus>, pc: u32, word: u32) {
     }
 
     core.pc = core.pc.wrapping_add(4).wrapping_add(offset as u32);
+}
+
+pub fn bx(core: &mut Core<impl Bus>, pc: u32, word: u32) {
+    let rn = (word & 15) as usize;
+    debug!("{:08X} BX {}", pc, REGS[rn]);
+    let target = core.get(rn);
+    core.pc = target & 0xffff_fffe;
+    core.cpsr.t = (target & 0x0000_0001) != 0;
 }

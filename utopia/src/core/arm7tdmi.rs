@@ -91,6 +91,10 @@ impl<T: Bus> Core<T> {
         use instruction as instr;
         use operator as op;
 
+        if self.cpsr.t {
+            todo!("Thumb mode");
+        }
+
         assert!((self.pc & 3) == 0);
 
         let pc = self.pc;
@@ -105,7 +109,7 @@ impl<T: Bus> Core<T> {
         }
 
         if (word & 0x0e00_0010) == 0x0000_0010 {
-            self.special(word);
+            self.special(pc, word);
             return;
         }
 
@@ -189,8 +193,11 @@ impl<T: Bus> Core<T> {
         }
     }
 
-    fn special(&mut self, word: u32) {
+    fn special(&mut self, pc: u32, word: u32) {
+        use instruction as instr;
+
         match (word >> 20) & 0x1f {
+            0x12 => instr::bx(self, pc, word),
             opcode => todo!(
                 "ARM7 Special Opcode {0:02X} [{0:08b}] (PC: {1:08X})",
                 opcode,
