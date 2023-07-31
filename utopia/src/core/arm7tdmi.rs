@@ -201,10 +201,10 @@ impl<T: Bus> Core<T> {
 
     fn get(&self, reg: usize) -> u32 {
         if reg == 15 {
-            todo!("PC get");
+            self.pc.wrapping_add(4)
+        } else {
+            self.regs[reg]
         }
-
-        self.regs[reg]
     }
 
     fn set(&mut self, reg: usize, value: u32) {
