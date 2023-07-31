@@ -5,7 +5,7 @@ use process::*;
 mod process;
 
 pub fn dispatch(core: &mut Core<impl Bus>) {
-    assert!((core.pc & 3) == 0);
+    assert!((core.pc & 1) == 0);
 
     let pc = core.pc;
     let word = core.bus.read::<u16>(core.pc);
