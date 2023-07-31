@@ -108,13 +108,35 @@ impl<T: Bus> Core<T> {
             0x12 => instr::msr_register::<false>(self, pc, word),
             0x16 => instr::msr_register::<true>(self, pc, word),
 
+            //0x20 => instr::binary_immediate::<op::And, false>(self, pc, word),
+            //0x21 => instr::binary_immediate::<op::And, true>(self, pc, word),
+            //0x22 => instr::binary_immediate::<op::Eor, false>(self, pc, word),
+            //0x23 => instr::binary_immediate::<op::Eor, true>(self, pc, word),
+            //0x24 => instr::binary_immediate::<op::Sub, false>(self, pc, word),
+            //0x25 => instr::binary_immediate::<op::Sub, true>(self, pc, word),
+            //0x26 => instr::binary_immediate::<op::Rsb, false>(self, pc, word),
+            //0x27 => instr::binary_immediate::<op::Rsb, true>(self, pc, word),
+            0x28 => instr::binary_immediate::<op::Add, false>(self, pc, word),
+            0x29 => instr::binary_immediate::<op::Add, true>(self, pc, word),
+            0x2a => instr::binary_immediate::<op::Adc, false>(self, pc, word),
+            0x2b => instr::binary_immediate::<op::Adc, true>(self, pc, word),
+            //0x2c => instr::binary_immediate::<op::Sbc, false>(self, pc, word),
+            //0x2d => instr::binary_immediate::<op::Sbc, true>(self, pc, word),
+            //0x2e => instr::binary_immediate::<op::Rsc, false>(self, pc, word),
+            //0x2f => instr::binary_immediate::<op::Rsc, true>(self, pc, word),
             0x31 => instr::compare_immediate::<op::Tst>(self, pc, word),
             0x33 => instr::compare_immediate::<op::Teq>(self, pc, word),
             0x35 => instr::compare_immediate::<op::Cmp>(self, pc, word),
             0x37 => instr::compare_immediate::<op::Cmn>(self, pc, word),
 
+            //0x38 => instr::binary_immediate::<op::Or, false>(self, pc, word),
+            //0x39 => instr::binary_immediate::<op::Or, true>(self, pc, word),
             0x3a => instr::move_immediate::<op::Mov, false>(self, pc, word),
-
+            0x3b => instr::move_immediate::<op::Mov, true>(self, pc, word),
+            //0x3c => instr::binary_immediate::<op::Bic, false>(self, pc, word),
+            //0x3d => instr::binary_immediate::<op::Bic, true>(self, pc, word),
+            //0x3e => instr::move_immediate::<op::Mvn, false>(self, pc, word),
+            //0x3f => instr::move_immediate::<op::Mvn, true>(self, pc, word),
             0x40 => instr::str_immediate::<false, 0b000>(self, pc, word),
             0x41 => instr::ldr_immediate::<false, 0b000>(self, pc, word),
             0x42 => instr::str_immediate::<false, 0b001>(self, pc, word),
@@ -296,13 +318,17 @@ impl<T: Bus> Core<T> {
         self.cpsr.z = value == 0;
     }
 
-    fn add_with_carry(&mut self, lhs: u32, rhs: u32, carry: bool) -> u32 {
+    fn add_with_carry<const SET_FLAGS: bool>(&mut self, lhs: u32, rhs: u32, carry: bool) -> u32 {
         let result = lhs.wrapping_add(rhs).wrapping_add(carry as u32);
         let carries = lhs ^ rhs ^ result;
         let overflow = (lhs ^ result) & (rhs ^ result);
-        self.set_nz(result);
-        self.cpsr.c = ((carries ^ overflow) & 0x8000_0000) != 0;
-        self.cpsr.v = (overflow & 0x8000_0000) != 0;
+
+        if SET_FLAGS {
+            self.set_nz(result);
+            self.cpsr.c = ((carries ^ overflow) & 0x8000_0000) != 0;
+            self.cpsr.v = (overflow & 0x8000_0000) != 0;
+        }
+
         result
     }
 
