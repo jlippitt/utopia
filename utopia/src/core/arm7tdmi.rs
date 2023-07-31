@@ -23,15 +23,15 @@ enum Mode {
     User = 0b10000,
     Fiq = 0b10001,
     Irq = 0b10010,
+    #[default]
     Supervisor = 0b10011,
     Abort = 0b10111,
     Undefined = 0b11011,
-    #[default]
     System = 0b11111,
 }
 
 #[derive(Clone, Default)]
-struct Psr {
+struct Cpsr {
     n: bool,
     z: bool,
     c: bool,
@@ -40,15 +40,16 @@ struct Psr {
     f: bool,
     t: bool,
     m: Mode,
+    reserved: u32,
 }
 
 #[derive(Clone, Default)]
 struct Spsr {
-    spsr_fiq: Psr,
-    spsr_svc: Psr,
-    spsr_abt: Psr,
-    spsr_irq: Psr,
-    spsr_und: Psr,
+    fiq: u32,
+    svc: u32,
+    abt: u32,
+    irq: u32,
+    und: u32,
 }
 
 #[derive(Clone, Default)]
@@ -65,7 +66,7 @@ pub struct Core<T: Bus> {
     bus: T,
     pc: u32,
     regs: [u32; 16],
-    cpsr: Psr,
+    cpsr: Cpsr,
     spsr: Spsr,
     bank: Bank,
 }
@@ -76,7 +77,11 @@ impl<T: Bus> Core<T> {
             bus,
             pc: 0,
             regs: [0; 16],
-            cpsr: Default::default(),
+            cpsr: Cpsr {
+                f: true,
+                i: true,
+                ..Default::default()
+            },
             spsr: Default::default(),
             bank: Default::default(),
         }
@@ -101,6 +106,7 @@ impl<T: Bus> Core<T> {
 
         match (word >> 20) & 0xff {
             0x12 => instr::msr_register::<false>(self, pc, word),
+            0x16 => instr::msr_register::<true>(self, pc, word),
 
             0x31 => instr::compare_immediate::<op::Tst>(self, pc, word),
             0x33 => instr::compare_immediate::<op::Teq>(self, pc, word),
@@ -216,40 +222,29 @@ impl<T: Bus> Core<T> {
         debug!("  {}: {:08X}", REGS[reg], value);
     }
 
-    fn get_psr<const SUPER: bool>(&self) -> u32 {
-        let psr = if SUPER {
-            todo!("SPSR registers")
-        } else {
-            &self.cpsr
-        };
-
-        let mut value = psr.m as u32;
-        value |= if psr.n { 0x8000_0000 } else { 0 };
-        value |= if psr.z { 0x4000_0000 } else { 0 };
-        value |= if psr.c { 0x2000_0000 } else { 0 };
-        value |= if psr.v { 0x1000_0000 } else { 0 };
-        value |= if psr.i { 0x80 } else { 0 };
-        value |= if psr.f { 0x40 } else { 0 };
-        value |= if psr.t { 0x20 } else { 0 };
+    fn cpsr_to_u32(&self) -> u32 {
+        let mut value = self.cpsr.reserved | self.cpsr.m as u32;
+        value |= if self.cpsr.n { 0x8000_0000 } else { 0 };
+        value |= if self.cpsr.z { 0x4000_0000 } else { 0 };
+        value |= if self.cpsr.c { 0x2000_0000 } else { 0 };
+        value |= if self.cpsr.v { 0x1000_0000 } else { 0 };
+        value |= if self.cpsr.i { 0x80 } else { 0 };
+        value |= if self.cpsr.f { 0x40 } else { 0 };
+        value |= if self.cpsr.t { 0x20 } else { 0 };
         value
     }
 
-    fn set_psr<const SUPER: bool>(&mut self, value: u32, control: bool) {
-        let psr = if SUPER {
-            todo!("SPSR registers")
-        } else {
-            &mut self.cpsr
-        };
+    fn cpsr_from_u32(&mut self, value: u32, control: bool) {
+        self.cpsr.n = (value & 0x8000_0000) != 0;
+        self.cpsr.z = (value & 0x4000_0000) != 0;
+        self.cpsr.c = (value & 0x2000_0000) != 0;
+        self.cpsr.v = (value & 0x1000_0000) != 0;
 
-        psr.n = (value & 0x8000_0000) != 0;
-        psr.z = (value & 0x4000_0000) != 0;
-        psr.c = (value & 0x2000_0000) != 0;
-        psr.v = (value & 0x1000_0000) != 0;
-
-        if control {
-            psr.i = (value & 0x80) != 0;
-            psr.f = (value & 0x40) != 0;
-            psr.t = (value & 0x20) != 0;
+        if control && self.cpsr.m != Mode::User {
+            self.cpsr.reserved = value & 0x0fff_ff00;
+            self.cpsr.i = (value & 0x80) != 0;
+            self.cpsr.f = (value & 0x40) != 0;
+            self.cpsr.t = (value & 0x20) != 0;
 
             self.set_mode(match value & 0x1f {
                 0b10000 => Mode::User,
@@ -259,15 +254,41 @@ impl<T: Bus> Core<T> {
                 0b10111 => Mode::Abort,
                 0b11011 => Mode::Undefined,
                 0b11111 => Mode::System,
-                mode => panic!("Invalid mode set: {:05b}", mode),
+                mode => panic!("Invalid mode: {:05b}", mode),
             });
         }
 
-        debug!(
-            "  {}PSR: {:08X}",
-            if SUPER { 'S' } else { 'C' },
-            self.get_psr::<SUPER>()
-        )
+        debug!("  CPSR: {:08X}", self.cpsr_to_u32());
+    }
+
+    fn spsr_to_u32(&self) -> u32 {
+        match self.cpsr.m {
+            Mode::Fiq => self.spsr.fiq,
+            Mode::Irq => self.spsr.irq,
+            Mode::Supervisor => self.spsr.svc,
+            Mode::Abort => self.spsr.abt,
+            Mode::Undefined => self.spsr.und,
+            mode => panic!("No SPSR defined for mode: {:?}", mode),
+        }
+    }
+
+    fn spsr_from_u32(&mut self, value: u32, control: bool) {
+        let spsr = match self.cpsr.m {
+            Mode::Fiq => &mut self.spsr.fiq,
+            Mode::Irq => &mut self.spsr.irq,
+            Mode::Supervisor => &mut self.spsr.svc,
+            Mode::Abort => &mut self.spsr.abt,
+            Mode::Undefined => &mut self.spsr.und,
+            mode => panic!("No SPSR defined for mode: {:?}", mode),
+        };
+
+        if control {
+            *spsr = value;
+        } else {
+            *spsr = (value & 0xf000_0000) | (*spsr & 0x0fff_ffff);
+        }
+
+        debug!("  SPSR: {:08X}", spsr);
     }
 
     fn set_nz(&mut self, value: u32) {
