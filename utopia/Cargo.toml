@@ -7,6 +7,7 @@ edition = "2021"
 cpu-tests = []
 
 [dependencies]
+arrayvec = "0.7.4"
 bitflags = "2.3.3"
 enum_dispatch = "0.3.11"
 num-derive = "0.4.0"
