@@ -19,6 +19,10 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x30..=0x37 => binary_immediate::<op::Add>(core, pc, word),
         //0x38..=0x3f => binary_immediate::<op::Sub>(core, pc, word),
         0x48..=0x4f => ldr_pc_relative(core, pc, word),
+        0x50 | 0x51 => str_register::<false>(core, pc, word),
+        0x54 | 0x55 => str_register::<true>(core, pc, word),
+        0x58 | 0x59 => ldr_register::<false>(core, pc, word),
+        0x5c | 0x5d => ldr_register::<true>(core, pc, word),
         opcode => todo!("Thumb Opcode {0:02X} [{0:08b}] (PC: {1:08X})", opcode, pc),
     }
 }
