@@ -2,6 +2,7 @@ use super::{Sync, System};
 use crate::core::mos6502::{Bus, Core, Interrupt};
 use crate::util::MirrorVec;
 use crate::JoypadState;
+use apu::Apu;
 use cartridge::Cartridge;
 use joypad::Joypad;
 use ppu::Ppu;
@@ -12,6 +13,7 @@ use tracing::debug;
 const WRAM_SIZE: usize = 2048;
 const CLIP_AMOUNT: usize = 8;
 
+mod apu;
 mod cartridge;
 mod joypad;
 mod ppu;
@@ -53,6 +55,14 @@ impl System for Nes {
         Sync::Audio
     }
 
+    fn sample_rate(&self) -> u64 {
+        Apu::SAMPLE_RATE
+    }
+
+    fn total_samples(&self) -> u64 {
+        self.core.bus().apu.total_samples()
+    }
+
     fn run_frame(&mut self, joypad_state: &JoypadState) {
         let core = &mut self.core;
 
@@ -75,6 +85,7 @@ struct Hardware {
     wram: MirrorVec<u8>,
     joypad: Joypad,
     ppu: Ppu,
+    apu: Apu,
 }
 
 impl Hardware {
@@ -88,6 +99,7 @@ impl Hardware {
             wram: MirrorVec::new(WRAM_SIZE),
             joypad: Joypad::new(),
             ppu: Ppu::new(),
+            apu: Apu::new(),
         }
     }
 
@@ -128,6 +140,7 @@ impl Bus for Hardware {
         self.step();
         self.step();
         self.step();
+        self.apu.step();
 
         self.mdr = self.cartridge.read_prg(address, self.mdr);
 
@@ -172,6 +185,7 @@ impl Bus for Hardware {
 
         self.step();
         self.step();
+        self.apu.step();
     }
 
     fn poll(&mut self) -> Interrupt {
