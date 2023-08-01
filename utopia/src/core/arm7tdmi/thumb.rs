@@ -30,6 +30,7 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x54 | 0x55 => str_register::<true>(core, pc, word),
         0x58 | 0x59 => ldr_register::<false>(core, pc, word),
         0x5c | 0x5d => ldr_register::<true>(core, pc, word),
+        0xb0 => binary_sp_immediate(core, pc, word),
         0xb4 => push::<false>(core, pc, word),
         0xb5 => push::<true>(core, pc, word),
         0xbc => pop::<false>(core, pc, word),

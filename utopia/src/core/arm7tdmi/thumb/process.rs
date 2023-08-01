@@ -66,3 +66,22 @@ pub fn compare_immediate(core: &mut Core<impl Bus>, pc: u32, word: u16) {
 
     Cmp::apply(core, core.get(rd), value as u32);
 }
+
+pub fn binary_sp_immediate(core: &mut Core<impl Bus>, pc: u32, word: u16) {
+    let sign = (word & 0x80) != 0;
+    let offset = (word & 0x7f) << 2;
+
+    debug!(
+        "{:08X} ADD {}, #{}0x{:X}",
+        pc,
+        REGS[13],
+        if sign { "-" } else { "" },
+        offset
+    );
+
+    if sign {
+        core.set(13, core.get(13).wrapping_sub(offset as u32));
+    } else {
+        core.set(13, core.get(13).wrapping_add(offset as u32));
+    }
+}
