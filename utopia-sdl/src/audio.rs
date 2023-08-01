@@ -41,9 +41,17 @@ impl AudioCallback for Callback {
     type Channel = i16;
 
     fn callback(&mut self, output: &mut [i16]) {
-        for (sample_out, sample_in) in output.chunks_exact_mut(2).zip(self.queue.iter()) {
-            sample_out[0] = sample_in.0;
-            sample_out[1] = sample_in.1;
+        let mut prev_sample = (0, 0);
+
+        for sample_out in output.chunks_exact_mut(2) {
+            if let Some(sample_in) = self.queue.pop_front() {
+                sample_out[0] = sample_in.0;
+                sample_out[1] = sample_in.1;
+                prev_sample = sample_in;
+            } else {
+                sample_out[0] = prev_sample.0;
+                sample_out[1] = prev_sample.1;
+            }
         }
     }
 }
