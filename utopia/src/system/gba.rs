@@ -1,6 +1,7 @@
 use super::{BiosLoader, System};
 use crate::core::arm7tdmi::{Bus, Core};
 use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
+use crate::util::MirrorVec;
 use crate::JoypadState;
 use std::error::Error;
 use tracing::{debug, info, warn};
@@ -8,6 +9,9 @@ use tracing::{debug, info, warn};
 const WIDTH: usize = 240;
 const HEIGHT: usize = 160;
 const PIXELS: [u8; WIDTH * HEIGHT * 4] = [0; WIDTH * HEIGHT * 4];
+
+const IWRAM_SIZE: usize = 32768;
+const EWRAM_SIZE: usize = 262144;
 
 pub struct GameBoyAdvance {
     core: Core<Hardware>,
@@ -47,6 +51,8 @@ impl System for GameBoyAdvance {
 struct Hardware {
     rom: Vec<u8>,
     bios: Vec<u8>,
+    iwram: MirrorVec<u8>,
+    ewram: MirrorVec<u8>,
     post_boot_flag: u8,
 }
 
@@ -59,6 +65,8 @@ impl Hardware {
         Self {
             rom,
             bios,
+            iwram: MirrorVec::new(IWRAM_SIZE),
+            ewram: MirrorVec::new(EWRAM_SIZE),
             post_boot_flag: 0,
         }
     }
@@ -95,8 +103,8 @@ impl Bus for Hardware {
     fn read<T: Value>(&mut self, address: u32) -> T {
         match address >> 24 {
             0x00 => self.bios.read_le(address as usize),
-            0x02 => todo!("EWRAM Reads"),
-            0x03 => todo!("IWRAM Reads"),
+            0x02 => self.ewram.read_le(address as usize),
+            0x03 => self.iwram.read_le(address as usize),
             0x04 => match address & 0x00ff_ffff {
                 0x0000..=0x005f => todo!("LCD Register Reads"),
                 0x0060..=0x00af => todo!("Audio Register Reads"),
@@ -117,8 +125,8 @@ impl Bus for Hardware {
     fn write<T: Value>(&mut self, address: u32, value: T) {
         match address >> 24 {
             0x00 => panic!("Write to BIOS area: {:08X} <= {:08X}", address, value),
-            0x02 => todo!("EWRAM Writes"),
-            0x03 => todo!("IWRAM Writes"),
+            0x02 => self.ewram.write_le(address as usize, value),
+            0x03 => self.ewram.write_le(address as usize, value),
             0x04 => match address & 0x00ff_ffff {
                 0x0000..=0x005f => todo!("LCD Register Writes"),
                 0x0060..=0x00af => todo!("Audio Register Writes"),

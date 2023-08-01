@@ -1,3 +1,4 @@
+use super::facade::{DataReader, DataWriter, Value};
 use std::ops::{Index, IndexMut};
 
 pub struct MirrorVec<T: Clone + Default> {
@@ -57,5 +58,20 @@ impl<T: Clone + Default> Index<usize> for MirrorVec<T> {
 impl<T: Clone + Default> IndexMut<usize> for MirrorVec<T> {
     fn index_mut(&mut self, index: usize) -> &mut T {
         unsafe { self.vec.get_unchecked_mut(index & self.mask) }
+    }
+}
+
+impl<T: Clone + Default + Value> DataReader for MirrorVec<T> {
+    type Address = usize;
+    type Value = T;
+
+    fn read(&self, address: usize) -> T {
+        self[address]
+    }
+}
+
+impl<T: Clone + Default + Value> DataWriter for MirrorVec<T> {
+    fn write(&mut self, address: usize, value: T) {
+        self[address] = value;
     }
 }
