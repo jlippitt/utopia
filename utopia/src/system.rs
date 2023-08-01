@@ -34,6 +34,10 @@ pub trait System {
     fn pixels(&self) -> &[u8];
     fn run_frame(&mut self, joypad_state: &JoypadState);
 
+    fn sample_rate(&self) -> u32 {
+        44100
+    }
+
     fn clip_top(&self) -> usize {
         0
     }

@@ -1,3 +1,4 @@
+use audio::Audio;
 use bios::BiosLoader;
 use clap::Parser;
 use joypad::Joypad;
@@ -7,6 +8,7 @@ use std::fs;
 use utopia::Options;
 use video::{Video, VideoOptions};
 
+mod audio;
 mod bios;
 mod joypad;
 mod log;
@@ -62,9 +64,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut texture = video.create_texture(&texture_creator)?;
 
+    let mut audio = Audio::new(&sdl_context, system.sample_rate())?;
+
     let mut joypad = Joypad::new(&sdl_context)?;
 
     let mut event_pump = sdl_context.event_pump()?;
+
+    audio.resume();
 
     'outer: loop {
         for event in event_pump.poll_iter() {
