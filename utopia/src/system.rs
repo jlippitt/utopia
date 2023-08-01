@@ -28,14 +28,28 @@ pub struct JoypadState {
     pub start: bool,
 }
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum Sync {
+    Video,
+    Audio,
+}
+
 pub trait System {
     fn width(&self) -> usize;
     fn height(&self) -> usize;
     fn pixels(&self) -> &[u8];
     fn run_frame(&mut self, joypad_state: &JoypadState);
 
-    fn sample_rate(&self) -> u32 {
+    fn sync(&self) -> Sync {
+        Sync::Video
+    }
+
+    fn sample_rate(&self) -> u64 {
         44100
+    }
+
+    fn total_samples(&self) -> u64 {
+        0
     }
 
     fn clip_top(&self) -> usize {

@@ -5,7 +5,9 @@ use joypad::Joypad;
 use sdl2::event::{Event, WindowEvent};
 use std::error::Error;
 use std::fs;
-use utopia::Options;
+use std::thread;
+use std::time::{Duration, Instant};
+use utopia::{Options, Sync};
 use video::{Video, VideoOptions};
 
 mod audio;
@@ -56,7 +58,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             clip_bottom: system.clip_bottom().try_into()?,
             upscale: args.upscale,
             full_screen: args.full_screen,
-            disable_vsync: args.disable_vsync,
+            disable_vsync: args.disable_vsync || system.sync() != Sync::Video,
         },
     )?;
 
@@ -64,13 +66,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut texture = video.create_texture(&texture_creator)?;
 
-    let mut audio = Audio::new(&sdl_context, system.sample_rate())?;
+    let sample_rate = system.sample_rate();
+
+    let mut audio = Audio::new(&sdl_context, sample_rate.try_into()?)?;
 
     let mut joypad = Joypad::new(&sdl_context)?;
 
     let mut event_pump = sdl_context.event_pump()?;
 
     audio.resume();
+
+    let start_time = Instant::now();
 
     'outer: loop {
         for event in event_pump.poll_iter() {
@@ -103,6 +109,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         system.run_frame(joypad.state());
 
         video.update(&mut texture, system.pixels())?;
+
+        if system.sync() == Sync::Audio {
+            let expected_duration = (system.total_samples() * 1000) / sample_rate;
+            let expected_time = start_time + Duration::from_millis(expected_duration);
+            let actual_time = Instant::now();
+
+            let duration = if actual_time < expected_time {
+                expected_time - actual_time
+            } else {
+                Duration::ZERO
+            };
+
+            thread::sleep(duration);
+        }
     }
 
     Ok(())

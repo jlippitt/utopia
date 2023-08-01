@@ -9,11 +9,11 @@ pub struct Audio {
 struct Callback;
 
 impl Audio {
-    pub fn new(sdl: &Sdl, sample_rate: u32) -> Result<Self, Box<dyn Error>> {
+    pub fn new(sdl: &Sdl, sample_rate: i32) -> Result<Self, Box<dyn Error>> {
         let audio = sdl.audio()?;
 
         let spec = AudioSpecDesired {
-            freq: Some(sample_rate.try_into()?),
+            freq: Some(sample_rate),
             channels: Some(2),
             samples: None,
         };

@@ -1,4 +1,4 @@
-use super::System;
+use super::{Sync, System};
 use crate::core::mos6502::{Bus, Core, Interrupt};
 use crate::util::MirrorVec;
 use crate::JoypadState;
@@ -47,6 +47,10 @@ impl System for Nes {
 
     fn pixels(&self) -> &[u8] {
         self.core.bus().ppu.pixels()
+    }
+
+    fn sync(&self) -> Sync {
+        Sync::Audio
     }
 
     fn run_frame(&mut self, joypad_state: &JoypadState) {
