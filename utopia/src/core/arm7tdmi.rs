@@ -2,6 +2,7 @@ use crate::util::facade::Value;
 use tracing::debug;
 
 mod arm;
+mod condition;
 mod operator;
 mod thumb;
 
@@ -93,27 +94,6 @@ impl<T: Bus> Core<T> {
             thumb::dispatch(self);
         } else {
             arm::dispatch(self);
-        }
-    }
-
-    fn apply_condition(&self, word: u32) -> (&'static str, bool) {
-        match word >> 28 {
-            0b0000 => ("EQ", self.cpsr.z),
-            0b0001 => ("NE", !self.cpsr.z),
-            0b0010 => ("CS", self.cpsr.c),
-            0b0011 => ("CC", !self.cpsr.c),
-            0b0100 => ("MI", self.cpsr.n),
-            0b0101 => ("PL", !self.cpsr.n),
-            0b0110 => ("VS", self.cpsr.v),
-            0b0111 => ("VC", !self.cpsr.v),
-            0b1000 => ("HI", !self.cpsr.z && self.cpsr.c),
-            0b1001 => ("LS", self.cpsr.z || !self.cpsr.c),
-            0b1010 => ("GE", self.cpsr.n == self.cpsr.v),
-            0b1011 => ("LT", self.cpsr.n != self.cpsr.v),
-            0b1100 => ("GT", !self.cpsr.z && self.cpsr.n == self.cpsr.v),
-            0b1101 => ("LE", self.cpsr.z || self.cpsr.n != self.cpsr.z),
-            0b1110 => ("", true),
-            code => unimplemented!("Condition code {:04b}", code),
         }
     }
 

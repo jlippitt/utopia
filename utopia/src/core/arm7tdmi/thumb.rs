@@ -1,8 +1,10 @@
 use super::operator as op;
 use super::{Bus, Core};
+use control::*;
 use process::*;
 use transfer::*;
 
+mod control;
 mod process;
 mod transfer;
 
@@ -27,6 +29,7 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x54 | 0x55 => str_register::<true>(core, pc, word),
         0x58 | 0x59 => ldr_register::<false>(core, pc, word),
         0x5c | 0x5d => ldr_register::<true>(core, pc, word),
+        0xd0..=0xdf => branch_conditional(core, pc, word),
         opcode => todo!("Thumb Opcode {0:02X} [{0:08b}] (PC: {1:08X})", opcode, pc),
     }
 }

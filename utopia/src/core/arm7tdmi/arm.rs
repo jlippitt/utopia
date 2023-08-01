@@ -1,6 +1,8 @@
+use super::condition::Condition;
 use super::operator as op;
 use super::{Bus, Core};
 use control::*;
+use num_traits::FromPrimitive;
 use process::*;
 use tracing::debug;
 use transfer::*;
@@ -16,10 +18,10 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
     let word = core.bus.read::<u32>(core.pc);
     core.pc = core.pc.wrapping_add(4);
 
-    let (name, result) = core.apply_condition(word);
+    let condition = Condition::from_u32(word >> 28).unwrap();
 
-    if !result {
-        debug!("{:08X}: ({}: Skipped)", core.pc, name);
+    if !condition.apply(core) {
+        debug!("{:08X}: ({}: Skipped)", core.pc, condition);
         return;
     }
 
