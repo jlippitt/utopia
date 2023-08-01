@@ -32,14 +32,17 @@ impl AudioCallback for Callback {
     type Channel = i16;
 
     fn callback(&mut self, output: &mut [i16]) {
-        let half_len = output.len() / 2;
+        let half_len = output.len() / 4;
 
-        for (index, sample) in output.iter_mut().enumerate() {
-            *sample = if index >= half_len {
-                i16::MAX
+        for (index, sample) in output.chunks_exact_mut(2).enumerate() {
+            let (left, right) = if index >= half_len {
+                (i16::MAX, i16::MIN)
             } else {
-                i16::MIN
+                (i16::MIN, i16::MAX)
             };
+
+            sample[0] = left;
+            sample[1] = right;
         }
     }
 }
