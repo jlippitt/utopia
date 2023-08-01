@@ -180,9 +180,7 @@ impl Bus for Hardware {
             2 => match address {
                 0x4014 => self.dma_address = Some(value),
                 0x4016 => self.joypad.write_register(value),
-                0x4000..=0x401f => {
-                    debug!("2A03 register write not yet implemented: {:02X}", address)
-                }
+                0x4000..=0x401f => self.apu.write_register(address, value),
                 _ => (),
             },
             _ => (),
