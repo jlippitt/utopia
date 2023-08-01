@@ -1,6 +1,7 @@
 use super::{Sync, System};
 use crate::core::mos6502::{Bus, Core, Interrupt};
 use crate::util::MirrorVec;
+use crate::AudioQueue;
 use crate::JoypadState;
 use apu::Apu;
 use cartridge::Cartridge;
@@ -57,6 +58,10 @@ impl System for Nes {
 
     fn sample_rate(&self) -> u64 {
         Apu::SAMPLE_RATE
+    }
+
+    fn audio_queue(&mut self) -> Option<&mut AudioQueue> {
+        Some(self.core.bus_mut().apu.audio_queue())
     }
 
     fn total_samples(&self) -> u64 {

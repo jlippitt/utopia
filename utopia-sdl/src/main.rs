@@ -110,6 +110,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         video.update(&mut texture, system.pixels())?;
 
+        if let Some(audio_queue) = system.audio_queue() {
+            audio.append_queue(audio_queue);
+        }
+
         if system.sync() == Sync::Audio {
             let expected_duration = (system.total_samples() * 1000) / sample_rate;
             let expected_time = start_time + Duration::from_millis(expected_duration);

@@ -3,6 +3,7 @@ use gba::GameBoyAdvance;
 use n64::N64;
 use nes::Nes;
 use snes::Snes;
+use std::collections::VecDeque;
 use std::error::Error;
 use std::path::Path;
 
@@ -34,6 +35,8 @@ pub enum Sync {
     Audio,
 }
 
+pub type AudioQueue = VecDeque<(i16, i16)>;
+
 pub trait System {
     fn width(&self) -> usize;
     fn height(&self) -> usize;
@@ -46,6 +49,10 @@ pub trait System {
 
     fn sample_rate(&self) -> u64 {
         44100
+    }
+
+    fn audio_queue(&mut self) -> Option<&mut AudioQueue> {
+        None
     }
 
     fn total_samples(&self) -> u64 {
