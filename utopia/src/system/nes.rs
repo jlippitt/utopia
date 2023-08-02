@@ -156,7 +156,7 @@ impl Bus for Hardware {
                 .read(&mut self.cartridge, &mut self.interrupt, address),
             2 => match address {
                 0x4016..=0x4017 => self.joypad.read_register(address, self.mdr),
-                0x4000..=0x401f => 0, // TODO: APU ports
+                0x4000..=0x401f => self.apu.read_register(address, self.mdr),
                 _ => self.mdr,
             },
             _ => self.mdr,

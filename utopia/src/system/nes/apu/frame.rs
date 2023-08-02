@@ -3,8 +3,7 @@ use tracing::debug;
 const STEPS: [u64; 5] = [3729, 7457, 11186, 14915, 18461];
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum Frame {
-    None,
+pub enum FrameEvent {
     Quarter,
     Half,
 }
@@ -42,25 +41,25 @@ impl FrameCounter {
         self.target_cycles = self.cycles + 3;
     }
 
-    pub fn step(&mut self) -> Frame {
+    pub fn step(&mut self) -> Option<FrameEvent> {
         self.cycles += 1;
 
         if self.cycles != self.target_cycles {
-            return Frame::None;
+            return None;
         }
 
         let frame = match self.step {
             0 => {
                 self.step += 1;
-                Frame::Quarter
+                Some(FrameEvent::Quarter)
             }
             1 => {
                 self.step += 1;
-                Frame::Half
+                Some(FrameEvent::Half)
             }
             2 => {
                 self.step += 1;
-                Frame::Quarter
+                Some(FrameEvent::Quarter)
             }
             3 => {
                 match self.mode {
@@ -68,11 +67,11 @@ impl FrameCounter {
                         self.cycles = 0;
                         self.step = 0;
                         // TODO: IRQ
-                        Frame::Half
+                        Some(FrameEvent::Half)
                     }
                     Mode::Long => {
                         self.step += 1;
-                        Frame::None
+                        None
                     }
                 }
             }
@@ -81,8 +80,8 @@ impl FrameCounter {
                 self.step = 0;
 
                 match self.mode {
-                    Mode::Short => Frame::None,
-                    Mode::Long => Frame::Half,
+                    Mode::Short => None,
+                    Mode::Long => Some(FrameEvent::Half),
                 }
             }
             _ => unreachable!(),

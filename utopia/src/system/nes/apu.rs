@@ -45,10 +45,36 @@ impl Apu {
         self.total_samples
     }
 
+    pub fn read_register(&mut self, address: u16, prev_value: u8) -> u8 {
+        match address & 0x1f {
+            0x15 => {
+                let mut value = prev_value & 0x20;
+                value |= if self.pulse1.enabled() { 0x01 } else { 0 };
+                value |= if self.pulse2.enabled() { 0x02 } else { 0 };
+                // TODO: Triangle
+                // TODO: Noise
+                // TODO: DMC
+                // TODO: IRQ status
+                value
+            }
+            _ => {
+                warn!("Unmapped APU Read: {:04X}", address);
+                prev_value
+            }
+        }
+    }
+
     pub fn write_register(&mut self, address: u16, value: u8) {
         match address & 0x1f {
             0x00..=0x03 => self.pulse1.write(address, value),
             0x04..=0x07 => self.pulse2.write(address, value),
+            0x15 => {
+                self.pulse1.set_enabled((value & 0x01) != 0);
+                self.pulse2.set_enabled((value & 0x02) != 0);
+                // TODO: Triangle
+                // TODO: Noise
+                // TODO: DMC
+            }
             0x17 => {
                 self.frame_counter.set_mode((value & 0x80) != 0);
                 // TODO: Frame IRQ
@@ -61,7 +87,10 @@ impl Apu {
         self.pulse1.step();
         self.pulse2.step();
 
-        let _frame = self.frame_counter.step();
+        if let Some(event) = self.frame_counter.step() {
+            self.pulse1.on_frame_event(event);
+            self.pulse2.on_frame_event(event);
+        }
 
         self.sample_clock += SAMPLES_PER_CYCLE;
 
