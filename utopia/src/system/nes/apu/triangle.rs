@@ -17,7 +17,7 @@ pub struct Triangle {
 impl Triangle {
     pub fn new() -> Self {
         Self {
-            timer: Timer::new(0),
+            timer: Timer::new(0, 0),
             sequencer: Sequencer::new(&SEQUENCE),
             linear_counter: LinearCounter::new(),
             length_counter: LengthCounter::new(),
@@ -28,9 +28,9 @@ impl Triangle {
         self.length_counter.counter() != 0
     }
 
-    pub fn sample(&self) -> u8 {
+    pub fn output(&self) -> u8 {
         if self.timer.period() >= 2 {
-            self.sequencer.sample()
+            self.sequencer.output()
         } else {
             // Silenced to avoid popping sound
             // This should technically be a value of 7.5

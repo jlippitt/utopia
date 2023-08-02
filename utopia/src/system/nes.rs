@@ -4,6 +4,7 @@ use crate::util::MirrorVec;
 use crate::AudioQueue;
 use crate::JoypadState;
 use apu::Apu;
+use bitflags::bitflags;
 use cartridge::Cartridge;
 use joypad::Joypad;
 use ppu::Ppu;
@@ -73,8 +74,17 @@ impl System for Nes {
     }
 }
 
+bitflags! {
+    #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+    pub struct DmaRequest: u8 {
+        const OAM = 0x01;
+        const DMC = 0x02;
+    }
+}
+
 struct Hardware {
-    dma_address: Option<u8>,
+    dma_request: DmaRequest,
+    dma_oam_src: u8,
     cycles: u64,
     mdr: u8,
     interrupt: Interrupt,
@@ -88,7 +98,8 @@ struct Hardware {
 impl Hardware {
     pub fn new(rom_data: Vec<u8>) -> Self {
         Self {
-            dma_address: None,
+            dma_request: DmaRequest::empty(),
+            dma_oam_src: 0,
             cycles: 0,
             mdr: 0,
             interrupt: 0,
@@ -100,44 +111,70 @@ impl Hardware {
         }
     }
 
-    fn step(&mut self) {
+    fn step_all(&mut self) {
+        // PPU does 3 cycles for every 1 machine cycle
+        self.step_ppu();
+        self.step_ppu();
+        self.step_ppu();
+        self.step_apu();
+    }
+
+    fn step_ppu(&mut self) {
         self.cycles += 4;
         self.ppu.step(&mut self.cartridge, &mut self.interrupt);
     }
 
-    fn transfer_dma(&mut self, base_address: u16) {
+    fn step_apu(&mut self) {
+        self.apu.step(&mut self.dma_request);
+    }
+
+    fn transfer_dma(&mut self) {
         debug!("DMA Transfer Begin");
 
-        self.step();
+        self.step_all();
 
         if (self.cycles % 12) != 0 {
-            self.step();
+            self.step_all();
         }
 
-        self.dma_address = None;
+        if self.dma_request.contains(DmaRequest::OAM) {
+            self.dma_request.remove(DmaRequest::OAM);
 
-        for index in 0..=255 {
-            let address = base_address + index;
-            let value = self.read(address);
-            debug!("DMA Write: OAM <= {:02X} <= {:04X}", value, address);
-            self.step();
-            self.ppu.write_oam(value);
+            let base_address = (self.dma_oam_src as u16) << 8;
+
+            for index in 0..=255 {
+                if self.dma_request.contains(DmaRequest::DMC) {
+                    self.load_dmc_sample();
+                }
+
+                let address = base_address + index;
+                let value = self.read(address);
+                debug!("DMA Write: OAM <= {:02X} <= {:04X}", value, address);
+                self.ppu.write_oam(value);
+            }
+        } else {
+            self.load_dmc_sample();
         }
 
         debug!("DMA Transfer End");
+    }
+
+    fn load_dmc_sample(&mut self) {
+        self.dma_request.remove(DmaRequest::DMC);
+        let address = self.apu.dmc_sample_address();
+        let value = self.read(address);
+        debug!("DMA Write: DMC <= {:02X} <= {:04X}", value, address);
+        self.apu.write_dmc_sample(value);
     }
 }
 
 impl Bus for Hardware {
     fn read(&mut self, address: u16) -> u8 {
-        if let Some(dma_address) = self.dma_address {
-            self.transfer_dma((dma_address as u16) << 8)
+        if !self.dma_request.is_empty() {
+            self.transfer_dma();
         }
 
-        self.step();
-        self.step();
-        self.step();
-        self.apu.step();
+        self.step_all();
 
         self.mdr = self.cartridge.read_prg(address, self.mdr);
 
@@ -158,7 +195,7 @@ impl Bus for Hardware {
     }
 
     fn write(&mut self, address: u16, value: u8) {
-        self.step();
+        self.step_ppu();
 
         self.mdr = value;
 
@@ -170,7 +207,10 @@ impl Bus for Hardware {
                 .ppu
                 .write(&mut self.cartridge, &mut self.interrupt, address, value),
             2 => match address {
-                0x4014 => self.dma_address = Some(value),
+                0x4014 => {
+                    self.dma_request.insert(DmaRequest::OAM);
+                    self.dma_oam_src = value;
+                }
                 0x4016 => self.joypad.write_register(value),
                 0x4000..=0x401f => self.apu.write_register(address, value),
                 _ => (),
@@ -178,9 +218,9 @@ impl Bus for Hardware {
             _ => (),
         };
 
-        self.step();
-        self.step();
-        self.apu.step();
+        self.step_ppu();
+        self.step_ppu();
+        self.step_apu();
     }
 
     fn poll(&mut self) -> Interrupt {

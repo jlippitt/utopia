@@ -5,10 +5,10 @@ pub struct Timer {
 }
 
 impl Timer {
-    pub fn new(shift: u32) -> Self {
+    pub fn new(period: u32, shift: u32) -> Self {
         Self {
             counter: (1 << shift) - 1,
-            period: 0,
+            period,
             shift,
         }
     }

@@ -19,7 +19,7 @@ impl Noise {
     pub fn new() -> Self {
         Self {
             shift: 1,
-            timer: Timer::new(1),
+            timer: Timer::new(PERIODS[0], 1),
             mode: false,
             envelope: Envelope::new(),
             length_counter: LengthCounter::new(),
@@ -30,7 +30,7 @@ impl Noise {
         self.length_counter.counter() != 0
     }
 
-    pub fn sample(&self) -> u8 {
+    pub fn output(&self) -> u8 {
         if (self.shift & 1) == 0 && self.length_counter.counter() != 0 {
             self.envelope.volume()
         } else {

@@ -19,7 +19,7 @@ pub struct Pulse {
 impl Pulse {
     pub fn new(complement_mode: bool) -> Self {
         Self {
-            timer: Timer::new(1),
+            timer: Timer::new(0, 1),
             sequencer: Sequencer::new(&DUTY_CYCLE[0]),
             envelope: Envelope::new(),
             sweep: Sweep::new(complement_mode),
@@ -31,9 +31,9 @@ impl Pulse {
         self.length_counter.counter() != 0
     }
 
-    pub fn sample(&self) -> u8 {
+    pub fn output(&self) -> u8 {
         if !self.sweep.muted() && self.length_counter.counter() != 0 {
-            self.sequencer.sample() * self.envelope.volume()
+            self.sequencer.output() * self.envelope.volume()
         } else {
             0
         }

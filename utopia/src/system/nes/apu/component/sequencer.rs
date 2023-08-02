@@ -8,7 +8,7 @@ impl<const SIZE: usize> Sequencer<SIZE> {
         Self { sequence, index: 0 }
     }
 
-    pub fn sample(&self) -> u8 {
+    pub fn output(&self) -> u8 {
         self.sequence[self.index]
     }
 

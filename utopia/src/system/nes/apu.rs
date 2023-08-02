@@ -1,3 +1,4 @@
+use super::DmaRequest;
 use crate::AudioQueue;
 use dmc::Dmc;
 use frame::FrameCounter;
@@ -52,6 +53,10 @@ impl Apu {
         }
     }
 
+    pub fn dmc_sample_address(&self) -> u16 {
+        self.dmc.sample_address()
+    }
+
     pub fn audio_queue(&mut self) -> &mut AudioQueue {
         &mut self.audio_queue
     }
@@ -82,7 +87,7 @@ impl Apu {
             0x04..=0x07 => self.pulse2.write(address, value),
             0x08..=0x0b => self.triangle.write(address, value),
             0x0c..=0x0f => self.noise.write(address, value),
-            0x10..=0x14 => self.dmc.write(address, value),
+            0x10..=0x13 => self.dmc.write(address, value),
             0x15 => {
                 self.pulse1.set_enabled((value & 0x01) != 0);
                 self.pulse2.set_enabled((value & 0x02) != 0);
@@ -99,12 +104,16 @@ impl Apu {
         }
     }
 
-    pub fn step(&mut self) {
+    pub fn write_dmc_sample(&mut self, value: u8) {
+        self.dmc.write_sample(value);
+    }
+
+    pub fn step(&mut self, dma_request: &mut DmaRequest) {
         self.pulse1.step();
         self.pulse2.step();
         self.triangle.step();
         self.noise.step();
-        self.dmc.step();
+        self.dmc.step(dma_request);
 
         if let Some(event) = self.frame_counter.step() {
             self.pulse1.on_frame_event(event);
@@ -118,11 +127,11 @@ impl Apu {
         if self.sample_clock >= SAMPLE_PERIOD {
             self.sample_clock -= SAMPLE_PERIOD;
 
-            let pulse = self.pulse1.sample() + self.pulse2.sample();
-            let tnd = self.triangle.sample() * 3 + self.noise.sample() * 2 + self.dmc.sample();
-            let sample = self.pulse_table[pulse as usize] + self.tnd_table[tnd as usize];
+            let pulse = self.pulse1.output() + self.pulse2.output();
+            let tnd = self.triangle.output() * 3 + self.noise.output() * 2 + self.dmc.output();
+            let output = self.pulse_table[pulse as usize] + self.tnd_table[tnd as usize];
 
-            self.audio_queue.push_back((sample, sample));
+            self.audio_queue.push_back((output, output));
         }
     }
 }
