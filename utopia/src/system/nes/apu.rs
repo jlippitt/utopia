@@ -37,8 +37,8 @@ impl Apu {
 
     pub fn new() -> Self {
         Self {
-            pulse1: Pulse::new(),
-            pulse2: Pulse::new(),
+            pulse1: Pulse::new(true),
+            pulse2: Pulse::new(false),
             noise: Noise::new(),
             triangle: Triangle::new(),
             frame_counter: FrameCounter::new(),

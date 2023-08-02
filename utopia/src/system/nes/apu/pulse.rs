@@ -1,4 +1,4 @@
-use super::component::{Envelope, LengthCounter, Sequencer, Timer};
+use super::component::{Envelope, LengthCounter, Sequencer, Sweep, Timer};
 use super::frame::FrameEvent;
 
 const DUTY_CYCLE: [[u8; 8]; 4] = [
@@ -12,15 +12,17 @@ pub struct Pulse {
     timer: Timer,
     sequencer: Sequencer<8>,
     envelope: Envelope,
+    sweep: Sweep,
     length_counter: LengthCounter,
 }
 
 impl Pulse {
-    pub fn new() -> Self {
+    pub fn new(complement_mode: bool) -> Self {
         Self {
             timer: Timer::new(1),
             sequencer: Sequencer::new(&DUTY_CYCLE[0]),
             envelope: Envelope::new(),
+            sweep: Sweep::new(complement_mode),
             length_counter: LengthCounter::new(),
         }
     }
@@ -30,8 +32,7 @@ impl Pulse {
     }
 
     pub fn sample(&self) -> u8 {
-        // TODO: Sweep
-        if self.timer.period() >= 8 && self.length_counter.counter() != 0 {
+        if !self.sweep.muted() && self.length_counter.counter() != 0 {
             self.sequencer.sample() * self.envelope.volume()
         } else {
             0
@@ -46,12 +47,14 @@ impl Pulse {
                 self.length_counter.set_halted((value & 0x20) != 0);
                 self.envelope.set_control(value);
             }
-            1 => {
-                // TODO: Sweep
+            1 => self.sweep.set_control(value),
+            2 => {
+                self.timer.set_period_low(value);
+                self.sweep.update_target_period(self.timer.period());
             }
-            2 => self.timer.set_period_low(value),
             3 => {
                 self.timer.set_period_high(value & 0x07);
+                self.sweep.update_target_period(self.timer.period());
                 self.length_counter.load(value >> 3);
                 self.sequencer.reset();
                 self.envelope.reset();
@@ -74,7 +77,7 @@ impl Pulse {
         self.envelope.step();
 
         if event == FrameEvent::Half {
-            // TODO: Sweep
+            self.sweep.step(&mut self.timer);
             self.length_counter.step();
         }
     }
