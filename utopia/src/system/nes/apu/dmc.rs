@@ -9,6 +9,7 @@ pub struct Dmc {
     output: u8,
     sample_address: u16,
     sample_length: u16,
+    bytes_remaining: u16,
     loop_flag: bool,
 }
 
@@ -19,18 +20,17 @@ impl Dmc {
             output: 0,
             sample_address: 0,
             sample_length: 0,
+            bytes_remaining: 0,
             loop_flag: false,
         }
     }
 
     pub fn enabled(&self) -> bool {
-        // TODO
-        false
+        self.bytes_remaining > 0
     }
 
     pub fn sample(&self) -> u8 {
-        // TODO
-        0
+        self.output
     }
 
     pub fn write(&mut self, address: u16, value: u8) {
@@ -48,7 +48,11 @@ impl Dmc {
     }
 
     pub fn set_enabled(&mut self, enabled: bool) {
-        // TODO
+        if enabled {
+            // TODO: Restart sample
+        } else {
+            self.bytes_remaining = 0;
+        }
     }
 
     pub fn step(&mut self) {

@@ -66,6 +66,7 @@ impl Apu {
                 value |= if self.noise.enabled() { 0x08 } else { 0 };
                 value |= if self.dmc.enabled() { 0x10 } else { 0 };
                 // TODO: IRQ status
+                // TODO: Clear frame interrupt
                 value
             }
             _ => {
@@ -88,6 +89,7 @@ impl Apu {
                 self.triangle.set_enabled((value & 0x04) != 0);
                 self.noise.set_enabled((value & 0x08) != 0);
                 self.dmc.set_enabled((value & 0x10) != 0);
+                // TODO: Clear DMA interrupt
             }
             0x17 => {
                 self.frame_counter.set_mode((value & 0x80) != 0);
