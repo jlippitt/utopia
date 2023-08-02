@@ -17,6 +17,10 @@ impl Timer {
         self.period
     }
 
+    pub fn set_period(&mut self, period: u32) {
+        self.period = period;
+    }
+
     pub fn set_period_low(&mut self, value: u8) {
         self.period = (self.period & 0xff00) | (value as u32);
     }
