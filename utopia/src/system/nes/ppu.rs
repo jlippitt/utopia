@@ -269,60 +269,64 @@ impl Ppu {
     }
 
     pub fn step(&mut self, cartridge: &mut Cartridge) {
-        if self.line < TOTAL_VISIBLE_LINES && self.mask.render_enabled {
-            match self.dot {
-                0..=255 => {
-                    if self.line != PRE_RENDER_LINE {
-                        self.draw_pixel();
-
-                        // TODO: Precise timings for sprite operations
-                        if self.dot == 255 {
-                            (self.sprites_selected, self.sprite_zero_selected) =
-                                self.oam.select_sprites(self.line, self.control.sprite_size);
-                        }
-                    }
-
-                    self.load_bg_tiles(cartridge);
-
-                    if self.dot == 255 {
-                        self.increment_vertical();
-                    }
-                }
-                256..=319 => {
-                    if self.dot == 256 {
-                        self.copy_horizontal();
-                    }
-
-                    if self.line == PRE_RENDER_LINE && self.dot >= 279 && self.dot <= 303 {
-                        self.copy_vertical();
-                    }
-
-                    self.load_sprite_tiles(cartridge);
-                }
-                320..=335 => {
-                    self.load_bg_tiles(cartridge);
-                }
-                336..=339 => {
-                    //
-                }
-                340 => {
-                    self.next_line();
-                }
-                _ => unreachable!(),
+        if self.line < TOTAL_VISIBLE_LINES {
+            if self.mask.render_enabled {
+                self.render(cartridge);
+            } else if self.line != PRE_RENDER_LINE && self.dot < 256 {
+                // TODO: The backdrop colour can apparently be set using palette address?
+                self.screen.draw(self.palette.color(0));
             }
-        } else if self.line < TOTAL_VISIBLE_LINES && self.line != PRE_RENDER_LINE && self.dot < 256
-        {
-            // TODO: The backdrop colour can apparently be set using palette address?
-            self.screen.draw(self.palette.color(0));
-        } else if self.dot == 340 {
-            self.next_line();
         }
 
-        self.dot += 1;
+        if self.dot == 340 {
+            self.next_line();
+        } else {
+            self.dot += 1;
+        }
+    }
+
+    fn render(&mut self, cartridge: &mut Cartridge) {
+        match self.dot {
+            0..=255 => {
+                if self.line != PRE_RENDER_LINE {
+                    self.draw_pixel();
+
+                    // TODO: Precise timings for sprite operations
+                    if self.dot == 255 {
+                        (self.sprites_selected, self.sprite_zero_selected) =
+                            self.oam.select_sprites(self.line, self.control.sprite_size);
+                    }
+                }
+
+                self.load_bg_tiles(cartridge);
+
+                if self.dot == 255 {
+                    self.increment_vertical();
+                }
+            }
+            256..=319 => {
+                if self.dot == 256 {
+                    self.copy_horizontal();
+                }
+
+                if self.line == PRE_RENDER_LINE && self.dot >= 279 && self.dot <= 303 {
+                    self.copy_vertical();
+                }
+
+                self.load_sprite_tiles(cartridge);
+            }
+            320..=335 => {
+                self.load_bg_tiles(cartridge);
+            }
+            336..=339 => {
+                //
+            }
+            _ => (),
+        }
     }
 
     fn next_line(&mut self) {
-        self.dot = -1;
+        self.dot = 0;
         self.line += 1;
 
         if self.line == VBLANK_LINE {
