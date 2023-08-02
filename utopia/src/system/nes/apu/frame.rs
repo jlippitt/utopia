@@ -1,3 +1,5 @@
+use super::FRAME_IRQ;
+use crate::core::mos6502::Interrupt;
 use tracing::debug;
 
 const STEPS: [u64; 5] = [7458, 14914, 22372, 29830, 37282];
@@ -19,6 +21,7 @@ pub struct FrameCounter {
     target_cycles: u64,
     step: u8,
     mode: Mode,
+    irq_inhibit: bool,
 }
 
 impl FrameCounter {
@@ -28,12 +31,25 @@ impl FrameCounter {
             target_cycles: STEPS[0],
             step: 0,
             mode: Mode::Short,
+            irq_inhibit: false,
         }
     }
 
-    pub fn set_mode(&mut self, long: bool) {
-        self.mode = if long { Mode::Long } else { Mode::Short };
+    pub fn set_control(&mut self, interrupt: &mut Interrupt, value: u8) {
+        self.mode = if (value & 0x80) != 0 {
+            Mode::Long
+        } else {
+            Mode::Short
+        };
         debug!("Frame Counter Mode: {:?}", self.mode);
+
+        self.irq_inhibit = (value & 0x40) != 0;
+        debug!("Frame Counter IRQ Inhibit: {}", self.irq_inhibit);
+
+        if self.irq_inhibit {
+            *interrupt &= !FRAME_IRQ;
+            debug!("Frame Counter IRQ Cleared");
+        }
 
         // Prepare for timer reset
         // TODO: Slightly more accurate timing, dependent on odd/even cycles?
@@ -41,7 +57,7 @@ impl FrameCounter {
         self.target_cycles = self.cycles + 3;
     }
 
-    pub fn step(&mut self) -> Option<FrameEvent> {
+    pub fn step(&mut self, interrupt: &mut Interrupt) -> Option<FrameEvent> {
         self.cycles += 1;
 
         if self.cycles != self.target_cycles {
@@ -61,20 +77,23 @@ impl FrameCounter {
                 self.step += 1;
                 Some(FrameEvent::Quarter)
             }
-            3 => {
-                match self.mode {
-                    Mode::Short => {
-                        self.cycles = 0;
-                        self.step = 0;
-                        // TODO: IRQ
-                        Some(FrameEvent::Half)
+            3 => match self.mode {
+                Mode::Short => {
+                    self.cycles = 0;
+                    self.step = 0;
+
+                    if !self.irq_inhibit {
+                        *interrupt |= FRAME_IRQ;
+                        debug!("Frame Counter IRQ Raised");
                     }
-                    Mode::Long => {
-                        self.step += 1;
-                        None
-                    }
+
+                    Some(FrameEvent::Half)
                 }
-            }
+                Mode::Long => {
+                    self.step += 1;
+                    None
+                }
+            },
             4 => {
                 self.cycles = 0;
                 self.step = 0;

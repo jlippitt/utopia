@@ -1,5 +1,7 @@
 use super::super::DmaRequest;
 use super::component::Timer;
+use super::DMC_IRQ;
+use crate::core::mos6502::Interrupt;
 use tracing::debug;
 
 #[rustfmt::skip]
@@ -28,6 +30,7 @@ pub struct Dmc {
     sample_address: u16,
     sample_length: u16,
     loop_flag: bool,
+    irq_enabled: bool,
 }
 
 impl Dmc {
@@ -48,6 +51,7 @@ impl Dmc {
             sample_address: 0,
             sample_length: 0,
             loop_flag: false,
+            irq_enabled: false,
         }
     }
 
@@ -63,10 +67,17 @@ impl Dmc {
         self.reader.address
     }
 
-    pub fn write(&mut self, address: u16, value: u8) {
+    pub fn write(&mut self, interrupt: &mut Interrupt, address: u16, value: u8) {
         match address & 3 {
             0 => {
-                // TODO: IRQ
+                self.irq_enabled = (value & 0x80) != 0;
+                debug!("DMC IRQ Enabled: {}", self.irq_enabled);
+
+                if !self.irq_enabled {
+                    *interrupt &= !DMC_IRQ;
+                    debug!("DMC IRQ Cleared");
+                }
+
                 self.loop_flag = (value & 0x40) != 0;
                 self.timer.set_period(PERIODS[(value & 0x0f) as usize]);
             }
@@ -87,7 +98,7 @@ impl Dmc {
         }
     }
 
-    pub fn write_sample(&mut self, value: u8) {
+    pub fn write_sample(&mut self, interrupt: &mut Interrupt, value: u8) {
         self.sample_buffer = Some(value);
         self.reader.address = 0x8000 | (self.reader.address.wrapping_add(1) & 0x7fff);
 
@@ -95,8 +106,9 @@ impl Dmc {
         if self.reader.bytes_remaining == 0 {
             if self.loop_flag {
                 self.restart();
-            } else {
-                // TODO: IRQ
+            } else if self.irq_enabled {
+                *interrupt |= DMC_IRQ;
+                debug!("DMC IRQ Raised");
             }
         } else {
             self.reader.bytes_remaining -= 1;

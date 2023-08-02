@@ -125,7 +125,7 @@ impl Hardware {
     }
 
     fn step_apu(&mut self) {
-        self.apu.step(&mut self.dma_request);
+        self.apu.step(&mut self.interrupt, &mut self.dma_request);
     }
 
     fn transfer_dma(&mut self) {
@@ -164,7 +164,7 @@ impl Hardware {
         let address = self.apu.dmc_sample_address();
         let value = self.read(address);
         debug!("DMA Write: DMC <= {:02X} <= {:04X}", value, address);
-        self.apu.write_dmc_sample(value);
+        self.apu.write_dmc_sample(&mut self.interrupt, value);
     }
 }
 
@@ -185,7 +185,9 @@ impl Bus for Hardware {
                 .read(&mut self.cartridge, &mut self.interrupt, address),
             2 => match address {
                 0x4016..=0x4017 => self.joypad.read_register(address, self.mdr),
-                0x4000..=0x401f => self.apu.read_register(address, self.mdr),
+                0x4000..=0x401f => self
+                    .apu
+                    .read_register(&mut self.interrupt, address, self.mdr),
                 _ => self.mdr,
             },
             _ => self.mdr,
@@ -212,7 +214,7 @@ impl Bus for Hardware {
                     self.dma_oam_src = value;
                 }
                 0x4016 => self.joypad.write_register(value),
-                0x4000..=0x401f => self.apu.write_register(address, value),
+                0x4000..=0x401f => self.apu.write_register(&mut self.interrupt, address, value),
                 _ => (),
             },
             _ => (),
