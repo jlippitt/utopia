@@ -1,4 +1,4 @@
-use super::component::{LengthCounter, Sequencer, Timer};
+use super::component::{Envelope, LengthCounter, Sequencer, Timer};
 use super::frame::FrameEvent;
 
 const DUTY_CYCLE: [[u8; 8]; 4] = [
@@ -11,6 +11,7 @@ const DUTY_CYCLE: [[u8; 8]; 4] = [
 pub struct Pulse {
     timer: Timer,
     sequencer: Sequencer<8>,
+    envelope: Envelope,
     length_counter: LengthCounter,
 }
 
@@ -19,6 +20,7 @@ impl Pulse {
         Self {
             timer: Timer::new(1),
             sequencer: Sequencer::new(&DUTY_CYCLE[0]),
+            envelope: Envelope::new(),
             length_counter: LengthCounter::new(),
         }
     }
@@ -28,9 +30,9 @@ impl Pulse {
     }
 
     pub fn sample(&self) -> u8 {
-        // TODO: Sweep + Envelope
+        // TODO: Sweep
         if self.timer.period() >= 8 && self.length_counter.counter() != 0 {
-            self.sequencer.sample() * 15
+            self.sequencer.sample() * self.envelope.volume()
         } else {
             0
         }
@@ -42,7 +44,7 @@ impl Pulse {
                 let duty_cycle = ((value >> 6) & 3) as usize;
                 self.sequencer.set_sequence(&DUTY_CYCLE[duty_cycle]);
                 self.length_counter.set_halted((value & 0x20) != 0);
-                // TODO: Envelope
+                self.envelope.set_control(value);
             }
             1 => {
                 // TODO: Sweep
@@ -51,9 +53,8 @@ impl Pulse {
             3 => {
                 self.timer.set_period_high(value & 0x07);
                 self.length_counter.load(value >> 3);
-
                 self.sequencer.reset();
-                // TODO: Restart envelope
+                self.envelope.reset();
             }
             _ => unreachable!(),
         }
@@ -70,7 +71,7 @@ impl Pulse {
     }
 
     pub fn on_frame_event(&mut self, event: FrameEvent) {
-        // TODO: Envelope
+        self.envelope.step();
 
         if event == FrameEvent::Half {
             // TODO: Sweep
