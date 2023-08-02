@@ -1,7 +1,7 @@
 pub use screen::{HEIGHT, WIDTH};
 
 use super::cartridge::Cartridge;
-use crate::core::mos6502::{Interrupt, INT_NMI};
+use super::interrupt::{Interrupt, InterruptType};
 use oam::Oam;
 use palette::Palette;
 use render::RenderState;
@@ -50,6 +50,7 @@ pub struct Ppu {
     read_buffer: u8,
     sprites_selected: usize,
     sprite_zero_selected: bool,
+    interrupt: Interrupt,
     regs: Registers,
     control: Control,
     status: Status,
@@ -61,7 +62,7 @@ pub struct Ppu {
 }
 
 impl Ppu {
-    pub fn new() -> Self {
+    pub fn new(interrupt: Interrupt) -> Self {
         Self {
             ready: false,
             line: 0,
@@ -69,6 +70,7 @@ impl Ppu {
             read_buffer: 0,
             sprites_selected: 0,
             sprite_zero_selected: false,
+            interrupt,
             regs: Registers {
                 v: 0,
                 t: 0,
@@ -118,12 +120,7 @@ impl Ppu {
         self.screen.pixels()
     }
 
-    pub fn read(
-        &mut self,
-        cartridge: &mut Cartridge,
-        interrupt: &mut Interrupt,
-        address: u16,
-    ) -> u8 {
+    pub fn read(&mut self, cartridge: &mut Cartridge, address: u16) -> u8 {
         match address & 7 {
             2 => {
                 // TODO: Open bus
@@ -133,7 +130,7 @@ impl Ppu {
                     result |= 0x80;
                     self.status.nmi_occurred = false;
                     debug!("NMI Occurred: {}", self.status.nmi_occurred);
-                    *interrupt &= !INT_NMI;
+                    self.interrupt.clear(InterruptType::Nmi);
                 }
 
                 if self.status.sprite_zero_hit {
@@ -173,21 +170,15 @@ impl Ppu {
         }
     }
 
-    pub fn write(
-        &mut self,
-        cartridge: &mut Cartridge,
-        interrupt: &mut Interrupt,
-        address: u16,
-        value: u8,
-    ) {
+    pub fn write(&mut self, cartridge: &mut Cartridge, address: u16, value: u8) {
         match address & 7 {
             0 => {
                 let nmi_active = (value & 0x80) != 0;
 
                 if !nmi_active {
-                    *interrupt &= !INT_NMI;
+                    self.interrupt.clear(InterruptType::Nmi);
                 } else if nmi_active && self.status.nmi_occurred && !self.control.nmi_active {
-                    *interrupt |= INT_NMI;
+                    self.interrupt.raise(InterruptType::Nmi);
                 }
 
                 self.control.nmi_active = nmi_active;
@@ -274,7 +265,7 @@ impl Ppu {
         self.oam.write(value);
     }
 
-    pub fn step(&mut self, cartridge: &mut Cartridge, interrupt: &mut Interrupt) {
+    pub fn step(&mut self, cartridge: &mut Cartridge) {
         if self.line < TOTAL_VISIBLE_LINES && self.mask.render_enabled {
             match self.dot {
                 0..=255 => {
@@ -312,18 +303,18 @@ impl Ppu {
                     //
                 }
                 340 => {
-                    self.next_line(interrupt);
+                    self.next_line();
                 }
                 _ => unreachable!(),
             }
         } else if self.dot == 340 {
-            self.next_line(interrupt);
+            self.next_line();
         }
 
         self.dot += 1;
     }
 
-    fn next_line(&mut self, interrupt: &mut Interrupt) {
+    fn next_line(&mut self) {
         self.dot = -1;
         self.line += 1;
 
@@ -335,14 +326,15 @@ impl Ppu {
             debug!("PPU NMI Occurred: {}", self.status.nmi_occurred);
 
             if self.control.nmi_active {
-                *interrupt |= INT_NMI;
+                self.interrupt.raise(InterruptType::Nmi);
             }
         } else if self.line == MAX_LINE_NUMBER {
             self.line = PRE_RENDER_LINE;
 
             self.status.nmi_occurred = false;
             debug!("PPU NMI Occurred: {}", self.status.nmi_occurred);
-            *interrupt &= !INT_NMI;
+
+            self.interrupt.clear(InterruptType::Nmi);
 
             self.status.sprite_zero_hit = false;
             debug!("Sprite Zero Hit: {}", self.status.sprite_zero_hit);

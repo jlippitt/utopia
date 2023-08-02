@@ -1,11 +1,12 @@
 use super::System;
-use crate::core::mos6502::{Bus, Core, Interrupt};
+use crate::core::mos6502::{self, Bus, Core};
 use crate::util::MirrorVec;
 use crate::AudioQueue;
 use crate::JoypadState;
 use apu::Apu;
 use bitflags::bitflags;
 use cartridge::Cartridge;
+use interrupt::Interrupt;
 use joypad::Joypad;
 use ppu::Ppu;
 use std::error::Error;
@@ -17,6 +18,7 @@ const CLIP_AMOUNT: usize = 8;
 
 mod apu;
 mod cartridge;
+mod interrupt;
 mod joypad;
 mod ppu;
 
@@ -97,17 +99,19 @@ struct Hardware {
 
 impl Hardware {
     pub fn new(rom_data: Vec<u8>) -> Self {
+        let interrupt = Interrupt::new();
+
         Self {
             dma_request: DmaRequest::empty(),
             dma_oam_src: 0,
             cycles: 0,
             mdr: 0,
-            interrupt: 0,
             cartridge: Cartridge::new(rom_data),
             wram: MirrorVec::new(WRAM_SIZE),
             joypad: Joypad::new(),
-            ppu: Ppu::new(),
-            apu: Apu::new(),
+            ppu: Ppu::new(interrupt.clone()),
+            apu: Apu::new(interrupt.clone()),
+            interrupt,
         }
     }
 
@@ -121,11 +125,11 @@ impl Hardware {
 
     fn step_ppu(&mut self) {
         self.cycles += 4;
-        self.ppu.step(&mut self.cartridge, &mut self.interrupt);
+        self.ppu.step(&mut self.cartridge);
     }
 
     fn step_apu(&mut self) {
-        self.apu.step(&mut self.interrupt, &mut self.dma_request);
+        self.apu.step(&mut self.dma_request);
     }
 
     fn transfer_dma(&mut self) {
@@ -164,7 +168,7 @@ impl Hardware {
         let address = self.apu.dmc_sample_address();
         let value = self.read(address);
         debug!("DMA Write: DMC <= {:02X} <= {:04X}", value, address);
-        self.apu.write_dmc_sample(&mut self.interrupt, value);
+        self.apu.write_dmc_sample(value);
     }
 }
 
@@ -180,14 +184,10 @@ impl Bus for Hardware {
 
         self.mdr = match address >> 13 {
             0 => self.wram[address as usize],
-            1 => self
-                .ppu
-                .read(&mut self.cartridge, &mut self.interrupt, address),
+            1 => self.ppu.read(&mut self.cartridge, address),
             2 => match address {
                 0x4016..=0x4017 => self.joypad.read_register(address, self.mdr),
-                0x4000..=0x401f => self
-                    .apu
-                    .read_register(&mut self.interrupt, address, self.mdr),
+                0x4000..=0x401f => self.apu.read_register(address, self.mdr),
                 _ => self.mdr,
             },
             _ => self.mdr,
@@ -205,16 +205,14 @@ impl Bus for Hardware {
 
         match address >> 13 {
             0 => self.wram[address as usize] = value,
-            1 => self
-                .ppu
-                .write(&mut self.cartridge, &mut self.interrupt, address, value),
+            1 => self.ppu.write(&mut self.cartridge, address, value),
             2 => match address {
                 0x4014 => {
                     self.dma_request.insert(DmaRequest::OAM);
                     self.dma_oam_src = value;
                 }
                 0x4016 => self.joypad.write_register(value),
-                0x4000..=0x401f => self.apu.write_register(&mut self.interrupt, address, value),
+                0x4000..=0x401f => self.apu.write_register(address, value),
                 _ => (),
             },
             _ => (),
@@ -225,12 +223,12 @@ impl Bus for Hardware {
         self.step_apu();
     }
 
-    fn poll(&mut self) -> Interrupt {
-        self.interrupt
+    fn poll(&mut self) -> mos6502::Interrupt {
+        self.interrupt.poll()
     }
 
-    fn acknowledge(&mut self, interrupt: Interrupt) {
-        self.interrupt &= !interrupt;
+    fn acknowledge(&mut self, interrupt: mos6502::Interrupt) {
+        self.interrupt.clear(interrupt.into());
     }
 }
 

@@ -1,5 +1,4 @@
-use super::FRAME_IRQ;
-use crate::core::mos6502::Interrupt;
+use super::super::interrupt::{Interrupt, InterruptType};
 use tracing::debug;
 
 const STEPS: [u64; 5] = [7458, 14914, 22372, 29830, 37282];
@@ -22,20 +21,22 @@ pub struct FrameCounter {
     step: u8,
     mode: Mode,
     irq_inhibit: bool,
+    interrupt: Interrupt,
 }
 
 impl FrameCounter {
-    pub fn new() -> Self {
+    pub fn new(interrupt: Interrupt) -> Self {
         Self {
             cycles: 0,
             target_cycles: STEPS[0],
             step: 0,
             mode: Mode::Short,
             irq_inhibit: false,
+            interrupt,
         }
     }
 
-    pub fn set_control(&mut self, interrupt: &mut Interrupt, value: u8) {
+    pub fn set_control(&mut self, value: u8) {
         self.mode = if (value & 0x80) != 0 {
             Mode::Long
         } else {
@@ -47,8 +48,7 @@ impl FrameCounter {
         debug!("Frame Counter IRQ Inhibit: {}", self.irq_inhibit);
 
         if self.irq_inhibit {
-            *interrupt &= !FRAME_IRQ;
-            debug!("Frame Counter IRQ Cleared");
+            self.interrupt.clear(InterruptType::FrameIrq);
         }
 
         // Prepare for timer reset
@@ -57,7 +57,7 @@ impl FrameCounter {
         self.target_cycles = self.cycles + 3;
     }
 
-    pub fn step(&mut self, interrupt: &mut Interrupt) -> Option<FrameEvent> {
+    pub fn step(&mut self) -> Option<FrameEvent> {
         self.cycles += 1;
 
         if self.cycles != self.target_cycles {
@@ -83,8 +83,7 @@ impl FrameCounter {
                     self.step = 0;
 
                     if !self.irq_inhibit {
-                        *interrupt |= FRAME_IRQ;
-                        debug!("Frame Counter IRQ Raised");
+                        self.interrupt.raise(InterruptType::FrameIrq);
                     }
 
                     Some(FrameEvent::Half)

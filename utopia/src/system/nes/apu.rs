@@ -1,5 +1,5 @@
+use super::interrupt::{Interrupt, InterruptType};
 use super::DmaRequest;
-use crate::core::mos6502::Interrupt;
 use crate::AudioQueue;
 use dmc::Dmc;
 use frame::FrameCounter;
@@ -24,9 +24,6 @@ const SAMPLES_PER_CYCLE: u64 = 1 << CLOCK_SHIFT;
 const PULSE_TABLE_SIZE: usize = 31;
 const TND_TABLE_SIZE: usize = 203;
 
-const FRAME_IRQ: Interrupt = 0x0000_0004;
-const DMC_IRQ: Interrupt = 0x0000_0008;
-
 pub struct Apu {
     pulse1: Pulse,
     pulse2: Pulse,
@@ -34,6 +31,7 @@ pub struct Apu {
     noise: Noise,
     dmc: Dmc,
     frame_counter: FrameCounter,
+    interrupt: Interrupt,
     sample_clock: u64,
     audio_queue: AudioQueue,
     pulse_table: [f32; PULSE_TABLE_SIZE],
@@ -43,14 +41,15 @@ pub struct Apu {
 impl Apu {
     pub const SAMPLE_RATE: u64 = 44100;
 
-    pub fn new() -> Self {
+    pub fn new(interrupt: Interrupt) -> Self {
         Self {
             pulse1: Pulse::new(true),
             pulse2: Pulse::new(false),
             triangle: Triangle::new(),
             noise: Noise::new(),
-            dmc: Dmc::new(),
-            frame_counter: FrameCounter::new(),
+            dmc: Dmc::new(interrupt.clone()),
+            frame_counter: FrameCounter::new(interrupt.clone()),
+            interrupt,
             sample_clock: 0,
             audio_queue: AudioQueue::new(),
             pulse_table: create_pulse_table(),
@@ -66,7 +65,7 @@ impl Apu {
         &mut self.audio_queue
     }
 
-    pub fn read_register(&mut self, interrupt: &mut Interrupt, address: u16, prev_value: u8) -> u8 {
+    pub fn read_register(&mut self, address: u16, prev_value: u8) -> u8 {
         match address & 0x1f {
             0x15 => {
                 let mut value = prev_value & 0x20;
@@ -75,15 +74,20 @@ impl Apu {
                 value |= if self.triangle.enabled() { 0x04 } else { 0 };
                 value |= if self.noise.enabled() { 0x08 } else { 0 };
                 value |= if self.dmc.enabled() { 0x10 } else { 0 };
-                value |= if (*interrupt & FRAME_IRQ) != 0 {
+
+                value |= if self.interrupt.has(InterruptType::FrameIrq) {
                     0x40
                 } else {
                     0
                 };
-                value |= if (*interrupt & DMC_IRQ) != 0 { 0x40 } else { 0 };
 
-                *interrupt &= !FRAME_IRQ;
-                debug!("Frame Counter IRQ Cleared");
+                value |= if self.interrupt.has(InterruptType::DmcIrq) {
+                    0x40
+                } else {
+                    0
+                };
+
+                self.interrupt.clear(InterruptType::FrameIrq);
 
                 value
             }
@@ -94,42 +98,40 @@ impl Apu {
         }
     }
 
-    pub fn write_register(&mut self, interrupt: &mut Interrupt, address: u16, value: u8) {
+    pub fn write_register(&mut self, address: u16, value: u8) {
         match address & 0x1f {
             0x00..=0x03 => self.pulse1.write(address, value),
             0x04..=0x07 => self.pulse2.write(address, value),
             0x08..=0x0b => self.triangle.write(address, value),
             0x0c..=0x0f => self.noise.write(address, value),
-            0x10..=0x13 => self.dmc.write(interrupt, address, value),
+            0x10..=0x13 => self.dmc.write(address, value),
             0x15 => {
                 self.pulse1.set_enabled((value & 0x01) != 0);
                 self.pulse2.set_enabled((value & 0x02) != 0);
                 self.triangle.set_enabled((value & 0x04) != 0);
                 self.noise.set_enabled((value & 0x08) != 0);
                 self.dmc.set_enabled((value & 0x10) != 0);
-
-                *interrupt &= !DMC_IRQ;
-                debug!("DMC IRQ Cleared");
+                self.interrupt.clear(InterruptType::DmcIrq);
             }
             0x17 => {
-                self.frame_counter.set_control(interrupt, value);
+                self.frame_counter.set_control(value);
             }
             _ => warn!("Unmapped APU Write: {:04X} <= {:02X}", address, value),
         }
     }
 
-    pub fn write_dmc_sample(&mut self, interrupt: &mut Interrupt, value: u8) {
-        self.dmc.write_sample(interrupt, value);
+    pub fn write_dmc_sample(&mut self, value: u8) {
+        self.dmc.write_sample(value);
     }
 
-    pub fn step(&mut self, interrupt: &mut Interrupt, dma_request: &mut DmaRequest) {
+    pub fn step(&mut self, dma_request: &mut DmaRequest) {
         self.pulse1.step();
         self.pulse2.step();
         self.triangle.step();
         self.noise.step();
         self.dmc.step(dma_request);
 
-        if let Some(event) = self.frame_counter.step(interrupt) {
+        if let Some(event) = self.frame_counter.step() {
             self.pulse1.on_frame_event(event);
             self.pulse2.on_frame_event(event);
             self.triangle.on_frame_event(event);

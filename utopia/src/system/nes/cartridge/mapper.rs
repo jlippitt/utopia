@@ -1,4 +1,3 @@
-use crate::core::mos6502::Interrupt;
 use axrom::AxRom;
 use cnrom::CnRom;
 use enum_dispatch::enum_dispatch;
@@ -16,8 +15,6 @@ mod uxrom;
 
 const PRG_PAGE_SIZE: usize = 4096;
 const CHR_PAGE_SIZE: usize = 1024;
-
-const MAPPER_IRQ: Interrupt = 0x0000_0010;
 
 #[enum_dispatch]
 pub trait Mapper {
