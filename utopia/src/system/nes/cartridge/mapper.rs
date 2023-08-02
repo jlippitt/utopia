@@ -1,3 +1,4 @@
+use super::super::interrupt::{Interrupt, InterruptType};
 use axrom::AxRom;
 use cnrom::CnRom;
 use enum_dispatch::enum_dispatch;
@@ -33,13 +34,13 @@ pub enum MapperType {
 }
 
 impl MapperType {
-    pub fn new(mapper_number: u8, prg_rom_size: usize) -> Self {
+    pub fn new(mapper_number: u8, prg_rom_size: usize, interrupt: Interrupt) -> Self {
         match mapper_number {
             0 => Self::NRom(NRom::new()),
             1 => Self::Mmc1(Mmc1::new(prg_rom_size)),
             2 => Self::UxRom(UxRom::new(prg_rom_size)),
             3 => Self::CnRom(CnRom::new()),
-            4 => Self::Mmc3(Mmc3::new(prg_rom_size)),
+            4 => Self::Mmc3(Mmc3::new(prg_rom_size, interrupt)),
             7 => Self::AxRom(AxRom::new()),
             _ => panic!("Mapper {} not yet supported", mapper_number),
         }

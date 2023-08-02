@@ -106,7 +106,7 @@ impl Hardware {
             dma_oam_src: 0,
             cycles: 0,
             mdr: 0,
-            cartridge: Cartridge::new(rom_data),
+            cartridge: Cartridge::new(rom_data, interrupt.clone()),
             wram: MirrorVec::new(WRAM_SIZE),
             joypad: Joypad::new(),
             ppu: Ppu::new(interrupt.clone()),

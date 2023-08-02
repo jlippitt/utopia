@@ -1,4 +1,4 @@
-use super::{Mapper, Mappings, MirrorMode, CHR_PAGE_SIZE};
+use super::{Interrupt, InterruptType, Mapper, Mappings, MirrorMode, CHR_PAGE_SIZE};
 use tracing::debug;
 
 const PRG_BANK_SIZE: usize = 8192;
@@ -9,16 +9,26 @@ pub struct Mmc3 {
     prg_rom_mode: bool,
     chr_mode: bool,
     prg_rom_size: usize,
+    irq_latch: u8,
+    irq_counter: u8,
+    irq_enabled: bool,
+    irq_reload: bool,
+    interrupt: Interrupt,
 }
 
 impl Mmc3 {
-    pub fn new(prg_rom_size: usize) -> Self {
+    pub fn new(prg_rom_size: usize, interrupt: Interrupt) -> Self {
         Self {
             registers: [0; 8],
             register_select: 0,
             prg_rom_mode: false,
             chr_mode: false,
             prg_rom_size,
+            irq_latch: 0,
+            irq_counter: 0,
+            irq_enabled: false,
+            irq_reload: false,
+            interrupt,
         }
     }
 
@@ -112,16 +122,23 @@ impl Mapper for Mmc3 {
                 debug!("MMC3 PRG Write Mappings: {:?}", mappings.prg_write);
             }
             0xc000 => {
-                // TODO: IRQ
+                self.irq_latch = value;
+                debug!("MMC3 IRQ Latch: {}", self.irq_latch);
             }
             0xc001 => {
-                // TODO: IRQ
+                self.irq_counter = 0;
+                self.irq_reload = true;
+                debug!("MMC3 IRQ Counter: {}", self.irq_counter);
+                debug!("MMC3 IRQ Reload: {}", self.irq_reload);
             }
             0xe000 => {
-                // TODO: IRQ
+                self.irq_enabled = false;
+                debug!("MMC3 IRQ Enabled: {}", self.irq_enabled);
+                self.interrupt.clear(InterruptType::MapperIrq);
             }
             0xe001 => {
-                // TODO: IRQ
+                self.irq_enabled = true;
+                debug!("MMC3 IRQ Enabled: {}", self.irq_enabled);
             }
             _ => unreachable!(),
         }

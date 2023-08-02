@@ -1,3 +1,4 @@
+use super::Interrupt;
 use crate::util::MirrorVec;
 use mapper::{Mapper, MapperType, Mappings, MirrorMode, NameTable, PrgRead, PrgWrite};
 use tracing::debug;
@@ -22,7 +23,7 @@ pub struct Cartridge {
 }
 
 impl Cartridge {
-    pub fn new(data: Vec<u8>) -> Cartridge {
+    pub fn new(data: Vec<u8>, interrupt: Interrupt) -> Cartridge {
         let mapper_number = ((data[6] & 0xf0) >> 4) | (data[7] & 0xf0);
         let prg_rom_size = PRG_ROM_MULTIPLIER * (data[4] as usize);
         let chr_rom_size = CHR_ROM_MULTIPLIER * (data[5] as usize);
@@ -53,7 +54,7 @@ impl Cartridge {
         debug!("Mirror Mode: {:?}", mirror_mode);
 
         let mut mappings = Mappings::new(mirror_mode);
-        let mut mapper = MapperType::new(mapper_number, prg_rom_size);
+        let mut mapper = MapperType::new(mapper_number, prg_rom_size, interrupt);
         mapper.init_mappings(&mut mappings);
 
         Self {
