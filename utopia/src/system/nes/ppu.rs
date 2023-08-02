@@ -310,6 +310,10 @@ impl Ppu {
                 }
                 _ => unreachable!(),
             }
+        } else if self.line < TOTAL_VISIBLE_LINES && self.line != PRE_RENDER_LINE && self.dot < 256
+        {
+            // TODO: The backdrop colour can apparently be set using palette address?
+            self.screen.draw(self.palette.color(0));
         } else if self.dot == 340 {
             self.next_line();
         }
