@@ -120,7 +120,7 @@ impl Hardware {
         self.step_ppu();
         self.step_ppu();
         self.step_ppu();
-        self.step_apu();
+        self.step_others();
     }
 
     fn step_ppu(&mut self) {
@@ -128,8 +128,9 @@ impl Hardware {
         self.ppu.step(&mut self.cartridge);
     }
 
-    fn step_apu(&mut self) {
+    fn step_others(&mut self) {
         self.apu.step(&mut self.dma_request);
+        self.cartridge.on_cpu_cycle();
     }
 
     fn transfer_dma(&mut self) {
@@ -220,7 +221,7 @@ impl Bus for Hardware {
 
         self.step_ppu();
         self.step_ppu();
-        self.step_apu();
+        self.step_others();
     }
 
     fn poll(&mut self) -> mos6502::Interrupt {

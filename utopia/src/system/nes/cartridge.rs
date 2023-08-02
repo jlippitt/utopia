@@ -116,6 +116,10 @@ impl Cartridge {
         }
     }
 
+    pub fn on_cpu_cycle(&mut self) {
+        self.mapper.on_cpu_cycle();
+    }
+
     pub fn on_ppu_address_changed(&mut self, ppu_address: u16) {
         self.mapper.on_ppu_address_changed(ppu_address);
     }

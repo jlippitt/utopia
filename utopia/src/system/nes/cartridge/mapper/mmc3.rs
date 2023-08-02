@@ -13,7 +13,8 @@ pub struct Mmc3 {
     irq_counter: u8,
     irq_enabled: bool,
     irq_reload: bool,
-    prev_ppu_address: u16,
+    cycle_counter: u64,
+    prev_a12: bool,
     interrupt: Interrupt,
 }
 
@@ -29,7 +30,8 @@ impl Mmc3 {
             irq_counter: 0,
             irq_enabled: false,
             irq_reload: false,
-            prev_ppu_address: 0,
+            cycle_counter: 0,
+            prev_a12: false,
             interrupt,
         }
     }
@@ -68,6 +70,21 @@ impl Mmc3 {
 
         debug!("MMC3 PRG Read Mappings: {:?}", mappings.prg_read);
         debug!("MMC3 CHR Mappings: {:?}", mappings.chr);
+    }
+
+    fn step_irq(&mut self) {
+        if self.irq_counter == 0 || self.irq_reload {
+            self.irq_reload = false;
+            self.irq_counter = self.irq_latch;
+        } else {
+            self.irq_counter -= 1;
+        }
+
+        debug!("MMC3 IRQ Counter: {}", self.irq_counter);
+
+        if self.irq_counter == 0 && self.irq_enabled {
+            self.interrupt.raise(InterruptType::MapperIrq);
+        }
     }
 }
 
@@ -146,22 +163,21 @@ impl Mapper for Mmc3 {
         }
     }
 
+    fn on_cpu_cycle(&mut self) {
+        self.cycle_counter += 1;
+    }
+
     fn on_ppu_address_changed(&mut self, ppu_address: u16) {
-        if (ppu_address & 0x1000) > (self.prev_ppu_address & 0x1000) {
-            if self.irq_counter == 0 || self.irq_reload {
-                self.irq_reload = false;
-                self.irq_counter = self.irq_latch;
-            } else {
-                self.irq_counter -= 1;
+        let a12 = (ppu_address & 0x1000) != 0;
+
+        if a12 {
+            if !self.prev_a12 && self.cycle_counter >= 3 {
+                self.step_irq();
             }
 
-            debug!("MMC3 IRQ Counter: {}", self.irq_counter);
-
-            if self.irq_counter == 0 && self.irq_enabled {
-                self.interrupt.raise(InterruptType::MapperIrq);
-            }
+            self.cycle_counter = 0;
         }
 
-        self.prev_ppu_address = ppu_address;
+        self.prev_a12 = a12;
     }
 }
