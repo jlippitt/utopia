@@ -1,8 +1,11 @@
 use crate::AudioQueue;
 use frame::FrameCounter;
+use pulse::Pulse;
 use tracing::warn;
 
+mod component;
 mod frame;
+mod pulse;
 
 const CYCLES_PER_SECOND: u64 = 1789773;
 const CLOCK_SHIFT: u32 = 16;
@@ -10,10 +13,13 @@ const SAMPLE_PERIOD: u64 = (CYCLES_PER_SECOND << CLOCK_SHIFT) / Apu::SAMPLE_RATE
 const SAMPLES_PER_CYCLE: u64 = 1 << CLOCK_SHIFT;
 
 pub struct Apu {
+    pulse1: Pulse,
+    pulse2: Pulse,
     frame_counter: FrameCounter,
     sample_clock: u64,
     total_samples: u64,
     audio_queue: AudioQueue,
+    pulse_table: [f32; 31],
 }
 
 impl Apu {
@@ -21,10 +27,13 @@ impl Apu {
 
     pub fn new() -> Self {
         Self {
+            pulse1: Pulse::new(),
+            pulse2: Pulse::new(),
             frame_counter: FrameCounter::new(),
             sample_clock: 0,
             total_samples: 0,
             audio_queue: AudioQueue::new(),
+            pulse_table: create_pulse_table(),
         }
     }
 
@@ -38,6 +47,8 @@ impl Apu {
 
     pub fn write_register(&mut self, address: u16, value: u8) {
         match address & 0x1f {
+            0x00..=0x03 => self.pulse1.write(address, value),
+            0x04..=0x07 => self.pulse2.write(address, value),
             0x17 => {
                 self.frame_counter.set_mode((value & 0x80) != 0);
                 // TODO: Frame IRQ
@@ -47,14 +58,32 @@ impl Apu {
     }
 
     pub fn step(&mut self) {
+        self.pulse1.step();
+        self.pulse2.step();
+
         let _frame = self.frame_counter.step();
 
         self.sample_clock += SAMPLES_PER_CYCLE;
 
         if self.sample_clock >= SAMPLE_PERIOD {
             self.sample_clock -= SAMPLE_PERIOD;
-            self.audio_queue.push_back((0, 0));
+
+            let pulse = self.pulse1.sample() + self.pulse2.sample();
+
+            let sample = self.pulse_table[pulse as usize];
+
+            self.audio_queue.push_back((sample, sample));
             self.total_samples += 1;
         }
     }
+}
+
+fn create_pulse_table() -> [f32; 31] {
+    let mut table = [0.0; 31];
+
+    for (index, entry) in table.iter_mut().enumerate() {
+        *entry = 95.52 / (8128.0 / (index as f32) + 100.0);
+    }
+
+    table
 }

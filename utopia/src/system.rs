@@ -35,7 +35,7 @@ pub enum Sync {
     Audio,
 }
 
-pub type AudioQueue = VecDeque<(i16, i16)>;
+pub type AudioQueue = VecDeque<(f32, f32)>;
 
 pub trait System {
     fn width(&self) -> usize;
