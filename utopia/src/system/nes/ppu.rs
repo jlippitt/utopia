@@ -166,7 +166,7 @@ impl Ppu {
                 value
             }
             _ => {
-                warn!("Unmapped PPU read {:04X}:", address);
+                debug!("Unmapped PPU read {:04X}:", address);
                 // TODO: PPU Open Bus
                 0
             }

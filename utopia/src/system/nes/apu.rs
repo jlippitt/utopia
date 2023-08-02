@@ -88,7 +88,7 @@ impl Apu {
                 value
             }
             _ => {
-                warn!("Unmapped APU Read: {:04X}", address);
+                debug!("Unmapped APU Read: {:04X}", address);
                 prev_value
             }
         }
