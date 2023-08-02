@@ -1,6 +1,6 @@
 use tracing::debug;
 
-const STEPS: [u64; 5] = [3729, 7457, 11186, 14915, 18461];
+const STEPS: [u64; 5] = [7458, 14914, 22372, 29830, 37282];
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum FrameEvent {
