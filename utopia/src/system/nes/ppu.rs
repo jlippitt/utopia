@@ -159,6 +159,7 @@ impl Ppu {
                 );
 
                 self.regs.v = (self.regs.v + self.control.vram_increment) & 0x7fff;
+                cartridge.on_ppu_address_changed(self.regs.v);
 
                 value
             }
@@ -237,6 +238,7 @@ impl Ppu {
                     self.regs.v = self.regs.t;
                     debug!("PPU TMP Address: {:04X}", self.regs.t);
                     debug!("PPU VRAM Address: {:04X}", self.regs.v);
+                    cartridge.on_ppu_address_changed(self.regs.v);
                 } else {
                     self.regs.t = (self.regs.t & 0xff) | ((value as u16 & 0x3f) << 8);
                     debug!("PPU TMP Address: {:04X}", self.regs.t);
@@ -256,6 +258,7 @@ impl Ppu {
                 }
 
                 self.regs.v = (self.regs.v + self.control.vram_increment) & 0x7fff;
+                cartridge.on_ppu_address_changed(self.regs.v);
             }
             _ => warn!("PPU write {:04X} not yet implemented", address),
         }

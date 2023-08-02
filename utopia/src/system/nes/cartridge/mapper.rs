@@ -21,6 +21,7 @@ const CHR_PAGE_SIZE: usize = 1024;
 pub trait Mapper {
     fn init_mappings(&mut self, _mappings: &mut Mappings) {}
     fn write_register(&mut self, _mappings: &mut Mappings, _address: u16, _value: u8) {}
+    fn on_ppu_address_changed(&mut self, _ppu_address: u16) {}
 }
 
 #[enum_dispatch(Mapper)]

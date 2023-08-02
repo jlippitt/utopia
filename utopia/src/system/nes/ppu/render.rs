@@ -41,6 +41,11 @@ impl RenderState {
             sprites: [Default::default(); 8],
         }
     }
+
+    pub fn set_address(&mut self, cartridge: &mut Cartridge, address: u16) {
+        self.address = address;
+        cartridge.on_ppu_address_changed(self.address);
+    }
 }
 
 impl Ppu {
@@ -111,28 +116,30 @@ impl Ppu {
         self.screen.draw(color);
     }
 
-    pub(super) fn load_bg_tiles(&mut self, cartridge: &Cartridge) {
+    pub(super) fn load_bg_tiles(&mut self, cartridge: &mut Cartridge) {
         self.render.chr_low <<= 1;
         self.render.chr_high <<= 1;
         self.render.attr_shift <<= 2;
 
         match self.dot & 7 {
-            0 => self.render.address = self.tile_address(),
+            0 => self.render.set_address(cartridge, self.tile_address()),
             1 => {
                 let value = cartridge.read_vram(self.render.address);
                 self.render.name = (value as u16) << 4;
             }
-            2 => self.render.address = self.attr_address(),
+            2 => self.render.set_address(cartridge, self.attr_address()),
             3 => {
                 let value = cartridge.read_vram(self.render.address);
                 let shift = ((self.regs.v & 0x40) >> 4) | (self.regs.v & 0x02);
                 self.render.attr_latch = (value >> shift) & 0x03;
             }
-            4 => self.render.address = self.bg_chr_address(),
+            4 => self.render.set_address(cartridge, self.bg_chr_address()),
             5 => {
                 self.render.chr_latch = cartridge.read_vram(self.render.address);
             }
-            6 => self.render.address = self.bg_chr_address() | 0x08,
+            6 => self
+                .render
+                .set_address(cartridge, self.bg_chr_address() | 0x08),
             7 => {
                 let value = cartridge.read_vram(self.render.address);
 
@@ -151,13 +158,13 @@ impl Ppu {
         }
     }
 
-    pub(super) fn load_sprite_tiles(&mut self, cartridge: &Cartridge) {
+    pub(super) fn load_sprite_tiles(&mut self, cartridge: &mut Cartridge) {
         let index = (self.dot as usize >> 3) & 7;
         let address = index << 2;
 
         match self.dot & 7 {
             0 => {
-                self.render.address = self.tile_address();
+                self.render.set_address(cartridge, self.tile_address());
                 self.render.sprite_y = self.oam.read_secondary(address) as u16;
             }
             1 => {
@@ -165,7 +172,7 @@ impl Ppu {
                 self.render.sprite_name = (self.oam.read_secondary(address + 1) as u16) << 4;
             }
             2 => {
-                self.render.address = self.attr_address();
+                self.render.set_address(cartridge, self.attr_address());
                 self.render.sprites[index].attr = self.oam.read_secondary(address + 2);
             }
             3 => {
@@ -174,7 +181,8 @@ impl Ppu {
             }
             4 => {
                 self.render.sprites[index].x = self.oam.read_secondary(address + 3) as i32 + 8;
-                self.render.address = self.sprite_chr_address(index);
+                self.render
+                    .set_address(cartridge, self.sprite_chr_address(index));
             }
             5 => {
                 self.render.sprites[index].x = self.oam.read_secondary(address + 3) as i32 + 8;
@@ -182,7 +190,8 @@ impl Ppu {
             }
             6 => {
                 self.render.sprites[index].x = self.oam.read_secondary(address + 3) as i32 + 8;
-                self.render.address = self.sprite_chr_address(index) | 0x08;
+                self.render
+                    .set_address(cartridge, self.sprite_chr_address(index) | 0x08);
             }
             7 => {
                 self.render.sprites[index].x = self.oam.read_secondary(address + 3) as i32 + 8;

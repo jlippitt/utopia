@@ -13,6 +13,7 @@ pub struct Mmc3 {
     irq_counter: u8,
     irq_enabled: bool,
     irq_reload: bool,
+    prev_ppu_address: u16,
     interrupt: Interrupt,
 }
 
@@ -28,6 +29,7 @@ impl Mmc3 {
             irq_counter: 0,
             irq_enabled: false,
             irq_reload: false,
+            prev_ppu_address: 0,
             interrupt,
         }
     }
@@ -142,5 +144,24 @@ impl Mapper for Mmc3 {
             }
             _ => unreachable!(),
         }
+    }
+
+    fn on_ppu_address_changed(&mut self, ppu_address: u16) {
+        if (ppu_address & 0x1000) > (self.prev_ppu_address & 0x1000) {
+            if self.irq_counter == 0 || self.irq_reload {
+                self.irq_reload = false;
+                self.irq_counter = self.irq_latch;
+            } else {
+                self.irq_counter -= 1;
+            }
+
+            debug!("MMC3 IRQ Counter: {}", self.irq_counter);
+
+            if self.irq_counter == 0 && self.irq_enabled {
+                self.interrupt.raise(InterruptType::MapperIrq);
+            }
+        }
+
+        self.prev_ppu_address = ppu_address;
     }
 }

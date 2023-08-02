@@ -25,6 +25,13 @@ pub fn nmi(core: &mut Core<impl Bus>) {
     jump_to_vector(core, NMI_VECTOR);
 }
 
+pub fn irq(core: &mut Core<impl Bus>) {
+    debug!("IRQ");
+    core.read(core.pc);
+    push_state(core, false);
+    jump_to_vector(core, IRQ_VECTOR);
+}
+
 pub fn reset(core: &mut Core<impl Bus>) {
     debug!("RESET");
     core.read(core.pc);

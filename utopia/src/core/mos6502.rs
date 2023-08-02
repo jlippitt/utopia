@@ -90,7 +90,7 @@ impl<T: Bus> Core<T> {
                 self.bus.acknowledge(INT_NMI);
                 instr::nmi(self);
             } else {
-                panic!("Interrupt type not yet supported");
+                instr::irq(self);
             }
 
             self.interrupt = 0;

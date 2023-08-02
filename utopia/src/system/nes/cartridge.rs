@@ -115,4 +115,8 @@ impl Cartridge {
             self.chr_data[offset as usize | ((address as usize) & 0x03ff)] = value;
         }
     }
+
+    pub fn on_ppu_address_changed(&mut self, ppu_address: u16) {
+        self.mapper.on_ppu_address_changed(ppu_address);
+    }
 }
