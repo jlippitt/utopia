@@ -1,4 +1,5 @@
 use crate::AudioQueue;
+use dmc::Dmc;
 use frame::FrameCounter;
 use noise::Noise;
 use pulse::Pulse;
@@ -6,6 +7,7 @@ use tracing::warn;
 use triangle::Triangle;
 
 mod component;
+mod dmc;
 mod frame;
 mod noise;
 mod pulse;
@@ -24,6 +26,7 @@ pub struct Apu {
     pulse2: Pulse,
     triangle: Triangle,
     noise: Noise,
+    dmc: Dmc,
     frame_counter: FrameCounter,
     sample_clock: u64,
     audio_queue: AudioQueue,
@@ -38,8 +41,9 @@ impl Apu {
         Self {
             pulse1: Pulse::new(true),
             pulse2: Pulse::new(false),
-            noise: Noise::new(),
             triangle: Triangle::new(),
+            noise: Noise::new(),
+            dmc: Dmc::new(),
             frame_counter: FrameCounter::new(),
             sample_clock: 0,
             audio_queue: AudioQueue::new(),
@@ -60,7 +64,7 @@ impl Apu {
                 value |= if self.pulse2.enabled() { 0x02 } else { 0 };
                 value |= if self.triangle.enabled() { 0x04 } else { 0 };
                 value |= if self.noise.enabled() { 0x08 } else { 0 };
-                // TODO: DMC
+                value |= if self.dmc.enabled() { 0x10 } else { 0 };
                 // TODO: IRQ status
                 value
             }
@@ -77,12 +81,13 @@ impl Apu {
             0x04..=0x07 => self.pulse2.write(address, value),
             0x08..=0x0b => self.triangle.write(address, value),
             0x0c..=0x0f => self.noise.write(address, value),
+            0x10..=0x14 => self.dmc.write(address, value),
             0x15 => {
                 self.pulse1.set_enabled((value & 0x01) != 0);
                 self.pulse2.set_enabled((value & 0x02) != 0);
                 self.triangle.set_enabled((value & 0x04) != 0);
                 self.noise.set_enabled((value & 0x08) != 0);
-                // TODO: DMC
+                self.dmc.set_enabled((value & 0x10) != 0);
             }
             0x17 => {
                 self.frame_counter.set_mode((value & 0x80) != 0);
@@ -97,6 +102,7 @@ impl Apu {
         self.pulse2.step();
         self.triangle.step();
         self.noise.step();
+        self.dmc.step();
 
         if let Some(event) = self.frame_counter.step() {
             self.pulse1.on_frame_event(event);
@@ -111,7 +117,7 @@ impl Apu {
             self.sample_clock -= SAMPLE_PERIOD;
 
             let pulse = self.pulse1.sample() + self.pulse2.sample();
-            let tnd = self.triangle.sample() * 3 + self.noise.sample() * 2;
+            let tnd = self.triangle.sample() * 3 + self.noise.sample() * 2 + self.dmc.sample();
             let sample = self.pulse_table[pulse as usize] + self.tnd_table[tnd as usize];
 
             self.audio_queue.push_back((sample, sample));
