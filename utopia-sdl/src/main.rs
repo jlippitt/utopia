@@ -7,7 +7,7 @@ use std::error::Error;
 use std::fs;
 use std::thread;
 use std::time::{Duration, Instant};
-use utopia::{Options, Sync};
+use utopia::Options;
 use video::{Video, VideoOptions};
 
 mod audio;
@@ -58,7 +58,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             clip_bottom: system.clip_bottom().try_into()?,
             upscale: args.upscale,
             full_screen: args.full_screen,
-            disable_vsync: args.disable_vsync || system.sync() != Sync::Video,
+            disable_vsync: args.disable_vsync || system.audio_queue().is_some(),
         },
     )?;
 
@@ -77,6 +77,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     audio.resume();
 
     let start_time = Instant::now();
+    let mut total_samples: u64 = 0;
 
     'outer: loop {
         for event in event_pump.poll_iter() {
@@ -111,11 +112,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         video.update(&mut texture, system.pixels())?;
 
         if let Some(audio_queue) = system.audio_queue() {
-            audio.append_queue(audio_queue);
-        }
+            total_samples += audio_queue.len() as u64;
 
-        if system.sync() == Sync::Audio {
-            let expected_duration = (system.total_samples() * 1000) / sample_rate;
+            audio.append_queue(audio_queue);
+
+            let expected_duration = (total_samples * 1000) / sample_rate;
             let expected_time = start_time + Duration::from_millis(expected_duration);
             let actual_time = Instant::now();
 

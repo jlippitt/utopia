@@ -26,7 +26,6 @@ pub struct Apu {
     noise: Noise,
     frame_counter: FrameCounter,
     sample_clock: u64,
-    total_samples: u64,
     audio_queue: AudioQueue,
     pulse_table: [f32; PULSE_TABLE_SIZE],
     tnd_table: [f32; TND_TABLE_SIZE],
@@ -43,7 +42,6 @@ impl Apu {
             triangle: Triangle::new(),
             frame_counter: FrameCounter::new(),
             sample_clock: 0,
-            total_samples: 0,
             audio_queue: AudioQueue::new(),
             pulse_table: create_pulse_table(),
             tnd_table: create_tnd_table(),
@@ -52,10 +50,6 @@ impl Apu {
 
     pub fn audio_queue(&mut self) -> &mut AudioQueue {
         &mut self.audio_queue
-    }
-
-    pub fn total_samples(&self) -> u64 {
-        self.total_samples
     }
 
     pub fn read_register(&mut self, address: u16, prev_value: u8) -> u8 {
@@ -121,7 +115,6 @@ impl Apu {
             let sample = self.pulse_table[pulse as usize] + self.tnd_table[tnd as usize];
 
             self.audio_queue.push_back((sample, sample));
-            self.total_samples += 1;
         }
     }
 }

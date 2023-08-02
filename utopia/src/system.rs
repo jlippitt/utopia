@@ -29,12 +29,6 @@ pub struct JoypadState {
     pub start: bool,
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum Sync {
-    Video,
-    Audio,
-}
-
 pub type AudioQueue = VecDeque<(f32, f32)>;
 
 pub trait System {
@@ -43,20 +37,12 @@ pub trait System {
     fn pixels(&self) -> &[u8];
     fn run_frame(&mut self, joypad_state: &JoypadState);
 
-    fn sync(&self) -> Sync {
-        Sync::Video
-    }
-
     fn sample_rate(&self) -> u64 {
         44100
     }
 
     fn audio_queue(&mut self) -> Option<&mut AudioQueue> {
         None
-    }
-
-    fn total_samples(&self) -> u64 {
-        0
     }
 
     fn clip_top(&self) -> usize {

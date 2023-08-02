@@ -1,4 +1,4 @@
-use super::{Sync, System};
+use super::System;
 use crate::core::mos6502::{Bus, Core, Interrupt};
 use crate::util::MirrorVec;
 use crate::AudioQueue;
@@ -52,20 +52,12 @@ impl System for Nes {
         self.core.bus().ppu.pixels()
     }
 
-    fn sync(&self) -> Sync {
-        Sync::Audio
-    }
-
     fn sample_rate(&self) -> u64 {
         Apu::SAMPLE_RATE
     }
 
     fn audio_queue(&mut self) -> Option<&mut AudioQueue> {
         Some(self.core.bus_mut().apu.audio_queue())
-    }
-
-    fn total_samples(&self) -> u64 {
-        self.core.bus().apu.total_samples()
     }
 
     fn run_frame(&mut self, joypad_state: &JoypadState) {
