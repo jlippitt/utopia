@@ -113,9 +113,8 @@ impl Apu {
             let pulse = self.pulse1.sample() + self.pulse2.sample();
             let tnd = self.triangle.sample() * 3 + self.noise.sample() * 2;
             let sample = self.pulse_table[pulse as usize] + self.tnd_table[tnd as usize];
-            let output = (sample * 2.0) - 1.0;
 
-            self.audio_queue.push_back((output, output));
+            self.audio_queue.push_back((sample, sample));
         }
     }
 }
