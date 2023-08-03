@@ -64,24 +64,26 @@ impl super::Ppu {
     }
 
     fn draw_pixel(&mut self) {
-        if let Some(bg_pixel) = self.render.bg_fifo.pop() {
-            if self.render.bg_fine_x > 0 {
-                self.render.bg_fine_x -= 1;
-                return;
-            }
+        let Some(bg_pixel) = self.render.bg_fifo.pop() else {
+            return;
+        };
 
-            let sprite_pixel = self.render.sprite_fifo.pop();
-
-            let color = if sprite_pixel.color != 0 && (bg_pixel == 0 || !sprite_pixel.below_bg) {
-                let sprite_palette = self.obj_palette[sprite_pixel.palette as usize];
-                (sprite_palette >> (sprite_pixel.color << 1)) & 3
-            } else {
-                (self.bg_palette >> (bg_pixel << 1)) & 3
-            };
-
-            self.screen.draw_pixel(color);
-            self.render.pos_x += 1;
+        if self.render.bg_fine_x > 0 {
+            self.render.bg_fine_x -= 1;
+            return;
         }
+
+        let sprite_pixel = self.render.sprite_fifo.pop();
+
+        let color = if sprite_pixel.color != 0 && (bg_pixel == 0 || !sprite_pixel.below_bg) {
+            let sprite_palette = self.obj_palette[sprite_pixel.palette as usize];
+            (sprite_palette >> (sprite_pixel.color << 1)) & 3
+        } else {
+            (self.bg_palette >> (bg_pixel << 1)) & 3
+        };
+
+        self.screen.draw_pixel(color);
+        self.render.pos_x += 1;
     }
 
     fn fetch_bg(&mut self) {
