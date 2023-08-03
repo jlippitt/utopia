@@ -1,5 +1,6 @@
-use super::component::{LengthCounter, LinearCounter, Sequencer, Timer};
+use super::component::{LengthCounter, LinearCounter, Timer};
 use super::frame::FrameEvent;
+use crate::util::audio::Sequencer;
 
 #[rustfmt::skip]
 const SEQUENCE: [u8; 32] = [

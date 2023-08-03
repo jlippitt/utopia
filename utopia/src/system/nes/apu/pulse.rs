@@ -1,5 +1,6 @@
-use super::component::{Envelope, LengthCounter, Sequencer, Sweep, Timer};
+use super::component::{Envelope, LengthCounter, Sweep, Timer};
 use super::frame::FrameEvent;
+use crate::util::audio::Sequencer;
 
 const DUTY_CYCLE: [[u8; 8]; 4] = [
     [0, 1, 0, 0, 0, 0, 0, 0],
@@ -42,7 +43,7 @@ impl Pulse {
     pub fn write(&mut self, address: u16, value: u8) {
         match address & 3 {
             0 => {
-                let duty_cycle = ((value >> 6) & 3) as usize;
+                let duty_cycle = value as usize >> 6;
                 self.sequencer.set_sequence(&DUTY_CYCLE[duty_cycle]);
                 self.length_counter.set_halted((value & 0x20) != 0);
                 self.envelope.set_control(value);

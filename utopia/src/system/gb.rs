@@ -229,10 +229,7 @@ impl Hardware {
             0x00 => self.joypad.read(),
             0x04..=0x07 => self.timer.read(address),
             0x0f => self.interrupt.flag(),
-            0x10..=0x3f => {
-                warn!("APU register reads not yet implemented");
-                0
-            }
+            0x10..=0x3f => self.apu.read(address),
             0x40..=0x4f => self.ppu.read_register(address),
             0x80..=0xfe => self.hram[address as usize],
             0xff => self.interrupt.enable(),
@@ -253,7 +250,7 @@ impl Hardware {
             0x01 | 0x02 => (), // TODO: Serial port
             0x04..=0x07 => self.timer.write(address, value),
             0x0f => self.interrupt.set_flag(value),
-            0x10..=0x3f => debug!("APU register writes not yet implemented"),
+            0x10..=0x3f => self.apu.write(address, value),
             0x46 => self.dma_address = Some((value as u16) << 8),
             0x40..=0x4f => self.ppu.write_register(&mut self.interrupt, address, value),
             0x50 => {
