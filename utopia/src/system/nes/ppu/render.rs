@@ -47,7 +47,47 @@ impl RenderState {
 }
 
 impl super::Ppu {
-    pub(super) fn draw_pixel(&mut self) {
+    pub(super) fn render(&mut self, cartridge: &mut Cartridge) {
+        match self.dot {
+            0..=255 => {
+                if self.line != super::PRE_RENDER_LINE {
+                    self.draw_pixel();
+
+                    // TODO: Precise timings for sprite operations
+                    if self.dot == 255 {
+                        (self.sprites_selected, self.sprite_zero_selected) =
+                            self.oam.select_sprites(self.line, self.control.sprite_size);
+                    }
+                }
+
+                self.load_bg_tiles(cartridge);
+
+                if self.dot == 255 {
+                    self.increment_vertical();
+                }
+            }
+            256..=319 => {
+                if self.dot == 256 {
+                    self.copy_horizontal();
+                }
+
+                if self.line == super::PRE_RENDER_LINE && self.dot >= 279 && self.dot <= 303 {
+                    self.copy_vertical();
+                }
+
+                self.load_sprite_tiles(cartridge);
+            }
+            320..=335 => {
+                self.load_bg_tiles(cartridge);
+            }
+            336..=339 => {
+                //
+            }
+            _ => (),
+        }
+    }
+
+    fn draw_pixel(&mut self) {
         // 1. Backdrop Color
         let mut color = self.palette.color(0);
         let mut bg_present = false;
@@ -114,7 +154,7 @@ impl super::Ppu {
         self.screen.draw(color);
     }
 
-    pub(super) fn load_bg_tiles(&mut self, cartridge: &mut Cartridge) {
+    fn load_bg_tiles(&mut self, cartridge: &mut Cartridge) {
         self.render.chr_low <<= 1;
         self.render.chr_high <<= 1;
         self.render.attr_shift <<= 2;
@@ -156,7 +196,7 @@ impl super::Ppu {
         }
     }
 
-    pub(super) fn load_sprite_tiles(&mut self, cartridge: &mut Cartridge) {
+    fn load_sprite_tiles(&mut self, cartridge: &mut Cartridge) {
         let index = (self.dot as usize >> 3) & 7;
         let address = index << 2;
 
@@ -199,17 +239,17 @@ impl super::Ppu {
         }
     }
 
-    pub(super) fn copy_horizontal(&mut self) {
+    fn copy_horizontal(&mut self) {
         self.regs.v = (self.regs.v & 0x7be0) | (self.regs.t & 0x041f);
         debug!("PPU VRAM Address (Copy Horizontal): {:04X}", self.regs.v);
     }
 
-    pub(super) fn copy_vertical(&mut self) {
+    fn copy_vertical(&mut self) {
         self.regs.v = (self.regs.v & 0x041f) | (self.regs.t & 0x7be0);
         debug!("PPU VRAM Address (Copy Vertical): {:04X}", self.regs.v);
     }
 
-    pub(super) fn increment_horizontal(&mut self) {
+    fn increment_horizontal(&mut self) {
         if self.regs.v & 0x1f == 0x1f {
             self.regs.v &= !0x1f;
             self.regs.v ^= 0x0400;
@@ -218,7 +258,7 @@ impl super::Ppu {
         }
     }
 
-    pub(super) fn increment_vertical(&mut self) {
+    fn increment_vertical(&mut self) {
         if (self.regs.v & 0x7000) == 0x7000 {
             self.regs.v &= !0x7000;
 
