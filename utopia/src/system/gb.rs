@@ -1,6 +1,7 @@
-use super::{BiosLoader, JoypadState, System};
+use super::{AudioQueue, BiosLoader, JoypadState, System};
 use crate::core::gbz80::{Bus, Core, State};
 use crate::util::MirrorVec;
+use apu::Apu;
 use cartridge::Cartridge;
 use interrupt::Interrupt;
 use joypad::Joypad;
@@ -10,6 +11,7 @@ use std::fmt;
 use timer::Timer;
 use tracing::{debug, warn};
 
+mod apu;
 mod cartridge;
 mod interrupt;
 mod joypad;
@@ -75,6 +77,14 @@ impl System for GameBoy {
         self.core.bus().ppu.pixels()
     }
 
+    fn sample_rate(&self) -> u64 {
+        Apu::SAMPLE_RATE
+    }
+
+    fn audio_queue(&mut self) -> Option<&mut AudioQueue> {
+        Some(self.core.bus_mut().apu.audio_queue())
+    }
+
     fn run_frame(&mut self, joypad_state: &JoypadState) {
         let core = &mut self.core;
 
@@ -97,6 +107,7 @@ struct Hardware {
     wram: MirrorVec<u8>,
     cartridge: Cartridge,
     ppu: Ppu,
+    apu: Apu,
     joypad: Joypad,
     bios_data: Option<MirrorVec<u8>>,
 }
@@ -112,6 +123,7 @@ impl Hardware {
             wram: MirrorVec::new(WRAM_SIZE),
             cartridge: Cartridge::new(rom_data),
             ppu: Ppu::new(skip_boot),
+            apu: Apu::new(),
             joypad: Joypad::new(),
             bios_data: bios_data.map(MirrorVec::from),
         }
@@ -121,6 +133,7 @@ impl Hardware {
         self.cycles += M_CYCLE_LENGTH;
         self.timer.step(&mut self.interrupt, M_CYCLE_LENGTH);
         self.ppu.step(&mut self.interrupt, M_CYCLE_LENGTH);
+        self.apu.step(M_CYCLE_LENGTH);
 
         let Some(src_address) = self.dma_address else {
             return false;
