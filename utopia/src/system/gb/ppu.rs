@@ -54,6 +54,7 @@ pub struct Ppu {
     scroll_y: u8,
     scroll_x: u8,
     bg_palette: u8,
+    obj_palette: [u8; 2],
     lcd_y_compare: u8,
     render: RenderState,
     screen: Screen,
@@ -85,6 +86,7 @@ impl Ppu {
             scroll_x: 0,
             lcd_y_compare: 0,
             bg_palette: 0,
+            obj_palette: [0; 2],
             render: RenderState::new(0),
             screen: Screen::new(),
             vram: MirrorVec::new(VRAM_SIZE),
@@ -201,6 +203,14 @@ impl Ppu {
             0x47 => {
                 self.bg_palette = value;
                 debug!("BG Palette: {:08b}", self.bg_palette);
+            }
+            0x48 => {
+                self.obj_palette[0] = value;
+                debug!("OBJ Palette 0: {:08b}", self.obj_palette[0]);
+            }
+            0x49 => {
+                self.obj_palette[1] = value;
+                debug!("OBJ Palette 1: {:08b}", self.obj_palette[1]);
             }
             _ => debug!("PPU register write {:02X} not yet implemented", address),
         }

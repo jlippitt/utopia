@@ -106,12 +106,20 @@ impl Oam {
         debug!("Line {}: {} Sprites Selected", line, self.write_index);
     }
 
-    pub fn current_sprite(&self) -> Option<&Sprite> {
-        if self.read_index < self.write_index {
-            Some(&self.sprites[self.selected[self.read_index]])
-        } else {
-            None
+    pub fn sprite_ready(&self, pos_x: usize) -> bool {
+        if self.read_index >= self.write_index {
+            return false;
         }
+
+        if self.current_sprite().x >= (pos_x as i32) {
+            return false;
+        }
+
+        true
+    }
+
+    pub fn current_sprite(&self) -> &Sprite {
+        &self.sprites[self.selected[self.read_index]]
     }
 
     pub fn next_sprite(&mut self) {

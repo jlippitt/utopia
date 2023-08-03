@@ -1,5 +1,4 @@
 use super::oam::Sprite;
-use super::{Ppu, WIDTH};
 use fifo::{BackgroundFifo, SpriteFifo};
 use tracing::trace;
 
@@ -7,14 +6,15 @@ mod fifo;
 
 pub struct RenderState {
     pos_x: usize,
-    tile: u8,
     //bg_ready: bool,
     bg_step: u32,
     bg_coarse_x: u16,
     bg_fine_x: u8,
-    bg_fifo: BackgroundFifo,
+    bg_tile: u8,
     bg_chr: (u8, u8),
+    bg_fifo: BackgroundFifo,
     sprite_step: u32,
+    sprite_tile: u8,
     sprite_chr: (u8, u8),
     sprite_fifo: SpriteFifo,
 }
@@ -23,43 +23,65 @@ impl RenderState {
     pub fn new(scroll_x: u8) -> Self {
         Self {
             pos_x: 0,
-            tile: 0,
             //bg_ready: false,
             bg_step: 0,
             bg_coarse_x: scroll_x as u16 >> 3,
             bg_fine_x: scroll_x & 7,
-            bg_fifo: BackgroundFifo::new(),
+            bg_tile: 0,
             bg_chr: (0, 0),
+            bg_fifo: BackgroundFifo::new(),
             sprite_step: 0,
+            sprite_tile: 0,
             sprite_chr: (0, 0),
             sprite_fifo: SpriteFifo::new(),
         }
     }
 }
 
-impl Ppu {
+impl super::Ppu {
     pub(super) fn reset_renderer(&mut self) {
         self.render = RenderState::new(self.scroll_x);
     }
 
     pub(super) fn step_renderer(&mut self) -> bool {
-        // TODO: This should wait until current BG fetch has completed
-        self.fetch_sprite();
-
-        self.fetch_bg();
-
-        if let Some((low, high)) = self.render.bg_fifo.pop() {
-            if self.render.bg_fine_x == 0 {
-                let shift = (high << 2) | (low << 1);
-                let color = (self.bg_palette >> shift) & 3;
-                self.screen.draw_pixel(color);
-                self.render.pos_x += 1;
+        if self.oam.sprite_ready(self.render.pos_x) {
+            if self.render.bg_fifo.is_empty() {
+                self.fetch_bg();
+                return false;
             } else {
-                self.render.bg_fine_x -= 1;
+                self.fetch_sprite();
+
+                if self.oam.sprite_ready(self.render.pos_x) {
+                    return false;
+                }
             }
+        } else {
+            self.fetch_bg();
         }
 
-        self.render.pos_x == WIDTH
+        self.draw_pixel();
+        self.render.pos_x == super::WIDTH
+    }
+
+    fn draw_pixel(&mut self) {
+        if let Some(bg_pixel) = self.render.bg_fifo.pop() {
+            if self.render.bg_fine_x > 0 {
+                self.render.bg_fine_x -= 1;
+                return;
+            }
+
+            let sprite_pixel = self.render.sprite_fifo.pop();
+
+            let color = if sprite_pixel.color != 0 && (bg_pixel == 0 || !sprite_pixel.below_bg) {
+                let sprite_palette = self.obj_palette[sprite_pixel.palette as usize];
+                (sprite_palette >> (sprite_pixel.color << 1)) & 3
+            } else {
+                (self.bg_palette >> (bg_pixel << 1)) & 3
+            };
+
+            self.screen.draw_pixel(color);
+            self.render.pos_x += 1;
+        }
     }
 
     fn fetch_bg(&mut self) {
@@ -72,7 +94,7 @@ impl Ppu {
 
                 trace!("BG Tile Address: {:04X}", address);
 
-                self.render.tile = self.vram[address as usize];
+                self.render.bg_tile = self.vram[address as usize];
                 self.render.bg_coarse_x += 1;
                 self.render.bg_step += 1;
             }
@@ -99,37 +121,33 @@ impl Ppu {
     }
 
     fn fetch_sprite(&mut self) {
-        if let Some(sprite) = self.oam.current_sprite() {
-            if sprite.x > self.render.pos_x as i32 {
-                return;
-            }
+        let sprite = self.oam.current_sprite();
 
-            match self.render.sprite_step {
-                0 | 2 | 4 => self.render.sprite_step += 1,
-                1 => {
-                    self.render.tile = sprite.chr;
-                    self.render.sprite_step += 1;
-                }
-                3 => {
-                    let address = self.sprite_chr_address(sprite);
-                    trace!("Sprite CHR Low Address: {:04X}", address);
-                    self.render.sprite_chr.0 = self.vram[address as usize];
-                    self.render.sprite_step += 1;
-                }
-                5 => {
-                    let address = self.sprite_chr_address(sprite) + 1;
-                    trace!("Sprite CHR High Address: {:04X}", address);
-                    self.render.sprite_chr.1 = self.vram[address as usize];
-                    self.render.sprite_step += 1;
-                }
-                6 => {
-                    // Push
-                    self.render.sprite_fifo.push(sprite, self.render.bg_chr);
-                    self.oam.next_sprite();
-                    self.render.sprite_step = 0;
-                }
-                _ => unreachable!(),
+        match self.render.sprite_step {
+            0 | 2 | 4 => self.render.sprite_step += 1,
+            1 => {
+                self.render.sprite_tile = sprite.chr;
+                self.render.sprite_step += 1;
             }
+            3 => {
+                let address = self.sprite_chr_address(sprite);
+                trace!("Sprite CHR Low Address: {:04X}", address);
+                self.render.sprite_chr.0 = self.vram[address as usize];
+                self.render.sprite_step += 1;
+            }
+            5 => {
+                let address = self.sprite_chr_address(sprite) + 1;
+                trace!("Sprite CHR High Address: {:04X}", address);
+                self.render.sprite_chr.1 = self.vram[address as usize];
+                self.render.sprite_step += 1;
+            }
+            6 => {
+                // Push
+                self.render.sprite_fifo.push(sprite, self.render.sprite_chr);
+                self.oam.next_sprite();
+                self.render.sprite_step = 0;
+            }
+            _ => unreachable!(),
         }
     }
 
@@ -138,7 +156,7 @@ impl Ppu {
     }
 
     fn bg_chr_address(&self) -> u16 {
-        let mut tile = self.render.tile as u16;
+        let mut tile = self.render.bg_tile as u16;
 
         if tile < 128 && !self.control.bg_chr_select {
             tile += 256;
@@ -150,7 +168,7 @@ impl Ppu {
     }
 
     fn sprite_chr_address(&self, sprite: &Sprite) -> u16 {
-        let tile = self.render.tile as u16;
+        let tile = self.render.sprite_tile as u16;
 
         let mut fine_y = ((self.line as i32 - sprite.y) & 7) as u16;
 
