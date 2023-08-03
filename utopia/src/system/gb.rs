@@ -3,6 +3,7 @@ use crate::core::gbz80::{Bus, Core, State};
 use crate::util::MirrorVec;
 use cartridge::Cartridge;
 use interrupt::Interrupt;
+use joypad::Joypad;
 use ppu::Ppu;
 use std::error::Error;
 use std::fmt;
@@ -11,6 +12,7 @@ use tracing::{debug, warn};
 
 mod cartridge;
 mod interrupt;
+mod joypad;
 mod ppu;
 mod timer;
 
@@ -73,9 +75,10 @@ impl System for GameBoy {
         self.core.bus().ppu.pixels()
     }
 
-    fn run_frame(&mut self, _joypad_state: &JoypadState) {
+    fn run_frame(&mut self, joypad_state: &JoypadState) {
         let core = &mut self.core;
 
+        core.bus_mut().joypad.update(joypad_state);
         core.bus_mut().ppu.start_frame();
 
         while !core.bus().ppu.ready() {
@@ -94,6 +97,7 @@ struct Hardware {
     wram: MirrorVec<u8>,
     cartridge: Cartridge,
     ppu: Ppu,
+    joypad: Joypad,
     bios_data: Option<MirrorVec<u8>>,
 }
 
@@ -108,6 +112,7 @@ impl Hardware {
             wram: MirrorVec::new(WRAM_SIZE),
             cartridge: Cartridge::new(rom_data),
             ppu: Ppu::new(skip_boot),
+            joypad: Joypad::new(),
             bios_data: bios_data.map(MirrorVec::from),
         }
     }
@@ -205,7 +210,7 @@ impl Hardware {
 
     fn read_high_normal(&mut self, address: u8) -> u8 {
         match address {
-            0x00 => 0xff, // TODO: Joypad
+            0x00 => self.joypad.read(),
             0x04..=0x07 => self.timer.read(address),
             0x0f => self.interrupt.flag(),
             0x10..=0x3f => {
@@ -228,7 +233,7 @@ impl Hardware {
 
     fn write_high_normal(&mut self, address: u8, value: u8) {
         match address {
-            0x00 => (),        // TODO: Joypad
+            0x00 => self.joypad.write(value),
             0x01 | 0x02 => (), // TODO: Serial port
             0x04..=0x07 => self.timer.write(address, value),
             0x0f => self.interrupt.set_flag(value),
