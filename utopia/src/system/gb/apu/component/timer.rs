@@ -1,16 +1,20 @@
 const COUNTER_MAX: u32 = 2048;
 
 pub struct Timer {
-    period: u32,
     counter: u32,
+    period: u32,
 }
 
 impl Timer {
     pub fn new() -> Self {
         Self {
-            period: 0,
             counter: 0,
+            period: 0,
         }
+    }
+
+    pub fn reset(&mut self) {
+        self.counter = self.period;
     }
 
     pub fn set_period_low(&mut self, value: u8) {

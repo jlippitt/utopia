@@ -13,6 +13,7 @@ const SAMPLES_PER_CYCLE: u64 = 1 << CLOCK_SHIFT;
 pub struct Apu {
     pulse1: Pulse,
     pulse2: Pulse,
+    divider: u64,
     sample_clock: u64,
     audio_queue: AudioQueue,
 }
@@ -24,6 +25,7 @@ impl Apu {
         Self {
             pulse1: Pulse::new(),
             pulse2: Pulse::new(),
+            divider: 0,
             sample_clock: 0,
             audio_queue: AudioQueue::new(),
         }
@@ -64,5 +66,11 @@ impl Apu {
 
             self.audio_queue.push_back((output, output));
         }
+    }
+
+    pub fn clock_divider(&mut self) {
+        self.divider += 1;
+        self.pulse1.on_divider_clock(self.divider);
+        self.pulse2.on_divider_clock(self.divider);
     }
 }

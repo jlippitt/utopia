@@ -131,7 +131,8 @@ impl Hardware {
 
     fn step(&mut self) -> bool {
         self.cycles += M_CYCLE_LENGTH;
-        self.timer.step(&mut self.interrupt, M_CYCLE_LENGTH);
+        self.timer
+            .step(&mut self.interrupt, &mut self.apu, M_CYCLE_LENGTH);
         self.ppu.step(&mut self.interrupt, M_CYCLE_LENGTH);
 
         if (self.cycles & 3) == 0 {
@@ -248,7 +249,7 @@ impl Hardware {
         match address {
             0x00 => self.joypad.write(value),
             0x01 | 0x02 => (), // TODO: Serial port
-            0x04..=0x07 => self.timer.write(address, value),
+            0x04..=0x07 => self.timer.write(&mut self.apu, address, value),
             0x0f => self.interrupt.set_flag(value),
             0x10..=0x3f => self.apu.write(address, value),
             0x46 => self.dma_address = Some((value as u16) << 8),

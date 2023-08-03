@@ -1,7 +1,9 @@
+use super::apu::Apu;
 use super::interrupt::{Interrupt, InterruptType};
 use tracing::debug;
 
 const PERIOD_MASKS: [u64; 4] = [1023, 15, 63, 255];
+const APU_DIVIDER_MASK: u64 = 8191;
 
 struct Control {
     enable: bool,
@@ -40,9 +42,13 @@ impl Timer {
         }
     }
 
-    pub fn write(&mut self, address: u8, value: u8) {
+    pub fn write(&mut self, apu: &mut Apu, address: u8, value: u8) {
         match address {
             4 => {
+                if (self.divider & APU_DIVIDER_MASK) != 0 {
+                    apu.clock_divider();
+                }
+
                 self.divider = 0;
                 debug!("Timer Divider Reset");
             }
@@ -65,8 +71,12 @@ impl Timer {
         }
     }
 
-    pub fn step(&mut self, interrupt: &mut Interrupt, cycles: u64) {
+    pub fn step(&mut self, interrupt: &mut Interrupt, apu: &mut Apu, cycles: u64) {
         self.divider += cycles;
+
+        if (self.divider & APU_DIVIDER_MASK) == 0 {
+            apu.clock_divider();
+        }
 
         if !self.control.enable {
             return;
