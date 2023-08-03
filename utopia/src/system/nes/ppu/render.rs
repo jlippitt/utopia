@@ -1,6 +1,4 @@
 use crate::system::nes::cartridge::Cartridge;
-
-use super::Ppu;
 use tracing::debug;
 
 const ATTR_SHIFT: [u32; 4] = [0, 0x5555, 0xaaaa, 0xffff];
@@ -48,7 +46,7 @@ impl RenderState {
     }
 }
 
-impl Ppu {
+impl super::Ppu {
     pub(super) fn draw_pixel(&mut self) {
         // 1. Backdrop Color
         let mut color = self.palette.color(0);
