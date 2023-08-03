@@ -90,10 +90,9 @@ impl super::Ppu {
         match self.render.bg_step {
             0 | 2 | 4 => self.render.bg_step += 1,
             1 => {
-                let address = self.control.bg_tile_offset
-                    + (((self.bg_pos_y() as u16) << 2) & !0x1f)
-                    + self.render.bg_coarse_x;
-
+                let coarse_y = ((self.bg_pos_y() as u16) >> 3) & 31;
+                let coarse_x = self.render.bg_coarse_x & 31;
+                let address = self.control.bg_tile_offset + (coarse_y << 5) + coarse_x;
                 trace!("BG Tile Address: {:04X}", address);
 
                 self.render.bg_tile = self.vram[address as usize];
