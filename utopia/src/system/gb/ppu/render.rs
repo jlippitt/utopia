@@ -75,11 +75,17 @@ impl super::Ppu {
 
         let sprite_pixel = self.render.sprite_fifo.pop();
 
-        let color = if sprite_pixel.color != 0 && (bg_pixel == 0 || !sprite_pixel.below_bg) {
+        let sprite_visible = self.ctrl.obj_enable
+            && sprite_pixel.color != 0
+            && (bg_pixel == 0 || !sprite_pixel.below_bg);
+
+        let color = if sprite_visible {
             let sprite_palette = self.obj_palette[sprite_pixel.palette as usize];
             (sprite_palette >> (sprite_pixel.color << 1)) & 3
-        } else {
+        } else if self.ctrl.bg_enable {
             (self.bg_palette >> (bg_pixel << 1)) & 3
+        } else {
+            0
         };
 
         self.screen.draw_pixel(color);
