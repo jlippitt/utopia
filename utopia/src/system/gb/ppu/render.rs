@@ -4,6 +4,7 @@ use tracing::trace;
 
 mod fifo;
 
+#[derive(Default)]
 pub struct RenderState {
     pos_x: u8,
     //bg_ready: bool,
@@ -13,37 +14,40 @@ pub struct RenderState {
     bg_tile: u8,
     bg_chr: (u8, u8),
     bg_fifo: BackgroundFifo,
+    window_start: u8,
+    window_active: bool,
     sprite_step: u32,
     sprite_tile: u8,
     sprite_chr: (u8, u8),
     sprite_fifo: SpriteFifo,
 }
 
-impl RenderState {
-    pub fn new(scroll_x: u8) -> Self {
-        Self {
-            pos_x: 0,
-            //bg_ready: false,
-            bg_step: 0,
-            bg_coarse_x: scroll_x as u16 >> 3,
-            bg_fine_x: scroll_x & 7,
-            bg_tile: 0,
-            bg_chr: (0, 0),
-            bg_fifo: BackgroundFifo::new(),
-            sprite_step: 0,
-            sprite_tile: 0,
-            sprite_chr: (0, 0),
-            sprite_fifo: SpriteFifo::new(),
-        }
-    }
-}
-
 impl super::Ppu {
-    pub(super) fn reset_renderer(&mut self) {
-        self.render = RenderState::new(self.scroll_x);
+    pub(super) fn init_renderer(&mut self) {
+        let window_start = if self.ctrl.window_enable && self.window_y <= self.line {
+            self.window_x.saturating_sub(7)
+        } else {
+            u8::MAX
+        };
+
+        self.render = RenderState {
+            bg_coarse_x: self.scroll_x as u16 >> 3,
+            bg_fine_x: self.scroll_x & 7,
+            window_start,
+            ..Default::default()
+        };
     }
 
     pub(super) fn step_renderer(&mut self) -> bool {
+        if self.render.pos_x >= self.render.window_start {
+            self.render.bg_step = 0;
+            self.render.bg_coarse_x = 0;
+            self.render.bg_fine_x = 7u8.saturating_sub(self.window_x);
+            self.render.bg_fifo.clear();
+            self.render.window_start = u8::MAX;
+            self.render.window_active = true;
+        }
+
         if self.oam.sprite_ready(self.render.pos_x) {
             if self.render.bg_fifo.is_empty() {
                 self.fetch_bg();
@@ -96,9 +100,16 @@ impl super::Ppu {
         match self.render.bg_step {
             0 | 2 | 4 => self.render.bg_step += 1,
             1 => {
+                let tile_offset = if self.render.window_active {
+                    self.ctrl.window_tile_offset
+                } else {
+                    self.ctrl.bg_tile_offset
+                };
+
                 let coarse_y = ((self.bg_pos_y() as u16) >> 3) & 31;
                 let coarse_x = self.render.bg_coarse_x & 31;
-                let address = self.ctrl.bg_tile_offset + (coarse_y << 5) + coarse_x;
+
+                let address = tile_offset + (coarse_y << 5) + coarse_x;
                 trace!("BG Tile Address: {:04X}", address);
 
                 self.render.bg_tile = self.vram[address as usize];
@@ -159,7 +170,11 @@ impl super::Ppu {
     }
 
     fn bg_pos_y(&self) -> u8 {
-        self.scroll_y.wrapping_add(self.line)
+        if self.render.window_active {
+            self.line.wrapping_sub(self.window_y)
+        } else {
+            self.scroll_y.wrapping_add(self.line)
+        }
     }
 
     fn bg_chr_address(&self) -> u16 {

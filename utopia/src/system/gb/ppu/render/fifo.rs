@@ -1,21 +1,19 @@
 use super::super::oam::Sprite;
 use std::cmp;
 
+#[derive(Default)]
 pub struct BackgroundFifo {
     chr: (u8, u8),
     remaining: u8,
 }
 
 impl BackgroundFifo {
-    pub fn new() -> Self {
-        Self {
-            chr: (0, 0),
-            remaining: 0,
-        }
-    }
-
     pub fn is_empty(&self) -> bool {
         self.remaining == 0
+    }
+
+    pub fn clear(&mut self) {
+        self.remaining = 0;
     }
 
     pub fn try_push(&mut self, chr: (u8, u8)) -> bool {
@@ -48,19 +46,13 @@ pub struct SpritePixel {
     pub palette: bool,
 }
 
+#[derive(Default)]
 pub struct SpriteFifo {
     pixels: [SpritePixel; 8],
     read_index: usize,
 }
 
 impl SpriteFifo {
-    pub fn new() -> Self {
-        Self {
-            pixels: [Default::default(); 8],
-            read_index: 0,
-        }
-    }
-
     pub fn push(&mut self, sprite: &Sprite, chr: (u8, u8)) {
         let colors: [u8; 8] = [
             ((chr.0 >> 7) & 1) | ((chr.1 >> 6) & 2),

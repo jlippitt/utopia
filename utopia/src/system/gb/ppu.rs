@@ -34,6 +34,8 @@ struct Control {
     bg_enable: bool,
     bg_tile_offset: u16,
     bg_chr_select: bool,
+    window_enable: bool,
+    window_tile_offset: u16,
     obj_enable: bool,
     obj_size: bool,
     raw: u8,
@@ -78,6 +80,8 @@ impl Ppu {
                 bg_enable: false,
                 bg_tile_offset: BASE_TILE_OFFSET,
                 bg_chr_select: false,
+                window_enable: false,
+                window_tile_offset: BASE_TILE_OFFSET,
                 obj_enable: false,
                 obj_size: false,
                 raw: 0,
@@ -95,7 +99,7 @@ impl Ppu {
             lcd_y_compare: 0,
             bg_palette: 0,
             obj_palette: [0; 2],
-            render: RenderState::new(0),
+            render: Default::default(),
             screen: Screen::new(),
             vram: MirrorVec::new(VRAM_SIZE),
             oam: Oam::new(),
@@ -184,10 +188,14 @@ impl Ppu {
                 self.ctrl.bg_enable = (value & 0x01) != 0;
                 self.ctrl.bg_tile_offset = BASE_TILE_OFFSET + ((value as u16 & 0x08) << 7);
                 self.ctrl.bg_chr_select = (value & 0x10) != 0;
+                self.ctrl.window_enable = (value & 0x20) != 0;
+                self.ctrl.window_tile_offset = BASE_TILE_OFFSET + ((value as u16 & 0x40) << 4);
                 self.ctrl.obj_enable = (value & 0x02) != 0;
                 self.ctrl.obj_size = (value & 0x04) != 0;
                 debug!("BG Enable: {}", self.ctrl.bg_enable);
                 debug!("BG Tile Offset: {:04X}", self.ctrl.bg_tile_offset);
+                debug!("Window Enable: {}", self.ctrl.window_enable);
+                debug!("Window Tile Offset: {:04X}", self.ctrl.window_tile_offset);
                 debug!("BG CHR Select: {}", self.ctrl.bg_chr_select);
                 debug!("OBJ Enable: {}", self.ctrl.obj_enable);
                 debug!("OBJ Size: 8x{}", 8 << self.ctrl.obj_size as u32);
@@ -297,7 +305,7 @@ impl Ppu {
                         let obj_size = 8 << self.ctrl.obj_size as u32;
                         self.oam.select_sprites(self.line, obj_size);
                         self.set_mode(interrupt, Mode::Vram);
-                        self.reset_renderer();
+                        self.init_renderer();
                     }
                 }
                 Mode::Vram => {
