@@ -81,12 +81,9 @@ fn try_parse(id: HeaderLocation, rom: &[u8]) -> Option<Header> {
         return None;
     }
 
-    let rom_size = match BASE_SIZE.checked_shl(rom[0x7fd7] as u32) {
-        Some(rom_size) => rom_size,
-        None => {
-            trace!("{:?}: Invalid ROM size", id);
-            return None;
-        }
+    let Some(rom_size) = BASE_SIZE.checked_shl(rom[0x7fd7] as u32) else {
+        trace!("{:?}: Invalid ROM size", id);
+        return None;
     };
 
     if rom_size != rom.len().next_power_of_two() {
@@ -98,13 +95,12 @@ fn try_parse(id: HeaderLocation, rom: &[u8]) -> Option<Header> {
     }
 
     let sram_size = if rom[0x7fd8] > 0 {
-        match BASE_SIZE.checked_shl(rom[0x7fd8] as u32) {
-            Some(sram_size) => sram_size,
-            None => {
-                trace!("{:?}: Invalid SRAM size", id);
-                return None;
-            }
-        }
+        let Some(sram_size) = BASE_SIZE.checked_shl(rom[0x7fd8] as u32) else {
+            trace!("{:?}: Invalid SRAM size", id);
+            return None;
+        };
+
+        sram_size
     } else {
         0
     };
