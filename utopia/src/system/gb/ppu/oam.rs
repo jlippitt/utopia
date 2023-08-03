@@ -4,7 +4,7 @@ const OAM_SIZE: usize = 160;
 const TOTAL_SPRITES: usize = OAM_SIZE / 4;
 const MAX_SPRITES_PER_LINE: usize = 10;
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Debug)]
 pub struct Sprite {
     pub y: u8,
     pub x: u8,
@@ -90,11 +90,13 @@ impl Oam {
 
             // Sort by X coordinate upon insert
             while insert_index > 0 {
-                if sprite.x >= self.sprites[insert_index - 1].x {
+                let prev_sprite_id = self.selected[insert_index - 1];
+
+                if sprite.x >= self.sprites[prev_sprite_id].x {
                     break;
                 }
 
-                self.selected[insert_index] = self.selected[insert_index - 1];
+                self.selected[insert_index] = prev_sprite_id;
                 insert_index -= 1;
             }
 

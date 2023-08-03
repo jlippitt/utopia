@@ -171,7 +171,7 @@ impl super::Ppu {
     fn sprite_chr_address(&self, sprite: &Sprite) -> u16 {
         let tile = self.render.sprite_tile as u16;
 
-        let mut fine_y = ((self.line - sprite.y) & 7) as u16;
+        let mut fine_y = (self.line.wrapping_sub(sprite.y) as u16) & 7;
 
         if sprite.flip_y {
             fine_y ^= 7;
