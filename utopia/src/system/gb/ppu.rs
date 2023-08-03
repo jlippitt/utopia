@@ -147,6 +147,8 @@ impl Ppu {
             0x44 => self.line,
             0x45 => self.lcd_y_compare,
             0x47 => self.bg_palette,
+            0x48 => self.obj_palette[0],
+            0x49 => self.obj_palette[1],
             _ => panic!("PPU register read {:02X} not yet implemented", address),
         }
     }
