@@ -1,6 +1,6 @@
 use crate::AudioQueue;
 
-const CYCLES_PER_SECOND: u64 = 4194304;
+const CYCLES_PER_SECOND: u64 = 1048576;
 const CLOCK_SHIFT: u32 = 16;
 const SAMPLE_PERIOD: u64 = (CYCLES_PER_SECOND << CLOCK_SHIFT) / Apu::SAMPLE_RATE;
 const SAMPLES_PER_CYCLE: u64 = 1 << CLOCK_SHIFT;
@@ -24,8 +24,8 @@ impl Apu {
         &mut self.audio_queue
     }
 
-    pub fn step(&mut self, cycles: u64) {
-        self.sample_clock += SAMPLES_PER_CYCLE * cycles;
+    pub fn step(&mut self) {
+        self.sample_clock += SAMPLES_PER_CYCLE;
 
         if self.sample_clock >= SAMPLE_PERIOD {
             self.sample_clock -= SAMPLE_PERIOD;

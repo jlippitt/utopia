@@ -133,7 +133,10 @@ impl Hardware {
         self.cycles += M_CYCLE_LENGTH;
         self.timer.step(&mut self.interrupt, M_CYCLE_LENGTH);
         self.ppu.step(&mut self.interrupt, M_CYCLE_LENGTH);
-        self.apu.step(M_CYCLE_LENGTH);
+
+        if (self.cycles & 3) == 0 {
+            self.apu.step();
+        }
 
         let Some(src_address) = self.dma_address else {
             return false;
