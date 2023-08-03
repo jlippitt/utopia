@@ -272,7 +272,7 @@ impl Ppu {
                     self.dot += 1;
 
                     if self.dot == OAM_SEARCH_LENGTH {
-                        self.oam.select_sprites(self.line as i32);
+                        self.oam.select_sprites(self.line);
                         self.set_mode(interrupt, Mode::Vram);
                         self.reset_renderer();
                     }

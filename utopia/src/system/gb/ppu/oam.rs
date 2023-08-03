@@ -6,8 +6,8 @@ const MAX_SPRITES_PER_LINE: usize = 10;
 
 #[derive(Copy, Clone, Default)]
 pub struct Sprite {
-    pub y: i32,
-    pub x: i32,
+    pub y: u8,
+    pub x: u8,
     pub chr: u8,
     pub palette: bool,
     pub flip_x: bool,
@@ -46,11 +46,11 @@ impl Oam {
 
         match address & 3 {
             0 => {
-                sprite.y = (value as i32) - 16;
+                sprite.y = value;
                 debug!("Sprite {} Y: {}", index, sprite.y);
             }
             1 => {
-                sprite.x = (value as i32) - 8;
+                sprite.x = value;
                 debug!("Sprite {} X: {}", index, sprite.x);
             }
             2 => {
@@ -71,13 +71,13 @@ impl Oam {
         }
     }
 
-    pub fn select_sprites(&mut self, line: i32) {
+    pub fn select_sprites(&mut self, line: u8) {
         self.read_index = 0;
         self.write_index = 0;
 
         for (sprite_id, sprite) in self.sprites.iter().enumerate() {
             // TODO: 8x16 sprites
-            if sprite.y > line || (sprite.y + 8) <= line {
+            if sprite.y > (line + 16) || (sprite.y + 8) <= (line + 16) {
                 continue;
             }
 
@@ -106,12 +106,12 @@ impl Oam {
         debug!("Line {}: {} Sprites Selected", line, self.write_index);
     }
 
-    pub fn sprite_ready(&self, pos_x: usize) -> bool {
+    pub fn sprite_ready(&self, pos_x: u8) -> bool {
         if self.read_index >= self.write_index {
             return false;
         }
 
-        if self.current_sprite().x >= (pos_x as i32) {
+        if self.current_sprite().x > pos_x + 8 {
             return false;
         }
 

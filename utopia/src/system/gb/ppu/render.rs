@@ -5,7 +5,7 @@ use tracing::trace;
 mod fifo;
 
 pub struct RenderState {
-    pos_x: usize,
+    pos_x: u8,
     //bg_ready: bool,
     bg_step: u32,
     bg_coarse_x: u16,
@@ -60,7 +60,7 @@ impl super::Ppu {
         }
 
         self.draw_pixel();
-        self.render.pos_x == super::WIDTH
+        self.render.pos_x == (super::WIDTH as u8)
     }
 
     fn draw_pixel(&mut self) {
@@ -171,7 +171,7 @@ impl super::Ppu {
     fn sprite_chr_address(&self, sprite: &Sprite) -> u16 {
         let tile = self.render.sprite_tile as u16;
 
-        let mut fine_y = ((self.line as i32 - sprite.y) & 7) as u16;
+        let mut fine_y = ((self.line - sprite.y) & 7) as u16;
 
         if sprite.flip_y {
             fine_y ^= 7;
