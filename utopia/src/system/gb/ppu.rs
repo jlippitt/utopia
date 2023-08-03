@@ -53,6 +53,8 @@ pub struct Ppu {
     interrupt_enable: InterruptEnable,
     scroll_y: u8,
     scroll_x: u8,
+    window_y: u8,
+    window_x: u8,
     bg_palette: u8,
     obj_palette: [u8; 2],
     lcd_y_compare: u8,
@@ -84,6 +86,8 @@ impl Ppu {
             },
             scroll_y: 0,
             scroll_x: 0,
+            window_y: 0,
+            window_x: 0,
             lcd_y_compare: 0,
             bg_palette: 0,
             obj_palette: [0; 2],
@@ -149,6 +153,8 @@ impl Ppu {
             0x47 => self.bg_palette,
             0x48 => self.obj_palette[0],
             0x49 => self.obj_palette[1],
+            0x4a => self.window_y,
+            0x4b => self.window_x,
             _ => panic!("PPU register read {:02X} not yet implemented", address),
         }
     }
@@ -213,6 +219,14 @@ impl Ppu {
             0x49 => {
                 self.obj_palette[1] = value;
                 debug!("OBJ Palette 1: {:08b}", self.obj_palette[1]);
+            }
+            0x4a => {
+                self.window_y = value;
+                debug!("Window Y: {}", self.window_y);
+            }
+            0x4b => {
+                self.window_x = value;
+                debug!("Window X: {}", self.window_x);
             }
             _ => debug!("PPU register write {:02X} not yet implemented", address),
         }
