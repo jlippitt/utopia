@@ -88,7 +88,7 @@ impl Cartridge {
         }
     }
 
-    pub fn read_vram(&self, address: u16) -> u8 {
+    pub fn read_vram(&mut self, address: u16) -> u8 {
         if address >= 0x2000 {
             let index = address as usize & 0x0fff;
 
@@ -98,7 +98,9 @@ impl Cartridge {
             }
         } else {
             let offset = self.mappings.chr[(address >> 10) as usize];
-            self.chr_data[offset as usize | ((address as usize) & 0x03ff)]
+            let value = self.chr_data[offset as usize | ((address as usize) & 0x03ff)];
+            self.mapper.on_ppu_chr_fetch(&mut self.mappings, address);
+            value
         }
     }
 

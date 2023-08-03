@@ -3,6 +3,7 @@ use axrom::AxRom;
 use cnrom::CnRom;
 use enum_dispatch::enum_dispatch;
 use mmc1::Mmc1;
+use mmc2::Mmc2;
 use mmc3::Mmc3;
 use nrom::NRom;
 use uxrom::UxRom;
@@ -10,6 +11,7 @@ use uxrom::UxRom;
 mod axrom;
 mod cnrom;
 mod mmc1;
+mod mmc2;
 mod mmc3;
 mod nrom;
 mod uxrom;
@@ -23,12 +25,14 @@ pub trait Mapper {
     fn write_register(&mut self, _mappings: &mut Mappings, _address: u16, _value: u8) {}
     fn on_cpu_cycle(&mut self) {}
     fn on_ppu_address_changed(&mut self, _ppu_address: u16) {}
+    fn on_ppu_chr_fetch(&mut self, _mappings: &mut Mappings, _ppu_address: u16) {}
 }
 
 #[enum_dispatch(Mapper)]
 pub enum MapperType {
     NRom,
     Mmc1,
+    Mmc2,
     Mmc3,
     UxRom,
     CnRom,
@@ -44,6 +48,7 @@ impl MapperType {
             3 => Self::CnRom(CnRom::new()),
             4 => Self::Mmc3(Mmc3::new(prg_rom_size, interrupt)),
             7 => Self::AxRom(AxRom::new()),
+            9 => Self::Mmc2(Mmc2::new(prg_rom_size)),
             _ => panic!("Mapper {} not yet supported", mapper_number),
         }
     }
