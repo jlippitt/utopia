@@ -117,27 +117,27 @@ impl Hardware {
         self.timer.step(&mut self.interrupt, M_CYCLE_LENGTH);
         self.ppu.step(&mut self.interrupt, M_CYCLE_LENGTH);
 
-        if let Some(src_address) = self.dma_address {
-            let dst_address = src_address as u8;
-            let value = self.read_normal(src_address);
+        let Some(src_address) = self.dma_address else {
+            return false;
+        };
 
-            debug!(
-                "DMA Transfer: FE{:02X} <= {:02X} <= {:04X}",
-                dst_address, value, src_address
-            );
+        let dst_address = src_address as u8;
+        let value = self.read_normal(src_address);
 
-            self.ppu.write_oam(dst_address, value);
+        debug!(
+            "DMA Transfer: FE{:02X} <= {:02X} <= {:04X}",
+            dst_address, value, src_address
+        );
 
-            self.dma_address = if (dst_address + 1) <= 0x9f {
-                Some(src_address + 1)
-            } else {
-                None
-            };
+        self.ppu.write_oam(dst_address, value);
 
-            true
+        self.dma_address = if (dst_address + 1) <= 0x9f {
+            Some(src_address + 1)
         } else {
-            false
-        }
+            None
+        };
+
+        true
     }
 
     fn read_normal(&mut self, address: u16) -> u8 {
