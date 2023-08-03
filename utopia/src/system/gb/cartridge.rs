@@ -28,15 +28,19 @@ impl Cartridge {
         };
 
         info!("Title: {}", String::from_utf8_lossy(&rom[0x0134..=0x0143]));
-        info!("Mapper Number: {}", mapper_number);
+        info!("Mapper Number: {:02X}", mapper_number);
         info!("ROM Size: {}", rom_size);
         info!("RAM Size: {}", ram_size);
+
+        let mut mappings = Mappings::new();
+        let mut mapper = MbcType::new(mapper_number);
+        mapper.init_mappings(&mut mappings);
 
         Self {
             rom: rom.into(),
             ram: MirrorVec::new(ram_size),
-            mappings: Mappings::new(),
-            mapper: MbcType::new(mapper_number),
+            mappings,
+            mapper,
         }
     }
 

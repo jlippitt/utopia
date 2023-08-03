@@ -20,11 +20,11 @@ impl Mbc1 {
         if self.mode {
             panic!("MBC1 advanced banking mode not yet implemented");
         } else {
-            mappings.rom[0] = 0;
             mappings.ram = if self.ram_enable { Some(0) } else { None };
         }
 
-        mappings.rom[1] = ((self.register[1] as usize) << 19) | ((self.register[0] as usize) << 14);
+        let rom_bank = ((self.register[1] as usize) << 5) | (self.register[0] as usize);
+        mappings.rom[1] = Mappings::ROM_PAGE_SIZE * rom_bank;
 
         debug!("MBC1 ROM Mapping: {:?}", mappings.rom);
         debug!("MBC1 RAM Mapping: {:?}", mappings.ram);
@@ -32,6 +32,11 @@ impl Mbc1 {
 }
 
 impl Mbc for Mbc1 {
+    fn init_mappings(&mut self, mappings: &mut Mappings) {
+        mappings.rom[0] = 0;
+        self.update_mappings(mappings)
+    }
+
     fn write_register(&mut self, mappings: &mut Mappings, address: u16, value: u8) {
         match address & 0xe000 {
             0x0000 => {
