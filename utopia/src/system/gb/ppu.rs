@@ -34,6 +34,7 @@ struct Control {
     bg_enable: bool,
     bg_tile_offset: u16,
     bg_chr_select: bool,
+    obj_size: bool,
     raw: u8,
 }
 
@@ -49,7 +50,7 @@ pub struct Ppu {
     mode: Mode,
     line: u8,
     dot: u64,
-    control: Control,
+    ctrl: Control,
     interrupt_enable: InterruptEnable,
     scroll_y: u8,
     scroll_x: u8,
@@ -71,11 +72,12 @@ impl Ppu {
             mode: Mode::Oam,
             line: 0,
             dot: 0,
-            control: Control {
+            ctrl: Control {
                 lcd_enable: skip_boot,
                 bg_enable: false,
                 bg_tile_offset: BASE_TILE_OFFSET,
                 bg_chr_select: false,
+                obj_size: false,
                 raw: 0,
             },
             interrupt_enable: InterruptEnable {
@@ -120,7 +122,7 @@ impl Ppu {
 
     pub fn read_register(&self, address: u8) -> u8 {
         match address {
-            0x40 => self.control.raw,
+            0x40 => self.ctrl.raw,
             0x41 => {
                 let mut value: u8 = 0x80 | (self.mode as u8);
 
@@ -164,27 +166,29 @@ impl Ppu {
             0x40 => {
                 let lcd_enable = (value & 0x80) != 0;
 
-                if lcd_enable && !self.control.lcd_enable {
+                if lcd_enable && !self.ctrl.lcd_enable {
                     debug!("Screen On");
                     self.set_mode(interrupt, Mode::Oam);
-                    self.control.lcd_enable = true;
+                    self.ctrl.lcd_enable = true;
                     self.screen.reset();
-                } else if !lcd_enable && self.control.lcd_enable {
+                } else if !lcd_enable && self.ctrl.lcd_enable {
                     debug!("Screen Off");
                     self.mode = Mode::HBlank;
                     self.line = 0;
                     self.dot = 0;
-                    self.control.lcd_enable = false;
+                    self.ctrl.lcd_enable = false;
                 }
 
-                self.control.bg_enable = (value & 0x01) != 0;
-                self.control.bg_tile_offset = BASE_TILE_OFFSET + ((value as u16 & 0x08) << 7);
-                self.control.bg_chr_select = (value & 0x10) != 0;
-                debug!("BG Enable: {}", self.control.bg_enable);
-                debug!("BG Tile Offset: {:04X}", self.control.bg_tile_offset);
-                debug!("BG CHR Select: {}", self.control.bg_chr_select);
+                self.ctrl.bg_enable = (value & 0x01) != 0;
+                self.ctrl.bg_tile_offset = BASE_TILE_OFFSET + ((value as u16 & 0x08) << 7);
+                self.ctrl.bg_chr_select = (value & 0x10) != 0;
+                self.ctrl.obj_size = (value & 0x04) != 0;
+                debug!("BG Enable: {}", self.ctrl.bg_enable);
+                debug!("BG Tile Offset: {:04X}", self.ctrl.bg_tile_offset);
+                debug!("BG CHR Select: {}", self.ctrl.bg_chr_select);
+                debug!("OBJ Size: 8x{}", 8 << self.ctrl.obj_size as u32);
 
-                self.control.raw = value;
+                self.ctrl.raw = value;
             }
             0x41 => {
                 self.interrupt_enable.hblank = (value & 0x08) != 0;
@@ -249,7 +253,7 @@ impl Ppu {
     }
 
     pub fn step(&mut self, interrupt: &mut Interrupt, cycles: u64) {
-        if !self.control.lcd_enable {
+        if !self.ctrl.lcd_enable {
             return;
         }
 
@@ -286,7 +290,8 @@ impl Ppu {
                     self.dot += 1;
 
                     if self.dot == OAM_SEARCH_LENGTH {
-                        self.oam.select_sprites(self.line);
+                        let obj_size = 8 << self.ctrl.obj_size as u32;
+                        self.oam.select_sprites(self.line, obj_size);
                         self.set_mode(interrupt, Mode::Vram);
                         self.reset_renderer();
                     }

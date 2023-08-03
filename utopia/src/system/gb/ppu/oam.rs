@@ -71,13 +71,14 @@ impl Oam {
         }
     }
 
-    pub fn select_sprites(&mut self, line: u8) {
+    pub fn select_sprites(&mut self, line: u8, size: u8) {
+        let obj_line = line + 16;
+
         self.read_index = 0;
         self.write_index = 0;
 
         for (sprite_id, sprite) in self.sprites.iter().enumerate() {
-            // TODO: 8x16 sprites
-            if sprite.y > (line + 16) || (sprite.y + 8) <= (line + 16) {
+            if sprite.y > obj_line || (sprite.y + size) <= obj_line {
                 continue;
             }
 

@@ -92,7 +92,7 @@ impl super::Ppu {
             1 => {
                 let coarse_y = ((self.bg_pos_y() as u16) >> 3) & 31;
                 let coarse_x = self.render.bg_coarse_x & 31;
-                let address = self.control.bg_tile_offset + (coarse_y << 5) + coarse_x;
+                let address = self.ctrl.bg_tile_offset + (coarse_y << 5) + coarse_x;
                 trace!("BG Tile Address: {:04X}", address);
 
                 self.render.bg_tile = self.vram[address as usize];
@@ -159,7 +159,7 @@ impl super::Ppu {
     fn bg_chr_address(&self) -> u16 {
         let mut tile = self.render.bg_tile as u16;
 
-        if tile < 128 && !self.control.bg_chr_select {
+        if tile < 128 && !self.ctrl.bg_chr_select {
             tile += 256;
         }
 
@@ -171,12 +171,15 @@ impl super::Ppu {
     fn sprite_chr_address(&self, sprite: &Sprite) -> u16 {
         let tile = self.render.sprite_tile as u16;
 
-        let mut fine_y = (self.line.wrapping_sub(sprite.y) as u16) & 7;
+        let (tile_mask, line_mask) = if self.ctrl.obj_size {
+            (0xfe, 15)
+        } else {
+            (0xff, 7)
+        };
 
-        if sprite.flip_y {
-            fine_y ^= 7;
-        }
+        let fine_y = (self.line.wrapping_sub(sprite.y) as u16) & line_mask;
+        let flip_mask = if sprite.flip_y { line_mask } else { 0 };
 
-        (tile << 4) | (fine_y << 1)
+        ((tile & tile_mask) << 4) | ((fine_y ^ flip_mask) << 1)
     }
 }
