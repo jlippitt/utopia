@@ -61,7 +61,7 @@ impl Wave {
     }
 
     pub fn step(&mut self) {
-        if !self.timer.step() {
+        if !(self.timer.step() | self.timer.step()) {
             return;
         }
 
