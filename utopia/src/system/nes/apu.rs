@@ -145,7 +145,7 @@ impl Apu {
 
             let pulse = self.pulse1.output() + self.pulse2.output();
             let tnd = self.triangle.output() * 3 + self.noise.output() * 2 + self.dmc.output();
-            let output = self.pulse_table[pulse as usize] + self.tnd_table[tnd as usize];
+            let output = (self.pulse_table[pulse as usize] + self.tnd_table[tnd as usize]) - 0.5;
 
             self.audio_queue.push_back((output, output));
         }

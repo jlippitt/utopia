@@ -14,6 +14,9 @@ const CLOCK_SHIFT: u32 = 16;
 const SAMPLE_PERIOD: u64 = (CYCLES_PER_SECOND << CLOCK_SHIFT) / Apu::SAMPLE_RATE;
 const SAMPLES_PER_CYCLE: u64 = 1 << CLOCK_SHIFT;
 
+// 0-15 channel output, 4 channels, 0-7 volume level
+const MAX_OUTPUT_VALUE: f32 = 15.0 * 4.0 * 7.0;
+
 #[derive(Clone, Default)]
 struct Channel {
     enabled: [bool; 4],
@@ -158,6 +161,6 @@ impl Apu {
             output += self.noise.output();
         }
 
-        (channel.volume as f32 * output as f32) / (15.0 * 4.0 * 7.0)
+        ((channel.volume as f32 * output as f32) / MAX_OUTPUT_VALUE) - 0.5
     }
 }
