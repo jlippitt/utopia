@@ -1,7 +1,7 @@
 use super::timer::Timer;
 
 pub struct Sweep {
-    timer_period: u32,
+    frequency: u32,
     divider_counter: u32,
     divider_period: u32,
     negate: bool,
@@ -12,7 +12,7 @@ pub struct Sweep {
 impl Sweep {
     pub fn new() -> Self {
         Self {
-            timer_period: 0,
+            frequency: 0,
             divider_counter: 0,
             divider_period: 0,
             negate: false,
@@ -22,7 +22,7 @@ impl Sweep {
     }
 
     pub fn reset(&mut self, timer_period: u32) -> bool {
-        self.timer_period = timer_period;
+        self.frequency = timer_period;
         self.divider_counter = self.divider_period;
         self.enabled = self.divider_period != 0 || self.shift != 0;
 
@@ -30,7 +30,7 @@ impl Sweep {
             return false;
         }
 
-        self.calculate_target_period() > Timer::MAX_VALUE
+        self.calculate_target_frequency() > Timer::MAX_FREQUENCY
     }
 
     pub fn set_control(&mut self, value: u8) {
@@ -52,23 +52,23 @@ impl Sweep {
 
         self.divider_counter = self.divider_period;
 
-        let target_period = self.calculate_target_period();
+        let target_frequency = self.calculate_target_frequency();
 
-        if target_period <= Timer::MAX_VALUE && self.shift != 0 {
-            self.timer_period = target_period;
-            timer.set_period(target_period);
+        if target_frequency <= Timer::MAX_FREQUENCY && self.shift != 0 {
+            self.frequency = target_frequency;
+            timer.set_frequency(target_frequency);
         }
 
-        self.calculate_target_period() > Timer::MAX_VALUE
+        self.calculate_target_frequency() > Timer::MAX_FREQUENCY
     }
 
-    fn calculate_target_period(&mut self) -> u32 {
-        let amount = self.timer_period >> self.shift;
+    fn calculate_target_frequency(&mut self) -> u32 {
+        let amount = self.frequency >> self.shift;
 
         if self.negate {
-            self.timer_period.saturating_sub(amount)
+            self.frequency.saturating_sub(amount)
         } else {
-            self.timer_period + amount
+            self.frequency + amount
         }
     }
 }

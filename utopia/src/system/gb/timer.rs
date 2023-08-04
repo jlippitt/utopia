@@ -46,7 +46,7 @@ impl Timer {
         match address {
             4 => {
                 if (self.divider & APU_DIVIDER_MASK) != 0 {
-                    apu.clock_divider();
+                    apu.on_divider_clock();
                 }
 
                 self.divider = 0;
@@ -75,7 +75,7 @@ impl Timer {
         self.divider += cycles;
 
         if (self.divider & APU_DIVIDER_MASK) == 0 {
-            apu.clock_divider();
+            apu.on_divider_clock();
         }
 
         if !self.control.enable {

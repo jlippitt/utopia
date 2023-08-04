@@ -21,7 +21,7 @@ impl Pulse {
     pub fn new(sweep_enabled: bool) -> Self {
         Self {
             enabled: false,
-            timer: Timer::new(),
+            timer: Timer::new(Timer::MAX_PERIOD),
             sequencer: Sequencer::new(&DUTY_CYCLE[0]),
             length_counter: LengthCounter::new(),
             sweep: sweep_enabled.then(|| Sweep::new()),
@@ -50,19 +50,19 @@ impl Pulse {
                 self.length_counter.set_period(value as u32 & 0x3f);
             }
             2 => self.envelope.set_control(value),
-            3 => self.timer.set_period_low(value),
+            3 => self.timer.set_frequency_low(value),
             4 => {
-                self.timer.set_period_high(value & 0x07);
+                self.timer.set_frequency_high(value & 0x07);
                 self.length_counter.set_enabled((value & 0x40) != 0);
 
                 if (value & 0x80) != 0 {
                     self.enabled = true;
-                    self.length_counter.reset();
                     self.timer.reset();
+                    self.length_counter.reset();
                     self.envelope.reset();
 
                     if let Some(sweep) = &mut self.sweep {
-                        if sweep.reset(self.timer.period()) {
+                        if sweep.reset(self.timer.frequency()) {
                             self.enabled = false;
                         }
                     }
