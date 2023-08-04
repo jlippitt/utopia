@@ -10,32 +10,44 @@ impl LengthCounter {
         Self {
             counter: 0,
             max_value,
-            period: 0,
+            period: max_value,
             enabled: false,
         }
     }
 
     pub fn reset(&mut self) {
-        if self.counter == self.max_value {
-            self.counter = 0;
+        if self.counter == 0 {
+            self.counter = self.max_value;
         }
     }
 
     pub fn set_period(&mut self, value: u32) {
-        self.period = value;
+        self.period = self.max_value - value;
+
+        if self.enabled {
+            self.counter = self.period;
+        }
     }
 
     pub fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
+
+        if self.enabled {
+            self.counter = self.period;
+        }
     }
 
     pub fn step(&mut self) -> bool {
-        if !self.enabled || self.counter > self.max_value {
+        if !self.enabled {
             return false;
         }
 
-        self.counter += 1;
+        println!("{}", self.counter);
 
-        self.counter > self.max_value
+        if self.counter != 0 {
+            self.counter -= 1;
+        }
+
+        self.counter == 0
     }
 }

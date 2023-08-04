@@ -18,7 +18,7 @@ impl Noise {
             timer: Timer::new(DIVIDER[0]),
             shift: 0x7fff,
             mode: false,
-            length_counter: LengthCounter::new(63),
+            length_counter: LengthCounter::new(64),
             envelope: Envelope::new(),
         }
     }

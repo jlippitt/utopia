@@ -22,7 +22,7 @@ impl Wave {
             sample: 0,
             read_index: 0,
             volume_shift: VOLUME_SHIFT[0],
-            length_counter: LengthCounter::new(255),
+            length_counter: LengthCounter::new(256),
             sample_ram: [0; 16],
         }
     }
