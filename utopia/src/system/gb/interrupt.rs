@@ -29,7 +29,7 @@ impl Interrupt {
     }
 
     pub fn set_flag(&mut self, value: u8) {
-        self.flag = value;
+        self.flag = value & 0x1f;
         debug!("Interrupt Flag: {:05b}", self.flag);
     }
 
@@ -38,7 +38,7 @@ impl Interrupt {
     }
 
     pub fn set_enable(&mut self, value: u8) {
-        self.enable = value;
+        self.enable = value & 0x1f;
         debug!("Interrupt Enable: {:05b}", self.enable);
     }
 

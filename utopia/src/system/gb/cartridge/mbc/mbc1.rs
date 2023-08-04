@@ -11,7 +11,7 @@ impl Mbc1 {
     pub fn new() -> Self {
         Self {
             ram_enable: false,
-            register: [0; 2],
+            register: [1, 0],
             mode: false,
         }
     }
