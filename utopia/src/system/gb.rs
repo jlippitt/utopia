@@ -183,7 +183,10 @@ impl Hardware {
                 0xff00..=0xffff => self.read_high_normal(address as u8),
                 0xfe00..=0xfe9f => self.ppu.read_oam(address as u8),
                 0xfea0..=0xfeff => 0xff,
-                _ => panic!("Read from unmapped location"),
+                _ => {
+                    warn!("Read WRAM mirror: {:04X}", address);
+                    self.wram[address as usize]
+                }
             },
             _ => unreachable!(),
         }
@@ -209,7 +212,7 @@ impl Hardware {
                 0xff00..=0xffff => self.write_high_normal(address as u8, value),
                 0xfe00..=0xfe9f => self.ppu.write_oam(address as u8, value),
                 0xfea0..=0xfeff => (),
-                _ => warn!("Write to unmapped location"),
+                _ => warn!("Write to WRAM mirror: {:04X} <= {:02X}", address, value),
             },
             _ => unreachable!(),
         }
