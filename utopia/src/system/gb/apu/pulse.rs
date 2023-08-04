@@ -65,6 +65,7 @@ impl Pulse {
             4 => {
                 self.timer.set_frequency_high(value & 0x07);
                 self.length_counter.set_enabled((value & 0x40) != 0);
+                self.read_value[4] = 0xbf | (value & 0x40);
 
                 if (value & 0x80) != 0 {
                     self.enabled = true;
@@ -78,8 +79,6 @@ impl Pulse {
                         }
                     }
                 }
-
-                self.read_value[4] = 0xbf | (value & 0x40);
             }
             _ => unreachable!(),
         }

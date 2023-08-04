@@ -11,6 +11,7 @@ pub struct Wave {
     volume_shift: u32,
     length_counter: LengthCounter,
     sample_ram: [u8; 16],
+    read_value: [u8; 5],
 }
 
 impl Wave {
@@ -24,6 +25,7 @@ impl Wave {
             volume_shift: VOLUME_SHIFT[0],
             length_counter: LengthCounter::new(256),
             sample_ram: [0; 16],
+            read_value: [0xff; 5],
         }
     }
 
@@ -35,15 +37,26 @@ impl Wave {
         }
     }
 
+    pub fn read_register(&mut self, address: u8) -> u8 {
+        self.read_value[address as usize]
+    }
+
     pub fn write_register(&mut self, address: u8, value: u8) {
         match address {
-            0 => self.power = (value & 0x80) != 0,
+            0 => {
+                self.power = (value & 0x80) != 0;
+                self.read_value[0] = 0x7f | (value & 0x80);
+            }
             1 => self.length_counter.set_period(value as u32),
-            2 => self.volume_shift = VOLUME_SHIFT[(value as usize >> 5) & 3],
+            2 => {
+                self.volume_shift = VOLUME_SHIFT[(value as usize >> 5) & 3];
+                self.read_value[2] = 0x9f | (value & 0x60);
+            }
             3 => self.timer.set_frequency_low(value),
             4 => {
                 self.timer.set_frequency_high(value & 0x07);
                 self.length_counter.set_enabled((value & 0x40) != 0);
+                self.read_value[4] = 0xbf | (value & 0x40);
 
                 if (value & 0x80) != 0 {
                     self.enabled = true;
