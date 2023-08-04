@@ -14,6 +14,12 @@ const CLOCK_SHIFT: u32 = 16;
 const SAMPLE_PERIOD: u64 = (CYCLES_PER_SECOND << CLOCK_SHIFT) / Apu::SAMPLE_RATE;
 const SAMPLES_PER_CYCLE: u64 = 1 << CLOCK_SHIFT;
 
+#[derive(Clone, Default)]
+struct Channel {
+    enabled: [bool; 4],
+    volume: f32,
+}
+
 pub struct Apu {
     pulse1: Pulse,
     pulse2: Pulse,
@@ -21,6 +27,8 @@ pub struct Apu {
     noise: Noise,
     divider: u64,
     sample_clock: u64,
+    power: bool,
+    channels: [Channel; 2],
     audio_queue: AudioQueue,
 }
 
@@ -35,6 +43,8 @@ impl Apu {
             noise: Noise::new(),
             divider: 0,
             sample_clock: 0,
+            power: false,
+            channels: Default::default(),
             audio_queue: AudioQueue::new(),
         }
     }
@@ -54,6 +64,21 @@ impl Apu {
             0x15..=0x19 => self.pulse2.write(address - 0x15, value),
             0x1a..=0x1e => self.wave.write_register(address - 0x1a, value),
             0x1f..=0x23 => self.noise.write(address - 0x1f, value),
+            0x24 => {
+                self.channels[0].volume = ((value >> 4) & 7) as f32;
+                self.channels[1].volume = (value & 7) as f32;
+            }
+            0x25 => {
+                self.channels[0].enabled[0] = (value & 0x10) != 0;
+                self.channels[0].enabled[1] = (value & 0x20) != 0;
+                self.channels[0].enabled[2] = (value & 0x40) != 0;
+                self.channels[0].enabled[3] = (value & 0x80) != 0;
+                self.channels[1].enabled[0] = (value & 0x01) != 0;
+                self.channels[1].enabled[1] = (value & 0x02) != 0;
+                self.channels[1].enabled[2] = (value & 0x04) != 0;
+                self.channels[1].enabled[3] = (value & 0x08) != 0;
+            }
+            0x26 => self.power = (value & 0x80) != 0,
             0x30..=0x3f => self.wave.write_ram(address as usize - 0x30, value),
             _ => warn!(
                 "APU register write not yet implemented: {:02X} <= {:02X}",
@@ -70,18 +95,21 @@ impl Apu {
 
         self.sample_clock += SAMPLES_PER_CYCLE;
 
-        if self.sample_clock >= SAMPLE_PERIOD {
-            self.sample_clock -= SAMPLE_PERIOD;
-
-            let raw_output = self.pulse1.output()
-                + self.pulse2.output()
-                + self.wave.output()
-                + self.noise.output();
-
-            let output = (raw_output as f32) / 60.0;
-
-            self.audio_queue.push_back((output, output));
+        if self.sample_clock < SAMPLE_PERIOD {
+            return;
         }
+
+        self.sample_clock -= SAMPLE_PERIOD;
+
+        let output = if self.power {
+            let left = self.channel_output(0);
+            let right = self.channel_output(1);
+            (left, right)
+        } else {
+            (0.0, 0.0)
+        };
+
+        self.audio_queue.push_back(output);
     }
 
     pub fn on_divider_clock(&mut self) {
@@ -91,5 +119,28 @@ impl Apu {
         self.pulse2.on_divider_clock(self.divider);
         self.wave.on_divider_clock(self.divider);
         self.noise.on_divider_clock(self.divider);
+    }
+
+    fn channel_output(&self, index: usize) -> f32 {
+        let channel = &self.channels[index];
+        let mut output = 0;
+
+        if channel.enabled[0] {
+            output += self.pulse1.output();
+        }
+
+        if channel.enabled[1] {
+            output += self.pulse2.output();
+        }
+
+        if channel.enabled[2] {
+            output += self.wave.output();
+        }
+
+        if channel.enabled[3] {
+            output += self.noise.output();
+        }
+
+        (channel.volume * output as f32) / (15.0 * 4.0 * 7.0)
     }
 }
