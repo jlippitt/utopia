@@ -3,13 +3,13 @@ use sdl2::VideoSubsystem;
 use std::cmp;
 use std::error::Error;
 
-pub struct DisplayMode {
+pub struct Viewport {
     width: u32,
     height: u32,
     upscale: Option<u32>,
 }
 
-impl DisplayMode {
+impl Viewport {
     pub fn new(width: u32, height: u32, upscale: Option<u32>) -> Self {
         Self {
             width,

@@ -1,13 +1,13 @@
-use display_mode::DisplayMode;
 use sdl2::pixels::PixelFormatEnum;
 use sdl2::rect::Rect;
 use sdl2::render::{Canvas, Texture, TextureCreator, TextureValueError};
-use sdl2::video::{Window, WindowContext};
+use sdl2::video::{FullscreenType, Window, WindowContext};
 use sdl2::Sdl;
 use sdl2::VideoSubsystem;
 use std::error::Error;
+use viewport::Viewport;
 
-mod display_mode;
+mod viewport;
 
 pub struct VideoOptions {
     pub width: u32,
@@ -25,9 +25,9 @@ pub struct Video {
     height: u32,
     pitch: usize,
     canvas: Canvas<Window>,
+    viewport: Viewport,
     source_rect: Rect,
     target_rect: Rect,
-    display_mode: DisplayMode,
     full_screen: bool,
 }
 
@@ -39,7 +39,7 @@ impl Video {
 
         let clipped_height = options.height - options.clip_top - options.clip_bottom;
 
-        let display_mode = DisplayMode::new(options.width, clipped_height, options.upscale);
+        let display_mode = Viewport::new(options.width, clipped_height, options.upscale);
 
         let (window_width, window_height) =
             display_mode.window_size(&video, options.full_screen)?;
@@ -77,9 +77,9 @@ impl Video {
             height: options.height,
             pitch,
             canvas,
+            viewport: display_mode,
             source_rect,
             target_rect,
-            display_mode,
             full_screen: options.full_screen,
         })
     }
@@ -95,10 +95,22 @@ impl Video {
         texture_creator.create_texture_streaming(PixelFormatEnum::BGR888, self.width, self.height)
     }
 
+    pub fn toggle_full_screen(&mut self) -> Result<(), String> {
+        self.full_screen = !self.full_screen;
+
+        let full_screen_type = if self.full_screen {
+            FullscreenType::True
+        } else {
+            FullscreenType::Off
+        };
+
+        self.canvas.window_mut().set_fullscreen(full_screen_type)?;
+
+        Ok(())
+    }
+
     pub fn on_size_changed(&mut self) -> Result<(), Box<dyn Error>> {
-        self.target_rect = self
-            .display_mode
-            .target_rect(&self.video, self.full_screen)?;
+        self.target_rect = self.viewport.target_rect(&self.video, self.full_screen)?;
 
         Ok(())
     }

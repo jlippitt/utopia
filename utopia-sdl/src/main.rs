@@ -3,6 +3,7 @@ use bios::BiosLoader;
 use clap::Parser;
 use joypad::Joypad;
 use sdl2::event::{Event, WindowEvent};
+use sdl2::keyboard::Scancode;
 use std::error::Error;
 use std::fs;
 use std::thread;
@@ -91,7 +92,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Event::KeyDown {
                     scancode: Some(scancode),
                     ..
-                } => joypad.key_event(scancode, true),
+                } => match scancode {
+                    Scancode::F11 => video.toggle_full_screen()?,
+                    _ => joypad.key_event(scancode, true),
+                },
                 Event::KeyUp {
                     scancode: Some(scancode),
                     ..
