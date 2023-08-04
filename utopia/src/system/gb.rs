@@ -237,7 +237,10 @@ impl Hardware {
             0x40..=0x4f => self.ppu.read_register(address),
             0x80..=0xfe => self.hram[address as usize],
             0xff => self.interrupt.enable(),
-            _ => panic!("Unmapped register read"),
+            _ => {
+                warn!("Unmapped register read: {:02X}", address);
+                0xff
+            }
         }
     }
 
@@ -263,7 +266,7 @@ impl Hardware {
             }
             0x80..=0xfe => self.hram[address as usize] = value,
             0xff => self.interrupt.set_enable(value),
-            _ => warn!("Unmapped register write: {:02X}", address),
+            _ => warn!("Unmapped register write: {:02X} <= {:02X}", address, value),
         }
     }
 
