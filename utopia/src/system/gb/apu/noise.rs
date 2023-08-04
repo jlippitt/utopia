@@ -9,6 +9,7 @@ pub struct Noise {
     mode: bool,
     length_counter: LengthCounter,
     envelope: Envelope,
+    read_value: [u8; 5],
 }
 
 impl Noise {
@@ -20,6 +21,7 @@ impl Noise {
             mode: false,
             length_counter: LengthCounter::new(64),
             envelope: Envelope::new(),
+            read_value: [0xff; 5],
         }
     }
 
@@ -31,19 +33,28 @@ impl Noise {
         }
     }
 
+    pub fn read(&mut self, address: u8) -> u8 {
+        self.read_value[address as usize]
+    }
+
     pub fn write(&mut self, address: u8, value: u8) {
         match address {
             0 => (),
             1 => self.length_counter.set_period(value as u32 & 0x3f),
-            2 => self.envelope.set_control(value),
+            2 => {
+                self.envelope.set_control(value);
+                self.read_value[2] = value;
+            }
             3 => {
                 let shift = value >> 4;
                 let divider = DIVIDER[value as usize & 7];
                 self.timer.set_period(divider << shift);
                 self.mode = (value & 0x08) != 0;
+                self.read_value[3] = value;
             }
             4 => {
                 self.length_counter.set_enabled((value & 0x40) != 0);
+                self.read_value[4] = 0xbf | (value & 0x40);
 
                 if (value & 0x80) != 0 {
                     self.enabled = true;
