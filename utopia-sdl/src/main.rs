@@ -94,6 +94,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     ..
                 } => match scancode {
                     Scancode::F11 => video.toggle_full_screen()?,
+                    Scancode::Escape => break 'outer,
                     _ => joypad.key_event(scancode, true),
                 },
                 Event::KeyUp {
