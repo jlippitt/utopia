@@ -56,6 +56,18 @@ impl Apu {
     pub fn read(&mut self, address: u8) -> u8 {
         match address {
             0x24 => (self.channels[0].volume << 4) | self.channels[1].volume,
+            0x25 => {
+                let mut value = 0;
+                value |= if self.channels[0].enabled[0] { 0x10 } else { 0 };
+                value |= if self.channels[0].enabled[1] { 0x20 } else { 0 };
+                value |= if self.channels[0].enabled[2] { 0x40 } else { 0 };
+                value |= if self.channels[0].enabled[3] { 0x80 } else { 0 };
+                value |= if self.channels[1].enabled[0] { 0x01 } else { 0 };
+                value |= if self.channels[1].enabled[1] { 0x02 } else { 0 };
+                value |= if self.channels[1].enabled[2] { 0x04 } else { 0 };
+                value |= if self.channels[1].enabled[3] { 0x08 } else { 0 };
+                value
+            }
             _ => {
                 warn!("APU register read not yet implemented: {:02X}", address);
                 0

@@ -42,8 +42,6 @@ impl LengthCounter {
             return false;
         }
 
-        println!("{}", self.counter);
-
         if self.counter != 0 {
             self.counter -= 1;
         }
