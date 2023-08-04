@@ -17,7 +17,7 @@ const SAMPLES_PER_CYCLE: u64 = 1 << CLOCK_SHIFT;
 #[derive(Clone, Default)]
 struct Channel {
     enabled: [bool; 4],
-    volume: f32,
+    volume: u8,
 }
 
 pub struct Apu {
@@ -54,8 +54,13 @@ impl Apu {
     }
 
     pub fn read(&mut self, address: u8) -> u8 {
-        warn!("APU register read not yet implemented: {:02X}", address);
-        0
+        match address {
+            0x24 => (self.channels[0].volume << 4) | self.channels[1].volume,
+            _ => {
+                warn!("APU register read not yet implemented: {:02X}", address);
+                0
+            }
+        }
     }
 
     pub fn write(&mut self, address: u8, value: u8) {
@@ -65,8 +70,8 @@ impl Apu {
             0x1a..=0x1e => self.wave.write_register(address - 0x1a, value),
             0x1f..=0x23 => self.noise.write(address - 0x1f, value),
             0x24 => {
-                self.channels[0].volume = ((value >> 4) & 7) as f32;
-                self.channels[1].volume = (value & 7) as f32;
+                self.channels[0].volume = (value >> 4) & 7;
+                self.channels[1].volume = value & 7;
             }
             0x25 => {
                 self.channels[0].enabled[0] = (value & 0x10) != 0;
@@ -141,6 +146,6 @@ impl Apu {
             output += self.noise.output();
         }
 
-        (channel.volume * output as f32) / (15.0 * 4.0 * 7.0)
+        (channel.volume as f32 * output as f32) / (15.0 * 4.0 * 7.0)
     }
 }
