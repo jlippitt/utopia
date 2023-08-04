@@ -1,4 +1,4 @@
-use super::component::{Envelope, LengthCounter, Timer};
+use super::component::{Envelope, LengthCounter, Sweep, Timer};
 use crate::util::audio::Sequencer;
 
 const DUTY_CYCLE: [[u8; 8]; 4] = [
@@ -13,16 +13,18 @@ pub struct Pulse {
     timer: Timer,
     sequencer: Sequencer<8>,
     length_counter: LengthCounter,
+    sweep: Option<Sweep>,
     envelope: Envelope,
 }
 
 impl Pulse {
-    pub fn new() -> Self {
+    pub fn new(sweep_enabled: bool) -> Self {
         Self {
             enabled: false,
             timer: Timer::new(),
             sequencer: Sequencer::new(&DUTY_CYCLE[0]),
             length_counter: LengthCounter::new(),
+            sweep: sweep_enabled.then(|| Sweep::new()),
             envelope: Envelope::new(),
         }
     }
@@ -38,7 +40,9 @@ impl Pulse {
     pub fn write(&mut self, address: u8, value: u8) {
         match address {
             0 => {
-                // TODO: Sweep
+                if let Some(sweep) = &mut self.sweep {
+                    sweep.set_control(value);
+                }
             }
             1 => {
                 let duty_cycle = value as usize >> 6;
@@ -56,7 +60,12 @@ impl Pulse {
                     self.length_counter.reset();
                     self.timer.reset();
                     self.envelope.reset();
-                    // TODO: Sweep
+
+                    if let Some(sweep) = &mut self.sweep {
+                        if sweep.reset(self.timer.period()) {
+                            self.enabled = false;
+                        }
+                    }
                 }
             }
             _ => unreachable!(),
@@ -72,6 +81,14 @@ impl Pulse {
     pub fn on_divider_clock(&mut self, divider: u64) {
         if (divider & 1) == 0 && self.length_counter.step() {
             self.enabled = false;
+        }
+
+        if (divider & 3) == 2 {
+            if let Some(sweep) = &mut self.sweep {
+                if sweep.step(&mut self.timer) {
+                    self.enabled = false;
+                }
+            }
         }
 
         if (divider & 7) == 7 {

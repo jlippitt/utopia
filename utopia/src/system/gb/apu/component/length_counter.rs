@@ -1,5 +1,3 @@
-const COUNTER_MAX: u32 = 64;
-
 pub struct LengthCounter {
     counter: u32,
     period: u32,
@@ -7,6 +5,8 @@ pub struct LengthCounter {
 }
 
 impl LengthCounter {
+    const MAX_VALUE: u32 = 63;
+
     pub fn new() -> Self {
         Self {
             counter: 0,
@@ -16,7 +16,7 @@ impl LengthCounter {
     }
 
     pub fn reset(&mut self) {
-        if self.counter == COUNTER_MAX {
+        if self.counter == Self::MAX_VALUE {
             self.counter = 0;
         }
     }
@@ -30,12 +30,12 @@ impl LengthCounter {
     }
 
     pub fn step(&mut self) -> bool {
-        if !self.enabled || self.counter >= COUNTER_MAX {
+        if !self.enabled || self.counter > Self::MAX_VALUE {
             return false;
         }
 
         self.counter += 1;
 
-        self.counter == COUNTER_MAX
+        self.counter > Self::MAX_VALUE
     }
 }

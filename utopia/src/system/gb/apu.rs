@@ -23,8 +23,8 @@ impl Apu {
 
     pub fn new() -> Self {
         Self {
-            pulse1: Pulse::new(),
-            pulse2: Pulse::new(),
+            pulse1: Pulse::new(true),
+            pulse2: Pulse::new(false),
             divider: 0,
             sample_clock: 0,
             audio_queue: AudioQueue::new(),
