@@ -58,6 +58,8 @@ impl Apu {
 
     pub fn read(&mut self, address: u8) -> u8 {
         match address {
+            0x10..=0x14 => self.pulse1.read(address - 0x10),
+            0x15..=0x19 => self.pulse2.read(address - 0x15),
             0x24 => (self.channels[0].volume << 4) | self.channels[1].volume,
             0x25 => {
                 let mut value = 0;

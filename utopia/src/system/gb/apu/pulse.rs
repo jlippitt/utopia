@@ -15,6 +15,7 @@ pub struct Pulse {
     length_counter: LengthCounter,
     sweep: Option<Sweep>,
     envelope: Envelope,
+    read_value: [u8; 5],
 }
 
 impl Pulse {
@@ -26,6 +27,7 @@ impl Pulse {
             length_counter: LengthCounter::new(64),
             sweep: sweep_enabled.then(|| Sweep::new()),
             envelope: Envelope::new(),
+            read_value: [0xff; 5],
         }
     }
 
@@ -37,19 +39,28 @@ impl Pulse {
         }
     }
 
+    pub fn read(&mut self, address: u8) -> u8 {
+        self.read_value[address as usize]
+    }
+
     pub fn write(&mut self, address: u8, value: u8) {
         match address {
             0 => {
                 if let Some(sweep) = &mut self.sweep {
                     sweep.set_control(value);
+                    self.read_value[0] = value;
                 }
             }
             1 => {
                 let duty_cycle = value as usize >> 6;
                 self.sequencer.set_sequence(&DUTY_CYCLE[duty_cycle]);
                 self.length_counter.set_period(value as u32 & 0x3f);
+                self.read_value[1] = 0x3f | (value & 0xc0);
             }
-            2 => self.envelope.set_control(value),
+            2 => {
+                self.envelope.set_control(value);
+                self.read_value[2] = value;
+            }
             3 => self.timer.set_frequency_low(value),
             4 => {
                 self.timer.set_frequency_high(value & 0x07);
@@ -67,6 +78,8 @@ impl Pulse {
                         }
                     }
                 }
+
+                self.read_value[4] = 0xbf | (value & 0x40);
             }
             _ => unreachable!(),
         }
