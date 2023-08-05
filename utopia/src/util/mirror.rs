@@ -1,10 +1,13 @@
 use super::facade::{DataReader, DataWriter, Value};
-use std::ops::{Index, IndexMut};
+use std::ops::{Deref, DerefMut, Index, IndexMut};
 
 pub trait Mirrorable {
     type Output;
     fn len(&self) -> usize;
     unsafe fn get_unchecked(&self, index: usize) -> &Self::Output;
+}
+
+pub trait MirrorableMut: Mirrorable {
     unsafe fn get_unchecked_mut(&mut self, index: usize) -> &mut Self::Output;
 }
 
@@ -67,7 +70,7 @@ impl<T: Mirrorable> Index<usize> for Mirror<T> {
     }
 }
 
-impl<T: Mirrorable> IndexMut<usize> for Mirror<T> {
+impl<T: MirrorableMut> IndexMut<usize> for Mirror<T> {
     fn index_mut(&mut self, index: usize) -> &mut T::Output {
         unsafe { self.inner.get_unchecked_mut(index & self.mask) }
     }
@@ -85,7 +88,7 @@ where
     }
 }
 
-impl<T: Mirrorable> DataWriter for Mirror<T>
+impl<T: MirrorableMut> DataWriter for Mirror<T>
 where
     T::Output: Value,
 {
@@ -94,17 +97,19 @@ where
     }
 }
 
-impl<T: Clone> Mirrorable for Vec<T> {
+impl<T: Clone, U: Deref<Target = [T]>> Mirrorable for U {
     type Output = T;
 
     fn len(&self) -> usize {
-        Vec::<T>::len(self)
+        <[T]>::len(self)
     }
 
     unsafe fn get_unchecked(&self, index: usize) -> &Self::Output {
         <[T]>::get_unchecked(self, index)
     }
+}
 
+impl<T: Clone, U: DerefMut<Target = [T]>> MirrorableMut for U {
     unsafe fn get_unchecked_mut(&mut self, index: usize) -> &mut Self::Output {
         <[T]>::get_unchecked_mut(self, index)
     }
