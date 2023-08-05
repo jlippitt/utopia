@@ -295,7 +295,7 @@ impl<T: Bus> Core<T> {
             0x6a => instr::and1_not(self),
             0x8a => instr::eor1(self),
             0xaa => instr::mov1_read(self),
-            //0xca => instr::mov1_write(self),
+            0xca => instr::mov1_write(self),
             0xea => instr::not1(self),
 
             // +0x1a
