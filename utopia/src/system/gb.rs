@@ -1,6 +1,6 @@
-use super::{AudioQueue, BiosLoader, JoypadState, System};
+use super::{AudioQueue, BiosLoader, JoypadState, Mapped, MemoryMapper, Options, System};
 use crate::core::gbz80::{Bus, Core, State};
-use crate::util::MirrorVec;
+use crate::util::mirror::MirrorVec;
 use apu::Apu;
 use cartridge::Cartridge;
 use interrupt::Interrupt;
@@ -23,17 +23,16 @@ const HRAM_SIZE: usize = 128;
 
 const M_CYCLE_LENGTH: u64 = 4;
 
-pub struct GameBoy {
-    core: Core<Hardware>,
+pub struct GameBoy<T: Mapped> {
+    core: Core<Hardware<T>>,
 }
 
-impl GameBoy {
-    pub fn new(
+impl<T: Mapped> GameBoy<T> {
+    pub fn new<U: MemoryMapper<Mapped = T>, V: BiosLoader>(
         rom_data: Vec<u8>,
-        bios_loader: &impl BiosLoader,
-        skip_boot: bool,
+        options: &Options<U, V>,
     ) -> Result<Self, Box<dyn Error>> {
-        let (initial_state, bios_data) = if skip_boot {
+        let (initial_state, bios_data) = if options.skip_boot {
             // TODO: This post-boot state should depend on hardware model
             let initial_state = State {
                 a: 0x01,
@@ -50,13 +49,13 @@ impl GameBoy {
 
             (Some(initial_state), None)
         } else {
-            let bios_data = bios_loader.load("dmg")?;
+            let bios_data = options.bios_loader.load("dmg")?;
 
             (None, Some(bios_data))
         };
 
         // TODO: Should skip boot sequence for other hardware components as well
-        let hw = Hardware::new(rom_data, bios_data, skip_boot);
+        let hw = Hardware::new(rom_data, bios_data, options)?;
 
         let core = Core::new(hw, initial_state);
 
@@ -64,7 +63,7 @@ impl GameBoy {
     }
 }
 
-impl System for GameBoy {
+impl<T: Mapped> System for GameBoy<T> {
     fn width(&self) -> usize {
         ppu::WIDTH
     }
@@ -98,35 +97,39 @@ impl System for GameBoy {
     }
 }
 
-struct Hardware {
+struct Hardware<T: Mapped> {
     cycles: u64,
     dma_address: Option<u16>,
     interrupt: Interrupt,
     timer: Timer,
     hram: MirrorVec<u8>,
     wram: MirrorVec<u8>,
-    cartridge: Cartridge,
+    cartridge: Cartridge<T>,
     ppu: Ppu,
     apu: Apu,
     joypad: Joypad,
     bios_data: Option<MirrorVec<u8>>,
 }
 
-impl Hardware {
-    pub fn new(rom_data: Vec<u8>, bios_data: Option<Vec<u8>>, skip_boot: bool) -> Self {
-        Self {
+impl<T: Mapped> Hardware<T> {
+    pub fn new<U: MemoryMapper<Mapped = T>, V: BiosLoader>(
+        rom_data: Vec<u8>,
+        bios_data: Option<Vec<u8>>,
+        options: &Options<U, V>,
+    ) -> Result<Self, Box<dyn Error>> {
+        Ok(Self {
             cycles: 0,
             dma_address: None,
             interrupt: Interrupt::new(),
             timer: Timer::new(),
             hram: MirrorVec::new(HRAM_SIZE),
             wram: MirrorVec::new(WRAM_SIZE),
-            cartridge: Cartridge::new(rom_data),
-            ppu: Ppu::new(skip_boot),
+            cartridge: Cartridge::new(rom_data, &options.rom_path, &options.memory_mapper)?,
+            ppu: Ppu::new(options.skip_boot),
             apu: Apu::new(),
             joypad: Joypad::new(),
             bios_data: bios_data.map(MirrorVec::from),
-        }
+        })
     }
 
     fn step(&mut self) -> bool {
@@ -278,7 +281,7 @@ impl Hardware {
     }
 }
 
-impl Bus for Hardware {
+impl<T: Mapped> Bus for Hardware<T> {
     fn idle(&mut self) {
         self.step();
     }
@@ -324,7 +327,7 @@ impl Bus for Hardware {
     }
 }
 
-impl fmt::Display for Hardware {
+impl<T: Mapped> fmt::Display for Hardware<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,

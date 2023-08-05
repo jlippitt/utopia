@@ -2,6 +2,7 @@ use audio::Audio;
 use bios::BiosLoader;
 use clap::Parser;
 use joypad::Joypad;
+use mmap::MemoryMapper;
 use sdl2::event::{Event, WindowEvent};
 use sdl2::keyboard::Scancode;
 use std::error::Error;
@@ -13,6 +14,7 @@ mod audio;
 mod bios;
 mod joypad;
 mod log;
+mod mmap;
 mod video;
 
 #[derive(Parser, Debug)]
@@ -41,10 +43,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let _guard = log::init()?;
 
     let options = Options {
+        bios_loader: BiosLoader::new(),
+        memory_mapper: MemoryMapper::new(),
         skip_boot: args.skip_boot,
+        rom_path: args.rom_path.into(),
     };
 
-    let mut system = utopia::create(&args.rom_path, rom_data, &BiosLoader::new(), &options)?;
+    let mut system = utopia::create(rom_data, &options)?;
 
     let sdl_context = sdl2::init()?;
 

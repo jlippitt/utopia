@@ -1,20 +1,29 @@
-use crate::util::MirrorVec;
+use crate::util::mirror::{Mirror, MirrorVec};
+use crate::{Mapped, MemoryMapper};
 use mbc::{Mappings, Mbc, MbcType};
+use std::error::Error;
+use std::path::Path;
 use tracing::info;
 
 mod mbc;
 
 const BASE_ROM_SIZE: usize = 32768;
 
-pub struct Cartridge {
+const BATTERY_BACKED: [u8; 9] = [0x03, 0x06, 0x0d, 0x10, 0x13, 0x1b, 0x1e, 0x22, 0xff];
+
+pub struct Cartridge<T: Mapped> {
     rom: MirrorVec<u8>,
-    ram: MirrorVec<u8>,
+    ram: Mirror<T>,
     mappings: Mappings,
     mapper: MbcType,
 }
 
-impl Cartridge {
-    pub fn new(rom: Vec<u8>) -> Self {
+impl<T: Mapped> Cartridge<T> {
+    pub fn new<U: MemoryMapper<Mapped = T>>(
+        rom: Vec<u8>,
+        rom_path: &Path,
+        memory_mapper: &U,
+    ) -> Result<Self, Box<dyn Error>> {
         let mapper_number = rom[0x0147];
 
         let rom_size = BASE_ROM_SIZE << rom[0x0148];
@@ -36,12 +45,15 @@ impl Cartridge {
         let mut mapper = MbcType::new(mapper_number);
         mapper.init_mappings(&mut mappings);
 
-        Self {
+        let battery_backed = ram_size > 0 && BATTERY_BACKED.contains(&mapper_number);
+        let save_path = battery_backed.then(|| rom_path.with_extension("sav"));
+
+        Ok(Self {
             rom: rom.into(),
-            ram: MirrorVec::new(ram_size),
+            ram: memory_mapper.open(save_path.as_deref(), ram_size)?.into(),
             mappings,
             mapper,
-        }
+        })
     }
 
     pub fn read_rom(&self, address: u16) -> u8 {
