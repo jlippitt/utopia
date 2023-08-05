@@ -49,7 +49,7 @@ impl<T: Mapped> GameBoy<T> {
 
             (Some(initial_state), None)
         } else {
-            let bios_data = options.bios_loader.load("dmg")?;
+            let bios_data = options.bios_loader.load("dmg_boot")?;
 
             (None, Some(bios_data))
         };
