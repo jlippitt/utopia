@@ -1,8 +1,14 @@
+use super::Runner;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::error::Error;
 use tracing::{debug, info};
 use utopia::core::wdc65c816::{Bus, Core, Interrupt, State};
+
+#[derive(Debug)]
+struct Memory {
+    map: HashMap<u32, u8>,
+}
 
 #[derive(Debug, Deserialize)]
 pub struct TestState {
@@ -28,9 +34,58 @@ pub struct Test {
     cycles: Vec<(Option<u32>, Option<u8>, String)>,
 }
 
-#[derive(Debug)]
-pub struct Memory {
-    map: HashMap<u32, u8>,
+pub struct Wdc65c816;
+
+impl Runner for Wdc65c816 {
+    type Test = Test;
+
+    fn parse(input: &str) -> Result<Vec<Test>, Box<dyn Error>> {
+        let tests: Vec<Test> = serde_json::from_str(input)?;
+        Ok(tests)
+    }
+
+    fn run(test: &Test) -> bool {
+        let memory = Memory::new(&test.initial.ram);
+        let mut core = Core::new(memory);
+        let core_initial = State::from(&test.initial);
+
+        core.set_state(&core_initial);
+        core.step();
+
+        let core_actual = core.state();
+        let core_expected = State::from(&test.r#final);
+
+        let ram_actual = core.bus().values();
+        let mut ram_expected = test.r#final.ram.clone();
+        ram_expected.sort();
+
+        let core_ok = core_actual == core_expected;
+        let ram_ok = ram_actual == ram_expected;
+
+        if core_ok && ram_ok {
+            debug!("Passed: {}", test.name);
+            return true;
+        }
+
+        info!("Failed: {}", test.name);
+
+        if !core_ok {
+            info!("Core Initial: {:?}", core_initial);
+            info!("Core Expected: {:?}", core_expected);
+            info!("Core Actual: {:?}", core_actual);
+        }
+
+        if !ram_ok {
+            let mut ram_initial = test.initial.ram.clone();
+            ram_initial.sort();
+
+            info!("RAM Initial: {:?}", ram_initial);
+            info!("RAM Expected: {:?}", ram_expected);
+            info!("RAM Actual: {:?}", ram_actual);
+        }
+
+        false
+    }
 }
 
 impl Memory {
@@ -71,54 +126,6 @@ impl Bus for Memory {
     fn acknowledge(&mut self, _interrupt: Interrupt) {
         //
     }
-}
-
-pub fn parse(input: &str) -> Result<Vec<Test>, Box<dyn Error>> {
-    let tests: Vec<Test> = serde_json::from_str(input)?;
-    Ok(tests)
-}
-
-pub fn run(test: &Test) -> bool {
-    let memory = Memory::new(&test.initial.ram);
-    let mut core = Core::new(memory);
-    let core_initial = State::from(&test.initial);
-
-    core.set_state(&core_initial);
-    core.step();
-
-    let core_actual = core.state();
-    let core_expected = State::from(&test.r#final);
-
-    let ram_actual = core.bus().values();
-    let mut ram_expected = test.r#final.ram.clone();
-    ram_expected.sort();
-
-    let core_ok = core_actual == core_expected;
-    let ram_ok = ram_actual == ram_expected;
-
-    if core_ok && ram_ok {
-        debug!("Passed: {}", test.name);
-        return true;
-    }
-
-    info!("Failed: {}", test.name);
-
-    if !core_ok {
-        info!("Core Initial: {:?}", core_initial);
-        info!("Core Expected: {:?}", core_expected);
-        info!("Core Actual: {:?}", core_actual);
-    }
-
-    if !ram_ok {
-        let mut ram_initial = test.initial.ram.clone();
-        ram_initial.sort();
-
-        info!("RAM Initial: {:?}", ram_initial);
-        info!("RAM Expected: {:?}", ram_expected);
-        info!("RAM Actual: {:?}", ram_actual);
-    }
-
-    false
 }
 
 impl From<&TestState> for State {
