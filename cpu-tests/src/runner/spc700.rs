@@ -3,26 +3,17 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::error::Error;
 use tracing::{debug, info};
-use utopia::core::wdc65c816::{Bus, Core, Interrupt, State};
-
-#[derive(Debug)]
-struct Memory {
-    map: HashMap<u32, u8>,
-}
+use utopia::core::spc700::{Bus, Core, State};
 
 #[derive(Debug, Deserialize)]
 pub struct TestState {
     pc: u16,
-    s: u16,
-    p: u8,
-    a: u16,
-    x: u16,
-    y: u16,
-    dbr: u8,
-    d: u16,
-    pbr: u8,
-    e: u8,
-    ram: Vec<(u32, u8)>,
+    a: u8,
+    x: u8,
+    y: u8,
+    sp: u8,
+    psw: u8,
+    ram: Vec<(u16, u8)>,
 }
 
 #[allow(dead_code)]
@@ -31,12 +22,12 @@ pub struct Test {
     name: String,
     initial: TestState,
     r#final: TestState,
-    cycles: Vec<(Option<u32>, Option<u8>, String)>,
+    cycles: Vec<(Option<u16>, Option<u8>, String)>,
 }
 
-pub struct Wdc65c816;
+pub struct Spc700;
 
-impl Runner for Wdc65c816 {
+impl Runner for Spc700 {
     type Test = Test;
 
     fn parse(input: &str) -> Result<Vec<Test>, Box<dyn Error>> {
@@ -88,8 +79,13 @@ impl Runner for Wdc65c816 {
     }
 }
 
+#[derive(Debug)]
+struct Memory {
+    map: HashMap<u16, u8>,
+}
+
 impl Memory {
-    fn new(ram: &[(u32, u8)]) -> Self {
+    fn new(ram: &[(u16, u8)]) -> Self {
         let mut map = HashMap::new();
 
         for (address, value) in ram {
@@ -99,8 +95,8 @@ impl Memory {
         Self { map }
     }
 
-    fn values(&self) -> Vec<(u32, u8)> {
-        let mut vec: Vec<(u32, u8)> = self.map.iter().map(|(k, v)| (*k, *v)).collect();
+    fn values(&self) -> Vec<(u16, u8)> {
+        let mut vec: Vec<(u16, u8)> = self.map.iter().map(|(k, v)| (*k, *v)).collect();
         vec.sort();
         vec
     }
@@ -109,19 +105,13 @@ impl Memory {
 impl Bus for Memory {
     fn idle(&mut self) {}
 
-    fn read(&mut self, address: u32) -> u8 {
+    fn read(&mut self, address: u16) -> u8 {
         *self.map.get(&address).unwrap_or(&0)
     }
 
-    fn write(&mut self, address: u32, value: u8) {
+    fn write(&mut self, address: u16, value: u8) {
         self.map.insert(address, value);
     }
-
-    fn poll(&self) -> Interrupt {
-        0
-    }
-
-    fn acknowledge(&mut self, _interrupt: Interrupt) {}
 }
 
 impl From<&TestState> for State {
@@ -130,16 +120,9 @@ impl From<&TestState> for State {
             a: state.a,
             x: state.x,
             y: state.y,
-            d: state.d,
-            s: state.s,
+            sp: state.sp,
             pc: state.pc,
-            pbr: state.pbr,
-            dbr: state.dbr,
-            p: state.p,
-            e: state.e != 0,
-            interrupt: 0,
-            waiting: false,
-            stopped: false,
+            psw: state.psw,
         }
     }
 }

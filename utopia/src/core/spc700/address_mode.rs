@@ -1,4 +1,4 @@
-use super::{Bus, Core, STACK_PAGE};
+use super::{Bus, Core};
 
 pub trait ReadAddress {
     const NAME: &'static str;
@@ -48,16 +48,7 @@ impl ReadAddress for Psw {
     const NAME: &'static str = "PSW";
 
     fn read(core: &mut Core<impl Bus>) -> u8 {
-        let mut value = 0;
-        value |= if (core.flags.n & 0x80) != 0 { 0x80 } else { 0 };
-        value |= if core.flags.v { 0x40 } else { 0 };
-        value |= if core.flags.p != 0 { 0x20 } else { 0 };
-        value |= if core.flags.b { 0x10 } else { 0 };
-        value |= if core.flags.h { 0x08 } else { 0 };
-        value |= if core.flags.i { 0x04 } else { 0 };
-        value |= if core.flags.z == 0 { 0x02 } else { 0 };
-        value |= if core.flags.c { 0x01 } else { 0 };
-        value
+        core.flags_to_u8()
     }
 }
 
@@ -65,14 +56,7 @@ impl WriteAddress for Psw {
     fn modify<T: Bus>(core: &mut Core<T>, callback: impl FnOnce(&mut Core<T>, u8) -> u8) {
         let value = Self::read(core);
         let result = callback(core, value);
-        core.flags.n = result;
-        core.flags.v = (result & 0x40) != 0;
-        core.flags.p = if result & 0x20 != 0 { STACK_PAGE } else { 0 };
-        core.flags.b = (result & 0x10) != 0;
-        core.flags.h = (result & 0x08) != 0;
-        core.flags.i = (result & 0x04) != 0;
-        core.flags.z = !result & 0x02;
-        core.flags.c = (result & 0x01) != 0;
+        core.flags_from_u8(result);
     }
 }
 

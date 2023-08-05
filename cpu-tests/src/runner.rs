@@ -1,3 +1,4 @@
+pub use spc700::Spc700;
 pub use wdc65c816::Wdc65c816;
 
 use std::error::Error;
@@ -5,6 +6,7 @@ use std::fs;
 use std::path::Path;
 use tracing::{info, warn};
 
+mod spc700;
 mod wdc65c816;
 
 pub trait Runner {

@@ -7,7 +7,7 @@ mod operator;
 
 const STACK_PAGE: u16 = 0x0100;
 
-pub trait Bus: fmt::Display {
+pub trait Bus {
     fn idle(&mut self);
     fn read(&mut self, address: u16) -> u8;
     fn write(&mut self, address: u16, value: u8);
@@ -22,6 +22,17 @@ pub struct Flags {
     i: bool,
     z: u8,
     c: bool,
+}
+
+#[cfg(feature = "cpu-tests")]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct State {
+    pub a: u8,
+    pub x: u8,
+    pub y: u8,
+    pub sp: u8,
+    pub pc: u16,
+    pub psw: u8,
 }
 
 pub struct Core<T: Bus> {
@@ -439,13 +450,59 @@ impl<T: Bus> Core<T> {
         u16::from_le_bytes([low, high])
     }
 
+    fn flags_to_u8(&self) -> u8 {
+        let mut value = 0;
+        value |= if (self.flags.n & 0x80) != 0 { 0x80 } else { 0 };
+        value |= if self.flags.v { 0x40 } else { 0 };
+        value |= if self.flags.p != 0 { 0x20 } else { 0 };
+        value |= if self.flags.b { 0x10 } else { 0 };
+        value |= if self.flags.h { 0x08 } else { 0 };
+        value |= if self.flags.i { 0x04 } else { 0 };
+        value |= if self.flags.z == 0 { 0x02 } else { 0 };
+        value |= if self.flags.c { 0x01 } else { 0 };
+        value
+    }
+
+    fn flags_from_u8(&mut self, value: u8) {
+        self.flags.n = value;
+        self.flags.v = (value & 0x40) != 0;
+        self.flags.p = if value & 0x20 != 0 { STACK_PAGE } else { 0 };
+        self.flags.b = (value & 0x10) != 0;
+        self.flags.h = (value & 0x08) != 0;
+        self.flags.i = (value & 0x04) != 0;
+        self.flags.z = !value & 0x02;
+        self.flags.c = (value & 0x01) != 0;
+    }
+
     pub fn set_nz(&mut self, value: u8) {
         self.flags.n = value;
         self.flags.z = value;
     }
+
+    #[cfg(feature = "cpu-tests")]
+    pub fn state(&self) -> State {
+        State {
+            a: self.a,
+            x: self.x,
+            y: self.y,
+            sp: self.sp,
+            pc: self.pc,
+            psw: self.flags_to_u8(),
+        }
+    }
+
+    #[cfg(feature = "cpu-tests")]
+    pub fn set_state(&mut self, state: &State) {
+        self.a = state.a;
+        self.x = state.x;
+        self.y = state.y;
+        self.sp = state.sp;
+        self.pc = state.pc;
+        self.flags_from_u8(state.psw);
+    }
 }
 
-impl<T: Bus> fmt::Display for Core<T> {
+impl<T: Bus + fmt::Display> fmt::Display for Core<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
