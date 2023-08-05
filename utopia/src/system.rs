@@ -6,7 +6,7 @@ use nes::Nes;
 use snes::Snes;
 use std::collections::VecDeque;
 use std::error::Error;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 mod gb;
 mod gba;
@@ -65,22 +65,21 @@ impl<T: MirrorableMut<Output = u8>> Mapped for T {}
 
 pub trait MemoryMapper {
     type Mapped: Mapped;
-    fn open(&self, path: Option<&Path>, len: usize) -> Result<Self::Mapped, Box<dyn Error>>;
+    fn open(&self, len: usize, battery_backed: bool) -> Result<Self::Mapped, Box<dyn Error>>;
 }
 
 pub struct Options<T: MemoryMapper, U: BiosLoader> {
     pub memory_mapper: T,
     pub bios_loader: U,
     pub skip_boot: bool,
-    pub rom_path: PathBuf,
 }
 
 pub fn create<T: MemoryMapper + 'static, U: BiosLoader>(
     rom_data: Vec<u8>,
+    rom_path: &str,
     options: &Options<T, U>,
 ) -> Result<Box<dyn System>, Box<dyn Error>> {
-    let extension = options
-        .rom_path
+    let extension = Path::new(rom_path)
         .extension()
         .and_then(|e| e.to_str())
         .unwrap_or("");
@@ -88,11 +87,7 @@ pub fn create<T: MemoryMapper + 'static, U: BiosLoader>(
     Ok(match extension {
         "gb" => Box::new(GameBoy::<T::Mapped>::new(rom_data, options)?),
         "gba" => Box::new(GameBoyAdvance::new(rom_data, &options.bios_loader)?),
-        "nes" => Box::new(Nes::new(
-            rom_data,
-            &options.rom_path,
-            &options.memory_mapper,
-        )?),
+        "nes" => Box::new(Nes::new(rom_data, &options.memory_mapper)?),
         "sfc" | "smc" => Box::new(Snes::new(rom_data, options)?),
         "z64" => Box::new(N64::new(rom_data)?),
         _ => Err("ROM type not supported".to_owned())?,

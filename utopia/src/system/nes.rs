@@ -10,7 +10,6 @@ use joypad::Joypad;
 use ppu::Ppu;
 use std::error::Error;
 use std::fmt;
-use std::path::Path;
 use tracing::debug;
 
 const WRAM_SIZE: usize = 2048;
@@ -29,10 +28,9 @@ pub struct Nes<T: Mapped> {
 impl<T: Mapped> Nes<T> {
     pub fn new(
         rom_data: Vec<u8>,
-        rom_path: &Path,
         memory_mapper: &impl MemoryMapper<Mapped = T>,
     ) -> Result<Self, Box<dyn Error>> {
-        let hw = Hardware::new(rom_data, rom_path, memory_mapper)?;
+        let hw = Hardware::new(rom_data, memory_mapper)?;
         let core = Core::new(hw);
         Ok(Nes { core })
     }
@@ -104,7 +102,6 @@ struct Hardware<T: Mapped> {
 impl<T: Mapped> Hardware<T> {
     pub fn new(
         rom_data: Vec<u8>,
-        rom_path: &Path,
         memory_mapper: &impl MemoryMapper<Mapped = T>,
     ) -> Result<Self, Box<dyn Error>> {
         let interrupt = Interrupt::new();
@@ -114,7 +111,7 @@ impl<T: Mapped> Hardware<T> {
             dma_oam_src: 0,
             cycles: 0,
             mdr: 0,
-            cartridge: Cartridge::new(rom_data, rom_path, memory_mapper, interrupt.clone())?,
+            cartridge: Cartridge::new(rom_data, memory_mapper, interrupt.clone())?,
             wram: MirrorVec::new(WRAM_SIZE),
             joypad: Joypad::new(),
             ppu: Ppu::new(interrupt.clone()),

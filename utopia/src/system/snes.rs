@@ -96,7 +96,6 @@ impl<T: Mapped> Hardware<T> {
         info!("Battery Backed: {}", battery_backed);
 
         let pages = memory::map(&header);
-        let save_path = battery_backed.then(|| options.rom_path.with_extension("sav"));
 
         Ok(Self {
             clock: Clock::new((header.map_mode & 0x10) != 0),
@@ -107,7 +106,7 @@ impl<T: Mapped> Hardware<T> {
             rom: MirrorVec::resize(rom_data),
             sram: options
                 .memory_mapper
-                .open(save_path.as_deref(), header.sram_size)?
+                .open(header.sram_size, battery_backed)?
                 .into(),
             wram: Wram::new(),
             regs: Registers::new(),

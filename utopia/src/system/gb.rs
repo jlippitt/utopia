@@ -124,7 +124,7 @@ impl<T: Mapped> Hardware<T> {
             timer: Timer::new(),
             hram: MirrorVec::new(HRAM_SIZE),
             wram: MirrorVec::new(WRAM_SIZE),
-            cartridge: Cartridge::new(rom_data, &options.rom_path, &options.memory_mapper)?,
+            cartridge: Cartridge::new(rom_data, &options.memory_mapper)?,
             ppu: Ppu::new(options.skip_boot),
             apu: Apu::new(),
             joypad: Joypad::new(),

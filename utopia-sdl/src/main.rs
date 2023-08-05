@@ -44,12 +44,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let options = Options {
         bios_loader: BiosLoader::new(),
-        memory_mapper: MemoryMapper::new(),
+        memory_mapper: MemoryMapper::new(args.rom_path.clone().into()),
         skip_boot: args.skip_boot,
-        rom_path: args.rom_path.into(),
     };
 
-    let mut system = utopia::create(rom_data, &options)?;
+    let mut system = utopia::create(rom_data, &args.rom_path, &options)?;
 
     let sdl_context = sdl2::init()?;
 

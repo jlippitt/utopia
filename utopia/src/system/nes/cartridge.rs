@@ -3,7 +3,6 @@ use crate::util::mirror::{Mirror, MirrorVec};
 use crate::{Mapped, MemoryMapper};
 use mapper::{Mapper, MapperType, Mappings, MirrorMode, NameTable, PrgRead, PrgWrite};
 use std::error::Error;
-use std::path::Path;
 use tracing::info;
 
 mod mapper;
@@ -28,7 +27,6 @@ pub struct Cartridge<T: Mapped> {
 impl<T: Mapped> Cartridge<T> {
     pub fn new(
         data: Vec<u8>,
-        rom_path: &Path,
         memory_mapper: &impl MemoryMapper<Mapped = T>,
         interrupt: Interrupt,
     ) -> Result<Self, Box<dyn Error>> {
@@ -68,13 +66,9 @@ impl<T: Mapped> Cartridge<T> {
         let battery_backed = (data[6] & 0x02) != 0;
         info!("Battery Backed: {}", battery_backed);
 
-        let save_path = battery_backed.then(|| rom_path.with_extension("sav"));
-
         Ok(Self {
             prg_rom: prg_rom.into(),
-            prg_ram: memory_mapper
-                .open(save_path.as_deref(), PRG_RAM_SIZE)?
-                .into(),
+            prg_ram: memory_mapper.open(PRG_RAM_SIZE, battery_backed)?.into(),
             chr_data: chr_data.into(),
             chr_writable: chr_rom_size == 0,
             ci_ram: MirrorVec::new(CI_RAM_SIZE),

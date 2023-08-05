@@ -1,26 +1,28 @@
 use memmap2::{MmapMut, MmapOptions};
 use std::error::Error;
 use std::fs::OpenOptions;
-use std::path::Path;
+use std::path::PathBuf;
 
-pub struct MemoryMapper;
+pub struct MemoryMapper {
+    rom_path: PathBuf,
+}
 
 impl MemoryMapper {
-    pub fn new() -> Self {
-        Self
+    pub fn new(rom_path: PathBuf) -> Self {
+        Self { rom_path }
     }
 }
 
 impl utopia::MemoryMapper for MemoryMapper {
     type Mapped = MmapMut;
 
-    fn open(&self, path: Option<&Path>, len: usize) -> Result<Self::Mapped, Box<dyn Error>> {
-        let mapped = if let Some(path) = path {
+    fn open(&self, len: usize, battery_backed: bool) -> Result<Self::Mapped, Box<dyn Error>> {
+        let mapped = if battery_backed {
             let file = OpenOptions::new()
                 .read(true)
                 .write(true)
                 .create(true)
-                .open(&path)?;
+                .open(&self.rom_path.with_extension("sav"))?;
 
             file.set_len(len as u64)?;
 

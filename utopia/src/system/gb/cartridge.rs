@@ -2,7 +2,6 @@ use crate::util::mirror::{Mirror, MirrorVec};
 use crate::{Mapped, MemoryMapper};
 use mbc::{Mappings, Mbc, MbcType};
 use std::error::Error;
-use std::path::Path;
 use tracing::info;
 
 mod mbc;
@@ -21,7 +20,6 @@ pub struct Cartridge<T: Mapped> {
 impl<T: Mapped> Cartridge<T> {
     pub fn new(
         rom: Vec<u8>,
-        rom_path: &Path,
         memory_mapper: &impl MemoryMapper<Mapped = T>,
     ) -> Result<Self, Box<dyn Error>> {
         let mapper_number = rom[0x0147];
@@ -48,11 +46,9 @@ impl<T: Mapped> Cartridge<T> {
         let battery_backed = ram_size > 0 && BATTERY_BACKED.contains(&mapper_number);
         info!("Battery Backed: {}", battery_backed);
 
-        let save_path = battery_backed.then(|| rom_path.with_extension("sav"));
-
         Ok(Self {
             rom: rom.into(),
-            ram: memory_mapper.open(save_path.as_deref(), ram_size)?.into(),
+            ram: memory_mapper.open(ram_size, battery_backed)?.into(),
             mappings,
             mapper,
         })
