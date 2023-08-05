@@ -43,6 +43,7 @@ pub struct Core<T: Bus> {
     pc: u16,
     flags: Flags,
     bus: T,
+    stopped: bool,
 }
 
 impl<T: Bus> Core<T> {
@@ -63,6 +64,7 @@ impl<T: Bus> Core<T> {
                 z: 0xff,
                 c: false,
             },
+            stopped: false,
             bus,
         }
     }
@@ -79,6 +81,11 @@ impl<T: Bus> Core<T> {
         use address_mode as addr;
         use instruction as instr;
         use operator as op;
+
+        if self.stopped {
+            self.idle();
+            return;
+        }
 
         match self.next_byte() {
             // +0x00
@@ -389,7 +396,7 @@ impl<T: Bus> Core<T> {
             0x8f => instr::write::<addr::Direct, addr::Immediate>(self),
             0xaf => instr::auto_inc_write(self),
             0xcf => instr::mul(self),
-            //0xef => instr::sleep(self),
+            0xef => instr::sleep(self),
 
             // +0x1f
             0x1f => instr::jmp_x_indirect(self),
@@ -399,7 +406,7 @@ impl<T: Bus> Core<T> {
             0x9f => instr::xcn(self),
             0xbf => instr::auto_inc_read(self),
             //0xdf => instr::daa(self),
-            //0xff => instr::stop(self),
+            0xff => instr::stop(self),
             opcode => todo!("SPC700 opcode {:02X}", opcode),
         }
     }

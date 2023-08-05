@@ -1,5 +1,5 @@
 use super::super::{Bus, Core};
-use tracing::debug;
+use tracing::{debug, warn};
 
 pub fn nop(core: &mut Core<impl Bus>) {
     debug!("NOP");
@@ -39,4 +39,21 @@ pub fn xcn(core: &mut Core<impl Bus>) {
     core.idle();
     core.a = (core.a << 4) | (core.a >> 4);
     core.set_nz(core.a);
+}
+
+pub fn sleep(core: &mut Core<impl Bus>) {
+    // Because there are no interrupts, this is functionally the same as STOP
+    debug!("SLEEP");
+    core.read(core.pc);
+    core.idle();
+    core.stopped = true;
+    warn!("SPC700 stopped");
+}
+
+pub fn stop(core: &mut Core<impl Bus>) {
+    debug!("STOP");
+    core.read(core.pc);
+    core.idle();
+    core.stopped = true;
+    warn!("SPC700 stopped");
 }
