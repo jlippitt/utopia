@@ -8,8 +8,8 @@ use utopia::AudioQueue;
 pub struct Audio {
     device: AudioDevice<Callback>,
     sample_rate: u64,
-    start_time: Instant,
     total_samples: u64,
+    start_time: Instant,
 }
 
 struct Callback {
@@ -32,15 +32,26 @@ impl Audio {
 
         device.resume();
 
-        let start_time = Instant::now();
         let total_samples = 0;
+        let start_time = Instant::now();
 
         Ok(Self {
             device,
             sample_rate,
-            start_time,
             total_samples,
+            start_time,
         })
+    }
+
+    pub fn pause(&mut self) {
+        self.device.pause();
+        self.device.lock().queue.clear();
+        self.total_samples = 0;
+    }
+
+    pub fn resume(&mut self) {
+        self.device.resume();
+        self.start_time = Instant::now();
     }
 
     pub fn sync(&mut self, audio_queue: &mut AudioQueue) {

@@ -86,7 +86,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                     scancode: Some(scancode),
                     ..
                 } => match scancode {
-                    Scancode::F11 => video.toggle_full_screen()?,
+                    Scancode::F11 => {
+                        audio.pause();
+                        video.toggle_full_screen()?;
+                        audio.resume();
+                    }
                     Scancode::Escape => break 'outer,
                     _ => joypad.key_event(scancode, true),
                 },
