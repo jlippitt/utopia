@@ -1,4 +1,5 @@
-use crate::system::nes::cartridge::Cartridge;
+use super::super::cartridge::Cartridge;
+use crate::Mapped;
 use tracing::debug;
 
 const ATTR_SHIFT: [u32; 4] = [0, 0x5555, 0xaaaa, 0xffff];
@@ -40,14 +41,14 @@ impl RenderState {
         }
     }
 
-    pub fn set_address(&mut self, cartridge: &mut Cartridge, address: u16) {
+    pub fn set_address(&mut self, cartridge: &mut Cartridge<impl Mapped>, address: u16) {
         self.address = address;
         cartridge.on_ppu_address_changed(self.address);
     }
 }
 
 impl super::Ppu {
-    pub(super) fn render(&mut self, cartridge: &mut Cartridge) {
+    pub(super) fn render(&mut self, cartridge: &mut Cartridge<impl Mapped>) {
         match self.dot {
             0..=255 => {
                 if self.line != super::PRE_RENDER_LINE {
@@ -154,7 +155,7 @@ impl super::Ppu {
         self.screen.draw(color);
     }
 
-    fn load_bg_tiles(&mut self, cartridge: &mut Cartridge) {
+    fn load_bg_tiles(&mut self, cartridge: &mut Cartridge<impl Mapped>) {
         self.render.chr_low <<= 1;
         self.render.chr_high <<= 1;
         self.render.attr_shift <<= 2;
@@ -196,7 +197,7 @@ impl super::Ppu {
         }
     }
 
-    fn load_sprite_tiles(&mut self, cartridge: &mut Cartridge) {
+    fn load_sprite_tiles(&mut self, cartridge: &mut Cartridge<impl Mapped>) {
         let index = (self.dot as usize >> 3) & 7;
         let address = index << 2;
 

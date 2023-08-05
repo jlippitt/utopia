@@ -2,6 +2,7 @@ pub use screen::{HEIGHT, WIDTH};
 
 use super::cartridge::Cartridge;
 use super::interrupt::{Interrupt, InterruptType};
+use crate::Mapped;
 use oam::Oam;
 use palette::Palette;
 use render::RenderState;
@@ -120,7 +121,7 @@ impl Ppu {
         self.screen.pixels()
     }
 
-    pub fn read(&mut self, cartridge: &mut Cartridge, address: u16) -> u8 {
+    pub fn read(&mut self, cartridge: &mut Cartridge<impl Mapped>, address: u16) -> u8 {
         match address & 7 {
             2 => {
                 // TODO: Open bus
@@ -171,7 +172,7 @@ impl Ppu {
         }
     }
 
-    pub fn write(&mut self, cartridge: &mut Cartridge, address: u16, value: u8) {
+    pub fn write(&mut self, cartridge: &mut Cartridge<impl Mapped>, address: u16, value: u8) {
         match address & 7 {
             0 => {
                 let nmi_active = (value & 0x80) != 0;
@@ -268,7 +269,7 @@ impl Ppu {
         self.oam.write(value);
     }
 
-    pub fn step(&mut self, cartridge: &mut Cartridge) {
+    pub fn step(&mut self, cartridge: &mut Cartridge<impl Mapped>) {
         if self.line < TOTAL_VISIBLE_LINES {
             if self.mask.render_enabled {
                 self.render(cartridge);

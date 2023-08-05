@@ -1,7 +1,10 @@
 use super::Interrupt;
-use crate::util::MirrorVec;
+use crate::util::mirror::{Mirror, MirrorVec};
+use crate::{Mapped, MemoryMapper};
 use mapper::{Mapper, MapperType, Mappings, MirrorMode, NameTable, PrgRead, PrgWrite};
-use tracing::debug;
+use std::error::Error;
+use std::path::Path;
+use tracing::info;
 
 mod mapper;
 
@@ -12,9 +15,9 @@ const CHR_ROM_MULTIPLIER: usize = 8192;
 const PRG_RAM_SIZE: usize = 8192;
 const CI_RAM_SIZE: usize = 2048;
 
-pub struct Cartridge {
+pub struct Cartridge<T: Mapped> {
     prg_rom: MirrorVec<u8>,
-    prg_ram: MirrorVec<u8>,
+    prg_ram: Mirror<T>,
     chr_data: MirrorVec<u8>,
     chr_writable: bool,
     ci_ram: MirrorVec<u8>,
@@ -22,14 +25,19 @@ pub struct Cartridge {
     mapper: MapperType,
 }
 
-impl Cartridge {
-    pub fn new(data: Vec<u8>, interrupt: Interrupt) -> Cartridge {
+impl<T: Mapped> Cartridge<T> {
+    pub fn new(
+        data: Vec<u8>,
+        rom_path: &Path,
+        memory_mapper: &impl MemoryMapper<Mapped = T>,
+        interrupt: Interrupt,
+    ) -> Result<Self, Box<dyn Error>> {
         let mapper_number = ((data[6] & 0xf0) >> 4) | (data[7] & 0xf0);
         let prg_rom_size = PRG_ROM_MULTIPLIER * (data[4] as usize);
         let chr_rom_size = CHR_ROM_MULTIPLIER * (data[5] as usize);
 
-        debug!("Mapper Number: {}", mapper_number);
-        debug!("PRG ROM Size: {}", prg_rom_size);
+        info!("Mapper Number: {}", mapper_number);
+        info!("PRG ROM Size: {}", prg_rom_size);
 
         let trainer_present = (data[6] & 0x04) != 0;
         let prg_rom_start = HEADER_SIZE + if trainer_present { TRAINER_SIZE } else { 0 };
@@ -37,11 +45,11 @@ impl Cartridge {
         let prg_rom = Vec::from(&data[prg_rom_start..prg_rom_end]);
 
         let chr_data = if chr_rom_size > 0 {
-            debug!("CHR ROM Size: {}", chr_rom_size);
+            info!("CHR ROM Size: {}", chr_rom_size);
             let chr_rom_end = prg_rom_end + chr_rom_size;
             Vec::from(&data[prg_rom_end..chr_rom_end])
         } else {
-            debug!("CHR RAM Size: {}", CHR_ROM_MULTIPLIER);
+            info!("CHR RAM Size: {}", CHR_ROM_MULTIPLIER);
             vec![0; CHR_ROM_MULTIPLIER]
         };
 
@@ -51,21 +59,28 @@ impl Cartridge {
             MirrorMode::Horizontal
         };
 
-        debug!("Mirror Mode: {:?}", mirror_mode);
+        info!("Mirror Mode: {:?}", mirror_mode);
 
         let mut mappings = Mappings::new(mirror_mode);
         let mut mapper = MapperType::new(mapper_number, prg_rom_size, interrupt);
         mapper.init_mappings(&mut mappings);
 
-        Self {
+        let battery_backed = (data[6] & 0x02) != 0;
+        info!("Battery Backed: {}", battery_backed);
+
+        let save_path = battery_backed.then(|| rom_path.with_extension("sav"));
+
+        Ok(Self {
             prg_rom: prg_rom.into(),
-            prg_ram: MirrorVec::new(PRG_RAM_SIZE),
+            prg_ram: memory_mapper
+                .open(save_path.as_deref(), PRG_RAM_SIZE)?
+                .into(),
             chr_data: chr_data.into(),
             chr_writable: chr_rom_size == 0,
             ci_ram: MirrorVec::new(CI_RAM_SIZE),
             mappings,
             mapper,
-        }
+        })
     }
 
     pub fn read_prg(&self, address: u16, prev_value: u8) -> u8 {

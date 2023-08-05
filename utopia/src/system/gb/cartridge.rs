@@ -19,10 +19,10 @@ pub struct Cartridge<T: Mapped> {
 }
 
 impl<T: Mapped> Cartridge<T> {
-    pub fn new<U: MemoryMapper<Mapped = T>>(
+    pub fn new(
         rom: Vec<u8>,
         rom_path: &Path,
-        memory_mapper: &U,
+        memory_mapper: &impl MemoryMapper<Mapped = T>,
     ) -> Result<Self, Box<dyn Error>> {
         let mapper_number = rom[0x0147];
 
@@ -46,6 +46,8 @@ impl<T: Mapped> Cartridge<T> {
         mapper.init_mappings(&mut mappings);
 
         let battery_backed = ram_size > 0 && BATTERY_BACKED.contains(&mapper_number);
+        info!("Battery Backed: {}", battery_backed);
+
         let save_path = battery_backed.then(|| rom_path.with_extension("sav"));
 
         Ok(Self {

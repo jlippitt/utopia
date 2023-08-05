@@ -1,8 +1,7 @@
 use super::System;
 use crate::core::mos6502::{self, Bus, Core};
 use crate::util::MirrorVec;
-use crate::AudioQueue;
-use crate::JoypadState;
+use crate::{AudioQueue, JoypadState, Mapped, MemoryMapper};
 use apu::Apu;
 use bitflags::bitflags;
 use cartridge::Cartridge;
@@ -11,6 +10,7 @@ use joypad::Joypad;
 use ppu::Ppu;
 use std::error::Error;
 use std::fmt;
+use std::path::Path;
 use tracing::debug;
 
 const WRAM_SIZE: usize = 2048;
@@ -22,19 +22,23 @@ mod interrupt;
 mod joypad;
 mod ppu;
 
-pub struct Nes {
-    core: Core<Hardware>,
+pub struct Nes<T: Mapped> {
+    core: Core<Hardware<T>>,
 }
 
-impl Nes {
-    pub fn new(rom_data: Vec<u8>) -> Result<Self, Box<dyn Error>> {
-        let hw = Hardware::new(rom_data);
+impl<T: Mapped> Nes<T> {
+    pub fn new(
+        rom_data: Vec<u8>,
+        rom_path: &Path,
+        memory_mapper: &impl MemoryMapper<Mapped = T>,
+    ) -> Result<Self, Box<dyn Error>> {
+        let hw = Hardware::new(rom_data, rom_path, memory_mapper)?;
         let core = Core::new(hw);
         Ok(Nes { core })
     }
 }
 
-impl System for Nes {
+impl<T: Mapped> System for Nes<T> {
     fn width(&self) -> usize {
         ppu::WIDTH
     }
@@ -84,35 +88,39 @@ bitflags! {
     }
 }
 
-struct Hardware {
+struct Hardware<T: Mapped> {
     dma_request: DmaRequest,
     dma_oam_src: u8,
     cycles: u64,
     mdr: u8,
     interrupt: Interrupt,
-    cartridge: Cartridge,
+    cartridge: Cartridge<T>,
     wram: MirrorVec<u8>,
     joypad: Joypad,
     ppu: Ppu,
     apu: Apu,
 }
 
-impl Hardware {
-    pub fn new(rom_data: Vec<u8>) -> Self {
+impl<T: Mapped> Hardware<T> {
+    pub fn new(
+        rom_data: Vec<u8>,
+        rom_path: &Path,
+        memory_mapper: &impl MemoryMapper<Mapped = T>,
+    ) -> Result<Self, Box<dyn Error>> {
         let interrupt = Interrupt::new();
 
-        Self {
+        Ok(Self {
             dma_request: DmaRequest::empty(),
             dma_oam_src: 0,
             cycles: 0,
             mdr: 0,
-            cartridge: Cartridge::new(rom_data, interrupt.clone()),
+            cartridge: Cartridge::new(rom_data, rom_path, memory_mapper, interrupt.clone())?,
             wram: MirrorVec::new(WRAM_SIZE),
             joypad: Joypad::new(),
             ppu: Ppu::new(interrupt.clone()),
             apu: Apu::new(interrupt.clone()),
             interrupt,
-        }
+        })
     }
 
     fn step_all(&mut self) {
@@ -173,7 +181,7 @@ impl Hardware {
     }
 }
 
-impl Bus for Hardware {
+impl<T: Mapped> Bus for Hardware<T> {
     fn read(&mut self, address: u16) -> u8 {
         if !self.dma_request.is_empty() {
             self.transfer_dma();
@@ -233,7 +241,7 @@ impl Bus for Hardware {
     }
 }
 
-impl fmt::Display for Hardware {
+impl<T: Mapped> fmt::Display for Hardware<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
