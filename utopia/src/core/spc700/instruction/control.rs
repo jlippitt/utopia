@@ -50,6 +50,20 @@ pub fn tcall(core: &mut Core<impl Bus>, id: u16) {
     core.pc = u16::from_le_bytes([low, high]);
 }
 
+pub fn brk(core: &mut Core<impl Bus>) {
+    debug!("BRK");
+    core.read(core.pc);
+    core.push((core.pc >> 8) as u8);
+    core.push(core.pc as u8);
+    core.push(core.flags_to_u8());
+    core.idle();
+    let low = core.read(0xffde);
+    let high = core.read(0xffdf);
+    core.pc = u16::from_le_bytes([low, high]);
+    core.flags.b = true;
+    core.flags.i = false;
+}
+
 pub fn ret(core: &mut Core<impl Bus>) {
     debug!("RET");
     core.read(core.pc);

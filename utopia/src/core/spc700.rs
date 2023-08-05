@@ -389,7 +389,7 @@ impl<T: Bus> Core<T> {
             0xfe => instr::branch::<op::DbnzY>(self),
 
             // +0x0f
-            //0x0f => instr::brk(self),
+            0x0f => instr::brk(self),
             0x2f => instr::branch::<op::Bra>(self),
             0x4f => instr::pcall(self),
             0x6f => instr::ret(self),
@@ -407,7 +407,6 @@ impl<T: Bus> Core<T> {
             0xbf => instr::auto_inc_read(self),
             0xdf => instr::daa(self),
             0xff => instr::stop(self),
-            opcode => todo!("SPC700 opcode {:02X}", opcode),
         }
     }
 
