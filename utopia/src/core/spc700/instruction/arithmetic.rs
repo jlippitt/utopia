@@ -51,9 +51,27 @@ pub fn div(core: &mut Core<impl Bus>) {
     core.flags.z = core.a;
 }
 
+pub fn daa(core: &mut Core<impl Bus>) {
+    debug!("DAA A");
+    core.read(core.pc);
+    core.idle();
+
+    if core.flags.c || core.a > 0x99 {
+        core.a = core.a.wrapping_add(0x60);
+        core.flags.c = true;
+    }
+
+    if core.flags.h || (core.a & 0x0f) > 0x09 {
+        core.a = core.a.wrapping_add(0x06);
+    }
+
+    core.set_nz(core.a);
+}
+
 pub fn das(core: &mut Core<impl Bus>) {
     debug!("DAS A");
     core.read(core.pc);
+    core.idle();
 
     if !core.flags.c || core.a > 0x99 {
         core.a = core.a.wrapping_sub(0x60);

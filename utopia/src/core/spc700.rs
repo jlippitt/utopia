@@ -405,7 +405,7 @@ impl<T: Bus> Core<T> {
             0x7f => instr::reti(self),
             0x9f => instr::xcn(self),
             0xbf => instr::auto_inc_read(self),
-            //0xdf => instr::daa(self),
+            0xdf => instr::daa(self),
             0xff => instr::stop(self),
             opcode => todo!("SPC700 opcode {:02X}", opcode),
         }
