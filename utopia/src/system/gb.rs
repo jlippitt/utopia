@@ -1,5 +1,5 @@
 use super::{AudioQueue, BiosLoader, JoypadState, Mapped, MemoryMapper, Options, System};
-use crate::core::gbz80::{Bus, Core, State};
+use crate::core::sm83::{Bus, Core, State};
 use crate::util::mirror::MirrorVec;
 use apu::Apu;
 use cartridge::Cartridge;
