@@ -1,8 +1,8 @@
 pub use color::Rgb;
-pub use mirror_vec::MirrorVec;
+pub use mirror::MirrorVec;
 
 pub mod audio;
 pub mod facade;
+pub mod mirror;
 
 mod color;
-mod mirror_vec;
