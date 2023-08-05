@@ -1,3 +1,4 @@
+use sdl2::mouse::MouseUtil;
 use sdl2::pixels::PixelFormatEnum;
 use sdl2::rect::Rect;
 use sdl2::render::{Canvas, Texture, TextureCreator, TextureValueError};
@@ -21,6 +22,7 @@ pub struct VideoOptions {
 
 pub struct Video {
     video: VideoSubsystem,
+    mouse: MouseUtil,
     width: u32,
     height: u32,
     pitch: usize,
@@ -34,6 +36,7 @@ pub struct Video {
 impl Video {
     pub fn new(sdl_context: &Sdl, options: VideoOptions) -> Result<Self, Box<dyn Error>> {
         let video = sdl_context.video()?;
+        let mouse = sdl_context.mouse();
 
         let pitch = options.width as usize * 4;
 
@@ -54,6 +57,8 @@ impl Video {
 
         let window = window_builder.allow_highdpi().build()?;
 
+        mouse.show_cursor(!options.full_screen);
+
         let mut canvas_builder = window.into_canvas();
 
         if !options.disable_vsync {
@@ -73,6 +78,7 @@ impl Video {
 
         Ok(Self {
             video,
+            mouse,
             width: options.width,
             height: options.height,
             pitch,
@@ -97,6 +103,8 @@ impl Video {
 
     pub fn toggle_full_screen(&mut self) -> Result<(), String> {
         self.full_screen = !self.full_screen;
+
+        self.mouse.show_cursor(!self.full_screen);
 
         let full_screen_type = if self.full_screen {
             FullscreenType::True
