@@ -391,7 +391,7 @@ impl<T: Bus> Core<T> {
             // +0x0f
             //0x0f => instr::brk(self),
             0x2f => instr::branch::<op::Bra>(self),
-            //0x4f => instr::pcall(self),
+            0x4f => instr::pcall(self),
             0x6f => instr::ret(self),
             0x8f => instr::write::<addr::Direct, addr::Immediate>(self),
             0xaf => instr::auto_inc_write(self),

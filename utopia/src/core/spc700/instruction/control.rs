@@ -22,20 +22,28 @@ pub fn call(core: &mut Core<impl Bus>) {
     core.idle();
     core.push((core.pc >> 8) as u8);
     core.push(core.pc as u8);
+    core.idle();
+    core.idle();
     core.pc = target;
+}
+
+pub fn pcall(core: &mut Core<impl Bus>) {
+    debug!("PCALL u");
+    let target = core.next_byte();
     core.idle();
+    core.push((core.pc >> 8) as u8);
+    core.push(core.pc as u8);
     core.idle();
+    core.pc = 0xff00 + (target as u16);
 }
 
 pub fn tcall(core: &mut Core<impl Bus>, id: u16) {
     debug!("TCALL {}", id);
-
     core.read(core.pc);
     core.idle();
     core.push((core.pc >> 8) as u8);
     core.push(core.pc as u8);
     core.idle();
-
     let vector = 0xffc0 + ((id ^ 15) << 1);
     let low = core.read(vector);
     let high = core.read(vector.wrapping_add(1));
