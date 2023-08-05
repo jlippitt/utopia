@@ -207,34 +207,34 @@ impl Clock {
     pub fn event(&mut self) -> Option<Event> {
         let current_event = self.next_event;
 
-        if self.line_cycles >= current_event.cycles {
-            self.next_event = self.next_event().unwrap_or_else(|| {
-                self.banked_cycles += CYCLES_PER_LINE;
-                self.line_cycles -= CYCLES_PER_LINE;
-                self.line += 1;
-
-                if self.line == self.total_lines {
-                    self.line = 0;
-                    self.frame += 1;
-                    self.total_lines = TOTAL_LINES;
-
-                    if self.interlace && !self.odd_frame() {
-                        self.total_lines += 1;
-                    };
-
-                    debug!("Total Lines: {}", self.total_lines);
-                }
-
-                self.update_irq_cycle(true);
-
-                self.line_events = LINE_EVENTS.iter().peekable();
-                self.next_event().unwrap()
-            });
-
-            Some(current_event.event)
-        } else {
-            None
+        if self.line_cycles < current_event.cycles {
+            return None;
         }
+
+        self.next_event = self.next_event().unwrap_or_else(|| {
+            self.banked_cycles += CYCLES_PER_LINE;
+            self.line_cycles -= CYCLES_PER_LINE;
+            self.line += 1;
+
+            if self.line == self.total_lines {
+                self.line = 0;
+                self.frame += 1;
+                self.total_lines = TOTAL_LINES;
+
+                if self.interlace && !self.odd_frame() {
+                    self.total_lines += 1;
+                };
+
+                debug!("Total Lines: {}", self.total_lines);
+            }
+
+            self.update_irq_cycle(true);
+
+            self.line_events = LINE_EVENTS.iter().peekable();
+            self.next_event().unwrap()
+        });
+
+        Some(current_event.event)
     }
 
     pub fn cycles_for_address(&self, address: u32) -> u64 {
@@ -281,21 +281,9 @@ impl Clock {
     fn update_irq_cycle(&mut self, end_of_line: bool) {
         self.irq_cycle = match self.irq_mode {
             IrqMode::None => None,
-            IrqMode::V => {
-                if self.line == self.irq_y {
-                    Some(0)
-                } else {
-                    None
-                }
-            }
+            IrqMode::V => (self.line == self.irq_y).then_some(0),
             IrqMode::H => Some((self.irq_x as u64) << 2),
-            IrqMode::HV => {
-                if self.line == self.irq_y {
-                    Some((self.irq_x as u64) << 2)
-                } else {
-                    None
-                }
-            }
+            IrqMode::HV => (self.line == self.irq_y).then(|| (self.irq_x as u64) << 2),
         };
 
         // During mid-line updates, don't schedule an IRQ if we've already

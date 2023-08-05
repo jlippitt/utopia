@@ -46,7 +46,7 @@ impl BackgroundLayer {
     }
 
     pub fn set_mosaic(&mut self, enabled: bool, size: u8) {
-        self.mosaic_size = if enabled { Some(size as u16) } else { None };
+        self.mosaic_size = enabled.then_some(size as u16);
         debug!("{} Mosaic Size: {:?}", self.name, self.mosaic_size);
     }
 
