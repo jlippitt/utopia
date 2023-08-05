@@ -35,3 +35,14 @@ pub fn ret(core: &mut Core<impl Bus>) {
     let high = core.pop();
     core.pc = u16::from_le_bytes([low, high]);
 }
+
+pub fn reti(core: &mut Core<impl Bus>) {
+    debug!("RET");
+    core.read(core.pc);
+    core.idle();
+    let flags = core.pop();
+    core.flags_from_u8(flags);
+    let low = core.pop();
+    let high = core.pop();
+    core.pc = u16::from_le_bytes([low, high]);
+}

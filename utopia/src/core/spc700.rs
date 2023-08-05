@@ -402,7 +402,7 @@ impl<T: Bus> Core<T> {
             0x1f => instr::jmp_x_indirect(self),
             0x3f => instr::call(self),
             0x5f => instr::jmp(self),
-            //0x7f => instr::reti(self),
+            0x7f => instr::reti(self),
             0x9f => instr::xcn(self),
             0xbf => instr::auto_inc_read(self),
             //0xdf => instr::daa(self),
