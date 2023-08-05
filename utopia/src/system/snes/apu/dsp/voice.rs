@@ -48,4 +48,12 @@ impl Voice {
     pub fn set_gain(&mut self, _value: u8) {
         // TODO
     }
+
+    pub fn set_key_on(&mut self, _key_on: bool) {
+        // TODO
+    }
+
+    pub fn set_key_off(&mut self, _key_off: bool) {
+        // TODO
+    }
 }

@@ -84,8 +84,8 @@ impl Dsp {
                     0x1c => (), // TODO: Main volume (right)
                     0x2c => (), // TODO: Echo volume (left)
                     0x3c => (), // TODO: Echo volume (right)
-                    0x4c => (), // TODO: Key on
-                    0x5c => (), // TODO: Key off
+                    0x4c => self.write_all(value, |voice, bit| voice.set_key_on(bit)),
+                    0x5c => self.write_all(value, |voice, bit| voice.set_key_off(bit)),
                     0x6c => (), // TODO: Flags
                     0x7c => (), // TODO: ENDX (read-only?)
                     _ => unreachable!(),
@@ -117,5 +117,12 @@ impl Dsp {
 
     fn voice_mut(&mut self, address: u8) -> &mut Voice {
         &mut self.voices[(address >> 4) as usize]
+    }
+
+    fn write_all(&mut self, value: u8, callback: impl Fn(&mut Voice, bool)) {
+        for (index, voice) in self.voices.iter_mut().enumerate() {
+            let bit = ((value >> index) & 1) != 0;
+            callback(voice, bit);
+        }
     }
 }
