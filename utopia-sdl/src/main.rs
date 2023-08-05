@@ -6,8 +6,6 @@ use sdl2::event::{Event, WindowEvent};
 use sdl2::keyboard::Scancode;
 use std::error::Error;
 use std::fs;
-use std::thread;
-use std::time::{Duration, Instant};
 use utopia::Options;
 use video::{Video, VideoOptions};
 
@@ -69,16 +67,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let sample_rate = system.sample_rate();
 
-    let mut audio = Audio::new(&sdl_context, sample_rate.try_into()?)?;
-
     let mut joypad = Joypad::new(&sdl_context)?;
 
     let mut event_pump = sdl_context.event_pump()?;
 
-    audio.resume();
-
-    let start_time = Instant::now();
-    let mut total_samples: u64 = 0;
+    let mut audio = Audio::new(&sdl_context, sample_rate)?;
 
     'outer: loop {
         for event in event_pump.poll_iter() {
@@ -117,21 +110,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         video.update(&mut texture, system.pixels())?;
 
         if let Some(audio_queue) = system.audio_queue() {
-            total_samples += audio_queue.len() as u64;
-
-            audio.append_queue(audio_queue);
-
-            let expected_duration = (total_samples * 1000) / sample_rate;
-            let expected_time = start_time + Duration::from_millis(expected_duration);
-            let actual_time = Instant::now();
-
-            let duration = if actual_time < expected_time {
-                expected_time - actual_time
-            } else {
-                Duration::ZERO
-            };
-
-            thread::sleep(duration);
+            audio.sync(audio_queue);
         }
     }
 

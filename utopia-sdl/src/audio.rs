@@ -1,10 +1,15 @@
 use sdl2::audio::{AudioCallback, AudioDevice, AudioSpecDesired};
 use sdl2::Sdl;
 use std::error::Error;
+use std::thread;
+use std::time::{Duration, Instant};
 use utopia::AudioQueue;
 
 pub struct Audio {
     device: AudioDevice<Callback>,
+    sample_rate: u64,
+    start_time: Instant,
+    total_samples: u64,
 }
 
 struct Callback {
@@ -12,11 +17,11 @@ struct Callback {
 }
 
 impl Audio {
-    pub fn new(sdl: &Sdl, sample_rate: i32) -> Result<Self, Box<dyn Error>> {
+    pub fn new(sdl: &Sdl, sample_rate: u64) -> Result<Self, Box<dyn Error>> {
         let audio = sdl.audio()?;
 
         let spec = AudioSpecDesired {
-            freq: Some(sample_rate),
+            freq: Some(sample_rate.try_into()?),
             channels: Some(2),
             samples: None,
         };
@@ -25,15 +30,35 @@ impl Audio {
             queue: AudioQueue::new(),
         })?;
 
-        Ok(Self { device })
+        device.resume();
+
+        let start_time = Instant::now();
+        let total_samples = 0;
+
+        Ok(Self {
+            device,
+            sample_rate,
+            start_time,
+            total_samples,
+        })
     }
 
-    pub fn append_queue(&mut self, other: &mut AudioQueue) {
-        self.device.lock().queue.append(other);
-    }
+    pub fn sync(&mut self, audio_queue: &mut AudioQueue) {
+        self.total_samples += audio_queue.len() as u64;
 
-    pub fn resume(&mut self) {
-        self.device.resume();
+        self.device.lock().queue.append(audio_queue);
+
+        let expected_duration = (self.total_samples * 1000) / self.sample_rate;
+        let expected_time = self.start_time + Duration::from_millis(expected_duration);
+        let actual_time = Instant::now();
+
+        let duration = if actual_time < expected_time {
+            expected_time - actual_time
+        } else {
+            Duration::ZERO
+        };
+
+        thread::sleep(duration);
     }
 }
 
