@@ -27,6 +27,21 @@ pub fn call(core: &mut Core<impl Bus>) {
     core.idle();
 }
 
+pub fn tcall(core: &mut Core<impl Bus>, id: u16) {
+    debug!("TCALL {}", id);
+
+    core.read(core.pc);
+    core.idle();
+    core.push((core.pc >> 8) as u8);
+    core.push(core.pc as u8);
+    core.idle();
+
+    let vector = 0xffc0 + ((id ^ 15) << 1);
+    let low = core.read(vector);
+    let high = core.read(vector.wrapping_add(1));
+    core.pc = u16::from_le_bytes([low, high]);
+}
+
 pub fn ret(core: &mut Core<impl Bus>) {
     debug!("RET");
     core.read(core.pc);
