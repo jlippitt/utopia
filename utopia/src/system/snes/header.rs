@@ -11,6 +11,7 @@ enum HeaderLocation {
 pub struct Header {
     pub title: String,
     pub map_mode: u8,
+    pub cartridge_type: u8,
     pub rom_size: usize,
     pub sram_size: usize,
 }
@@ -50,6 +51,7 @@ pub fn parse(rom: &[u8]) -> Header {
             Header {
                 title: String::new(),
                 map_mode: 0x20,
+                cartridge_type: 0x00,
                 rom_size: rom.len(),
                 sram_size: 0,
             }
@@ -107,9 +109,12 @@ fn try_parse(id: HeaderLocation, rom: &[u8]) -> Option<Header> {
 
     let title = String::from_utf8_lossy(&rom[0x7fc0..=0x7fd4]).into_owned();
 
+    let cartridge_type = rom[0x7fd6];
+
     Some(Header {
         title,
         map_mode,
+        cartridge_type,
         rom_size,
         sram_size,
     })

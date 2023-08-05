@@ -1,6 +1,6 @@
-use super::{BiosLoader, JoypadState, System};
+use super::{BiosLoader, JoypadState, Mapped, MemoryMapper, Options, System};
 use crate::core::wdc65c816::{Bus, Core, Interrupt, INT_NMI};
-use crate::util::MirrorVec;
+use crate::util::mirror::{Mirror, MirrorVec};
 use apu::Apu;
 use clock::{Clock, Event, FAST_CYCLES, TIMER_IRQ};
 use dma::Dma;
@@ -23,20 +23,22 @@ mod ppu;
 mod registers;
 mod wram;
 
-pub struct Snes {
-    core: Core<Hardware>,
+pub struct Snes<T: Mapped> {
+    core: Core<Hardware<T>>,
 }
 
-impl Snes {
-    pub fn new(rom_data: Vec<u8>, bios_loader: &impl BiosLoader) -> Result<Self, Box<dyn Error>> {
-        let ipl_rom = bios_loader.load("ipl_rom")?;
-        let hw = Hardware::new(rom_data, ipl_rom);
+impl<T: Mapped> Snes<T> {
+    pub fn new<U: MemoryMapper<Mapped = T>, V: BiosLoader>(
+        rom_data: Vec<u8>,
+        options: &Options<U, V>,
+    ) -> Result<Self, Box<dyn Error>> {
+        let hw = Hardware::new(rom_data, options)?;
         let core = Core::new(hw);
         Ok(Snes { core })
     }
 }
 
-impl System for Snes {
+impl<T: Mapped> System for Snes<T> {
     fn width(&self) -> usize {
         WIDTH
     }
@@ -60,14 +62,14 @@ impl System for Snes {
     }
 }
 
-pub struct Hardware {
+pub struct Hardware<T: Mapped> {
     clock: Clock,
     mdr: u8,
     interrupt: Interrupt,
     ready: bool,
     pages: [Page; TOTAL_PAGES],
     rom: MirrorVec<u8>,
-    sram: MirrorVec<u8>,
+    sram: Mirror<T>,
     wram: Wram,
     regs: Registers,
     dma: Dma,
@@ -76,32 +78,44 @@ pub struct Hardware {
     joypad: Joypad,
 }
 
-impl Hardware {
-    pub fn new(rom_data: Vec<u8>, ipl_rom: Vec<u8>) -> Self {
-        let header = header::parse(&rom_data);
+impl<T: Mapped> Hardware<T> {
+    pub fn new<U: MemoryMapper<Mapped = T>, V: BiosLoader>(
+        rom_data: Vec<u8>,
+        options: &Options<U, V>,
+    ) -> Result<Self, Box<dyn Error>> {
+        let ipl_rom = options.bios_loader.load("ipl_rom")?;
 
+        let header = header::parse(&rom_data);
         info!("Title: {}", header.title);
         info!("Map Mode: {:02X}", header.map_mode);
+        info!("Cartridge Type: {:02X}", header.cartridge_type);
         info!("ROM Size: {}", header.rom_size);
         info!("SRAM Size: {}", header.sram_size);
 
-        let pages = memory::map(&header);
+        let battery_backed = [0x02, 0x05].contains(&(header.cartridge_type & 0x0f));
+        info!("Battery Backed: {}", battery_backed);
 
-        Self {
+        let pages = memory::map(&header);
+        let save_path = battery_backed.then(|| options.rom_path.with_extension("sav"));
+
+        Ok(Self {
             clock: Clock::new((header.map_mode & 0x10) != 0),
             mdr: 0,
             interrupt: 0,
             ready: false,
             pages,
             rom: MirrorVec::resize(rom_data),
-            sram: MirrorVec::new(header.sram_size),
+            sram: options
+                .memory_mapper
+                .open(save_path.as_deref(), header.sram_size)?
+                .into(),
             wram: Wram::new(),
             regs: Registers::new(),
             dma: Dma::new(),
             ppu: Ppu::new(),
             apu: Apu::new(ipl_rom),
             joypad: Joypad::new(),
-        }
+        })
     }
 
     fn step(&mut self, cycles: u64) {
@@ -235,7 +249,7 @@ impl Hardware {
     }
 }
 
-impl Bus for Hardware {
+impl<T: Mapped> Bus for Hardware<T> {
     fn idle(&mut self) {
         if self.dma.requested() {
             self.transfer_dma();
@@ -273,7 +287,7 @@ impl Bus for Hardware {
     }
 }
 
-impl fmt::Display for Hardware {
+impl<T: Mapped> fmt::Display for Hardware<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.clock)
     }

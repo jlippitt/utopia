@@ -93,7 +93,7 @@ pub fn create<T: MemoryMapper + 'static, U: BiosLoader>(
             &options.rom_path,
             &options.memory_mapper,
         )?),
-        "sfc" | "smc" => Box::new(Snes::new(rom_data, &options.bios_loader)?),
+        "sfc" | "smc" => Box::new(Snes::new(rom_data, options)?),
         "z64" => Box::new(N64::new(rom_data)?),
         _ => Err("ROM type not supported".to_owned())?,
     })

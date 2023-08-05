@@ -1,4 +1,5 @@
 use super::clock::SLOW_CYCLES;
+use crate::Mapped;
 use tracing::{debug, warn};
 
 struct Mode {
@@ -225,7 +226,7 @@ impl Dma {
     }
 }
 
-impl super::Hardware {
+impl<T: Mapped> super::Hardware<T> {
     pub(super) fn transfer_dma(&mut self) {
         // TODO: More accurate timing - but this will do for now
         debug!("DMA Transfer Begin");

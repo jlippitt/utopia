@@ -1,4 +1,5 @@
 use super::clock::TIMER_IRQ;
+use crate::Mapped;
 use tracing::{debug, warn};
 
 pub struct Registers {
@@ -47,7 +48,7 @@ impl Registers {
     }
 }
 
-impl super::Hardware {
+impl<T: Mapped> super::Hardware<T> {
     pub(super) fn read_register(&mut self, address: u8, prev_value: u8) -> u8 {
         match address {
             0x10 => {
