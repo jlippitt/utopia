@@ -377,7 +377,7 @@ impl<T: Bus> Core<T> {
             0x5e => instr::compare::<addr::Y, addr::Absolute>(self),
             0x7e => instr::compare::<addr::Y, addr::Direct>(self),
             0x9e => instr::div(self),
-            //0xbe => instr::das(self),
+            0xbe => instr::das(self),
             0xde => instr::branch::<op::CbneDirectX>(self),
             0xfe => instr::branch::<op::DbnzY>(self),
 
