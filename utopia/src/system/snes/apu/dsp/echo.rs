@@ -63,7 +63,6 @@ impl Echo {
             4
         };
         debug!("Echo Buffer Size: {}", self.ring_buffer.size);
-        self.ring_buffer.remaining = self.ring_buffer.size;
     }
 
     pub fn set_write_enabled(&mut self, write_enabled: bool) {
@@ -180,5 +179,8 @@ impl RingBuffer {
         } else {
             self.read_index = self.read_index.wrapping_add(4);
         }
+
+        debug!("Echo Buffer Read Index: {}", self.read_index);
+        debug!("Echo Buffer Remaining: {}", self.remaining);
     }
 }
