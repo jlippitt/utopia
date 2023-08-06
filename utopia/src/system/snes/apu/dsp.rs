@@ -1,3 +1,5 @@
+use crate::util::MirrorVec;
+use crate::AudioQueue;
 use directory::Directory;
 use tracing::debug;
 use voice::Voice;
@@ -9,8 +11,10 @@ const TOTAL_REGISTERS: usize = 128;
 
 pub struct Dsp {
     address: u8,
-    directory: Directory,
+    poll_key_state: bool,
+    dir: Directory,
     voices: [Voice; 8],
+    audio_queue: AudioQueue,
     data: [u8; TOTAL_REGISTERS],
 }
 
@@ -18,7 +22,8 @@ impl Dsp {
     pub fn new() -> Self {
         Self {
             address: 0,
-            directory: Directory::new(),
+            poll_key_state: false,
+            dir: Directory::new(),
             voices: [
                 Voice::new(0),
                 Voice::new(1),
@@ -29,12 +34,17 @@ impl Dsp {
                 Voice::new(6),
                 Voice::new(7),
             ],
+            audio_queue: AudioQueue::new(),
             data: [0; TOTAL_REGISTERS],
         }
     }
 
     pub fn address(&self) -> u8 {
         self.address
+    }
+
+    pub fn audio_queue(&mut self) -> &mut AudioQueue {
+        &mut self.audio_queue
     }
 
     pub fn set_address(&mut self, value: u8) {
@@ -102,7 +112,7 @@ impl Dsp {
                     0x2d => (), // TODO: Pitch modulation
                     0x3d => (), // TODO: Noise enable
                     0x4d => (), // TOOD: Echo enable
-                    0x5d => self.directory.set_base_address(value),
+                    0x5d => self.dir.set_base_address(value),
                     0x6d => (), // TODO: Echo start address
                     0x7d => (), // TODO: Echo delay
                     _ => unreachable!(),
@@ -113,6 +123,25 @@ impl Dsp {
             }
             _ => (), // TODO: Not used
         }
+    }
+
+    pub fn step(&mut self, ram: &MirrorVec<u8>) {
+        debug!("DSP Step Begin");
+
+        let sample = self.voices[0].step(&self.dir, ram, self.poll_key_state);
+
+        for voice in &mut self.voices[1..] {
+            voice.step(&self.dir, ram, self.poll_key_state);
+        }
+
+        let left = sample.0 as f32 / i16::MAX as f32;
+        let right = sample.1 as f32 / i16::MAX as f32;
+
+        self.audio_queue.push_back((left, right));
+
+        self.poll_key_state = !self.poll_key_state;
+
+        debug!("DSP Step End");
     }
 
     fn voice(&self, address: u8) -> &Voice {

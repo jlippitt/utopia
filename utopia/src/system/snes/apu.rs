@@ -1,5 +1,6 @@
 use crate::core::spc700::{Bus, Core};
 use crate::util::MirrorVec;
+use crate::AudioQueue;
 use dsp::Dsp;
 use std::fmt;
 use timer::Timer;
@@ -27,6 +28,10 @@ impl Apu {
             core,
             prev_cpu_cycles: 0,
         }
+    }
+
+    pub fn audio_queue(&mut self) -> &mut AudioQueue {
+        self.core.bus_mut().dsp.audio_queue()
     }
 
     pub fn read(&self, address: u8) -> u8 {
@@ -96,6 +101,10 @@ impl Hardware {
             }
 
             self.timers[2].step();
+
+            if (self.cycles & 31) == 0 {
+                self.dsp.step(&self.ram);
+            }
         }
     }
 }

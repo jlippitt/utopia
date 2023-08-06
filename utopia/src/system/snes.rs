@@ -51,6 +51,14 @@ impl<T: Mapped> System for Snes<T> {
         self.core.bus().ppu.pixels()
     }
 
+    fn sample_rate(&self) -> u64 {
+        32000
+    }
+
+    fn audio_queue(&mut self) -> Option<&mut crate::AudioQueue> {
+        Some(self.core.bus_mut().apu.audio_queue())
+    }
+
     fn run_frame(&mut self, joypad_state: &JoypadState) {
         self.core.bus_mut().joypad.update(joypad_state);
         self.core.bus_mut().ready = false;
