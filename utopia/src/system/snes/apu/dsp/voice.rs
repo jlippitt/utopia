@@ -16,6 +16,7 @@ pub struct Voice {
     key_on: bool,
     key_off: bool,
     noise_enabled: bool,
+    echo_enabled: bool,
     counter: usize,
     decoder: BrrDecoder,
     id: u32,
@@ -32,6 +33,7 @@ impl Voice {
             key_on: false,
             key_off: false,
             noise_enabled: false,
+            echo_enabled: false,
             counter: 0,
             decoder: BrrDecoder::new(id),
             id: id,
@@ -98,6 +100,11 @@ impl Voice {
     pub fn set_noise_enabled(&mut self, noise_enabled: bool) {
         self.noise_enabled = noise_enabled;
         debug!("Voice {} Noise Enabled: {}", self.id, self.noise_enabled);
+    }
+
+    pub fn set_echo_enabled(&mut self, echo_enabled: bool) {
+        self.echo_enabled = echo_enabled;
+        debug!("Voice {} Echo Enabled: {}", self.id, self.echo_enabled);
     }
 
     pub fn step(

@@ -1,12 +1,14 @@
 use crate::util::MirrorVec;
 use crate::AudioQueue;
 use directory::Directory;
+use echo::Echo;
 use noise::NoiseGenerator;
 use tracing::{debug, warn};
 use voice::Voice;
 
 mod constants;
 mod directory;
+mod echo;
 mod noise;
 mod voice;
 
@@ -17,6 +19,7 @@ pub struct Dsp {
     poll_key_state: bool,
     volume_left: i32,
     volume_right: i32,
+    echo: Echo,
     noise: NoiseGenerator,
     dir: Directory,
     voices: [Voice; 8],
@@ -32,6 +35,7 @@ impl Dsp {
             volume_left: 0,
             volume_right: 0,
             noise: NoiseGenerator::new(),
+            echo: Echo::new(),
             dir: Directory::new(),
             voices: [
                 Voice::new(0),
@@ -101,34 +105,32 @@ impl Dsp {
             0x07 => self.voice_mut(self.address).set_gain(value),
             0x08 => warn!("ENVX Write: {:02X} <= {:02X}", self.address, value),
             0x09 => warn!("OUTX Write: {:02X} <= {:02X}", self.address, value),
-            0x0c => {
-                match self.address {
-                    0x0c => {
-                        self.volume_left = value as i8 as i32;
-                        debug!("DSP Volume Left: {}", self.volume_left);
-                    }
-                    0x1c => {
-                        self.volume_right = value as i8 as i32;
-                        debug!("DSP Volume Right: {}", self.volume_right);
-                    }
-                    0x2c => (), // TODO: Echo volume (left)
-                    0x3c => (), // TODO: Echo volume (right)
-                    0x4c => self.write_all(value, |voice, bit| voice.set_key_on(bit)),
-                    0x5c => self.write_all(value, |voice, bit| voice.set_key_off(bit)),
-                    0x6c => {
-                        self.noise.set_rate(value & 0x1f);
-
-                        if (value & 0xe0) != 0 {
-                            warn!("Flag write not yet implemented: {:02X}", value);
-                        }
-                    }
-                    0x7c => warn!("ENDX Write: {:02X}", value),
-                    _ => unreachable!(),
+            0x0c => match self.address {
+                0x0c => {
+                    self.volume_left = value as i8 as i32;
+                    debug!("DSP Volume Left: {}", self.volume_left);
                 }
-            }
+                0x1c => {
+                    self.volume_right = value as i8 as i32;
+                    debug!("DSP Volume Right: {}", self.volume_right);
+                }
+                0x2c => self.echo.set_volume_left(value),
+                0x3c => self.echo.set_volume_right(value),
+                0x4c => self.write_all(value, |voice, bit| voice.set_key_on(bit)),
+                0x5c => self.write_all(value, |voice, bit| voice.set_key_off(bit)),
+                0x6c => {
+                    self.noise.set_rate(value & 0x1f);
+
+                    if (value & 0xe0) != 0 {
+                        warn!("Flag write not yet implemented: {:02X}", value);
+                    }
+                }
+                0x7c => warn!("ENDX Write: {:02X}", value),
+                _ => unreachable!(),
+            },
             0x0d => {
                 match self.address {
-                    0x0d => (), // TODO: Echo feedback
+                    0x0d => self.echo.set_feedback_volume(value),
                     0x1d => (), // TODO: Not used
                     0x2d => {
                         if value != 0 {
@@ -136,20 +138,14 @@ impl Dsp {
                         }
                     }
                     0x3d => self.write_all(value, |voice, bit| voice.set_noise_enabled(bit)),
-                    0x4d => {
-                        if value != 0 {
-                            warn!("Echo not yet implemented");
-                        }
-                    }
+                    0x4d => self.write_all(value, |voice, bit| voice.set_echo_enabled(bit)),
                     0x5d => self.dir.set_base_address(value),
-                    0x6d => (), // TODO: Echo start address
-                    0x7d => (), // TODO: Echo delay
+                    0x6d => self.echo.set_base_address(value),
+                    0x7d => self.echo.set_buffer_size(value),
                     _ => unreachable!(),
                 }
             }
-            0x0f => {
-                // TODO: FIR coefficients
-            }
+            0x0f => self.echo.set_fir_value((self.address >> 4) as usize, value),
             _ => (), // TODO: Not used
         }
     }
