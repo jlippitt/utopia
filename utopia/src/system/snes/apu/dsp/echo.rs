@@ -57,7 +57,11 @@ impl Echo {
     }
 
     pub fn set_buffer_size(&mut self, value: u8) {
-        self.ring_buffer.size = if value != 0 { (value as u16) * 2048 } else { 4 };
+        self.ring_buffer.size = if value != 0 {
+            (value as u16 & 0x0f) * 2048
+        } else {
+            4
+        };
         debug!("Echo Buffer Size: {}", self.ring_buffer.size);
         self.ring_buffer.remaining = self.ring_buffer.size;
     }
