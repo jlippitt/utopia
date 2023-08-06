@@ -1,10 +1,18 @@
+use tracing::debug;
+
 pub struct Voice {
-    _id: u32,
+    pitch: i32,
+    source: u8,
+    id: u32,
 }
 
 impl Voice {
     pub fn new(id: u32) -> Self {
-        Self { _id: id }
+        Self {
+            pitch: 0,
+            source: 0,
+            id: id,
+        }
     }
 
     pub fn envelope(&self) -> u8 {
@@ -25,16 +33,19 @@ impl Voice {
         // TODO
     }
 
-    pub fn set_pitch_low(&mut self, _value: u8) {
-        // TODO
+    pub fn set_pitch_low(&mut self, value: u8) {
+        self.pitch = (self.pitch & 0x3f00) | (value as i32);
+        debug!("V{} Pitch: {:04X}", self.id, self.pitch);
     }
 
-    pub fn set_pitch_high(&mut self, _value: u8) {
-        // TODO
+    pub fn set_pitch_high(&mut self, value: u8) {
+        self.pitch = (self.pitch & 0xff) | ((value as i32 & 0x3f) << 8);
+        debug!("V{} Pitch: {:04X}", self.id, self.pitch);
     }
 
-    pub fn set_source(&mut self, _value: u8) {
-        // TODO
+    pub fn set_source(&mut self, value: u8) {
+        self.source = value;
+        debug!("V{} Source: {:02X}", self.id, self.source);
     }
 
     pub fn set_adsr_low(&mut self, _value: u8) {

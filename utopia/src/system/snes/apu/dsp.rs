@@ -1,12 +1,15 @@
+use directory::Directory;
 use tracing::debug;
 use voice::Voice;
 
+mod directory;
 mod voice;
 
 const TOTAL_REGISTERS: usize = 128;
 
 pub struct Dsp {
     address: u8,
+    directory: Directory,
     voices: [Voice; 8],
     data: [u8; TOTAL_REGISTERS],
 }
@@ -15,6 +18,7 @@ impl Dsp {
     pub fn new() -> Self {
         Self {
             address: 0,
+            directory: Directory::new(),
             voices: [
                 Voice::new(0),
                 Voice::new(1),
@@ -98,7 +102,7 @@ impl Dsp {
                     0x2d => (), // TODO: Pitch modulation
                     0x3d => (), // TODO: Noise enable
                     0x4d => (), // TOOD: Echo enable
-                    0x5d => (), // TODO: Directory
+                    0x5d => self.directory.set_base_address(value),
                     0x6d => (), // TODO: Echo start address
                     0x7d => (), // TODO: Echo delay
                     _ => unreachable!(),
