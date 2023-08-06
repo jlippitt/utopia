@@ -6,6 +6,8 @@ use tracing::debug;
 mod decoder;
 
 pub struct Voice {
+    volume_left: i32,
+    volume_right: i32,
     pitch: usize,
     source: u8,
     key_on: bool,
@@ -17,6 +19,8 @@ pub struct Voice {
 impl Voice {
     pub fn new(id: u32) -> Self {
         Self {
+            volume_left: 0,
+            volume_right: 0,
             pitch: 0,
             source: 0,
             key_on: false,
@@ -36,12 +40,14 @@ impl Voice {
         0
     }
 
-    pub fn set_volume_left(&mut self, _value: u8) {
-        // TODO
+    pub fn set_volume_left(&mut self, value: u8) {
+        self.volume_left = value as i32;
+        debug!("Voice {} Volume Left: {}", self.id, self.volume_left);
     }
 
-    pub fn set_volume_right(&mut self, _value: u8) {
-        // TODO
+    pub fn set_volume_right(&mut self, value: u8) {
+        self.volume_right = value as i32;
+        debug!("Voice {} Volume Right: {}", self.id, self.volume_right);
     }
 
     pub fn set_pitch_low(&mut self, value: u8) {
@@ -109,11 +115,14 @@ impl Voice {
 
         let sample = self.decoder.sample(self.counter);
 
-        // TODO: Volume & Envelope
+        // TODO: Envelope
 
-        debug!("Voice {} Output: {}", self.id, sample);
+        let left = (sample * self.volume_left) >> 6;
+        let right = (sample * self.volume_right) >> 6;
 
-        (sample, sample)
+        debug!("Voice {} Output: ({}, {})", self.id, left, right);
+
+        (left, right)
     }
 
     fn next_block(&mut self, dir: &Directory, ram: &MirrorVec<u8>) {

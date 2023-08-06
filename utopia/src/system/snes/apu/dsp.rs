@@ -9,9 +9,15 @@ mod voice;
 
 const TOTAL_REGISTERS: usize = 128;
 
+fn clamp16(value: i32) -> i32 {
+    value.clamp(u16::MIN as i32, u16::MAX as i32)
+}
+
 pub struct Dsp {
     address: u8,
     poll_key_state: bool,
+    volume_left: i32,
+    volume_right: i32,
     dir: Directory,
     voices: [Voice; 8],
     audio_queue: AudioQueue,
@@ -23,6 +29,8 @@ impl Dsp {
         Self {
             address: 0,
             poll_key_state: false,
+            volume_left: 0,
+            volume_right: 0,
             dir: Directory::new(),
             voices: [
                 Voice::new(0),
@@ -94,8 +102,14 @@ impl Dsp {
             0x09 => (), // TODO: OUTX (read-only?)
             0x0c => {
                 match self.address {
-                    0x0c => (), // TODO: Main volume (left)
-                    0x1c => (), // TODO: Main volume (right)
+                    0x0c => {
+                        self.volume_left = value as i32;
+                        debug!("DSP Volume Left: {}", self.volume_left);
+                    }
+                    0x1c => {
+                        self.volume_right = value as i32;
+                        debug!("DSP Volume Right: {}", self.volume_right);
+                    }
                     0x2c => (), // TODO: Echo volume (left)
                     0x3c => (), // TODO: Echo volume (right)
                     0x4c => self.write_all(value, |voice, bit| voice.set_key_on(bit)),
@@ -128,16 +142,22 @@ impl Dsp {
     pub fn step(&mut self, ram: &MirrorVec<u8>) {
         debug!("DSP Step Begin");
 
-        let sample = self.voices[0].step(&self.dir, ram, self.poll_key_state);
+        let (mut left, mut right) = (0, 0);
 
-        for voice in &mut self.voices[1..] {
-            voice.step(&self.dir, ram, self.poll_key_state);
+        for voice in &mut self.voices {
+            let sample = voice.step(&self.dir, ram, self.poll_key_state);
+            left = clamp16(left + sample.0);
+            right = clamp16(right + sample.1);
         }
 
-        let left = sample.0 as f32 / i16::MAX as f32;
-        let right = sample.1 as f32 / i16::MAX as f32;
+        left = clamp16((left * self.volume_left) >> 7);
+        right = clamp16((right * self.volume_right) >> 7);
 
-        self.audio_queue.push_back((left, right));
+        // TODO: Echo
+        // TODO: Mute
+
+        self.audio_queue
+            .push_back((!left as f32 / 32768.0, !right as f32 / 32768.0));
 
         self.poll_key_state = !self.poll_key_state;
 
