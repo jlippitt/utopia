@@ -6,7 +6,7 @@ pub struct Echo {
     feedback_volume: i32,
     base_address: u16,
     buffer_size: u16,
-    fir_values: [u8; 8],
+    fir_values: [i32; 8],
 }
 
 impl Echo {
@@ -47,7 +47,8 @@ impl Echo {
     }
 
     pub fn set_fir_value(&mut self, index: usize, value: u8) {
+        let value = value as i8 as i32;
         self.fir_values[index] = value;
-        debug!("Echo FIR {}: {:02X}", index, value);
+        debug!("Echo FIR {}: {}", index, value);
     }
 }
