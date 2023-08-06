@@ -108,10 +108,10 @@ impl BrrDecoder {
         let new = self.buffer[read_index & 31];
 
         let mut output = 0;
-        output += (GAUSS[0x0ff - gauss_index] * oldest) >> 10;
-        output += (GAUSS[0x1ff - gauss_index] * older) >> 10;
-        output += (GAUSS[0x100 + gauss_index] * old) >> 10;
-        output += (GAUSS[0x000 + gauss_index] * new) >> 10;
+        output += (GAUSS[0x0ff - gauss_index] * oldest) >> 11;
+        output += (GAUSS[0x1ff - gauss_index] * older) >> 11;
+        output += (GAUSS[0x100 + gauss_index] * old) >> 11;
+        output += (GAUSS[0x000 + gauss_index] * new) >> 11;
 
         if output < i16::MIN as i32 || output > i16::MAX as i32 {
             warn!("Voice {} gauss output truncated: {}", self.id, output)

@@ -91,7 +91,7 @@ impl Echo {
                 .fold(0, |acc, (fir_index, fir_value)| {
                     let write_index = self.write_index.wrapping_add(fir_index).wrapping_sub(7);
                     let sample = buffer[write_index & 7];
-                    acc + ((sample * fir_value) >> 7)
+                    acc + ((sample * fir_value) >> 6)
                 });
 
             if sum < i16::MIN as i32 || sum > i16::MAX as i32 {
