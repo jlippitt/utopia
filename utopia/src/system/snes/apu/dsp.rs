@@ -120,8 +120,9 @@ impl Dsp {
                 0x5c => self.write_all(value, |voice, bit| voice.set_key_off(bit)),
                 0x6c => {
                     self.noise.set_rate(value & 0x1f);
+                    self.echo.set_write_enabled((value & 0x20) == 0);
 
-                    if (value & 0xe0) != 0 {
+                    if (value & 0xc0) != 0 {
                         warn!("Flag write not yet implemented: {:02X}", value);
                     }
                 }
@@ -150,29 +151,37 @@ impl Dsp {
         }
     }
 
-    pub fn step(&mut self, ram: &MirrorVec<u8>) {
+    pub fn step(&mut self, ram: &mut MirrorVec<u8>) {
         debug!("DSP Step Begin");
 
         self.noise.step();
 
-        let (mut left, mut right) = (0, 0);
+        let mut dsp_out = (0, 0);
+        let mut echo_in = (0, 0);
 
         for voice in &mut self.voices {
             let sample = voice.step(&self.dir, ram, self.noise.level(), self.poll_key_state);
-            debug!("Sample: {:?}", sample);
 
-            left = clamp16(left + sample.0);
-            right = clamp16(right + sample.1);
+            dsp_out.0 = clamp16(dsp_out.0 + sample.0);
+            dsp_out.1 = clamp16(dsp_out.1 + sample.1);
+
+            if voice.echo_enabled() {
+                echo_in.0 = clamp16(echo_in.0 + sample.0);
+                echo_in.1 = clamp16(echo_in.1 + sample.1);
+            }
         }
 
-        left = clamp16((left * self.volume_left) >> 7);
-        right = clamp16((right * self.volume_right) >> 7);
+        dsp_out.0 = clamp16((dsp_out.0 * self.volume_left) >> 7);
+        dsp_out.1 = clamp16((dsp_out.1 * self.volume_right) >> 7);
 
-        // TODO: Echo
+        let echo_out = self.echo.step(ram, echo_in);
+        dsp_out.0 = clamp16(dsp_out.0 + echo_out.0);
+        dsp_out.1 = clamp16(dsp_out.1 + echo_out.1);
+
         // TODO: Mute
 
         self.audio_queue
-            .push_back((!left as f32 / 32768.0, !right as f32 / 32768.0));
+            .push_back((!dsp_out.0 as f32 / 32768.0, !dsp_out.1 as f32 / 32768.0));
 
         self.poll_key_state = !self.poll_key_state;
 

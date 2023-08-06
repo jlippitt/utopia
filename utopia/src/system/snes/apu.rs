@@ -103,7 +103,7 @@ impl Hardware {
             self.timers[2].step();
 
             if (self.cycles & 31) == 0 {
-                self.dsp.step(&self.ram);
+                self.dsp.step(&mut self.ram);
             }
         }
     }

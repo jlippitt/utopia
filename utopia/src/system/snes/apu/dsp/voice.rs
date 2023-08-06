@@ -41,13 +41,16 @@ impl Voice {
     }
 
     pub fn envelope(&self) -> u8 {
-        warn!("Envelope read not yet implemented");
-        0
+        (self.envelope.level() >> 4) as u8
     }
 
     pub fn output(&self) -> u8 {
         warn!("Output read not yet implemented");
         0
+    }
+
+    pub fn echo_enabled(&self) -> bool {
+        self.echo_enabled
     }
 
     pub fn set_volume_left(&mut self, value: u8) {
