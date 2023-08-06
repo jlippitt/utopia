@@ -12,10 +12,11 @@ pub struct Voice {
     volume_right: i32,
     pitch: usize,
     source: u8,
+    envelope: Envelope,
     key_on: bool,
+    key_off: bool,
     counter: usize,
     decoder: BrrDecoder,
-    envelope: Envelope,
     id: u32,
 }
 
@@ -26,10 +27,11 @@ impl Voice {
             volume_right: 0,
             pitch: 0,
             source: 0,
+            envelope: Envelope::new(id),
             key_on: false,
+            key_off: false,
             counter: 0,
             decoder: BrrDecoder::new(id),
-            envelope: Envelope::new(id),
             id: id,
         }
     }
@@ -86,8 +88,9 @@ impl Voice {
         debug!("Voice {} Key On: {}", self.id, self.key_on);
     }
 
-    pub fn set_key_off(&mut self, _key_off: bool) {
-        // TODO
+    pub fn set_key_off(&mut self, key_off: bool) {
+        self.key_off = key_off;
+        debug!("Voice {} Key Off: {}", self.id, self.key_off);
     }
 
     pub fn step(
@@ -104,6 +107,8 @@ impl Voice {
             debug!("Voice {} Start Address: {:04X}", self.id, start_address);
             self.decoder.restart(ram, start_address);
 
+            self.envelope.restart();
+
             // TODO: Should be a 5 sample delay?
         } else {
             // TODO: Pitch modulation
@@ -115,11 +120,13 @@ impl Voice {
             }
         }
 
-        // TODO: Key off
+        if poll_key_state && self.key_off {
+            self.envelope.release();
+        }
 
-        let sample = self.decoder.sample(self.counter);
+        self.envelope.step();
 
-        // TODO: Envelope
+        let sample = (self.decoder.sample(self.counter) * self.envelope.level()) >> 11;
 
         let left = (sample * self.volume_left) >> 6;
         let right = (sample * self.volume_right) >> 6;
@@ -135,8 +142,7 @@ impl Voice {
             debug!("Voice {} End", self.id);
 
             if self.decoder.block_mode() == BlockMode::EndMute {
-                // TODO: Mute
-                debug!("Voice {} Muted", self.id);
+                self.envelope.mute();
             }
 
             let loop_address = dir.loop_address(ram, self.source);
