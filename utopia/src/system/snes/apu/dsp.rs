@@ -1,10 +1,13 @@
 use crate::util::MirrorVec;
 use crate::AudioQueue;
 use directory::Directory;
+use noise::NoiseGenerator;
 use tracing::{debug, warn};
 use voice::Voice;
 
+mod constants;
 mod directory;
+mod noise;
 mod voice;
 
 const TOTAL_REGISTERS: usize = 128;
@@ -14,6 +17,7 @@ pub struct Dsp {
     poll_key_state: bool,
     volume_left: i32,
     volume_right: i32,
+    noise: NoiseGenerator,
     dir: Directory,
     voices: [Voice; 8],
     audio_queue: AudioQueue,
@@ -27,6 +31,7 @@ impl Dsp {
             poll_key_state: false,
             volume_left: 0,
             volume_right: 0,
+            noise: NoiseGenerator::new(),
             dir: Directory::new(),
             voices: [
                 Voice::new(0),
@@ -111,7 +116,9 @@ impl Dsp {
                     0x4c => self.write_all(value, |voice, bit| voice.set_key_on(bit)),
                     0x5c => self.write_all(value, |voice, bit| voice.set_key_off(bit)),
                     0x6c => {
-                        if value != 0 {
+                        self.noise.set_rate(value & 0x1f);
+
+                        if (value & 0xe0) != 0 {
                             warn!("Flag write not yet implemented: {:02X}", value);
                         }
                     }
@@ -128,11 +135,7 @@ impl Dsp {
                             warn!("Pitch modulation not yet implemented");
                         }
                     }
-                    0x3d => {
-                        if value != 0 {
-                            warn!("Noise not yet implemented");
-                        }
-                    }
+                    0x3d => self.write_all(value, |voice, bit| voice.set_noise_enabled(bit)),
                     0x4d => {
                         if value != 0 {
                             warn!("Echo not yet implemented");
@@ -154,10 +157,12 @@ impl Dsp {
     pub fn step(&mut self, ram: &MirrorVec<u8>) {
         debug!("DSP Step Begin");
 
+        self.noise.step();
+
         let (mut left, mut right) = (0, 0);
 
         for voice in &mut self.voices {
-            let sample = voice.step(&self.dir, ram, self.poll_key_state);
+            let sample = voice.step(&self.dir, ram, self.noise.level(), self.poll_key_state);
             debug!("Sample: {:?}", sample);
 
             left = clamp16(left + sample.0);

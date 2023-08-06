@@ -15,6 +15,7 @@ pub struct Voice {
     envelope: Envelope,
     key_on: bool,
     key_off: bool,
+    noise_enabled: bool,
     counter: usize,
     decoder: BrrDecoder,
     id: u32,
@@ -30,6 +31,7 @@ impl Voice {
             envelope: Envelope::new(id),
             key_on: false,
             key_off: false,
+            noise_enabled: false,
             counter: 0,
             decoder: BrrDecoder::new(id),
             id: id,
@@ -93,10 +95,16 @@ impl Voice {
         debug!("Voice {} Key Off: {}", self.id, self.key_off);
     }
 
+    pub fn set_noise_enabled(&mut self, noise_enabled: bool) {
+        self.noise_enabled = noise_enabled;
+        debug!("Voice {} Noise Enabled: {}", self.id, self.noise_enabled);
+    }
+
     pub fn step(
         &mut self,
         dir: &Directory,
         ram: &MirrorVec<u8>,
+        noise_level: i32,
         poll_key_state: bool,
     ) -> (i32, i32) {
         if poll_key_state && self.key_on {
@@ -127,10 +135,16 @@ impl Voice {
 
         self.envelope.step();
 
-        let sample = (self.decoder.sample(self.counter) * self.envelope.level()) >> 11;
+        let sample = if self.noise_enabled {
+            noise_level
+        } else {
+            self.decoder.sample(self.counter)
+        };
 
-        let left = (sample * self.volume_left) >> 6;
-        let right = (sample * self.volume_right) >> 6;
+        let output = (sample * self.envelope.level()) >> 11;
+
+        let left = (output * self.volume_left) >> 6;
+        let right = (output * self.volume_right) >> 6;
 
         debug!("Voice {} Output: ({}, {})", self.id, left, right);
 
