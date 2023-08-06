@@ -60,13 +60,17 @@ impl<T: Mapped> System for Snes<T> {
     }
 
     fn run_frame(&mut self, joypad_state: &JoypadState) {
-        self.core.bus_mut().joypad.update(joypad_state);
-        self.core.bus_mut().ready = false;
+        let core = &mut self.core;
+        core.bus_mut().joypad.update(joypad_state);
+        core.bus_mut().ready = false;
 
-        while !self.core.bus().ready {
-            self.core.step();
-            debug!("{}", self.core);
+        while !core.bus().ready {
+            core.step();
+            debug!("{}", core);
         }
+
+        let cpu_cycles = core.bus().clock.cycles();
+        core.bus_mut().apu.run_until(cpu_cycles);
     }
 }
 
