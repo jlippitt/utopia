@@ -184,7 +184,6 @@ impl Envelope {
                 if self.level >= 0x07e0 {
                     self.mode = Mode::Decay;
                     self.divider = RATE[self.adsr.decay_rate];
-                    self.level = self.level.min(MAX_LEVEL);
                 }
             }
             Mode::Decay => {
@@ -212,6 +211,7 @@ impl Envelope {
         }
 
         self.counter = self.divider;
+        self.level = self.level.clamp(0, MAX_LEVEL);
     }
 
     fn apply_gain(&mut self) {
@@ -228,8 +228,6 @@ impl Envelope {
                 }
             }
         };
-
-        self.level = self.level.clamp(0, MAX_LEVEL);
     }
 }
 

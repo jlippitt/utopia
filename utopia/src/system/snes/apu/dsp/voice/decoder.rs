@@ -1,5 +1,5 @@
 use crate::util::MirrorVec;
-use tracing::debug;
+use tracing::{debug, warn};
 
 #[rustfmt::skip]
 const GAUSS: [i32; 512] = [
@@ -38,7 +38,7 @@ const GAUSS: [i32; 512] = [
 ];
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum BlockMode {
+pub enum LoopMode {
     Normal,
     EndMute,
     EndLoop,
@@ -47,7 +47,7 @@ pub enum BlockMode {
 pub struct BrrDecoder {
     read_address: u16,
     write_index: usize,
-    block_mode: BlockMode,
+    loop_mode: LoopMode,
     buffer: [i32; 32],
     id: u32,
 }
@@ -57,14 +57,14 @@ impl BrrDecoder {
         Self {
             read_address: 0,
             write_index: 0,
-            block_mode: BlockMode::Normal,
+            loop_mode: LoopMode::Normal,
             buffer: [0; 32],
             id,
         }
     }
 
-    pub fn block_mode(&self) -> BlockMode {
-        self.block_mode
+    pub fn loop_mode(&self) -> LoopMode {
+        self.loop_mode
     }
 
     pub fn restart(&mut self, ram: &MirrorVec<u8>, start_address: u16) {
@@ -85,13 +85,13 @@ impl BrrDecoder {
             self.write_sample(filter, shift, byte & 0x0f);
         }
 
-        self.block_mode = match header & 3 {
-            1 => BlockMode::EndMute,
-            3 => BlockMode::EndLoop,
-            _ => BlockMode::Normal,
+        self.loop_mode = match header & 3 {
+            1 => LoopMode::EndMute,
+            3 => LoopMode::EndLoop,
+            _ => LoopMode::Normal,
         };
 
-        debug!("Voice {} Block Mode: {:?}", self.id, self.block_mode);
+        debug!("Voice {} Loop Mode: {:?}", self.id, self.loop_mode);
     }
 
     pub fn sample(&mut self, counter: usize) -> i32 {
@@ -112,13 +112,18 @@ impl BrrDecoder {
         output += (GAUSS[0x1ff - gauss_index] * older) >> 10;
         output += (GAUSS[0x100 + gauss_index] * old) >> 10;
         output += (GAUSS[0x000 + gauss_index] * new) >> 10;
+
+        if output < i16::MIN as i32 || output > i16::MAX as i32 {
+            warn!("Voice {} gauss output truncated: {}", self.id, output)
+        }
+
         output = output.clamp(i16::MIN as i32, i16::MAX as i32);
         output >> 1
     }
 
     fn write_sample(&mut self, filter: u8, shift: u8, nibble: u8) {
         // Sign the 4-bit value (-8 to +7)
-        let sample = (nibble as i32) - ((nibble as i32 & 0x08) << 1);
+        let sample = ((nibble as i32) << 28) >> 28;
 
         let input = if shift <= 12 {
             (sample << shift) >> 1
@@ -131,11 +136,15 @@ impl BrrDecoder {
 
         let output = match filter {
             0 => input,
-            1 => input + old + (-old >> 4),
-            2 => input + (old * 2) + ((-old * 3) >> 5) - older + (older >> 4),
-            3 => input + (old * 2) + ((-old * 13) >> 6) - older + ((older * 3) >> 4),
+            1 => input + old + ((old * -1) >> 4),
+            2 => input + (old * 2) + ((old * -3) >> 5) - older + (older >> 4),
+            3 => input + (old * 2) + ((old * -13) >> 6) - older + ((older * 3) >> 4),
             _ => unreachable!(),
         };
+
+        if output < i16::MIN as i32 || output > i16::MAX as i32 {
+            warn!("Voice {} sample output truncated: {}", self.id, output)
+        }
 
         let clamped_output = output.clamp(i16::MIN as i32, i16::MAX as i32);
         self.buffer[self.write_index] = clamped_output;

@@ -1,7 +1,7 @@
 use crate::util::MirrorVec;
 use crate::AudioQueue;
 use directory::Directory;
-use tracing::debug;
+use tracing::{debug, warn};
 use voice::Voice;
 
 mod directory;
@@ -142,6 +142,8 @@ impl Dsp {
 
         for voice in &mut self.voices {
             let sample = voice.step(&self.dir, ram, self.poll_key_state);
+            debug!("Sample: {:?}", sample);
+
             left = clamp16(left + sample.0);
             right = clamp16(right + sample.1);
         }
@@ -177,5 +179,9 @@ impl Dsp {
 }
 
 fn clamp16(value: i32) -> i32 {
-    value.clamp(u16::MIN as i32, u16::MAX as i32)
+    if value < i16::MIN as i32 || value > i16::MAX as i32 {
+        warn!("Value clamped in mixer: {}", value);
+    }
+
+    value.clamp(i16::MIN as i32, i16::MAX as i32)
 }

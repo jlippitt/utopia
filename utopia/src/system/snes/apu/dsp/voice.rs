@@ -1,6 +1,6 @@
 use super::directory::Directory;
 use crate::util::MirrorVec;
-use decoder::{BlockMode, BrrDecoder};
+use decoder::{BrrDecoder, LoopMode};
 use envelope::Envelope;
 use tracing::debug;
 
@@ -121,6 +121,7 @@ impl Voice {
         }
 
         if poll_key_state && self.key_off {
+            self.key_off = false;
             self.envelope.release();
         }
 
@@ -137,11 +138,11 @@ impl Voice {
     }
 
     fn next_block(&mut self, dir: &Directory, ram: &MirrorVec<u8>) {
-        if self.decoder.block_mode() != BlockMode::Normal {
+        if self.decoder.loop_mode() != LoopMode::Normal {
             // TODO: Set END flag
             debug!("Voice {} End", self.id);
 
-            if self.decoder.block_mode() == BlockMode::EndMute {
+            if self.decoder.loop_mode() == LoopMode::EndMute {
                 self.envelope.mute();
             }
 
