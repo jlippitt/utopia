@@ -18,9 +18,13 @@ impl Directory {
     pub fn start_address(&self, ram: &MirrorVec<u8>, source: u8) -> u16 {
         let low = self.byte(ram, source, 0);
         let high = self.byte(ram, source, 1);
-        let address = u16::from_le_bytes([low, high]);
-        debug!("Start Address: {:04X}", address);
-        address
+        u16::from_le_bytes([low, high])
+    }
+
+    pub fn loop_address(&self, ram: &MirrorVec<u8>, source: u8) -> u16 {
+        let low = self.byte(ram, source, 2);
+        let high = self.byte(ram, source, 3);
+        u16::from_le_bytes([low, high])
     }
 
     fn byte(&self, ram: &MirrorVec<u8>, source: u8, byte: usize) -> u8 {
