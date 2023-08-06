@@ -64,7 +64,7 @@ impl Dsp {
             0x09 => self.voice(address).output(),
             _ => {
                 if address == 0x7c {
-                    // TODO: ENDX
+                    warn!("ENDX read not yet implemented");
                     0
                 } else {
                     self.data[address as usize]
@@ -94,8 +94,8 @@ impl Dsp {
             0x05 => self.voice_mut(self.address).set_adsr_low(value),
             0x06 => self.voice_mut(self.address).set_adsr_high(value),
             0x07 => self.voice_mut(self.address).set_gain(value),
-            0x08 => (), // TODO: ENVX (read-only?)
-            0x09 => (), // TODO: OUTX (read-only?)
+            0x08 => warn!("ENVX Write: {:02X} <= {:02X}", self.address, value),
+            0x09 => warn!("OUTX Write: {:02X} <= {:02X}", self.address, value),
             0x0c => {
                 match self.address {
                     0x0c => {
@@ -110,8 +110,12 @@ impl Dsp {
                     0x3c => (), // TODO: Echo volume (right)
                     0x4c => self.write_all(value, |voice, bit| voice.set_key_on(bit)),
                     0x5c => self.write_all(value, |voice, bit| voice.set_key_off(bit)),
-                    0x6c => (), // TODO: Flags
-                    0x7c => (), // TODO: ENDX (read-only?)
+                    0x6c => {
+                        if value != 0 {
+                            warn!("Flag write not yet implemented: {:02X}", value);
+                        }
+                    }
+                    0x7c => warn!("ENDX Write: {:02X}", value),
                     _ => unreachable!(),
                 }
             }
@@ -119,9 +123,21 @@ impl Dsp {
                 match self.address {
                     0x0d => (), // TODO: Echo feedback
                     0x1d => (), // TODO: Not used
-                    0x2d => (), // TODO: Pitch modulation
-                    0x3d => (), // TODO: Noise enable
-                    0x4d => (), // TOOD: Echo enable
+                    0x2d => {
+                        if value != 0 {
+                            warn!("Pitch modulation not yet implemented");
+                        }
+                    }
+                    0x3d => {
+                        if value != 0 {
+                            warn!("Noise not yet implemented");
+                        }
+                    }
+                    0x4d => {
+                        if value != 0 {
+                            warn!("Echo not yet implemented");
+                        }
+                    }
                     0x5d => self.dir.set_base_address(value),
                     0x6d => (), // TODO: Echo start address
                     0x7d => (), // TODO: Echo delay

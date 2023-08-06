@@ -2,7 +2,7 @@ use super::directory::Directory;
 use crate::util::MirrorVec;
 use decoder::{BrrDecoder, LoopMode};
 use envelope::Envelope;
-use tracing::debug;
+use tracing::{debug, warn};
 
 mod decoder;
 mod envelope;
@@ -37,12 +37,12 @@ impl Voice {
     }
 
     pub fn envelope(&self) -> u8 {
-        // TODO
+        warn!("Envelope read not yet implemented");
         0
     }
 
     pub fn output(&self) -> u8 {
-        // TODO
+        warn!("Output read not yet implemented");
         0
     }
 
