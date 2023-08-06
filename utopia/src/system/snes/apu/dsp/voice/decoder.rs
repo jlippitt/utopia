@@ -113,11 +113,11 @@ impl BrrDecoder {
         output += (GAUSS[0x100 + gauss_index] * old) >> 10;
         output += (GAUSS[0x000 + gauss_index] * new) >> 10;
 
-        if output < i16::MIN as i32 || output > i16::MAX as i32 {
-            warn!("Voice {} gauss output truncated: {}", self.id, output)
-        }
+        // if output < i16::MIN as i32 || output > i16::MAX as i32 {
+        //     warn!("Voice {} gauss output truncated: {}", self.id, output)
+        // }
 
-        output = output.clamp(i16::MIN as i32, i16::MAX as i32);
+        //output = output.clamp(i16::MIN as i32, i16::MAX as i32);
         output >> 1
     }
 

@@ -1,5 +1,5 @@
 use super::super::constants::RATE;
-use tracing::{debug, warn};
+use tracing::debug;
 
 const RELEASE_RATE: usize = 31;
 const MAX_LEVEL: i32 = 0x07ff;
@@ -88,19 +88,11 @@ impl Envelope {
             "Voice {} ADSR Sustain Level: {}",
             self.id, self.adsr.sustain_level
         );
-
-        if self.adsr.sustain_rate == 0 {
-            warn!("Voice {} Sustain Rate is 0", self.id);
-        }
     }
 
     pub fn set_gain(&mut self, value: u8) {
         self.gain = if (value & 0x80) != 0 {
             let rate = value as usize & 31;
-
-            if rate == 0 {
-                warn!("Voice {} Gain Rate is 0", self.id);
-            }
 
             match (value >> 5) & 3 {
                 0 => Gain::LinearDecrease(rate),
