@@ -1,9 +1,11 @@
 use super::directory::Directory;
 use crate::util::MirrorVec;
 use decoder::{BlockMode, BrrDecoder};
+use envelope::Envelope;
 use tracing::debug;
 
 mod decoder;
+mod envelope;
 
 pub struct Voice {
     volume_left: i32,
@@ -13,6 +15,7 @@ pub struct Voice {
     key_on: bool,
     counter: usize,
     decoder: BrrDecoder,
+    envelope: Envelope,
     id: u32,
 }
 
@@ -26,6 +29,7 @@ impl Voice {
             key_on: false,
             counter: 0,
             decoder: BrrDecoder::new(id),
+            envelope: Envelope::new(id),
             id: id,
         }
     }
@@ -65,16 +69,16 @@ impl Voice {
         debug!("Voice {} Source: {:02X}", self.id, self.source);
     }
 
-    pub fn set_adsr_low(&mut self, _value: u8) {
-        // TODO
+    pub fn set_adsr_low(&mut self, value: u8) {
+        self.envelope.set_adsr_low(value)
     }
 
-    pub fn set_adsr_high(&mut self, _value: u8) {
-        // TODO
+    pub fn set_adsr_high(&mut self, value: u8) {
+        self.envelope.set_adsr_high(value)
     }
 
-    pub fn set_gain(&mut self, _value: u8) {
-        // TODO
+    pub fn set_gain(&mut self, value: u8) {
+        self.envelope.set_gain(value)
     }
 
     pub fn set_key_on(&mut self, key_on: bool) {
