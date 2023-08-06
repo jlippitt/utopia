@@ -9,10 +9,6 @@ mod voice;
 
 const TOTAL_REGISTERS: usize = 128;
 
-fn clamp16(value: i32) -> i32 {
-    value.clamp(u16::MIN as i32, u16::MAX as i32)
-}
-
 pub struct Dsp {
     address: u8,
     poll_key_state: bool,
@@ -103,11 +99,11 @@ impl Dsp {
             0x0c => {
                 match self.address {
                     0x0c => {
-                        self.volume_left = value as i32;
+                        self.volume_left = value as i8 as i32;
                         debug!("DSP Volume Left: {}", self.volume_left);
                     }
                     0x1c => {
-                        self.volume_right = value as i32;
+                        self.volume_right = value as i8 as i32;
                         debug!("DSP Volume Right: {}", self.volume_right);
                     }
                     0x2c => (), // TODO: Echo volume (left)
@@ -178,4 +174,8 @@ impl Dsp {
             callback(voice, bit);
         }
     }
+}
+
+fn clamp16(value: i32) -> i32 {
+    value.clamp(u16::MIN as i32, u16::MAX as i32)
 }

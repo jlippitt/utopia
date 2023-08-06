@@ -47,12 +47,12 @@ impl Voice {
     }
 
     pub fn set_volume_left(&mut self, value: u8) {
-        self.volume_left = value as i32;
+        self.volume_left = value as i8 as i32;
         debug!("Voice {} Volume Left: {}", self.id, self.volume_left);
     }
 
     pub fn set_volume_right(&mut self, value: u8) {
-        self.volume_right = value as i32;
+        self.volume_right = value as i8 as i32;
         debug!("Voice {} Volume Right: {}", self.id, self.volume_right);
     }
 
