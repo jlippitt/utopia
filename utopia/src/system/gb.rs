@@ -32,9 +32,15 @@ impl<T: Mapped> GameBoy<T> {
         rom_data: Vec<u8>,
         options: &Options<U, V>,
     ) -> Result<Self, Box<dyn Error>> {
-        let (initial_state, bios_data) = if options.skip_boot {
+        let bios_data = if !options.skip_boot {
+            options.bios_loader.load("dmg_boot").ok()
+        } else {
+            None
+        };
+
+        let initial_state = bios_data.is_none().then_some(
             // TODO: This post-boot state should depend on hardware model
-            let initial_state = State {
+            State {
                 a: 0x01,
                 b: 0x00,
                 c: 0x13,
@@ -45,14 +51,8 @@ impl<T: Mapped> GameBoy<T> {
                 sp: 0xfffe,
                 pc: 0x0100,
                 f: 0xb0, // TODO: H & C should depend on header checksum
-            };
-
-            (Some(initial_state), None)
-        } else {
-            let bios_data = options.bios_loader.load("dmg_boot")?;
-
-            (None, Some(bios_data))
-        };
+            },
+        );
 
         // TODO: Should skip boot sequence for other hardware components as well
         let hw = Hardware::new(rom_data, bios_data, options)?;
