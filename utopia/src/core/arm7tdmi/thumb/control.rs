@@ -45,12 +45,13 @@ pub fn bx(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     debug!("{:08X} BX {}", pc, REGS[rs]);
 
     let target = core.get(rs);
-    core.pc = target & 0xffff_fffe;
     core.cpsr.t = (target & 0x0000_0001) != 0;
 
     if core.cpsr.t {
+        core.pc = target & 0xffff_fffe;
         debug!("  Thumb Mode");
     } else {
+        core.pc = target & 0xffff_fffc;
         debug!("  ARM Mode");
     }
 }
