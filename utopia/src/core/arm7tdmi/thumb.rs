@@ -39,6 +39,8 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0xbc => pop::<false>(core, pc, word),
         0xbd => pop::<true>(core, pc, word),
         0xd0..=0xdf => branch_conditional(core, pc, word),
+        0xf0..=0xf7 => branch_and_link::<false>(core, pc, word),
+        0xf8..=0xff => branch_and_link::<true>(core, pc, word),
         opcode => todo!("Thumb Opcode {0:02X} [{0:08b}] (PC: {1:08X})", opcode, pc),
     }
 }
