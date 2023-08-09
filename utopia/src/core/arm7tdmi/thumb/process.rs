@@ -121,15 +121,16 @@ pub fn alu_operation(core: &mut Core<impl Bus>, pc: u32, word: u16) {
         // 0b0101 => binary_op::<op::Adc>(core, pc, rs, rd),
         // 0b0110 => binary_op::<op::Sbc>(core, pc, rs, rd),
         // 0b0111 => shift_op::<op::Ror>(core, pc, rs, rd),
-        // 0b1000 => compare_op::<op::Tst>(core, pc, rs, rd),
+        0b1000 => compare_op::<op::Tst>(core, pc, rs, rd),
         // 0b1001 => move_op::<op::Neg>(core, pc, rs, rd),
-        // 0b1010 => compare_op::<op::Cmp>(core, pc, rs, rd),
-        // 0b1011 => compare_op::<op::Cmn>(core, pc, rs, rd),
+        0b1010 => compare_op::<op::Cmp>(core, pc, rs, rd),
+        0b1011 => compare_op::<op::Cmn>(core, pc, rs, rd),
         // 0b1100 => binary_op::<op::Orr>(core, pc, rs, rd),
         // 0b1101 => binary_op::<op::Mul>(core, pc, rs, rd),
         // 0b1110 => binary_op::<op::Bic>(core, pc, rs, rd),
         0b1111 => move_op::<op::Mvn>(core, pc, rs, rd),
-        _ => unreachable!(),
+        opcode => todo!("ALU operation {:04b}", opcode),
+        //_ => unreachable!(),
     }
 }
 
@@ -137,4 +138,9 @@ fn move_op<Op: MoveOperator>(core: &mut Core<impl Bus>, pc: u32, rs: usize, rd: 
     debug!("{:08X} {} {}, {}", pc, Op::NAME, REGS[rd], REGS[rs]);
     let result = Op::apply::<true>(core, core.get(rs));
     core.set(rd, result);
+}
+
+fn compare_op<Op: CompareOperator>(core: &mut Core<impl Bus>, pc: u32, rs: usize, rd: usize) {
+    debug!("{:08X} {} {}, {}", pc, Op::NAME, REGS[rd], REGS[rs]);
+    Op::apply(core, core.get(rd), core.get(rs));
 }
