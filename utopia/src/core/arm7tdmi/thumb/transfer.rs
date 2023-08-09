@@ -72,7 +72,7 @@ pub fn ldr_pc_relative(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     let rd = ((word >> 8) & 7) as usize;
     let offset = (word & 0xff) << 2;
 
-    debug!("{:08X} LDR {}, [PC, #{}]", pc, REGS[rd], offset);
+    debug!("{:08X} LDR {}, [PC, #0x{:X}]", pc, REGS[rd], offset);
 
     let address = core.pc.wrapping_add(offset as u32);
     let result = core.read_word(address);
@@ -83,7 +83,7 @@ pub fn ldr_sp_relative(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     let rd = ((word >> 8) & 7) as usize;
     let offset = (word & 0xff) << 2;
 
-    debug!("{:08X} LDR {}, [SP, #{}]", pc, REGS[rd], offset);
+    debug!("{:08X} LDR {}, [SP, #0x{:X}]", pc, REGS[rd], offset);
 
     let address = core.regs[13].wrapping_add(offset as u32);
     let result = core.read_word(address);
@@ -94,7 +94,7 @@ pub fn str_sp_relative(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     let rd = ((word >> 8) & 7) as usize;
     let offset = (word & 0xff) << 2;
 
-    debug!("{:08X} STR {}, [SP, #{}]", pc, REGS[rd], offset);
+    debug!("{:08X} STR {}, [SP, #0x{:X}]", pc, REGS[rd], offset);
 
     let address = core.regs[13].wrapping_add(offset as u32);
     core.write_word(address, core.get(rd));
