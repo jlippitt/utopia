@@ -12,10 +12,8 @@ mod process;
 mod transfer;
 
 pub fn dispatch(core: &mut Core<impl Bus>) {
-    assert!((core.pc & 3) == 0);
-
-    let pc = core.pc;
-    let word = core.bus.read::<u32>(core.pc);
+    let pc = core.pc & !3;
+    let word = core.bus.read::<u32>(pc);
     core.pc = core.pc.wrapping_add(4);
 
     let condition = Condition::from_u32(word >> 28).unwrap();
