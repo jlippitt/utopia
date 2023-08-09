@@ -68,6 +68,35 @@ pub fn str_register<const BYTE: bool>(core: &mut Core<impl Bus>, pc: u32, word: 
     }
 }
 
+pub fn ldr_halfword(core: &mut Core<impl Bus>, pc: u32, word: u16) {
+    let offset = (word >> 6) & 31;
+    let rb = ((word >> 3) & 7) as usize;
+    let rd = (word & 7) as usize;
+
+    debug!(
+        "{:08X} LDRH {}, [{}, #0x{:X}]",
+        pc, REGS[rd], REGS[rb], offset
+    );
+
+    let address = core.get(rb).wrapping_add(offset as u32);
+    let result = core.read_halfword(address);
+    core.set(rd, result as u32);
+}
+
+pub fn str_halfword(core: &mut Core<impl Bus>, pc: u32, word: u16) {
+    let offset = (word >> 6) & 31;
+    let rb = ((word >> 3) & 7) as usize;
+    let rd = (word & 7) as usize;
+
+    debug!(
+        "{:08X} STRH {}, [{}, #0x{:X}]",
+        pc, REGS[rd], REGS[rb], offset
+    );
+
+    let address = core.get(rb).wrapping_add(offset as u32);
+    core.write_halfword(address, core.get(rd) as u16);
+}
+
 pub fn ldr_pc_relative(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     let rd = ((word >> 8) & 7) as usize;
     let offset = (word & 0xff) << 2;
