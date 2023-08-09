@@ -6,10 +6,6 @@ use tracing::debug;
 pub fn branch_conditional(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     let code = (word >> 8) & 15;
 
-    if code == 0b1111 {
-        todo!("SWI");
-    }
-
     let condition = Condition::from_u16(code).unwrap();
 
     if !condition.apply(core) {
@@ -18,6 +14,12 @@ pub fn branch_conditional(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     }
 
     let offset = ((word & 0xff) as i8 as i32) << 1;
+    debug!("{:08X} B {:+}", pc, offset);
+    core.pc = core.pc.wrapping_add(2).wrapping_add(offset as u32);
+}
+
+pub fn branch_unconditional(core: &mut Core<impl Bus>, pc: u32, word: u16) {
+    let offset = (((word & 0x07ff) as i32) << 21) >> 20;
     debug!("{:08X} B {:+}", pc, offset);
     core.pc = core.pc.wrapping_add(2).wrapping_add(offset as u32);
 }
