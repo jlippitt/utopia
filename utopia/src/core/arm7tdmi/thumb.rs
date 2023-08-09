@@ -24,6 +24,7 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x28..=0x2f => compare_immediate(core, pc, word),
         0x30..=0x37 => binary_immediate::<op::Add>(core, pc, word),
         //0x38..=0x3f => binary_immediate::<op::Sub>(core, pc, word),
+        0x40..=0x43 => alu_operation(core, pc, word),
         0x47 => bx(core, pc, word),
         0x48..=0x4f => ldr_pc_relative(core, pc, word),
         0x50 | 0x51 => str_register::<false>(core, pc, word),

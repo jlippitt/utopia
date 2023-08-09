@@ -1,4 +1,4 @@
-use super::super::operator::{BinaryOperator, ComparisonOperator, MoveOperator};
+use super::super::operator::{BinaryOperator, CompareOperator, MoveOperator};
 use super::super::{Bus, Core, REGS};
 use tracing::debug;
 
@@ -60,7 +60,7 @@ pub fn move_immediate<Op: MoveOperator, const SET_FLAGS: bool>(
     core.set(rd, result);
 }
 
-pub fn compare_immediate<Op: ComparisonOperator>(core: &mut Core<impl Bus>, pc: u32, word: u32) {
+pub fn compare_immediate<Op: CompareOperator>(core: &mut Core<impl Bus>, pc: u32, word: u32) {
     let rn = ((word >> 16) & 15) as usize;
     let value = immediate_value(word);
 
