@@ -9,8 +9,10 @@ mod process;
 mod transfer;
 
 pub fn dispatch(core: &mut Core<impl Bus>) {
-    let pc = core.pc & !1;
-    let word = core.bus.read::<u16>(pc);
+    assert!((core.pc & 1) == 0);
+
+    let pc = core.pc;
+    let word = core.bus.read::<u16>(core.pc);
     core.pc = core.pc.wrapping_add(2);
 
     match word >> 8 {
