@@ -28,7 +28,7 @@ pub fn branch_and_link<const SELECTOR: bool>(core: &mut Core<impl Bus>, pc: u32,
     if SELECTOR {
         let next = core.pc;
         core.pc = core.get(14).wrapping_add(offset << 1);
-        debug!("{:08X} BL 0x{:08X}", pc, core.pc);
+        debug!("{:08X} BL 0x{:08X}", pc.wrapping_sub(2), core.pc);
         core.set(14, next | 1);
     } else {
         let signed_offset = (((offset as i32) << 21) >> 9) as u32;
