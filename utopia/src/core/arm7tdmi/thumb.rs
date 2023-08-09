@@ -16,6 +16,7 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
     core.pc = core.pc.wrapping_add(2);
 
     match word >> 8 {
+        0x00..=0x07 => move_shifted::<op::Lsl>(core, pc, word),
         0x18 | 0x19 => binary_register_3op::<op::Add>(core, pc, word),
         //0x1a | 0x1b => binary_register_3op::<op::Sub, false>(core, pc, word),
         0x1c | 0x1d => binary_immediate_3op::<op::Add>(core, pc, word),

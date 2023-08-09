@@ -1,6 +1,26 @@
-use super::super::operator::{self, BinaryOperator, Cmp, CompareOperator, Mov, MoveOperator};
+use super::super::operator::{
+    self, BinaryOperator, Cmp, CompareOperator, Mov, MoveOperator, ShiftOperator,
+};
 use super::super::{Bus, Core, REGS};
 use tracing::debug;
+
+pub fn move_shifted<Op: ShiftOperator>(core: &mut Core<impl Bus>, pc: u32, word: u16) {
+    let shift_amount = ((word >> 6) & 31) as u32;
+    let rs = ((word >> 3) & 7) as usize;
+    let rd = (word & 7) as usize;
+
+    debug!(
+        "{:08X} {} {}, {}, #0x{:X}",
+        pc,
+        Op::NAME,
+        REGS[rd],
+        REGS[rs],
+        shift_amount
+    );
+
+    let result = Op::apply::<true>(core, core.get(rs), shift_amount);
+    core.set(rd, result);
+}
 
 pub fn binary_register_3op<Op: BinaryOperator>(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     let rn = ((word >> 6) & 7) as usize;
