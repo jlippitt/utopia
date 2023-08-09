@@ -87,7 +87,7 @@ pub fn compare_immediate(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     Cmp::apply(core, core.get(rd), value as u32);
 }
 
-pub fn binary_sp_immediate(core: &mut Core<impl Bus>, pc: u32, word: u16) {
+pub fn add_sp_immediate(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     let sign = (word & 0x80) != 0;
     let offset = (word & 0x7f) << 2;
 
@@ -104,6 +104,15 @@ pub fn binary_sp_immediate(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     } else {
         core.set(13, core.get(13).wrapping_add(offset as u32));
     }
+}
+
+pub fn mov_high(core: &mut Core<impl Bus>, pc: u32, word: u16) {
+    let rs = ((word >> 3) & 15) as usize;
+    let rd = (((word >> 4) & 8) | (word & 7)) as usize;
+
+    debug!("{:08X} MOV {}, {}", pc, REGS[rd], REGS[rs]);
+    let result = Mov::apply::<false>(core, core.get(rs));
+    core.set(rd, result);
 }
 
 pub fn alu_operation(core: &mut Core<impl Bus>, pc: u32, word: u16) {
