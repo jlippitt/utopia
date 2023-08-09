@@ -33,7 +33,7 @@ pub fn branch_and_link<const SELECTOR: bool>(core: &mut Core<impl Bus>, pc: u32,
     } else {
         let signed_offset = (((offset as i32) << 21) >> 9) as u32;
         let result = core.pc.wrapping_add(2).wrapping_add(signed_offset);
-        core.set(14, result);
+        core.regs[14] = result;
     }
 }
 
