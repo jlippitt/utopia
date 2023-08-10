@@ -1,15 +1,17 @@
 use super::{BiosLoader, System};
 use crate::core::arm7tdmi::{Bus, Core};
-use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
+use crate::util::facade::{ReadFacade, Value, WriteFacade};
 use crate::util::MirrorVec;
 use crate::JoypadState;
 use audio::Audio;
 use dma::Dma;
+use registers::Registers;
 use std::error::Error;
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
 mod audio;
 mod dma;
+mod registers;
 
 const WIDTH: usize = 240;
 const HEIGHT: usize = 160;
@@ -56,11 +58,11 @@ impl System for GameBoyAdvance {
 struct Hardware {
     rom: Vec<u8>,
     bios: Vec<u8>,
+    regs: Registers,
     iwram: MirrorVec<u8>,
     ewram: MirrorVec<u8>,
     audio: Audio,
     dma: Dma,
-    post_boot_flag: u8,
 }
 
 impl Hardware {
@@ -72,38 +74,11 @@ impl Hardware {
         Self {
             rom,
             bios,
+            regs: Registers::new(),
             iwram: MirrorVec::new(IWRAM_SIZE),
             ewram: MirrorVec::new(EWRAM_SIZE),
             audio: Audio::new(),
             dma: Dma::new(),
-            post_boot_flag: 0,
-        }
-    }
-}
-
-impl DataReader for Hardware {
-    type Address = u32;
-    type Value = u8;
-
-    fn read(&self, address: u32) -> u8 {
-        match address {
-            0x0300 => self.post_boot_flag,
-            _ => todo!("I/O Register Read: {:08X}", address),
-        }
-    }
-}
-
-impl DataWriter for Hardware {
-    fn write(&mut self, address: u32, value: u8) {
-        match address {
-            0x0300 => {
-                self.post_boot_flag = value;
-                debug!("Post-Boot Flag: {:02X}", self.post_boot_flag);
-            }
-            _ => warn!(
-                "not yet implemented: I/O Register Write: {:08X} <= {:02X}",
-                address, value
-            ),
         }
     }
 }
@@ -120,7 +95,7 @@ impl Bus for Hardware {
                 0x00b0..=0x00ff => self.dma.read_le(address),
                 0x0100..=0x011f => todo!("Timer Register Reads"),
                 0x0120..=0x01ff => todo!("Serial Register Reads"),
-                address => self.read_le(address),
+                address => self.regs.read_le(address),
             },
             0x05 => todo!("Palette RAM Reads"),
             0x06 => todo!("VRAM Reads"),
@@ -142,7 +117,7 @@ impl Bus for Hardware {
                 0x00b0..=0x00ff => self.dma.write_le(address, value),
                 0x0100..=0x011f => warn!("Timer Register Writes not yet implemented"),
                 0x0120..=0x01ff => warn!("Serial Register Writes not yet implemented"),
-                address => self.write_le(address, value),
+                address => self.regs.write_le(address, value),
             },
             0x05 => warn!("Palette RAM Writes not yet implemented"),
             0x06 => warn!("VRAM Writes not yet implemented"),
