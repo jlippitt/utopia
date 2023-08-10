@@ -69,7 +69,7 @@ pub fn str_register<const BYTE: bool>(core: &mut Core<impl Bus>, pc: u32, word: 
 }
 
 pub fn ldr_halfword(core: &mut Core<impl Bus>, pc: u32, word: u16) {
-    let offset = (word >> 6) & 31;
+    let offset = ((word >> 6) & 31) << 1;
     let rb = ((word >> 3) & 7) as usize;
     let rd = (word & 7) as usize;
 
@@ -84,7 +84,7 @@ pub fn ldr_halfword(core: &mut Core<impl Bus>, pc: u32, word: u16) {
 }
 
 pub fn str_halfword(core: &mut Core<impl Bus>, pc: u32, word: u16) {
-    let offset = (word >> 6) & 31;
+    let offset = ((word >> 6) & 31) << 1;
     let rb = ((word >> 3) & 7) as usize;
     let rd = (word & 7) as usize;
 
