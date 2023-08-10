@@ -12,6 +12,7 @@ fn format_immediate<const PUW: u8>(rn: usize, offset: u32) -> String {
         _ => panic!("Invalid address mode: {:03b}", PUW),
     }
 }
+
 fn resolve<const PUW: u8>(core: &mut Core<impl Bus>, rn: usize, offset: u32) -> u32 {
     let base = core.get(rn);
 
