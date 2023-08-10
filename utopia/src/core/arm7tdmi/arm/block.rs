@@ -18,6 +18,69 @@ fn reg_list(word: u32) -> String {
     reg_list.join(", ")
 }
 
+fn next_address<const PU: u8>(base: &mut u32) -> u32 {
+    match PU {
+        0b00 => {
+            let address = *base;
+            *base = base.wrapping_sub(4);
+            address
+        }
+        0b01 => {
+            let address = *base;
+            *base = base.wrapping_add(4);
+            address
+        }
+        0b10 => {
+            *base = base.wrapping_sub(4);
+            *base
+        }
+        0b11 => {
+            *base = base.wrapping_add(4);
+            *base
+        }
+        _ => unreachable!(),
+    }
+}
+
+pub fn ldm<const PU: u8, const S: bool, const W: bool>(
+    core: &mut Core<impl Bus>,
+    pc: u32,
+    word: u32,
+) {
+    if S {
+        todo!("S bit")
+    }
+
+    let rn = ((word >> 16) & 15) as usize;
+    let mut base = core.get(rn);
+
+    debug!(
+        "{:08X} LDM{} {}{}, {{ {} }}{}",
+        pc,
+        ADDRESS[PU as usize],
+        REGS[rn],
+        if W { "!" } else { "" },
+        reg_list(word),
+        if S { "^" } else { "" }
+    );
+
+    for index in 0..=15 {
+        let mask = 1 << index;
+
+        if (word & mask) == 0 {
+            continue;
+        }
+
+        let address = next_address::<PU>(&mut base);
+        let result = core.read_word(address);
+        core.set(index, result);
+    }
+
+    if W {
+        core.set(rn, base);
+    }
+}
+
 pub fn stm<const PU: u8, const S: bool, const W: bool>(
     core: &mut Core<impl Bus>,
     pc: u32,
@@ -47,28 +110,7 @@ pub fn stm<const PU: u8, const S: bool, const W: bool>(
             continue;
         }
 
-        let address = match PU {
-            0b00 => {
-                let address = base;
-                base = base.wrapping_sub(4);
-                address
-            }
-            0b01 => {
-                let address = base;
-                base = base.wrapping_add(4);
-                address
-            }
-            0b10 => {
-                base = base.wrapping_sub(4);
-                base
-            }
-            0b11 => {
-                base = base.wrapping_add(4);
-                base
-            }
-            _ => unreachable!(),
-        };
-
+        let address = next_address::<PU>(&mut base);
         core.write_word(address, core.get(index));
     }
 
