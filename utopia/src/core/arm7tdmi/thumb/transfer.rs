@@ -103,7 +103,7 @@ pub fn ldr_pc_relative(core: &mut Core<impl Bus>, pc: u32, word: u16) {
 
     debug!("{:08X} LDR {}, [PC, #0x{:X}]", pc, REGS[rd], offset);
 
-    let address = core.pc.wrapping_add(offset as u32);
+    let address = core.pc.wrapping_add(2).wrapping_add(offset as u32) & 0xffff_fffd;
     let result = core.read_word(address);
     core.set(rd, result);
 }
