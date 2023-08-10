@@ -57,6 +57,9 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x90..=0x97 => str_sp_relative(core, pc, word),
         0x98..=0x9f => ldr_sp_relative(core, pc, word),
 
+        0xa0..=0xa7 => load_address::<false>(core, pc, word),
+        0xa8..=0xaf => load_address::<true>(core, pc, word),
+
         0xb0 => add_sp_immediate(core, pc, word),
         0xb4 => push::<false>(core, pc, word),
         0xb5 => push::<true>(core, pc, word),

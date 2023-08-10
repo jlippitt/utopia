@@ -135,6 +135,7 @@ pub fn str_register<const BYTE: bool>(core: &mut Core<impl Bus>, pc: u32, word: 
         core.write_word(address, core.get(rd));
     }
 }
+
 pub fn ldr_pc_relative(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     let rd = ((word >> 8) & 7) as usize;
     let offset = (word & 0xff) << 2;
@@ -165,4 +166,25 @@ pub fn str_sp_relative(core: &mut Core<impl Bus>, pc: u32, word: u16) {
 
     let address = core.regs[13].wrapping_add(offset as u32);
     core.write_word(address, core.get(rd));
+}
+
+pub fn load_address<const SP: bool>(core: &mut Core<impl Bus>, pc: u32, word: u16) {
+    let rd = ((word >> 8) & 7) as usize;
+    let offset = (word & 0xff) << 2;
+
+    debug!(
+        "{:08X} ADD {}, [{}, #0x{:X}]",
+        pc,
+        REGS[rd],
+        if SP { "SP" } else { "PC" },
+        offset
+    );
+
+    let address = if SP {
+        core.regs[13].wrapping_add(offset as u32)
+    } else {
+        core.pc.wrapping_add(2).wrapping_add(offset as u32) & 0xffff_fffd
+    };
+
+    core.set(rd, address);
 }
