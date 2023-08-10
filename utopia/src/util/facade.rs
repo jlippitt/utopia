@@ -71,12 +71,14 @@ fn read_data<T: DataReader, U: Value, const BE: bool>(reader: &T, address: T::Ad
     } else if U::BITS > T::Value::BITS {
         let mask = ((U::BITS / T::Value::BITS) - 1) as usize;
         let flip = if BE { mask } else { Default::default() };
+        let shift = T::Value::BITS >> 4;
         let mut result: U = Default::default();
 
         for chunk_index in 0..((U::BITS / T::Value::BITS) as usize) {
-            let chunk_address = address.wrapping_add(&Address::from_address(chunk_index));
+            let chunk_address = address.wrapping_add(&Address::from_address(chunk_index << shift));
             let chunk = reader.read(T::Address::from_address(chunk_address));
-            result = result | (U::from_value(chunk) << ((chunk_index ^ flip) << 3));
+            result =
+                result | (U::from_value(chunk) << (T::Value::BITS as usize * (chunk_index ^ flip)));
         }
 
         result
@@ -95,10 +97,12 @@ fn write_data<T: DataWriter, U: Value, const BE: bool>(
     } else if U::BITS > T::Value::BITS {
         let mask = ((U::BITS / T::Value::BITS) - 1) as usize;
         let flip = if BE { mask } else { Default::default() };
+        let shift = T::Value::BITS >> 4;
 
         for chunk_index in 0..((U::BITS / T::Value::BITS) as usize) {
-            let chunk_address = address.wrapping_add(&Address::from_address(chunk_index));
-            let chunk = T::Value::from_value(value >> (8 * (chunk_index ^ flip)));
+            let chunk_address = address.wrapping_add(&Address::from_address(chunk_index << shift));
+            let chunk =
+                T::Value::from_value(value >> (T::Value::BITS as usize * (chunk_index ^ flip)));
             writer.write(T::Address::from_address(chunk_address), chunk);
         }
     } else {

@@ -3,8 +3,11 @@ use crate::core::arm7tdmi::{Bus, Core};
 use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
 use crate::util::MirrorVec;
 use crate::JoypadState;
+use dma::Dma;
 use std::error::Error;
 use tracing::{debug, info, warn};
+
+mod dma;
 
 const WIDTH: usize = 240;
 const HEIGHT: usize = 160;
@@ -54,6 +57,7 @@ struct Hardware {
     iwram: MirrorVec<u8>,
     ewram: MirrorVec<u8>,
     post_boot_flag: u8,
+    dma: Dma,
 }
 
 impl Hardware {
@@ -68,6 +72,7 @@ impl Hardware {
             iwram: MirrorVec::new(IWRAM_SIZE),
             ewram: MirrorVec::new(EWRAM_SIZE),
             post_boot_flag: 0,
+            dma: Dma::new(),
         }
     }
 }
@@ -108,7 +113,7 @@ impl Bus for Hardware {
             0x04 => match address & 0x00ff_ffff {
                 0x0000..=0x005f => todo!("LCD Register Reads"),
                 0x0060..=0x00af => todo!("Audio Register Reads"),
-                0x00b0..=0x00ff => todo!("DMA Register Reads"),
+                0x00b0..=0x00ff => self.dma.read_le(address & 0xff),
                 0x0100..=0x011f => todo!("Timer Register Reads"),
                 0x0120..=0x01ff => todo!("Serial Register Reads"),
                 address => self.read_le(address),
@@ -130,7 +135,7 @@ impl Bus for Hardware {
             0x04 => match address & 0x00ff_ffff {
                 0x0000..=0x005f => warn!("LCD Register Writes not yet implemented"),
                 0x0060..=0x00af => warn!("Audio Register Writes not yet implemented"),
-                0x00b0..=0x00ff => todo!("DMA Register Writes"),
+                0x00b0..=0x00ff => self.dma.write_le(address & 0xff, value),
                 0x0100..=0x011f => warn!("Timer Register Writes not yet implemented"),
                 0x0120..=0x01ff => warn!("Serial Register Writes not yet implemented"),
                 address => self.write_le(address, value),
