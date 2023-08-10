@@ -59,6 +59,16 @@ pub trait DataReader {
 
 pub trait DataWriter: DataReader {
     fn write(&mut self, address: Self::Address, value: Self::Value);
+
+    fn read_cached(&self, _address: Self::Address) -> Self::Value {
+        panic!("Partial writes not permitted for this type");
+    }
+}
+
+pub struct WriteCache<T: Address, U: Value> {
+    vec: Vec<U>,
+    mask: T,
+    start: T,
 }
 
 fn read_data<T: DataReader, U: Value, const BE: bool>(reader: &T, address: T::Address) -> U {
@@ -93,7 +103,15 @@ fn write_data<T: DataWriter, U: Value, const BE: bool>(
     value: U,
 ) {
     if U::BITS < T::Value::BITS {
-        todo!("Inexact writes");
+        let address_mask = !(T::Address::from_address(T::Value::BITS - 1) >> 3);
+        let base_address = address & address_mask;
+        let shift_mask = usize::from_address(address - base_address);
+        let flip = if BE { shift_mask } else { Default::default() };
+        let shift = U::BITS as usize * (shift_mask ^ flip);
+        let value_mask = T::Value::from_value(!U::default()) << shift;
+        let prev_value = writer.read_cached(base_address);
+        let new_value = (prev_value & !value_mask) | (T::Value::from_value(value) << shift);
+        writer.write(base_address, new_value);
     } else if U::BITS > T::Value::BITS {
         let mask = ((U::BITS / T::Value::BITS) - 1) as usize;
         let flip = if BE { mask } else { Default::default() };
@@ -171,4 +189,27 @@ impl Value for u32 {}
 impl Address for usize {
     const BITS: u32 = usize::BITS;
     const MASK: usize = u32::MAX as usize;
+}
+
+impl<T: Address, U: Value> WriteCache<T, U> {
+    pub fn new(mask: T, start: T, len: usize) -> Self {
+        Self {
+            vec: vec![U::default(); len],
+            mask,
+            start,
+        }
+    }
+
+    pub fn get(&self, address: T) -> U {
+        self.vec[self.map_address(address)]
+    }
+
+    pub fn set(&mut self, address: T, value: U) {
+        let offset = self.map_address(address);
+        self.vec[offset] = value;
+    }
+
+    fn map_address(&self, address: T) -> usize {
+        usize::from_address((address & self.mask) - self.start)
+    }
 }

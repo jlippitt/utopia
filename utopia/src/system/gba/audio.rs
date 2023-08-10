@@ -1,13 +1,17 @@
-use crate::util::facade::{DataReader, DataWriter};
+use crate::util::facade::{DataReader, DataWriter, WriteCache};
 use tracing::{debug, warn};
 
 pub struct Audio {
     bias: u16,
+    write_cache: WriteCache<u32, u16>,
 }
 
 impl Audio {
     pub fn new() -> Self {
-        Self { bias: 0x0200 }
+        Self {
+            bias: 0x0200,
+            write_cache: WriteCache::new(0xff, 0x60, 80),
+        }
     }
 }
 
@@ -32,5 +36,11 @@ impl DataWriter for Audio {
             }
             address => warn!("Unmapped Audio Write: {:02X} <= {:04X}", address, value),
         }
+
+        self.write_cache.set(address, value);
+    }
+
+    fn read_cached(&self, address: u32) -> u16 {
+        self.write_cache.get(address)
     }
 }
