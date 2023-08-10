@@ -1,5 +1,5 @@
 use super::super::operator::{
-    self, BinaryOperator, Cmp, CompareOperator, Mov, MoveOperator, ShiftOperator,
+    self, Add, BinaryOperator, Cmp, CompareOperator, Mov, MoveOperator, ShiftOperator,
 };
 use super::super::{Bus, Core, REGS};
 use tracing::debug;
@@ -104,6 +104,15 @@ pub fn add_sp_immediate(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     } else {
         core.set(13, core.get(13).wrapping_add(offset as u32));
     }
+}
+
+pub fn add_high(core: &mut Core<impl Bus>, pc: u32, word: u16) {
+    let rs = ((word >> 3) & 15) as usize;
+    let rd = (((word >> 4) & 8) | (word & 7)) as usize;
+
+    debug!("{:08X} ADD {}, {}", pc, REGS[rd], REGS[rs]);
+    let result = Add::apply::<false>(core, core.get(rd), core.get(rs));
+    core.set(rd, result);
 }
 
 pub fn mov_high(core: &mut Core<impl Bus>, pc: u32, word: u16) {
