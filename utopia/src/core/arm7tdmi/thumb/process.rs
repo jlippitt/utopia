@@ -18,7 +18,7 @@ pub fn move_shifted<Op: ShiftOperator>(core: &mut Core<impl Bus>, pc: u32, word:
         shift_amount
     );
 
-    let result = Op::apply::<true>(core, core.get(rs), shift_amount);
+    let result = Op::apply::<true, true>(core, core.get(rs), shift_amount);
     core.set(rd, result);
 }
 
