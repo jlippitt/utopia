@@ -1,5 +1,4 @@
 use super::super::{Bus, Core};
-use tracing::debug;
 
 pub trait ShiftOperator {
     const NAME: &'static str;
