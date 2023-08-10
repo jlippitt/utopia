@@ -1,24 +1,5 @@
 use super::super::{Bus, Core, REGS};
-use arrayvec::ArrayVec;
 use tracing::debug;
-
-fn reg_list(word: u16, extra: Option<usize>) -> String {
-    let mut reg_list: ArrayVec<&str, 9> = ArrayVec::new();
-
-    for reg in 0..=7 {
-        let mask = 1 << reg;
-
-        if (word & mask) != 0 {
-            reg_list.push(REGS[reg]);
-        }
-    }
-
-    if let Some(reg) = extra {
-        reg_list.push(REGS[reg]);
-    }
-
-    reg_list.join(", ")
-}
 
 pub fn ldr_byte(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     let offset = (word >> 6) & 31;
@@ -184,54 +165,4 @@ pub fn str_sp_relative(core: &mut Core<impl Bus>, pc: u32, word: u16) {
 
     let address = core.regs[13].wrapping_add(offset as u32);
     core.write_word(address, core.get(rd));
-}
-
-pub fn pop<const PC: bool>(core: &mut Core<impl Bus>, pc: u32, word: u16) {
-    debug!(
-        "{:08X} POP {{ {} }}",
-        pc,
-        reg_list(word, if PC { Some(15) } else { None })
-    );
-
-    for reg in 0..=7 {
-        let mask = 1 << reg;
-
-        if (word & mask) != 0 {
-            let result = core.read_word(core.regs[13]);
-            core.set(reg, result);
-            core.regs[13] = core.regs[13].wrapping_add(4);
-        }
-    }
-
-    if PC {
-        let result = core.read_word(core.regs[13]);
-        core.set(15, result);
-        core.regs[13] = core.regs[13].wrapping_add(4);
-    }
-
-    debug!("  {}: {:08X}", REGS[13], core.regs[13]);
-}
-
-pub fn push<const LR: bool>(core: &mut Core<impl Bus>, pc: u32, word: u16) {
-    debug!(
-        "{:08X} PUSH {{ {} }}",
-        pc,
-        reg_list(word, if LR { Some(14) } else { None })
-    );
-
-    if LR {
-        core.regs[13] = core.regs[13].wrapping_sub(4);
-        core.write_word(core.regs[13], core.get(14));
-    }
-
-    for reg in (0..=7).rev() {
-        let mask = 1 << reg;
-
-        if (word & mask) != 0 {
-            core.regs[13] = core.regs[13].wrapping_sub(4);
-            core.write_word(core.regs[13], core.get(reg));
-        }
-    }
-
-    debug!("  {}: {:08X}", REGS[13], core.regs[13]);
 }
