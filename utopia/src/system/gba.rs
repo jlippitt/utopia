@@ -3,10 +3,12 @@ use crate::core::arm7tdmi::{Bus, Core};
 use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
 use crate::util::MirrorVec;
 use crate::JoypadState;
+use audio::Audio;
 use dma::Dma;
 use std::error::Error;
 use tracing::{debug, info, warn};
 
+mod audio;
 mod dma;
 
 const WIDTH: usize = 240;
@@ -56,8 +58,9 @@ struct Hardware {
     bios: Vec<u8>,
     iwram: MirrorVec<u8>,
     ewram: MirrorVec<u8>,
-    post_boot_flag: u8,
+    audio: Audio,
     dma: Dma,
+    post_boot_flag: u8,
 }
 
 impl Hardware {
@@ -71,8 +74,9 @@ impl Hardware {
             bios,
             iwram: MirrorVec::new(IWRAM_SIZE),
             ewram: MirrorVec::new(EWRAM_SIZE),
-            post_boot_flag: 0,
+            audio: Audio::new(),
             dma: Dma::new(),
+            post_boot_flag: 0,
         }
     }
 }
@@ -112,8 +116,8 @@ impl Bus for Hardware {
             0x03 => self.iwram.read_le(address as usize),
             0x04 => match address & 0x00ff_ffff {
                 0x0000..=0x005f => todo!("LCD Register Reads"),
-                0x0060..=0x00af => todo!("Audio Register Reads"),
-                0x00b0..=0x00ff => self.dma.read_le(address & 0xff),
+                0x0060..=0x00af => self.audio.read_le(address),
+                0x00b0..=0x00ff => self.dma.read_le(address),
                 0x0100..=0x011f => todo!("Timer Register Reads"),
                 0x0120..=0x01ff => todo!("Serial Register Reads"),
                 address => self.read_le(address),
@@ -134,8 +138,8 @@ impl Bus for Hardware {
             0x03 => self.iwram.write_le(address as usize, value),
             0x04 => match address & 0x00ff_ffff {
                 0x0000..=0x005f => warn!("LCD Register Writes not yet implemented"),
-                0x0060..=0x00af => warn!("Audio Register Writes not yet implemented"),
-                0x00b0..=0x00ff => self.dma.write_le(address & 0xff, value),
+                0x0060..=0x00af => self.audio.write_le(address, value),
+                0x00b0..=0x00ff => self.dma.write_le(address, value),
                 0x0100..=0x011f => warn!("Timer Register Writes not yet implemented"),
                 0x0120..=0x01ff => warn!("Serial Register Writes not yet implemented"),
                 address => self.write_le(address, value),

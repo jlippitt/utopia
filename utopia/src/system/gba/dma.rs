@@ -71,19 +71,19 @@ impl DataReader for Dma {
     type Value = u16;
 
     fn read(&self, address: u32) -> u16 {
-        match address {
+        match address & 0xff {
             0xba => self.channels[0].control(),
             0xc6 => self.channels[1].control(),
             0xd2 => self.channels[2].control(),
             0xde => self.channels[3].control(),
-            _ => panic!("Unmapped DMA Read: {:02X}", address),
+            address => panic!("Unmapped DMA Read: {:02X}", address),
         }
     }
 }
 
 impl DataWriter for Dma {
     fn write(&mut self, address: u32, value: u16) {
-        match address {
+        match address & 0xff {
             0xb0 => self.channels[0].set_source_low(value),
             0xb2 => self.channels[0].set_source_high(value),
             0xb4 => self.channels[0].set_destination_low(value),
@@ -108,7 +108,7 @@ impl DataWriter for Dma {
             0xda => self.channels[3].set_destination_high(value),
             0xdc => self.channels[3].set_word_count(value),
             0xde => self.channels[3].set_control(value),
-            _ => warn!("Unmapped DMA Write: {:02X} <= {:04X}", address, value),
+            address => warn!("Unmapped DMA Write: {:02X} <= {:04X}", address, value),
         }
     }
 }
