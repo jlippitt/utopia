@@ -21,7 +21,27 @@ impl BinaryOperator for Adc {
     const NAME: &'static str = "ADC";
 
     fn apply<const SET_FLAGS: bool>(core: &mut Core<impl Bus>, lhs: u32, rhs: u32) -> u32 {
-        core.add_with_carry::<SET_FLAGS>(lhs, rhs, true)
+        core.add_with_carry::<SET_FLAGS>(lhs, rhs, core.cpsr.c)
+    }
+}
+
+pub struct Sub;
+
+impl BinaryOperator for Sub {
+    const NAME: &'static str = "SUB";
+
+    fn apply<const SET_FLAGS: bool>(core: &mut Core<impl Bus>, lhs: u32, rhs: u32) -> u32 {
+        core.add_with_carry::<SET_FLAGS>(lhs, !rhs, true)
+    }
+}
+
+pub struct Sbc;
+
+impl BinaryOperator for Sbc {
+    const NAME: &'static str = "SBC";
+
+    fn apply<const SET_FLAGS: bool>(core: &mut Core<impl Bus>, lhs: u32, rhs: u32) -> u32 {
+        core.add_with_carry::<SET_FLAGS>(lhs, !rhs, core.cpsr.c)
     }
 }
 
