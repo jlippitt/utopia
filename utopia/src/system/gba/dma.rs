@@ -1,4 +1,5 @@
 use crate::util::facade::{DataReader, DataWriter};
+use tracing::warn;
 
 struct DmaChannel {
     _id: u32,
@@ -107,7 +108,7 @@ impl DataWriter for Dma {
             0xda => self.channels[3].set_destination_high(value),
             0xdc => self.channels[3].set_word_count(value),
             0xde => self.channels[3].set_control(value),
-            _ => panic!("Unmapped DMA Write: {:02X} <= {:04X}", address, value),
+            _ => warn!("Unmapped DMA Write: {:02X} <= {:04X}", address, value),
         }
     }
 }
