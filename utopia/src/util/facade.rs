@@ -65,12 +65,6 @@ pub trait DataWriter: DataReader {
     }
 }
 
-pub struct WriteCache<T: Address, U: Value> {
-    vec: Vec<U>,
-    mask: T,
-    start: T,
-}
-
 fn read_data<T: DataReader, U: Value, const BE: bool>(reader: &T, address: T::Address) -> U {
     if U::BITS < T::Value::BITS {
         let value = reader.read(address);
@@ -189,27 +183,4 @@ impl Value for u32 {}
 impl Address for usize {
     const BITS: u32 = usize::BITS;
     const MASK: usize = u32::MAX as usize;
-}
-
-impl<T: Address, U: Value> WriteCache<T, U> {
-    pub fn new(mask: T, start: T, len: usize) -> Self {
-        Self {
-            vec: vec![U::default(); len],
-            mask,
-            start,
-        }
-    }
-
-    pub fn get(&self, address: T) -> U {
-        self.vec[self.map_address(address)]
-    }
-
-    pub fn set(&mut self, address: T, value: U) {
-        let offset = self.map_address(address);
-        self.vec[offset] = value;
-    }
-
-    fn map_address(&self, address: T) -> usize {
-        usize::from_address((address & self.mask) - self.start)
-    }
 }
