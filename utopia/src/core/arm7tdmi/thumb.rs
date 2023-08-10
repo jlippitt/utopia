@@ -66,7 +66,7 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0xbc => pop::<false>(core, pc, word),
         0xbd => pop::<true>(core, pc, word),
 
-        //0xc0..=0xc7 => stmia(core, pc, word),
+        0xc0..=0xc7 => stmia(core, pc, word),
         0xc8..=0xcf => ldmia(core, pc, word),
 
         0xd0..=0xde => branch_conditional(core, pc, word),

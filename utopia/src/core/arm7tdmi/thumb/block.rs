@@ -93,3 +93,26 @@ pub fn ldmia(core: &mut Core<impl Bus>, pc: u32, word: u16) {
 
     core.set(rb, base);
 }
+
+pub fn stmia(core: &mut Core<impl Bus>, pc: u32, word: u16) {
+    let rb = ((word >> 8) & 7) as usize;
+    let mut base = core.get(rb);
+
+    debug!(
+        "{:08X} STMIA {}!, {{ {} }}",
+        pc,
+        REGS[rb],
+        reg_list(word, None),
+    );
+
+    for reg in (0..=7).rev() {
+        let mask = 1 << reg;
+
+        if (word & mask) != 0 {
+            core.write_word(base, core.get(reg));
+            base = base.wrapping_add(4);
+        }
+    }
+
+    core.set(rb, base);
+}
