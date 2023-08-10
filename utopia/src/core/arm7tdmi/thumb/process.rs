@@ -115,6 +115,14 @@ pub fn mov_high(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     core.set(rd, result);
 }
 
+pub fn cmp_high(core: &mut Core<impl Bus>, pc: u32, word: u16) {
+    let rs = ((word >> 3) & 15) as usize;
+    let rd = (((word >> 4) & 8) | (word & 7)) as usize;
+
+    debug!("{:08X} CMP {}, {}", pc, REGS[rd], REGS[rs]);
+    Cmp::apply(core, core.get(rd), core.get(rs));
+}
+
 pub fn alu_operation(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     use operator as op;
 

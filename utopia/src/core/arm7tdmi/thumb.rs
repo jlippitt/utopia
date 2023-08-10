@@ -29,7 +29,7 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x38..=0x3f => binary_immediate::<op::Sub>(core, pc, word),
         0x40..=0x43 => alu_operation(core, pc, word),
         //0x44 => add_high(core, pc, word),
-        //0x45 => cmp_high(core, pc, word),
+        0x45 => cmp_high(core, pc, word),
         0x46 => mov_high(core, pc, word),
         0x47 => bx(core, pc, word),
         0x48..=0x4f => ldr_pc_relative(core, pc, word),
