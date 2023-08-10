@@ -126,7 +126,7 @@ impl Bus for Hardware {
         match address >> 24 {
             0x00 => panic!("Write to BIOS area: {:08X} <= {:08X}", address, value),
             0x02 => self.ewram.write_le(address as usize, value),
-            0x03 => self.ewram.write_le(address as usize, value),
+            0x03 => self.iwram.write_le(address as usize, value),
             0x04 => match address & 0x00ff_ffff {
                 0x0000..=0x005f => warn!("LCD Register Writes not yet implemented"),
                 0x0060..=0x00af => warn!("Audio Register Writes not yet implemented"),
