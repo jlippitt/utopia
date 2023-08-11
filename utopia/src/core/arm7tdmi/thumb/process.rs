@@ -144,7 +144,7 @@ pub fn alu_operation(core: &mut Core<impl Bus>, pc: u32, word: u16) {
         0b0001 => binary_op::<op::Eor>(core, pc, rs, rd),
         0b0010 => shift_op::<op::Lsl>(core, pc, rs, rd),
         0b0011 => shift_op::<op::Lsr>(core, pc, rs, rd),
-        // 0b0100 => shift_op::<op::Asr>(core, pc, rs, rd),
+        0b0100 => shift_op::<op::Asr>(core, pc, rs, rd),
         0b0101 => binary_op::<op::Adc>(core, pc, rs, rd),
         0b0110 => binary_op::<op::Sbc>(core, pc, rs, rd),
         0b0111 => shift_op::<op::Ror>(core, pc, rs, rd),

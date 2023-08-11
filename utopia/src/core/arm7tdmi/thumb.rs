@@ -21,7 +21,7 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x00..=0x07 => move_shifted::<op::Lsl>(core, pc, word),
         0x08..=0x0f => move_shifted::<op::Lsr>(core, pc, word),
 
-        //0x10..=0x17 => move_shifted::<op::Asr>(core, pc, word),
+        0x10..=0x17 => move_shifted::<op::Asr>(core, pc, word),
         0x18 | 0x19 => binary_register_3op::<op::Add>(core, pc, word),
         0x1a | 0x1b => binary_register_3op::<op::Sub>(core, pc, word),
         0x1c | 0x1d => binary_immediate_3op::<op::Add>(core, pc, word),

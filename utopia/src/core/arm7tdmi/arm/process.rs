@@ -1,6 +1,4 @@
-use super::super::operator::{
-    BinaryOperator, CompareOperator, Lsl, Lsr, MoveOperator, ShiftOperator,
-};
+use super::super::operator::{self, BinaryOperator, CompareOperator, MoveOperator, ShiftOperator};
 use super::super::{Bus, Core, REGS};
 use tracing::debug;
 
@@ -16,11 +14,13 @@ fn shifted_value<const SET_FLAGS: bool, const SET_CARRY: bool>(
     shift_type: usize,
     shift_amount: u32,
 ) -> u32 {
+    use operator as op;
+
     match shift_type {
-        0b00 => Lsl::apply::<SET_FLAGS, SET_CARRY>(core, core.get(rm), shift_amount),
-        0b01 => Lsr::apply::<SET_FLAGS, SET_CARRY>(core, core.get(rm), shift_amount),
-        0b10 => todo!("ASR"),
-        0b11 => todo!("ROR"),
+        0b00 => op::Lsl::apply::<SET_FLAGS, SET_CARRY>(core, core.get(rm), shift_amount),
+        0b01 => op::Lsr::apply::<SET_FLAGS, SET_CARRY>(core, core.get(rm), shift_amount),
+        0b10 => op::Asr::apply::<SET_FLAGS, SET_CARRY>(core, core.get(rm), shift_amount),
+        0b11 => op::Ror::apply::<SET_FLAGS, SET_CARRY>(core, core.get(rm), shift_amount),
         _ => unreachable!(),
     }
 }
