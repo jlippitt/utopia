@@ -39,7 +39,7 @@ pub fn pop<const PC: bool>(core: &mut Core<impl Bus>, pc: u32, word: u16) {
 
     if PC {
         let result = core.read_word(core.regs[13]);
-        core.set(15, result);
+        core.pc = result & 0xffff_fffe;
         core.regs[13] = core.regs[13].wrapping_add(4);
     }
 
