@@ -100,7 +100,15 @@ impl Bus for Hardware {
             0x05 => todo!("Palette RAM Reads"),
             0x06 => todo!("VRAM Reads"),
             0x07 => todo!("OAM Reads"),
-            0x08..=0x0d => self.rom.read_le(address as usize & 0x01ff_ffff),
+            0x08..=0x0d => {
+                let index = address as usize & 0x01ff_ffff;
+
+                if index < self.rom.len() {
+                    self.rom.read_le(index)
+                } else {
+                    T::default()
+                }
+            }
             0xe0 => todo!("SRAM Reads"),
             _ => panic!("Unmapped Read: {:08X}", address),
         }
