@@ -1,5 +1,6 @@
 use super::super::operator::{
-    self, Add, BinaryOperator, Cmp, CompareOperator, Mov, MoveOperator, ShiftOperator,
+    self, Add, BinaryOperator, Cmp, CompareOperator, Mov, MoveOperator, MultiplyOperator,
+    ShiftOperator,
 };
 use super::super::{Bus, Core, REGS};
 use tracing::debug;
@@ -152,7 +153,7 @@ pub fn alu_operation(core: &mut Core<impl Bus>, pc: u32, word: u16) {
         0b1010 => compare_op::<op::Cmp>(core, pc, rs, rd),
         0b1011 => compare_op::<op::Cmn>(core, pc, rs, rd),
         0b1100 => binary_op::<op::Orr>(core, pc, rs, rd),
-        // 0b1101 => binary_op::<op::Mul>(core, pc, rs, rd),
+        0b1101 => multiply_op::<op::Mul>(core, pc, rs, rd),
         0b1110 => binary_op::<op::Bic>(core, pc, rs, rd),
         0b1111 => move_op::<op::Mvn>(core, pc, rs, rd),
         opcode => todo!("ALU operation {:04b}", opcode),
@@ -174,6 +175,12 @@ fn compare_op<Op: CompareOperator>(core: &mut Core<impl Bus>, pc: u32, rs: usize
 fn binary_op<Op: BinaryOperator>(core: &mut Core<impl Bus>, pc: u32, rs: usize, rd: usize) {
     debug!("{:08X} {} {}, {}", pc, Op::NAME, REGS[rd], REGS[rs]);
     let result = Op::apply::<true>(core, core.get(rd), core.get(rs));
+    core.set(rd, result);
+}
+
+fn multiply_op<Op: MultiplyOperator>(core: &mut Core<impl Bus>, pc: u32, rs: usize, rd: usize) {
+    debug!("{:08X} {} {}, {}", pc, Op::NAME, REGS[rd], REGS[rs]);
+    let result = Op::apply::<true>(core, core.get(rd), core.get(rs), 0);
     core.set(rd, result);
 }
 
