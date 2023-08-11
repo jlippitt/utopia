@@ -141,12 +141,12 @@ pub fn alu_operation(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     match (word >> 6) & 15 {
         0b0000 => binary_op::<op::And>(core, pc, rs, rd),
         0b0001 => binary_op::<op::Eor>(core, pc, rs, rd),
-        // 0b0010 => shift_op::<op::Lsl>(core, pc, rs, rd),
-        // 0b0011 => shift_op::<op::Lsr>(core, pc, rs, rd),
+        0b0010 => shift_op::<op::Lsl>(core, pc, rs, rd),
+        0b0011 => shift_op::<op::Lsr>(core, pc, rs, rd),
         // 0b0100 => shift_op::<op::Asr>(core, pc, rs, rd),
         0b0101 => binary_op::<op::Adc>(core, pc, rs, rd),
-        // 0b0110 => binary_op::<op::Sbc>(core, pc, rs, rd),
-        // 0b0111 => shift_op::<op::Ror>(core, pc, rs, rd),
+        0b0110 => binary_op::<op::Sbc>(core, pc, rs, rd),
+        0b0111 => shift_op::<op::Ror>(core, pc, rs, rd),
         0b1000 => compare_op::<op::Tst>(core, pc, rs, rd),
         // 0b1001 => move_op::<op::Neg>(core, pc, rs, rd),
         0b1010 => compare_op::<op::Cmp>(core, pc, rs, rd),
@@ -174,5 +174,11 @@ fn compare_op<Op: CompareOperator>(core: &mut Core<impl Bus>, pc: u32, rs: usize
 fn binary_op<Op: BinaryOperator>(core: &mut Core<impl Bus>, pc: u32, rs: usize, rd: usize) {
     debug!("{:08X} {} {}, {}", pc, Op::NAME, REGS[rd], REGS[rs]);
     let result = Op::apply::<true>(core, core.get(rd), core.get(rs));
+    core.set(rd, result);
+}
+
+fn shift_op<Op: ShiftOperator>(core: &mut Core<impl Bus>, pc: u32, rs: usize, rd: usize) {
+    debug!("{:08X} {} {}, {}", pc, Op::NAME, REGS[rd], REGS[rs]);
+    let result = Op::apply::<true, true>(core, core.get(rd), core.get(rs));
     core.set(rd, result);
 }

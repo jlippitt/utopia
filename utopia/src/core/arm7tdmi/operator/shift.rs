@@ -62,3 +62,39 @@ impl ShiftOperator for Lsr {
         result
     }
 }
+
+pub struct Ror;
+
+impl ShiftOperator for Ror {
+    const NAME: &'static str = "ROR";
+
+    fn apply<const SET_FLAGS: bool, const LOGICAL: bool>(
+        core: &mut Core<impl Bus>,
+        value: u32,
+        shift_amount: u32,
+    ) -> u32 {
+        let result = if shift_amount != 0 {
+            // ROR
+            if SET_FLAGS && LOGICAL {
+                core.cpsr.c = (value & 0x8000_0000u32.rotate_left(shift_amount)) != 0;
+            }
+
+            value.rotate_right(shift_amount)
+        } else {
+            // RRX
+            let carry = core.cpsr.c as u32;
+
+            if SET_FLAGS && LOGICAL {
+                core.cpsr.c = (value & 1) != 0;
+            }
+
+            (value >> 1) | (carry << 31)
+        };
+
+        if SET_FLAGS {
+            core.set_nz(result);
+        }
+
+        result
+    }
+}
