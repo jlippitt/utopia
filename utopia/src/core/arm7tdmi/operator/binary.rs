@@ -50,6 +50,28 @@ impl BinaryOperator for Sbc {
     }
 }
 
+pub struct Rsb;
+
+impl BinaryOperator for Rsb {
+    const NAME: &'static str = "RSB";
+    const LOGICAL: bool = false;
+
+    fn apply<const SET_FLAGS: bool>(core: &mut Core<impl Bus>, lhs: u32, rhs: u32) -> u32 {
+        core.add_with_carry::<SET_FLAGS>(rhs, !lhs, true)
+    }
+}
+
+pub struct Rsc;
+
+impl BinaryOperator for Rsc {
+    const NAME: &'static str = "RSC";
+    const LOGICAL: bool = false;
+
+    fn apply<const SET_FLAGS: bool>(core: &mut Core<impl Bus>, lhs: u32, rhs: u32) -> u32 {
+        core.add_with_carry::<SET_FLAGS>(rhs, !lhs, core.cpsr.c)
+    }
+}
+
 pub struct And;
 
 impl BinaryOperator for And {
