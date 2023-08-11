@@ -180,7 +180,7 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
     }
 }
 
-fn dispatch_special(core: &mut Core<impl Bus>, pc: u32, word: u32) {
+fn dispatch_special(_core: &mut Core<impl Bus>, pc: u32, word: u32) {
     match (word >> 20) & 0x1f {
         opcode => todo!(
             "ARM7 Special Opcode {0:02X} [{0:08b}] (PC: {1:08X})",
