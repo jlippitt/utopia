@@ -192,7 +192,7 @@ impl<T: Bus> Core<T> {
         debug!("  CPSR: {:08X}", self.cpsr_to_u32());
     }
 
-    fn _spsr_to_u32(&self) -> u32 {
+    fn spsr_to_u32(&self) -> u32 {
         match self.cpsr.m {
             Mode::Fiq => self.spsr.fiq,
             Mode::Irq => self.spsr.irq,

@@ -60,9 +60,11 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x0e => binary_register::<op::Rsc, false, false>(core, pc, word),
         0x0f => binary_register::<op::Rsc, true, false>(core, pc, word),
 
+        0x10 => mrs_register::<false>(core, pc, word),
         0x11 => compare_register::<op::Tst, false>(core, pc, word),
         0x12 => msr_register::<false>(core, pc, word),
         0x13 => compare_register::<op::Teq, false>(core, pc, word),
+        0x14 => mrs_register::<true>(core, pc, word),
         0x15 => compare_register::<op::Cmp, false>(core, pc, word),
         0x16 => msr_register::<true>(core, pc, word),
         0x17 => compare_register::<op::Cmn, false>(core, pc, word),

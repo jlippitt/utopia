@@ -190,6 +190,25 @@ pub fn compare_register<Op: CompareOperator, const VAR_SHIFT: bool>(
     Op::apply(core, core.get(rn), value);
 }
 
+pub fn mrs_register<const SPSR: bool>(core: &mut Core<impl Bus>, pc: u32, word: u32) {
+    let rd = ((word >> 12) & 15) as usize;
+
+    debug!(
+        "{:08X} MRS {}, {}PSR",
+        pc,
+        REGS[rd],
+        if SPSR { "S" } else { "C" },
+    );
+
+    let result = if SPSR {
+        core.spsr_to_u32()
+    } else {
+        core.cpsr_to_u32()
+    };
+
+    core.set(rd, result);
+}
+
 pub fn msr_register<const SPSR: bool>(core: &mut Core<impl Bus>, pc: u32, word: u32) {
     let rm = (word & 15) as usize;
     let control = (word & 0x0001_0000) != 0;
