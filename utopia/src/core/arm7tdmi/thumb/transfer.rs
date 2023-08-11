@@ -1,91 +1,48 @@
 use super::super::{Bus, Core, REGS};
 use tracing::debug;
 
-pub fn ldr_byte(core: &mut Core<impl Bus>, pc: u32, word: u16) {
-    let offset = (word >> 6) & 31;
+const SIZES: [&str; 3] = ["B", "H", ""];
+
+pub fn ldr_immediate<const SIZE: usize>(core: &mut Core<impl Bus>, pc: u32, word: u16) {
+    let offset = ((word >> 6) & 31) << SIZE;
     let rb = ((word >> 3) & 7) as usize;
     let rd = (word & 7) as usize;
 
     debug!(
-        "{:08X} LDRB {}, [{}, #0x{:X}]",
-        pc, REGS[rd], REGS[rb], offset
+        "{:08X} LDR{} {}, [{}, #0x{:X}]",
+        pc, SIZES[SIZE], REGS[rd], REGS[rb], offset
     );
 
     let address = core.get(rb).wrapping_add(offset as u32);
-    let result = core.read_byte(address);
-    core.set(rd, result as u32);
-}
 
-pub fn ldr_halfword(core: &mut Core<impl Bus>, pc: u32, word: u16) {
-    let offset = ((word >> 6) & 31) << 1;
-    let rb = ((word >> 3) & 7) as usize;
-    let rd = (word & 7) as usize;
+    let result = match SIZE {
+        0 => core.read_byte(address) as u32,
+        1 => core.read_halfword(address) as u32,
+        2 => core.read_word(address),
+        _ => unreachable!(),
+    };
 
-    debug!(
-        "{:08X} LDRH {}, [{}, #0x{:X}]",
-        pc, REGS[rd], REGS[rb], offset
-    );
-
-    let address = core.get(rb).wrapping_add(offset as u32);
-    let result = core.read_halfword(address);
-    core.set(rd, result as u32);
-}
-
-pub fn ldr_word(core: &mut Core<impl Bus>, pc: u32, word: u16) {
-    let offset = ((word >> 6) & 31) << 2;
-    let rb = ((word >> 3) & 7) as usize;
-    let rd = (word & 7) as usize;
-
-    debug!(
-        "{:08X} LDR {}, [{}, #0x{:X}]",
-        pc, REGS[rd], REGS[rb], offset
-    );
-
-    let address = core.get(rb).wrapping_add(offset as u32);
-    let result = core.read_word(address);
     core.set(rd, result);
 }
 
-pub fn str_byte(core: &mut Core<impl Bus>, pc: u32, word: u16) {
-    let offset = (word >> 6) & 31;
+pub fn str_immediate<const SIZE: usize>(core: &mut Core<impl Bus>, pc: u32, word: u16) {
+    let offset = ((word >> 6) & 31) << SIZE;
     let rb = ((word >> 3) & 7) as usize;
     let rd = (word & 7) as usize;
 
     debug!(
-        "{:08X} STRB {}, [{}, #0x{:X}]",
-        pc, REGS[rd], REGS[rb], offset
+        "{:08X} STR{} {}, [{}, #0x{:X}]",
+        pc, SIZES[SIZE], REGS[rd], REGS[rb], offset
     );
 
     let address = core.get(rb).wrapping_add(offset as u32);
-    core.write_byte(address, core.get(rd) as u8);
-}
 
-pub fn str_halfword(core: &mut Core<impl Bus>, pc: u32, word: u16) {
-    let offset = ((word >> 6) & 31) << 1;
-    let rb = ((word >> 3) & 7) as usize;
-    let rd = (word & 7) as usize;
-
-    debug!(
-        "{:08X} STRH {}, [{}, #0x{:X}]",
-        pc, REGS[rd], REGS[rb], offset
-    );
-
-    let address = core.get(rb).wrapping_add(offset as u32);
-    core.write_halfword(address, core.get(rd) as u16);
-}
-
-pub fn str_word(core: &mut Core<impl Bus>, pc: u32, word: u16) {
-    let offset = ((word >> 6) & 31) << 2;
-    let rb = ((word >> 3) & 7) as usize;
-    let rd = (word & 7) as usize;
-
-    debug!(
-        "{:08X} STR {}, [{}, #0x{:X}]",
-        pc, REGS[rd], REGS[rb], offset
-    );
-
-    let address = core.get(rb).wrapping_add(offset as u32);
-    core.write_word(address, core.get(rd));
+    match SIZE {
+        0 => core.write_byte(address, core.get(rd) as u8),
+        1 => core.write_halfword(address, core.get(rd) as u16),
+        2 => core.write_word(address, core.get(rd)),
+        _ => unreachable!(),
+    }
 }
 
 pub fn ldr_register<const BYTE: bool>(core: &mut Core<impl Bus>, pc: u32, word: u16) {
