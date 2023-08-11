@@ -23,7 +23,7 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
     let condition = Condition::from_u32(word >> 28).unwrap();
 
     if !condition.apply(core) {
-        debug!("{:08X}: ({}: Skipped)", core.pc, condition);
+        debug!("{:08X}: ({}: Skipped)", pc, condition);
         return;
     }
 
