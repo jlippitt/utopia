@@ -40,10 +40,14 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x47 => bx(core, pc, word),
         0x48..=0x4f => ldr_pc_relative(core, pc, word),
 
-        0x50 | 0x51 => str_register::<false>(core, pc, word),
-        0x54 | 0x55 => str_register::<true>(core, pc, word),
-        0x58 | 0x59 => ldr_register::<false>(core, pc, word),
-        0x5c | 0x5d => ldr_register::<true>(core, pc, word),
+        0x50 | 0x51 => str_register::<2>(core, pc, word),
+        0x52 | 0x53 => str_register::<1>(core, pc, word),
+        0x54 | 0x55 => str_register::<0>(core, pc, word),
+        0x56 | 0x57 => lds_register::<0>(core, pc, word),
+        0x58 | 0x59 => ldr_register::<2>(core, pc, word),
+        0x5a | 0x5b => ldr_register::<1>(core, pc, word),
+        0x5c | 0x5d => ldr_register::<0>(core, pc, word),
+        0x5e | 0x5f => lds_register::<1>(core, pc, word),
 
         0x60..=0x67 => str_immediate::<2>(core, pc, word),
         0x68..=0x6f => ldr_immediate::<2>(core, pc, word),
