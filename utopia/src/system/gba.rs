@@ -5,12 +5,14 @@ use crate::util::MirrorVec;
 use crate::JoypadState;
 use audio::Audio;
 use dma::Dma;
+use ppu::Ppu;
 use registers::Registers;
 use std::error::Error;
 use tracing::{info, warn};
 
 mod audio;
 mod dma;
+mod ppu;
 mod registers;
 
 const WIDTH: usize = 240;
@@ -61,6 +63,7 @@ struct Hardware {
     regs: Registers,
     iwram: MirrorVec<u8>,
     ewram: MirrorVec<u8>,
+    ppu: Ppu,
     audio: Audio,
     dma: Dma,
 }
@@ -77,6 +80,7 @@ impl Hardware {
             regs: Registers::new(),
             iwram: MirrorVec::new(IWRAM_SIZE),
             ewram: MirrorVec::new(EWRAM_SIZE),
+            ppu: Ppu::new(),
             audio: Audio::new(),
             dma: Dma::new(),
         }
@@ -98,7 +102,7 @@ impl Bus for Hardware {
                 address => self.regs.read_le(address),
             },
             0x05 => todo!("Palette RAM Reads"),
-            0x06 => todo!("VRAM Reads"),
+            0x06 => self.ppu.vram().read_le(address as usize & 0x00ff_ffff),
             0x07 => todo!("OAM Reads"),
             0x08..=0x0d => {
                 let index = address as usize & 0x01ff_ffff;
@@ -128,7 +132,10 @@ impl Bus for Hardware {
                 address => self.regs.write_le(address, value),
             },
             0x05 => warn!("Palette RAM Writes not yet implemented"),
-            0x06 => warn!("VRAM Writes not yet implemented"),
+            0x06 => self
+                .ppu
+                .vram_mut()
+                .write_le(address as usize & 0x00ff_ffff, value),
             0x07 => warn!("OAM Writes not yet implemented"),
             0x08..=0x0d => panic!("Write to ROM area: {:08X} <= {:08X}", address, value),
             0xe0 => warn!("SRAM Writes not yet implemented"),
