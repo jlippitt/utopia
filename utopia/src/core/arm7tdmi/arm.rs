@@ -27,7 +27,7 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         return;
     }
 
-    if (word & 0x0e00_0010) == 0x0000_0010 {
+    if (word & 0x0e00_0090) == 0x0000_0090 {
         dispatch_special(core, pc, word);
         return;
     }
@@ -50,7 +50,13 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         //0x0e => binary_register::<op::Rsc, false>(core, pc, word),
         //0x0f => binary_register::<op::Rsc, true>(core, pc, word),
         0x11 => compare_register::<op::Tst>(core, pc, word),
-        0x12 => msr_register::<false>(core, pc, word),
+        0x12 => {
+            if (word & 0x000f_f000) == 0x000f_f000 {
+                bx(core, pc, word)
+            } else {
+                msr_register::<false>(core, pc, word)
+            }
+        }
         0x13 => compare_register::<op::Teq>(core, pc, word),
         0x15 => compare_register::<op::Cmp>(core, pc, word),
         0x16 => msr_register::<true>(core, pc, word),
@@ -176,7 +182,6 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
 
 fn dispatch_special(core: &mut Core<impl Bus>, pc: u32, word: u32) {
     match (word >> 20) & 0x1f {
-        0x12 => bx(core, pc, word),
         opcode => todo!(
             "ARM7 Special Opcode {0:02X} [{0:08b}] (PC: {1:08X})",
             opcode,
