@@ -27,48 +27,43 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         return;
     }
 
-    if (word & 0x0e00_0090) == 0x0000_0090 {
+    if (word & 0x0e00_0010) == 0x0000_0010 {
         dispatch_special(core, pc, word);
         return;
     }
 
     match (word >> 20) & 0xff {
-        0x00 => binary_register::<op::And, false>(core, pc, word),
-        0x01 => binary_register::<op::And, true>(core, pc, word),
-        0x02 => binary_register::<op::Eor, false>(core, pc, word),
-        0x03 => binary_register::<op::Eor, true>(core, pc, word),
-        0x04 => binary_register::<op::Sub, false>(core, pc, word),
-        0x05 => binary_register::<op::Sub, true>(core, pc, word),
-        //0x06 => binary_register::<op::Rsb, false>(core, pc, word),
-        //0x07 => binary_register::<op::Rsb, true>(core, pc, word),
-        0x08 => binary_register::<op::Add, false>(core, pc, word),
-        0x09 => binary_register::<op::Add, true>(core, pc, word),
-        0x0a => binary_register::<op::Adc, false>(core, pc, word),
-        0x0b => binary_register::<op::Adc, true>(core, pc, word),
-        0x0c => binary_register::<op::Sbc, false>(core, pc, word),
-        0x0d => binary_register::<op::Sbc, true>(core, pc, word),
-        //0x0e => binary_register::<op::Rsc, false>(core, pc, word),
-        //0x0f => binary_register::<op::Rsc, true>(core, pc, word),
-        0x11 => compare_register::<op::Tst>(core, pc, word),
-        0x12 => {
-            if (word & 0x000f_f000) == 0x000f_f000 {
-                bx(core, pc, word)
-            } else {
-                msr_register::<false>(core, pc, word)
-            }
-        }
-        0x13 => compare_register::<op::Teq>(core, pc, word),
-        0x15 => compare_register::<op::Cmp>(core, pc, word),
+        0x00 => binary_register::<op::And, false, false>(core, pc, word),
+        0x01 => binary_register::<op::And, true, false>(core, pc, word),
+        0x02 => binary_register::<op::Eor, false, false>(core, pc, word),
+        0x03 => binary_register::<op::Eor, true, false>(core, pc, word),
+        0x04 => binary_register::<op::Sub, false, false>(core, pc, word),
+        0x05 => binary_register::<op::Sub, true, false>(core, pc, word),
+        //0x06 => binary_register::<op::Rsb, false, false>(core, pc, word),
+        //0x07 => binary_register::<op::Rsb, true, false>(core, pc, word),
+        0x08 => binary_register::<op::Add, false, false>(core, pc, word),
+        0x09 => binary_register::<op::Add, true, false>(core, pc, word),
+        0x0a => binary_register::<op::Adc, false, false>(core, pc, word),
+        0x0b => binary_register::<op::Adc, true, false>(core, pc, word),
+        0x0c => binary_register::<op::Sbc, false, false>(core, pc, word),
+        0x0d => binary_register::<op::Sbc, true, false>(core, pc, word),
+        //0x0e => binary_register::<op::Rsc, false, false>(core, pc, word),
+        //0x0f => binary_register::<op::Rsc, true, false>(core, pc, word),
+        0x11 => compare_register::<op::Tst, false>(core, pc, word),
+        0x12 => msr_register::<false>(core, pc, word),
+        0x13 => compare_register::<op::Teq, false>(core, pc, word),
+        0x15 => compare_register::<op::Cmp, false>(core, pc, word),
         0x16 => msr_register::<true>(core, pc, word),
-        0x17 => compare_register::<op::Cmn>(core, pc, word),
-        0x18 => binary_register::<op::Orr, false>(core, pc, word),
-        0x19 => binary_register::<op::Orr, true>(core, pc, word),
-        0x1a => move_register::<op::Mov, false>(core, pc, word),
-        0x1b => move_register::<op::Mov, true>(core, pc, word),
-        0x1c => binary_register::<op::Bic, false>(core, pc, word),
-        0x1d => binary_register::<op::Bic, true>(core, pc, word),
-        0x1e => move_register::<op::Mvn, false>(core, pc, word),
-        0x1f => move_register::<op::Mvn, true>(core, pc, word),
+        0x17 => compare_register::<op::Cmn, false>(core, pc, word),
+        0x18 => binary_register::<op::Orr, false, false>(core, pc, word),
+
+        0x19 => binary_register::<op::Orr, true, false>(core, pc, word),
+        0x1a => move_register::<op::Mov, false, false>(core, pc, word),
+        0x1b => move_register::<op::Mov, true, false>(core, pc, word),
+        0x1c => binary_register::<op::Bic, false, false>(core, pc, word),
+        0x1d => binary_register::<op::Bic, true, false>(core, pc, word),
+        0x1e => move_register::<op::Mvn, false, false>(core, pc, word),
+        0x1f => move_register::<op::Mvn, true, false>(core, pc, word),
 
         0x20 => binary_immediate::<op::And, false>(core, pc, word),
         0x21 => binary_immediate::<op::And, true>(core, pc, word),
@@ -180,12 +175,53 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
     }
 }
 
-fn dispatch_special(_core: &mut Core<impl Bus>, pc: u32, word: u32) {
-    match (word >> 20) & 0x1f {
-        opcode => todo!(
-            "ARM7 Special Opcode {0:02X} [{0:08b}] (PC: {1:08X})",
-            opcode,
-            pc
-        ),
+fn dispatch_special(core: &mut Core<impl Bus>, pc: u32, word: u32) {
+    if (word & 0x80) == 0 {
+        match (word >> 20) & 0x1f {
+            0x00 => binary_register::<op::And, false, true>(core, pc, word),
+            0x01 => binary_register::<op::And, true, true>(core, pc, word),
+            0x02 => binary_register::<op::Eor, false, true>(core, pc, word),
+            0x03 => binary_register::<op::Eor, true, true>(core, pc, word),
+            0x04 => binary_register::<op::Sub, false, true>(core, pc, word),
+            0x05 => binary_register::<op::Sub, true, true>(core, pc, word),
+            //0x06 => binary_register::<op::Rsb, false, true>(core, pc, word),
+            //0x07 => binary_register::<op::Rsb, true, true>(core, pc, word),
+            0x08 => binary_register::<op::Add, false, true>(core, pc, word),
+            0x09 => binary_register::<op::Add, true, true>(core, pc, word),
+            0x0a => binary_register::<op::Adc, false, true>(core, pc, word),
+            0x0b => binary_register::<op::Adc, true, true>(core, pc, word),
+            0x0c => binary_register::<op::Sbc, false, true>(core, pc, word),
+            0x0d => binary_register::<op::Sbc, true, true>(core, pc, word),
+            //0x0e => binary_register::<op::Rsc, false, true>(core, pc, word),
+            //0x0f => binary_register::<op::Rsc, true, true>(core, pc, word),
+            0x11 => compare_register::<op::Tst, true>(core, pc, word),
+            0x12 => bx(core, pc, word),
+            0x13 => compare_register::<op::Teq, true>(core, pc, word),
+            0x15 => compare_register::<op::Cmp, true>(core, pc, word),
+            0x17 => compare_register::<op::Cmn, true>(core, pc, word),
+            0x18 => binary_register::<op::Orr, false, true>(core, pc, word),
+
+            0x19 => binary_register::<op::Orr, true, true>(core, pc, word),
+            0x1a => move_register::<op::Mov, false, true>(core, pc, word),
+            0x1b => move_register::<op::Mov, true, true>(core, pc, word),
+            0x1c => binary_register::<op::Bic, false, true>(core, pc, word),
+            0x1d => binary_register::<op::Bic, true, true>(core, pc, word),
+            0x1e => move_register::<op::Mvn, false, true>(core, pc, word),
+            0x1f => move_register::<op::Mvn, true, true>(core, pc, word),
+
+            opcode => todo!(
+                "ARM7 Special Opcode {0:02X}/0 [{0:08b}] (PC: {1:08X})",
+                opcode,
+                pc
+            ),
+        }
+    } else {
+        match (word >> 20) & 0x1f {
+            opcode => todo!(
+                "ARM7 Special Opcode {0:02X}/1 [{0:08b}] (PC: {1:08X})",
+                opcode,
+                pc
+            ),
+        }
     }
 }

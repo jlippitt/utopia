@@ -88,7 +88,7 @@ pub fn compare_immediate<Op: CompareOperator>(core: &mut Core<impl Bus>, pc: u32
     Op::apply(core, core.get(rn), value);
 }
 
-pub fn binary_register<Op: BinaryOperator, const SET_FLAGS: bool>(
+pub fn binary_register<Op: BinaryOperator, const SET_FLAGS: bool, const VAR_SHIFT: bool>(
     core: &mut Core<impl Bus>,
     pc: u32,
     word: u32,
@@ -97,10 +97,17 @@ pub fn binary_register<Op: BinaryOperator, const SET_FLAGS: bool>(
     let rd = ((word >> 12) & 15) as usize;
     let rm = (word & 15) as usize;
     let shift_type = ((word >> 5) & 3) as usize;
-    let shift_amount = (word >> 7) & 31;
+
+    let (shift_amount, debug_string) = if VAR_SHIFT {
+        let rs = ((word >> 8) & 15) as usize;
+        (core.get(rs), format!("{}", REGS[rs]))
+    } else {
+        let shift_amount = (word >> 7) & 31;
+        (shift_amount, format!("#0x{:X}", shift_amount))
+    };
 
     debug!(
-        "{:08X} {}{} {}, {}, {}, {} #0x{:X}",
+        "{:08X} {}{} {}, {}, {}, {} {}",
         pc,
         Op::NAME,
         if SET_FLAGS { "S" } else { "" },
@@ -108,7 +115,7 @@ pub fn binary_register<Op: BinaryOperator, const SET_FLAGS: bool>(
         REGS[rn],
         REGS[rm],
         SHIFT[shift_type],
-        shift_amount,
+        debug_string
     );
 
     let value = if Op::LOGICAL {
@@ -126,7 +133,7 @@ pub fn binary_register<Op: BinaryOperator, const SET_FLAGS: bool>(
     core.set(rd, result);
 }
 
-pub fn move_register<Op: MoveOperator, const SET_FLAGS: bool>(
+pub fn move_register<Op: MoveOperator, const SET_FLAGS: bool, const VAR_SHIFT: bool>(
     core: &mut Core<impl Bus>,
     pc: u32,
     word: u32,
@@ -134,17 +141,24 @@ pub fn move_register<Op: MoveOperator, const SET_FLAGS: bool>(
     let rd = ((word >> 12) & 15) as usize;
     let rm = (word & 15) as usize;
     let shift_type = ((word >> 5) & 3) as usize;
-    let shift_amount = (word >> 7) & 31;
+
+    let (shift_amount, debug_string) = if VAR_SHIFT {
+        let rs = ((word >> 8) & 15) as usize;
+        (core.get(rs), format!("{}", REGS[rs]))
+    } else {
+        let shift_amount = (word >> 7) & 31;
+        (shift_amount, format!("#0x{:X}", shift_amount))
+    };
 
     debug!(
-        "{:08X} {}{} {}, {}, {} #0x{:X}",
+        "{:08X} {}{} {}, {}, {} {}",
         pc,
         Op::NAME,
         if SET_FLAGS { "S" } else { "" },
         REGS[rd],
         REGS[rm],
         SHIFT[shift_type],
-        shift_amount,
+        debug_string,
     );
 
     let value = shifted_value::<SET_FLAGS, true>(core, rm, shift_type, shift_amount);
@@ -158,20 +172,31 @@ pub fn move_register<Op: MoveOperator, const SET_FLAGS: bool>(
     core.set(rd, result);
 }
 
-pub fn compare_register<Op: CompareOperator>(core: &mut Core<impl Bus>, pc: u32, word: u32) {
+pub fn compare_register<Op: CompareOperator, const VAR_SHIFT: bool>(
+    core: &mut Core<impl Bus>,
+    pc: u32,
+    word: u32,
+) {
     let rn = ((word >> 16) & 15) as usize;
     let rm = (word & 15) as usize;
     let shift_type = ((word >> 5) & 3) as usize;
-    let shift_amount = (word >> 7) & 31;
+
+    let (shift_amount, debug_string) = if VAR_SHIFT {
+        let rs = ((word >> 8) & 15) as usize;
+        (core.get(rs), format!("{}", REGS[rs]))
+    } else {
+        let shift_amount = (word >> 7) & 31;
+        (shift_amount, format!("#0x{:X}", shift_amount))
+    };
 
     debug!(
-        "{:08X} {} {}, {}, {} #0x{:X}",
+        "{:08X} {} {}, {}, {} {}",
         pc,
         Op::NAME,
         REGS[rn],
         REGS[rm],
         SHIFT[shift_type],
-        shift_amount,
+        debug_string
     );
 
     let value = if Op::LOGICAL {
