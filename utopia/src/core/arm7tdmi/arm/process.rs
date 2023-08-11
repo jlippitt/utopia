@@ -1,28 +1,10 @@
-use super::super::operator::{self, BinaryOperator, CompareOperator, MoveOperator, ShiftOperator};
+use super::super::operator::{BinaryOperator, CompareOperator, MoveOperator};
 use super::super::{Bus, Core, REGS};
+use super::{apply_shift, SHIFT};
 use tracing::debug;
-
-const SHIFT: [&str; 4] = ["LSL", "LSR", "ASR", "ROR"];
 
 fn immediate_value(word: u32) -> u32 {
     (word & 0xff).rotate_right(((word >> 8) & 15) << 1)
-}
-
-fn shifted_value<const SET_FLAGS: bool, const SET_CARRY: bool>(
-    core: &mut Core<impl Bus>,
-    rm: usize,
-    shift_type: usize,
-    shift_amount: u32,
-) -> u32 {
-    use operator as op;
-
-    match shift_type {
-        0b00 => op::Lsl::apply::<SET_FLAGS, SET_CARRY>(core, core.get(rm), shift_amount),
-        0b01 => op::Lsr::apply::<SET_FLAGS, SET_CARRY>(core, core.get(rm), shift_amount),
-        0b10 => op::Asr::apply::<SET_FLAGS, SET_CARRY>(core, core.get(rm), shift_amount),
-        0b11 => op::Ror::apply::<SET_FLAGS, SET_CARRY>(core, core.get(rm), shift_amount),
-        _ => unreachable!(),
-    }
 }
 
 pub fn binary_immediate<Op: BinaryOperator, const SET_FLAGS: bool>(
@@ -119,9 +101,9 @@ pub fn binary_register<Op: BinaryOperator, const SET_FLAGS: bool, const VAR_SHIF
     );
 
     let value = if Op::LOGICAL {
-        shifted_value::<SET_FLAGS, true>(core, rm, shift_type, shift_amount)
+        apply_shift::<SET_FLAGS, true>(core, rm, shift_type, shift_amount)
     } else {
-        shifted_value::<SET_FLAGS, false>(core, rm, shift_type, shift_amount)
+        apply_shift::<SET_FLAGS, false>(core, rm, shift_type, shift_amount)
     };
 
     let result = if SET_FLAGS && rd == 15 {
@@ -161,7 +143,7 @@ pub fn move_register<Op: MoveOperator, const SET_FLAGS: bool, const VAR_SHIFT: b
         debug_string,
     );
 
-    let value = shifted_value::<SET_FLAGS, true>(core, rm, shift_type, shift_amount);
+    let value = apply_shift::<SET_FLAGS, true>(core, rm, shift_type, shift_amount);
 
     let result = if SET_FLAGS && rd == 15 {
         todo!("Weird PC register flag handling");
@@ -200,9 +182,9 @@ pub fn compare_register<Op: CompareOperator, const VAR_SHIFT: bool>(
     );
 
     let value = if Op::LOGICAL {
-        shifted_value::<true, true>(core, rm, shift_type, shift_amount)
+        apply_shift::<true, true>(core, rm, shift_type, shift_amount)
     } else {
-        shifted_value::<true, false>(core, rm, shift_type, shift_amount)
+        apply_shift::<true, false>(core, rm, shift_type, shift_amount)
     };
 
     Op::apply(core, core.get(rn), value);

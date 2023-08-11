@@ -1,5 +1,5 @@
 use super::condition::Condition;
-use super::operator as op;
+use super::operator::{self as op, ShiftOperator};
 use super::{Bus, Core};
 use block::*;
 use control::*;
@@ -12,6 +12,8 @@ mod block;
 mod control;
 mod process;
 mod transfer;
+
+const SHIFT: [&str; 4] = ["LSL", "LSR", "ASR", "ROR"];
 
 pub fn dispatch(core: &mut Core<impl Bus>) {
     assert!((core.pc & 3) == 0);
@@ -135,6 +137,42 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x5e => str_immediate::<true, 0b111>(core, pc, word),
         0x5f => ldr_immediate::<true, 0b111>(core, pc, word),
 
+        0x60 => str_register::<false, 0b000>(core, pc, word),
+        0x61 => ldr_register::<false, 0b000>(core, pc, word),
+        0x62 => str_register::<false, 0b001>(core, pc, word),
+        0x63 => ldr_register::<false, 0b001>(core, pc, word),
+        0x64 => str_register::<true, 0b000>(core, pc, word),
+        0x65 => ldr_register::<true, 0b000>(core, pc, word),
+        0x66 => str_register::<true, 0b001>(core, pc, word),
+        0x67 => ldr_register::<true, 0b001>(core, pc, word),
+
+        0x68 => str_register::<false, 0b010>(core, pc, word),
+        0x69 => ldr_register::<false, 0b010>(core, pc, word),
+        0x6a => str_register::<false, 0b011>(core, pc, word),
+        0x6b => ldr_register::<false, 0b011>(core, pc, word),
+        0x6c => str_register::<true, 0b010>(core, pc, word),
+        0x6d => ldr_register::<true, 0b010>(core, pc, word),
+        0x6e => str_register::<true, 0b011>(core, pc, word),
+        0x6f => ldr_register::<true, 0b011>(core, pc, word),
+
+        0x70 => str_register::<false, 0b100>(core, pc, word),
+        0x71 => ldr_register::<false, 0b100>(core, pc, word),
+        0x72 => str_register::<false, 0b101>(core, pc, word),
+        0x73 => ldr_register::<false, 0b101>(core, pc, word),
+        0x74 => str_register::<true, 0b100>(core, pc, word),
+        0x75 => ldr_register::<true, 0b100>(core, pc, word),
+        0x76 => str_register::<true, 0b101>(core, pc, word),
+        0x77 => ldr_register::<true, 0b101>(core, pc, word),
+
+        0x78 => str_register::<false, 0b110>(core, pc, word),
+        0x79 => ldr_register::<false, 0b110>(core, pc, word),
+        0x7a => str_register::<false, 0b111>(core, pc, word),
+        0x7b => ldr_register::<false, 0b111>(core, pc, word),
+        0x7c => str_register::<true, 0b110>(core, pc, word),
+        0x7d => ldr_register::<true, 0b110>(core, pc, word),
+        0x7e => str_register::<true, 0b111>(core, pc, word),
+        0x7f => ldr_register::<true, 0b111>(core, pc, word),
+
         0x80 => stm::<0b00, false, false>(core, pc, word),
         0x81 => ldm::<0b00, false, false>(core, pc, word),
         0x82 => stm::<0b00, false, true>(core, pc, word),
@@ -229,5 +267,20 @@ fn dispatch_special(core: &mut Core<impl Bus>, pc: u32, word: u32) {
                 pc
             ),
         }
+    }
+}
+
+fn apply_shift<const SET_FLAGS: bool, const SET_CARRY: bool>(
+    core: &mut Core<impl Bus>,
+    rm: usize,
+    shift_type: usize,
+    shift_amount: u32,
+) -> u32 {
+    match shift_type {
+        0b00 => op::Lsl::apply::<SET_FLAGS, SET_CARRY>(core, core.get(rm), shift_amount),
+        0b01 => op::Lsr::apply::<SET_FLAGS, SET_CARRY>(core, core.get(rm), shift_amount),
+        0b10 => op::Asr::apply::<SET_FLAGS, SET_CARRY>(core, core.get(rm), shift_amount),
+        0b11 => op::Ror::apply::<SET_FLAGS, SET_CARRY>(core, core.get(rm), shift_amount),
+        _ => unreachable!(),
     }
 }
