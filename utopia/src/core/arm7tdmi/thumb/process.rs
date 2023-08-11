@@ -19,7 +19,7 @@ pub fn move_shifted<Op: ShiftOperator>(core: &mut Core<impl Bus>, pc: u32, word:
         shift_amount
     );
 
-    let result = Op::apply::<true, true>(core, core.get(rs), shift_amount);
+    let result = Op::apply::<true, false, true>(core, core.get(rs), shift_amount);
     core.set(rd, result);
 }
 
@@ -186,6 +186,6 @@ fn multiply_op<Op: MultiplyOperator>(core: &mut Core<impl Bus>, pc: u32, rs: usi
 
 fn shift_op<Op: ShiftOperator>(core: &mut Core<impl Bus>, pc: u32, rs: usize, rd: usize) {
     debug!("{:08X} {} {}, {}", pc, Op::NAME, REGS[rd], REGS[rs]);
-    let result = Op::apply::<true, true>(core, core.get(rd), core.get(rs));
+    let result = Op::apply::<true, true, true>(core, core.get(rd), core.get(rs));
     core.set(rd, result);
 }

@@ -114,7 +114,9 @@ pub fn ldr_register<const SIZE: usize, const PUW: u8>(
     let rm = (word & 15) as usize;
     let shift_type = ((word >> 5) & 3) as usize;
 
-    let (shift_amount, debug_string) = if (word & 0x10) != 0 {
+    let var_shift = (word & 0x10) != 0;
+
+    let (shift_amount, debug_string) = if var_shift {
         let rs = ((word >> 8) & 15) as usize;
         (core.get(rs), format!("{}", REGS[rs]))
     } else {
@@ -130,7 +132,12 @@ pub fn ldr_register<const SIZE: usize, const PUW: u8>(
         format_register::<PUW>(rn, rm, shift_type, &debug_string),
     );
 
-    let offset = apply_shift::<false, false>(core, rm, shift_type, shift_amount);
+    let offset = if var_shift {
+        apply_shift::<false, true, false>(core, rm, shift_type, shift_amount)
+    } else {
+        apply_shift::<false, false, false>(core, rm, shift_type, shift_amount)
+    };
+
     let address = resolve::<PUW>(core, rn, offset);
 
     let result = match SIZE {
@@ -180,7 +187,9 @@ pub fn str_register<const SIZE: usize, const PUW: u8>(
     let rm = (word & 15) as usize;
     let shift_type = ((word >> 5) & 3) as usize;
 
-    let (shift_amount, debug_string) = if (word & 0x10) != 0 {
+    let var_shift = (word & 0x10) != 0;
+
+    let (shift_amount, debug_string) = if var_shift {
         let rs = ((word >> 8) & 15) as usize;
         (core.get(rs), format!("{}", REGS[rs]))
     } else {
@@ -196,7 +205,12 @@ pub fn str_register<const SIZE: usize, const PUW: u8>(
         format_register::<PUW>(rn, rm, shift_type, &debug_string),
     );
 
-    let offset = apply_shift::<false, false>(core, rm, shift_type, shift_amount);
+    let offset = if var_shift {
+        apply_shift::<false, true, false>(core, rm, shift_type, shift_amount)
+    } else {
+        apply_shift::<false, false, false>(core, rm, shift_type, shift_amount)
+    };
+
     let address = resolve::<PUW>(core, rn, offset);
 
     match SIZE {
@@ -245,7 +259,9 @@ pub fn lds_register<const SIZE: usize, const PUW: u8>(
     let rm = (word & 15) as usize;
     let shift_type = ((word >> 5) & 3) as usize;
 
-    let (shift_amount, debug_string) = if (word & 0x10) != 0 {
+    let var_shift = (word & 0x10) != 0;
+
+    let (shift_amount, debug_string) = if var_shift {
         let rs = ((word >> 8) & 15) as usize;
         (core.get(rs), format!("{}", REGS[rs]))
     } else {
@@ -261,7 +277,12 @@ pub fn lds_register<const SIZE: usize, const PUW: u8>(
         format_register::<PUW>(rn, rm, shift_type, &debug_string),
     );
 
-    let offset = apply_shift::<false, false>(core, rm, shift_type, shift_amount);
+    let offset = if var_shift {
+        apply_shift::<false, true, false>(core, rm, shift_type, shift_amount)
+    } else {
+        apply_shift::<false, false, false>(core, rm, shift_type, shift_amount)
+    };
+
     let address = resolve::<PUW>(core, rn, offset);
 
     let result = match SIZE {

@@ -353,17 +353,17 @@ fn dispatch_signed<const SIZE: usize>(core: &mut Core<impl Bus>, pc: u32, word: 
     }
 }
 
-fn apply_shift<const SET_FLAGS: bool, const SET_CARRY: bool>(
+fn apply_shift<const SET_FLAGS: bool, const VAR_SHIFT: bool, const SET_CARRY: bool>(
     core: &mut Core<impl Bus>,
     rm: usize,
     shift_type: usize,
     shift_amount: u32,
 ) -> u32 {
     match shift_type {
-        0b00 => op::Lsl::apply::<SET_FLAGS, SET_CARRY>(core, core.get(rm), shift_amount),
-        0b01 => op::Lsr::apply::<SET_FLAGS, SET_CARRY>(core, core.get(rm), shift_amount),
-        0b10 => op::Asr::apply::<SET_FLAGS, SET_CARRY>(core, core.get(rm), shift_amount),
-        0b11 => op::Ror::apply::<SET_FLAGS, SET_CARRY>(core, core.get(rm), shift_amount),
+        0b00 => op::Lsl::apply::<SET_FLAGS, VAR_SHIFT, SET_CARRY>(core, core.get(rm), shift_amount),
+        0b01 => op::Lsr::apply::<SET_FLAGS, VAR_SHIFT, SET_CARRY>(core, core.get(rm), shift_amount),
+        0b10 => op::Asr::apply::<SET_FLAGS, VAR_SHIFT, SET_CARRY>(core, core.get(rm), shift_amount),
+        0b11 => op::Ror::apply::<SET_FLAGS, VAR_SHIFT, SET_CARRY>(core, core.get(rm), shift_amount),
         _ => unreachable!(),
     }
 }

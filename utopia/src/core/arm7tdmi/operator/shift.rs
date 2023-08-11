@@ -2,7 +2,7 @@ use super::super::{Bus, Core};
 
 pub trait ShiftOperator {
     const NAME: &'static str;
-    fn apply<const SET_FLAGS: bool, const LOGICAL: bool>(
+    fn apply<const SET_FLAGS: bool, const VAR_SHIFT: bool, const LOGICAL: bool>(
         core: &mut Core<impl Bus>,
         value: u32,
         shift_amount: u32,
@@ -14,7 +14,7 @@ pub struct Lsl;
 impl ShiftOperator for Lsl {
     const NAME: &'static str = "LSL";
 
-    fn apply<const SET_FLAGS: bool, const LOGICAL: bool>(
+    fn apply<const SET_FLAGS: bool, const VAR_SHIFT: bool, const LOGICAL: bool>(
         core: &mut Core<impl Bus>,
         value: u32,
         shift_amount: u32,
@@ -42,12 +42,20 @@ pub struct Lsr;
 impl ShiftOperator for Lsr {
     const NAME: &'static str = "LSR";
 
-    fn apply<const SET_FLAGS: bool, const LOGICAL: bool>(
+    fn apply<const SET_FLAGS: bool, const VAR_SHIFT: bool, const LOGICAL: bool>(
         core: &mut Core<impl Bus>,
         value: u32,
         shift_amount: u32,
     ) -> u32 {
-        let shift_amount = if shift_amount == 0 { 32 } else { shift_amount };
+        let shift_amount = if shift_amount == 0 {
+            if VAR_SHIFT {
+                return value;
+            }
+
+            32
+        } else {
+            shift_amount
+        };
 
         if SET_FLAGS && LOGICAL {
             core.cpsr.c = (value & 0x8000_0000u32.rotate_left(shift_amount)) != 0;
@@ -68,12 +76,20 @@ pub struct Asr;
 impl ShiftOperator for Asr {
     const NAME: &'static str = "ASR";
 
-    fn apply<const SET_FLAGS: bool, const LOGICAL: bool>(
+    fn apply<const SET_FLAGS: bool, const VAR_SHIFT: bool, const LOGICAL: bool>(
         core: &mut Core<impl Bus>,
         value: u32,
         shift_amount: u32,
     ) -> u32 {
-        let shift_amount = if shift_amount == 0 { 32 } else { shift_amount };
+        let shift_amount = if shift_amount == 0 {
+            if VAR_SHIFT {
+                return value;
+            }
+
+            32
+        } else {
+            shift_amount
+        };
 
         if SET_FLAGS && LOGICAL {
             core.cpsr.c = (value & 0x8000_0000u32.rotate_left(shift_amount)) != 0;
@@ -94,19 +110,16 @@ pub struct Ror;
 impl ShiftOperator for Ror {
     const NAME: &'static str = "ROR";
 
-    fn apply<const SET_FLAGS: bool, const LOGICAL: bool>(
+    fn apply<const VAR_SHIFT: bool, const SET_FLAGS: bool, const LOGICAL: bool>(
         core: &mut Core<impl Bus>,
         value: u32,
         shift_amount: u32,
     ) -> u32 {
-        let result = if shift_amount != 0 {
-            // ROR
-            if SET_FLAGS && LOGICAL {
-                core.cpsr.c = (value & 0x8000_0000u32.rotate_left(shift_amount)) != 0;
+        let result = if shift_amount == 0 {
+            if VAR_SHIFT {
+                return value;
             }
 
-            value.rotate_right(shift_amount)
-        } else {
             // RRX
             let carry = core.cpsr.c as u32;
 
@@ -115,6 +128,13 @@ impl ShiftOperator for Ror {
             }
 
             (value >> 1) | (carry << 31)
+        } else {
+            // ROR
+            if SET_FLAGS && LOGICAL {
+                core.cpsr.c = (value & 0x8000_0000u32.rotate_left(shift_amount)) != 0;
+            }
+
+            value.rotate_right(shift_amount)
         };
 
         if SET_FLAGS {

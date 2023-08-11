@@ -101,9 +101,9 @@ pub fn binary_register<Op: BinaryOperator, const SET_FLAGS: bool, const VAR_SHIF
     );
 
     let value = if Op::LOGICAL {
-        apply_shift::<SET_FLAGS, true>(core, rm, shift_type, shift_amount)
+        apply_shift::<SET_FLAGS, VAR_SHIFT, true>(core, rm, shift_type, shift_amount)
     } else {
-        apply_shift::<SET_FLAGS, false>(core, rm, shift_type, shift_amount)
+        apply_shift::<SET_FLAGS, VAR_SHIFT, false>(core, rm, shift_type, shift_amount)
     };
 
     let result = if SET_FLAGS && rd == 15 {
@@ -143,7 +143,7 @@ pub fn move_register<Op: MoveOperator, const SET_FLAGS: bool, const VAR_SHIFT: b
         debug_string,
     );
 
-    let value = apply_shift::<SET_FLAGS, true>(core, rm, shift_type, shift_amount);
+    let value = apply_shift::<SET_FLAGS, VAR_SHIFT, true>(core, rm, shift_type, shift_amount);
 
     let result = if SET_FLAGS && rd == 15 {
         todo!("Weird PC register flag handling");
@@ -182,9 +182,9 @@ pub fn compare_register<Op: CompareOperator, const VAR_SHIFT: bool>(
     );
 
     let value = if Op::LOGICAL {
-        apply_shift::<true, true>(core, rm, shift_type, shift_amount)
+        apply_shift::<true, VAR_SHIFT, true>(core, rm, shift_type, shift_amount)
     } else {
-        apply_shift::<true, false>(core, rm, shift_type, shift_amount)
+        apply_shift::<true, VAR_SHIFT, false>(core, rm, shift_type, shift_amount)
     };
 
     Op::apply(core, core.get(rn), value);
