@@ -14,6 +14,8 @@ const REGS: [&'static str; 16] = [
     "R12", "SP", "LR", "PC",
 ];
 
+const SIZES: [&str; 3] = ["B", "H", ""];
+
 pub trait Bus {
     fn read<T: Value>(&mut self, address: u32) -> T;
     fn write<T: Value>(&mut self, address: u32, value: T);

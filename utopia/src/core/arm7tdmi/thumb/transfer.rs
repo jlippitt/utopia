@@ -1,7 +1,5 @@
-use super::super::{Bus, Core, REGS};
+use super::super::{Bus, Core, REGS, SIZES};
 use tracing::debug;
-
-const SIZES: [&str; 3] = ["B", "H", ""];
 
 pub fn ldr_immediate<const SIZE: usize>(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     let offset = ((word >> 6) & 31) << SIZE;
@@ -102,7 +100,6 @@ pub fn lds_register<const SIZE: usize>(core: &mut Core<impl Bus>, pc: u32, word:
     let result = match SIZE {
         0 => core.read_byte(address) as i8 as i32 as u32,
         1 => core.read_halfword(address) as i16 as i32 as u32,
-        2 => core.read_word(address),
         _ => unreachable!(),
     };
 
