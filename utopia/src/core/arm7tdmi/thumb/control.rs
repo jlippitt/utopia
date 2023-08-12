@@ -58,10 +58,11 @@ pub fn bx(core: &mut Core<impl Bus>, pc: u32, word: u16) {
 
 pub fn swi(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     debug!("{:08X} SWI #{:X}", pc, word & 0xff);
-    core.set(14, core.pc);
-    core.spsr_from_u32(core.cpsr_to_u32(), true);
-    core.pc = 0x0000_0008;
+    let saved_cpsr = core.cpsr_to_u32();
     core.cpsr.t = false;
     debug!("  ARM Mode");
     core.set_mode(Mode::Supervisor);
+    core.set(14, core.pc);
+    core.pc = 0x0000_0008;
+    core.spsr_from_u32(saved_cpsr, true);
 }
