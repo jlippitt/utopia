@@ -78,7 +78,11 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0xc8..=0xcf => ldmia(core, pc, word),
 
         0xd0..=0xde => branch_conditional(core, pc, word),
+
+        0xdf => swi(core, pc, word),
+
         0xe0..=0xe7 => branch_unconditional(core, pc, word),
+
         0xf0..=0xf7 => branch_and_link::<false>(core, pc, word),
         0xf8..=0xff => branch_and_link::<true>(core, pc, word),
 

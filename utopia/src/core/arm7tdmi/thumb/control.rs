@@ -1,5 +1,5 @@
 use super::super::condition::Condition;
-use super::super::{Bus, Core, REGS};
+use super::super::{Bus, Core, Mode, REGS};
 use num_traits::FromPrimitive;
 use tracing::debug;
 
@@ -54,4 +54,14 @@ pub fn bx(core: &mut Core<impl Bus>, pc: u32, word: u16) {
         core.pc = target & 0xffff_fffc;
         debug!("  ARM Mode");
     }
+}
+
+pub fn swi(core: &mut Core<impl Bus>, pc: u32, word: u16) {
+    debug!("{:08X} SWI #{:X}", pc, word & 0xff);
+    core.set(14, core.pc);
+    core.spsr_from_u32(core.cpsr_to_u32(), true);
+    core.pc = 0x0000_0008;
+    core.cpsr.t = false;
+    debug!("  ARM Mode");
+    core.set_mode(Mode::Supervisor);
 }
