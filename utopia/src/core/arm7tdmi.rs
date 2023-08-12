@@ -151,7 +151,8 @@ impl<T: Bus> Core<T> {
 
     fn set(&mut self, reg: usize, value: u32) {
         if reg == 15 {
-            todo!("PC set");
+            self.pc = value;
+            return;
         }
 
         self.regs[reg] = value;

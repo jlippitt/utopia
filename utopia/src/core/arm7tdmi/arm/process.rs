@@ -34,7 +34,8 @@ pub fn alu_immediate<Op: AluOperator, const SET_FLAGS: bool>(
     }
 
     if SET_FLAGS && rd == 15 {
-        todo!("Weird PC register flag handling");
+        core.cpsr_from_u32(core.spsr_to_u32(), true);
+        Op::apply::<false>(core, rd, core.get(rn), value);
     }
 
     Op::apply::<SET_FLAGS>(core, rd, core.get(rn), value);
@@ -98,7 +99,8 @@ pub fn alu_register<Op: AluOperator, const SET_FLAGS: bool, const VAR_SHIFT: boo
     };
 
     if SET_FLAGS && rd == 15 {
-        todo!("Weird PC register flag handling");
+        core.cpsr_from_u32(core.spsr_to_u32(), true);
+        Op::apply::<false>(core, rd, core.get(rn), value);
     };
 
     Op::apply::<SET_FLAGS>(core, rd, core.get(rn), value);
