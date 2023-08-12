@@ -20,23 +20,23 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
     match word >> 8 {
         0x00..=0x07 => move_shifted::<op::Lsl>(core, pc, word),
         0x08..=0x0f => move_shifted::<op::Lsr>(core, pc, word),
-
         0x10..=0x17 => move_shifted::<op::Asr>(core, pc, word),
-        0x18 | 0x19 => binary_register_3op::<op::Add>(core, pc, word),
-        0x1a | 0x1b => binary_register_3op::<op::Sub>(core, pc, word),
-        0x1c | 0x1d => binary_immediate_3op::<op::Add>(core, pc, word),
-        0x1e | 0x1f => binary_immediate_3op::<op::Sub>(core, pc, word),
 
-        0x20..=0x27 => move_immediate(core, pc, word),
-        0x28..=0x2f => compare_immediate(core, pc, word),
+        0x18 | 0x19 => alu_register_3op::<op::Add>(core, pc, word),
+        0x1a | 0x1b => alu_register_3op::<op::Sub>(core, pc, word),
 
-        0x30..=0x37 => binary_immediate::<op::Add>(core, pc, word),
-        0x38..=0x3f => binary_immediate::<op::Sub>(core, pc, word),
+        0x1c | 0x1d => alu_immediate_3op::<op::Add>(core, pc, word),
+        0x1e | 0x1f => alu_immediate_3op::<op::Sub>(core, pc, word),
 
-        0x40..=0x43 => alu_operation(core, pc, word),
-        0x44 => add_high(core, pc, word),
-        0x45 => cmp_high(core, pc, word),
-        0x46 => mov_high(core, pc, word),
+        0x20..=0x27 => alu_immediate_2op::<op::Mov>(core, pc, word),
+        0x28..=0x2f => alu_immediate_2op::<op::Cmp>(core, pc, word),
+        0x30..=0x37 => alu_immediate_2op::<op::Add>(core, pc, word),
+        0x38..=0x3f => alu_immediate_2op::<op::Sub>(core, pc, word),
+
+        0x40..=0x43 => alu_register_2op(core, pc, word),
+        0x44 => alu_register_high::<op::Add>(core, pc, word),
+        0x45 => alu_register_high::<op::Cmp>(core, pc, word),
+        0x46 => alu_register_high::<op::Mov>(core, pc, word),
         0x47 => bx(core, pc, word),
         0x48..=0x4f => ldr_pc_relative(core, pc, word),
 

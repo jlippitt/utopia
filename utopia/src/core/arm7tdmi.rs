@@ -1,5 +1,5 @@
 use crate::util::facade::Value;
-use tracing::debug;
+use tracing::{debug, warn};
 
 mod arm;
 mod condition;
@@ -199,7 +199,10 @@ impl<T: Bus> Core<T> {
             Mode::Supervisor => self.spsr.svc,
             Mode::Abort => self.spsr.abt,
             Mode::Undefined => self.spsr.und,
-            mode => panic!("No SPSR defined for mode: {:?}", mode),
+            mode => {
+                warn!("No SPSR defined for mode: {:?}", mode);
+                0
+            }
         }
     }
 
@@ -210,7 +213,10 @@ impl<T: Bus> Core<T> {
             Mode::Supervisor => &mut self.spsr.svc,
             Mode::Abort => &mut self.spsr.abt,
             Mode::Undefined => &mut self.spsr.und,
-            mode => panic!("No SPSR defined for mode: {:?}", mode),
+            mode => {
+                warn!("No SPSR defined for mode: {:?}", mode);
+                return;
+            }
         };
 
         if control {
