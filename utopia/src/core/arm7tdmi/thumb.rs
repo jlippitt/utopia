@@ -34,29 +34,32 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x38..=0x3f => alu_immediate_2op::<op::Sub>(core, pc, word),
 
         0x40..=0x43 => alu_register_2op(core, pc, word),
+
         0x44 => alu_register_high::<op::Add>(core, pc, word),
         0x45 => alu_register_high::<op::Cmp>(core, pc, word),
         0x46 => alu_register_high::<op::Mov>(core, pc, word),
+
         0x47 => bx(core, pc, word),
+
         0x48..=0x4f => ldr_pc_relative(core, pc, word),
 
-        0x50 | 0x51 => str_register::<2>(core, pc, word),
-        0x52 | 0x53 => str_register::<1>(core, pc, word),
-        0x54 | 0x55 => str_register::<0>(core, pc, word),
-        0x56 | 0x57 => lds_register::<0>(core, pc, word),
-        0x58 | 0x59 => ldr_register::<2>(core, pc, word),
-        0x5a | 0x5b => ldr_register::<1>(core, pc, word),
-        0x5c | 0x5d => ldr_register::<0>(core, pc, word),
-        0x5e | 0x5f => lds_register::<1>(core, pc, word),
+        0x50 | 0x51 => mem_register::<op::Str, 2>(core, pc, word),
+        0x52 | 0x53 => mem_register::<op::Str, 1>(core, pc, word),
+        0x54 | 0x55 => mem_register::<op::Str, 0>(core, pc, word),
+        0x56 | 0x57 => mem_register::<op::Lds, 0>(core, pc, word),
+        0x58 | 0x59 => mem_register::<op::Ldr, 2>(core, pc, word),
+        0x5a | 0x5b => mem_register::<op::Ldr, 1>(core, pc, word),
+        0x5c | 0x5d => mem_register::<op::Ldr, 0>(core, pc, word),
+        0x5e | 0x5f => mem_register::<op::Lds, 1>(core, pc, word),
 
-        0x60..=0x67 => str_immediate::<2>(core, pc, word),
-        0x68..=0x6f => ldr_immediate::<2>(core, pc, word),
+        0x60..=0x67 => mem_immediate::<op::Str, 2>(core, pc, word),
+        0x68..=0x6f => mem_immediate::<op::Ldr, 2>(core, pc, word),
 
-        0x70..=0x77 => str_immediate::<0>(core, pc, word),
-        0x78..=0x7f => ldr_immediate::<0>(core, pc, word),
+        0x70..=0x77 => mem_immediate::<op::Str, 0>(core, pc, word),
+        0x78..=0x7f => mem_immediate::<op::Ldr, 0>(core, pc, word),
 
-        0x80..=0x87 => str_immediate::<1>(core, pc, word),
-        0x88..=0x8f => ldr_immediate::<1>(core, pc, word),
+        0x80..=0x87 => mem_immediate::<op::Str, 1>(core, pc, word),
+        0x88..=0x8f => mem_immediate::<op::Ldr, 1>(core, pc, word),
 
         0x90..=0x97 => str_sp_relative(core, pc, word),
         0x98..=0x9f => ldr_sp_relative(core, pc, word),
@@ -65,6 +68,7 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0xa8..=0xaf => load_address::<true>(core, pc, word),
 
         0xb0 => add_sp_immediate(core, pc, word),
+
         0xb4 => push::<false>(core, pc, word),
         0xb5 => push::<true>(core, pc, word),
         0xbc => pop::<false>(core, pc, word),
@@ -74,11 +78,10 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0xc8..=0xcf => ldmia(core, pc, word),
 
         0xd0..=0xde => branch_conditional(core, pc, word),
-
         0xe0..=0xe7 => branch_unconditional(core, pc, word),
-
         0xf0..=0xf7 => branch_and_link::<false>(core, pc, word),
         0xf8..=0xff => branch_and_link::<true>(core, pc, word),
+
         opcode => todo!("Thumb Opcode {0:02X} [{0:08b}] (PC: {1:08X})", opcode, pc),
     }
 }
