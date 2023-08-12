@@ -1,5 +1,5 @@
 use super::{BiosLoader, System};
-use crate::core::arm7tdmi::{Bus, Core};
+use crate::core::arm7tdmi::{Bus, Core, Mode, State};
 use crate::util::facade::{ReadFacade, Value, WriteFacade};
 use crate::util::MirrorVec;
 use crate::JoypadState;
@@ -27,10 +27,25 @@ pub struct GameBoyAdvance {
 }
 
 impl GameBoyAdvance {
-    pub fn new(rom: Vec<u8>, bios_loader: &impl BiosLoader) -> Result<Self, Box<dyn Error>> {
+    pub fn new(
+        rom: Vec<u8>,
+        bios_loader: &impl BiosLoader,
+        skip_boot: bool,
+    ) -> Result<Self, Box<dyn Error>> {
         let bios = bios_loader.load("gba_bios")?;
         let hw = Hardware::new(rom, bios);
-        let core = Core::new(hw);
+
+        let mut initial_state: State = Default::default();
+
+        if skip_boot {
+            initial_state.pc = 0x0800_0000;
+            initial_state.regs[13] = 0x0300_7f00;
+            initial_state.bank.irq[0] = 0x0300_7fa0;
+            initial_state.bank.svc[0] = 0x0300_7fe0;
+            initial_state.cpsr.m = Mode::System;
+        };
+
+        let core = Core::new(hw, initial_state);
         Ok(GameBoyAdvance { core })
     }
 }

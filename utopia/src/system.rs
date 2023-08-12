@@ -86,7 +86,11 @@ pub fn create<T: MemoryMapper + 'static, U: BiosLoader>(
 
     Ok(match extension {
         "gb" => Box::new(GameBoy::<T::Mapped>::new(rom_data, options)?),
-        "gba" => Box::new(GameBoyAdvance::new(rom_data, &options.bios_loader)?),
+        "gba" => Box::new(GameBoyAdvance::new(
+            rom_data,
+            &options.bios_loader,
+            options.skip_boot,
+        )?),
         "nes" => Box::new(Nes::new(rom_data, &options.memory_mapper)?),
         "sfc" | "smc" => Box::new(Snes::new(rom_data, options)?),
         "z64" => Box::new(N64::new(rom_data)?),

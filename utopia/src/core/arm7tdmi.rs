@@ -23,7 +23,7 @@ pub trait Bus {
 
 #[repr(u8)]
 #[derive(Copy, Clone, Default, Debug, Eq, PartialEq)]
-enum Mode {
+pub enum Mode {
     User = 0b10000,
     Fiq = 0b10001,
     Irq = 0b10010,
@@ -34,36 +34,45 @@ enum Mode {
     System = 0b11111,
 }
 
-#[derive(Clone, Default)]
-struct Cpsr {
-    n: bool,
-    z: bool,
-    c: bool,
-    v: bool,
-    i: bool,
-    f: bool,
-    t: bool,
-    m: Mode,
-    reserved: u32,
+#[derive(Clone)]
+pub struct Cpsr {
+    pub n: bool,
+    pub z: bool,
+    pub c: bool,
+    pub v: bool,
+    pub i: bool,
+    pub f: bool,
+    pub t: bool,
+    pub m: Mode,
+    pub reserved: u32,
 }
 
 #[derive(Clone, Default)]
-struct Spsr {
-    fiq: u32,
-    svc: u32,
-    abt: u32,
-    irq: u32,
-    und: u32,
+pub struct Spsr {
+    pub fiq: u32,
+    pub svc: u32,
+    pub abt: u32,
+    pub irq: u32,
+    pub und: u32,
 }
 
 #[derive(Clone, Default)]
-struct Bank {
-    usr: [u32; 7],
-    fiq: [u32; 7],
-    svc: [u32; 2],
-    abt: [u32; 2],
-    irq: [u32; 2],
-    und: [u32; 2],
+pub struct Bank {
+    pub usr: [u32; 7],
+    pub fiq: [u32; 7],
+    pub svc: [u32; 2],
+    pub abt: [u32; 2],
+    pub irq: [u32; 2],
+    pub und: [u32; 2],
+}
+
+#[derive(Clone, Default)]
+pub struct State {
+    pub pc: u32,
+    pub regs: [u32; 16],
+    pub cpsr: Cpsr,
+    pub spsr: Spsr,
+    pub bank: Bank,
 }
 
 pub struct Core<T: Bus> {
@@ -76,18 +85,14 @@ pub struct Core<T: Bus> {
 }
 
 impl<T: Bus> Core<T> {
-    pub fn new(bus: T) -> Self {
+    pub fn new(bus: T, state: State) -> Self {
         Self {
             bus,
-            pc: 0,
-            regs: [0; 16],
-            cpsr: Cpsr {
-                f: true,
-                i: true,
-                ..Default::default()
-            },
-            spsr: Default::default(),
-            bank: Default::default(),
+            pc: state.pc,
+            regs: state.regs,
+            cpsr: state.cpsr,
+            spsr: state.spsr,
+            bank: state.bank,
         }
     }
 
@@ -300,5 +305,21 @@ impl<T: Bus> Core<T> {
         }
 
         debug!("  Loaded: {:X?}", &self.regs[8..=14]);
+    }
+}
+
+impl Default for Cpsr {
+    fn default() -> Self {
+        Self {
+            n: false,
+            z: false,
+            c: false,
+            v: false,
+            i: true,
+            f: true,
+            t: false,
+            m: Mode::Supervisor,
+            reserved: 0,
+        }
     }
 }
