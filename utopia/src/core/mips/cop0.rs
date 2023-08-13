@@ -142,11 +142,11 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
             debug!("  COP0 UX: {}", status.ux);
             debug!("  COP0 SX: {}", status.sx);
             debug!("  COP0 KX: {}", status.kx);
+            debug!("  COP0 IM: {:08b}", status.im);
             debug!("  COP0 DS: {}", status.ds);
             debug!("  COP0 RE: {}", status.re);
             debug!("  COP0 FR: {}", status.fr);
             debug!("  COP0 RP: {}", status.rp);
-            debug!("  COP0 IM: {:08b}", status.im);
             debug!("  COP0 CU: {:?}", status.cu);
         }
         14 => {
