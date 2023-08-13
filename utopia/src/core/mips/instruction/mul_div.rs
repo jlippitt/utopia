@@ -52,3 +52,13 @@ pub fn mfhi(core: &mut Core<impl Bus>, _rs: usize, _rt: usize, rd: usize, _sa: u
     debug!("{:08X} MFHI {}", core.pc, REGS[rd]);
     core.setd(rd, core.hi);
 }
+
+pub fn mtlo(core: &mut Core<impl Bus>, _rs: usize, _rt: usize, rd: usize, _sa: u32) {
+    debug!("{:08X} MTLO {}", core.pc, REGS[rd]);
+    core.setd_lo(core.getd(rd));
+}
+
+pub fn mthi(core: &mut Core<impl Bus>, _rs: usize, _rt: usize, rd: usize, _sa: u32) {
+    debug!("{:08X} MTHI {}", core.pc, REGS[rd]);
+    core.setd_hi(core.getd(rd));
+}
