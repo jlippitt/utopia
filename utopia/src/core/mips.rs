@@ -44,9 +44,6 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn step(&mut self) {
-        use instruction as instr;
-        use operator as op;
-
         self.pc = self.next[0];
         self.next[0] = self.next[1];
         self.next[1] = self.next[1].wrapping_add(4);
@@ -54,110 +51,7 @@ impl<T: Bus> Core<T> {
         assert!((self.pc & 3) == 0);
 
         let word = self.bus.read::<u32>(self.pc);
-
-        match word >> 26 {
-            0o00 => self.special(word),
-            0o01 => self.regimm(word),
-            0o03 => self.type_j(instr::jal, word),
-            0o04 => self.type_i(instr::branch::<op::Beq, false, false>, word),
-            0o05 => self.type_i(instr::branch::<op::Bne, false, false>, word),
-            0o06 => self.type_i(instr::branch::<op::Blez, false, false>, word),
-            0o07 => self.type_i(instr::branch::<op::Bgtz, false, false>, word),
-            0o10 => self.type_i(instr::addi, word),
-            0o11 => self.type_i(instr::addiu, word),
-            0o12 => self.type_i(instr::slti, word),
-            0o13 => self.type_i(instr::sltiu, word),
-            0o14 => self.type_i(instr::andi, word),
-            0o15 => self.type_i(instr::ori, word),
-            0o16 => self.type_i(instr::xori, word),
-            0o17 => self.type_i(instr::lui, word),
-            0o20 => self.cop::<0>(word),
-            0o24 => self.type_i(instr::branch::<op::Beq, false, true>, word),
-            0o25 => self.type_i(instr::branch::<op::Bne, false, true>, word),
-            0o26 => self.type_i(instr::branch::<op::Blez, false, true>, word),
-            0o27 => self.type_i(instr::branch::<op::Bgtz, false, true>, word),
-            0o43 => self.type_i(instr::lw, word),
-            0o44 => self.type_i(instr::lbu, word),
-            0o50 => self.type_i(instr::sb, word),
-            0o53 => self.type_i(instr::sw, word),
-            0o57 => self.type_i(instr::cache, word),
-            opcode => unimplemented!("Opcode {:02o} ({:08X}: {:08X})", opcode, self.pc, word),
-        }
-    }
-
-    fn special(&mut self, word: u32) {
-        use instruction as instr;
-
-        match word & 0o77 {
-            0o00 => self.type_r(instr::sll, word),
-            0o02 => self.type_r(instr::srl, word),
-            0o04 => self.type_r(instr::sllv, word),
-            0o06 => self.type_r(instr::srlv, word),
-            0o10 => self.type_r(instr::jr, word),
-            0o20 => self.type_r(instr::mfhi, word),
-            0o22 => self.type_r(instr::mflo, word),
-            0o31 => self.type_r(instr::multu, word),
-            0o40 => self.type_r(instr::add, word),
-            0o41 => self.type_r(instr::addu, word),
-            0o42 => self.type_r(instr::sub, word),
-            0o43 => self.type_r(instr::subu, word),
-            0o44 => self.type_r(instr::and, word),
-            0o45 => self.type_r(instr::or, word),
-            0o46 => self.type_r(instr::xor, word),
-            0o52 => self.type_r(instr::slt, word),
-            0o53 => self.type_r(instr::sltu, word),
-            function => unimplemented!(
-                "SPECIAL FN={:02o} ({:08X}: {:08X})",
-                function,
-                self.pc,
-                word,
-            ),
-        }
-    }
-
-    fn regimm(&mut self, word: u32) {
-        use instruction as instr;
-        use operator as op;
-
-        match (word >> 16) & 31 {
-            0b00000 => self.type_i(instr::branch::<op::Bltz, false, false>, word),
-            0b00001 => self.type_i(instr::branch::<op::Bgez, false, false>, word),
-            0b00010 => self.type_i(instr::branch::<op::Bltz, false, true>, word),
-            0b00011 => self.type_i(instr::branch::<op::Bgez, false, true>, word),
-            0b10000 => self.type_i(instr::branch::<op::Bltz, true, false>, word),
-            0b10001 => self.type_i(instr::branch::<op::Bgez, true, false>, word),
-            0b10010 => self.type_i(instr::branch::<op::Bltz, true, true>, word),
-            0b10011 => self.type_i(instr::branch::<op::Bgez, true, true>, word),
-            rt => unimplemented!("REGIMM RT={:05b} ({:08X}: {:08X})", rt, self.pc, word),
-        }
-    }
-    fn cop<const COP: usize>(&mut self, word: u32) {
-        use instruction as instr;
-
-        match (word >> 21) & 31 {
-            0b00100 => self.type_r(instr::mtc::<COP>, word),
-            rs => unimplemented!("COP{} RS={:05b} ({:08X}: {:08X})", COP, rs, self.pc, word),
-        }
-    }
-
-    fn type_r(&mut self, instr: impl Fn(&mut Core<T>, usize, usize, usize, u32), word: u32) {
-        let rs = ((word >> 21) & 31) as usize;
-        let rt = ((word >> 16) & 31) as usize;
-        let rd = ((word >> 11) & 31) as usize;
-        let sa = (word >> 6) & 31;
-        instr(self, rs, rt, rd, sa);
-    }
-
-    fn type_i(&mut self, instr: impl Fn(&mut Core<T>, usize, usize, u32), word: u32) {
-        let rs = ((word >> 21) & 31) as usize;
-        let rt = ((word >> 16) & 31) as usize;
-        let value = word & 0xffff;
-        instr(self, rs, rt, value);
-    }
-
-    fn type_j(&mut self, instr: impl Fn(&mut Core<T>, u32), word: u32) {
-        let value = word & 0x03ff_ffff;
-        instr(self, value);
+        instruction::dispatch(self, word);
     }
 
     fn get(&self, reg: usize) -> u32 {
