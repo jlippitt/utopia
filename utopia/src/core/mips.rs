@@ -1,6 +1,9 @@
 use crate::util::facade::Value;
+use cop1::Cop1;
 use tracing::debug;
 
+mod cop0;
+mod cop1;
 mod instruction;
 mod operator;
 
@@ -20,6 +23,7 @@ pub struct Core<T: Bus> {
     next: [u32; 2],
     regs: [u32; 32],
     hi_lo: u64,
+    cop1: Cop1,
     bus: T,
 }
 
@@ -39,6 +43,7 @@ impl<T: Bus> Core<T> {
             next: [pc, pc.wrapping_add(4)],
             regs: initial_state.regs,
             hi_lo: 0,
+            cop1: Cop1::default(),
             bus,
         }
     }
