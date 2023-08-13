@@ -21,6 +21,28 @@ pub fn dmultu(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: 
     core.setd_lo(result as u64);
 }
 
+pub fn divu(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u32) {
+    debug!("{:08X} DIVU {}, {}", core.pc, REGS[rs], REGS[rt]);
+    let lhs = core.get(rs);
+    let rhs = core.get(rt);
+    let quotient = lhs / rhs;
+    let remainder = lhs % rhs;
+    debug!("  {} * {} = {} ({})", lhs, rhs, quotient, remainder);
+    core.set_hi(remainder);
+    core.set_lo(quotient);
+}
+
+pub fn ddivu(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u32) {
+    debug!("{:08X} DDIVU {}, {}", core.pc, REGS[rs], REGS[rt]);
+    let lhs = core.getd(rs);
+    let rhs = core.getd(rt);
+    let quotient = lhs / rhs;
+    let remainder = lhs % rhs;
+    debug!("  {} * {} = {} ({})", lhs, rhs, quotient, remainder);
+    core.setd_hi(remainder);
+    core.setd_lo(quotient);
+}
+
 pub fn mflo(core: &mut Core<impl Bus>, _rs: usize, _rt: usize, rd: usize, _sa: u32) {
     debug!("{:08X} MFLO {}", core.pc, REGS[rd]);
     core.setd(rd, core.lo);
