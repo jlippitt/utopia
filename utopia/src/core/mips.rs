@@ -135,6 +135,11 @@ impl<T: Bus> Core<T> {
         self.bus.write(address, value);
     }
 
+    fn write_halfword(&mut self, address: u32, value: u16) {
+        debug!("  [{:08X}] <= {:04X}", address, value);
+        self.bus.write(address, value);
+    }
+
     fn write_word(&mut self, address: u32, value: u32) {
         assert!((address & 3) == 0);
         debug!("  [{:08X}] <= {:08X}", address, value);
