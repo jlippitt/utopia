@@ -57,8 +57,10 @@ fn special(core: &mut Core<impl Bus>, word: u32) {
     match word & 0o77 {
         0o00 => type_r(core, sll, word),
         0o02 => type_r(core, srl, word),
+        0o03 => type_r(core, sra, word),
         0o04 => type_r(core, sllv, word),
         0o06 => type_r(core, srlv, word),
+        0o07 => type_r(core, srav, word),
         0o10 => type_r(core, jr, word),
         0o20 => type_r(core, mfhi, word),
         0o22 => type_r(core, mflo, word),
@@ -74,7 +76,9 @@ fn special(core: &mut Core<impl Bus>, word: u32) {
         0o52 => type_r(core, slt, word),
         0o53 => type_r(core, sltu, word),
         0o70 => type_r(core, dsll, word),
+        0o73 => type_r(core, dsra, word),
         0o74 => type_r(core, dsll32, word),
+        0o77 => type_r(core, dsra32, word),
         function => unimplemented!(
             "SPECIAL FN={:02o} ({:08X}: {:08X})",
             function,

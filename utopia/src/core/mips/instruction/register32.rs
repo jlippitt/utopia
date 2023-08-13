@@ -18,6 +18,12 @@ pub fn srl(core: &mut Core<impl Bus>, _rs: usize, rt: usize, rd: usize, sa: u32)
     core.set(rd, result);
 }
 
+pub fn sra(core: &mut Core<impl Bus>, _rs: usize, rt: usize, rd: usize, sa: u32) {
+    debug!("{:08X} SRA {}, {}, {}", core.pc, REGS[rd], REGS[rt], sa);
+    let result = (core.get(rt) as i32 >> sa) as u32;
+    core.set(rd, result);
+}
+
 pub fn sllv(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
     debug!(
         "{:08X} SLLV {}, {}, {}",
@@ -33,6 +39,15 @@ pub fn srlv(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32
         core.pc, REGS[rd], REGS[rt], REGS[rs]
     );
     let result = core.get(rt) >> (core.get(rs) & 31);
+    core.set(rd, result);
+}
+
+pub fn srav(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
+    debug!(
+        "{:08X} SRAV {}, {}, {}",
+        core.pc, REGS[rd], REGS[rt], REGS[rs]
+    );
+    let result = (core.get(rt) as i32 >> (core.get(rs) & 31)) as u32;
     core.set(rd, result);
 }
 
