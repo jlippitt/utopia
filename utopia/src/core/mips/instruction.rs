@@ -46,6 +46,7 @@ pub fn dispatch(core: &mut Core<impl Bus>, word: u32) {
         0o50 => type_i(core, sb, word),
         0o53 => type_i(core, sw, word),
         0o57 => type_i(core, cache, word),
+        0o67 => type_i(core, ld, word),
         opcode => unimplemented!("Opcode {:02o} ({:08X}: {:08X})", opcode, core.pc, word),
     }
 }

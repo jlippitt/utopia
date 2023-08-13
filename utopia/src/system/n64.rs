@@ -38,14 +38,14 @@ impl N64 {
 
         let hw = Hardware::new(rom_data);
 
-        let mut regs: [u32; 32] = Default::default();
+        let mut regs: [u64; 32] = Default::default();
 
         regs[19] = 0; // $S3
         regs[20] = 1; // $S4
         regs[21] = 0; // $S5
         regs[22] = 0x3f; // $S6
         regs[23] = 0; // $S7
-        regs[29] = 0xa4001ff0; // $SP
+        regs[29] = 0xa4001ff0u32 as i32 as i64 as u64; // $SP
 
         let core = Core::new(
             hw,

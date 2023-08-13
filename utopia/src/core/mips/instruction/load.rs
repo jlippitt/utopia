@@ -29,3 +29,15 @@ pub fn lw(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     let result = core.read_word(address);
     core.set(rt, result);
 }
+
+pub fn ld(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+    debug!(
+        "{:08X} LD {}, {}({})",
+        core.pc, REGS[rt], value as i16, REGS[rs]
+    );
+
+    let ivalue = value as i16 as i32 as u32;
+    let address = core.get(rs).wrapping_add(ivalue);
+    let result = core.read_doubleword(address);
+    core.setd(rt, result);
+}

@@ -22,7 +22,7 @@ pub trait Bus {
 pub struct Core<T: Bus> {
     pc: u32,
     next: [u32; 2],
-    regs: [u32; 32],
+    regs: [u64; 32],
     hi_lo: u64,
     cop0: Cop0,
     cop1: Cop1,
@@ -32,7 +32,7 @@ pub struct Core<T: Bus> {
 #[derive(Clone, Default, Debug, Eq, PartialEq)]
 pub struct State {
     pub pc: u32,
-    pub regs: [u32; 32],
+    pub regs: [u64; 32],
     pub hi_lo: u64,
 }
 
@@ -63,7 +63,7 @@ impl<T: Bus> Core<T> {
     }
 
     fn get(&self, reg: usize) -> u32 {
-        self.regs[reg]
+        self.regs[reg] as u32
     }
 
     fn set(&mut self, reg: usize, value: u32) {
@@ -71,8 +71,17 @@ impl<T: Bus> Core<T> {
             return;
         }
 
-        self.regs[reg] = value;
+        self.regs[reg] = value as i32 as i64 as u64;
         debug!("  {}: {:08X}", REGS[reg], value);
+    }
+
+    fn setd(&mut self, reg: usize, value: u64) {
+        if reg == 0 {
+            return;
+        }
+
+        self.regs[reg] = value;
+        debug!("  {}: {:016X}", REGS[reg], value);
     }
 
     fn read_byte(&mut self, address: u32) -> u8 {
@@ -86,6 +95,13 @@ impl<T: Bus> Core<T> {
         let value = self.bus.read(address);
         debug!("  [{:08X}] => {:08X}", address, value);
         value
+    }
+
+    fn read_doubleword(&mut self, address: u32) -> u64 {
+        assert!((address & 3) == 0);
+        let high = self.read_word(address);
+        let low = self.read_word(address.wrapping_add(4));
+        ((high as u64) << 32) | (low as u64)
     }
 
     fn write_byte(&mut self, address: u32, value: u8) {
