@@ -68,6 +68,10 @@ impl<T: Bus> Core<T> {
         self.regs[reg] as u32
     }
 
+    fn getd(&self, reg: usize) -> u64 {
+        self.regs[reg]
+    }
+
     fn set(&mut self, reg: usize, value: u32) {
         if reg == 0 {
             return;

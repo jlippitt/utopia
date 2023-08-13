@@ -5,7 +5,8 @@ use immediate::*;
 use load::*;
 use misc::*;
 use mul_div::*;
-use register::*;
+use register32::*;
+use register64::*;
 use store::*;
 
 mod control;
@@ -13,7 +14,8 @@ mod immediate;
 mod load;
 mod misc;
 mod mul_div;
-mod register;
+mod register32;
+mod register64;
 mod store;
 
 pub fn dispatch(core: &mut Core<impl Bus>, word: u32) {
@@ -71,6 +73,8 @@ fn special(core: &mut Core<impl Bus>, word: u32) {
         0o46 => type_r(core, xor, word),
         0o52 => type_r(core, slt, word),
         0o53 => type_r(core, sltu, word),
+        0o70 => type_r(core, dsll, word),
+        0o74 => type_r(core, dsll32, word),
         function => unimplemented!(
             "SPECIAL FN={:02o} ({:08X}: {:08X})",
             function,
