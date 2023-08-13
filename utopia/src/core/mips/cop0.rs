@@ -43,6 +43,7 @@ pub fn dispatch(core: &mut Core<impl Bus>, word: u32) {
         0b00100 => type_r(core, mtc0, word),
         0b10000..=0b11111 => match word & 63 {
             0o02 => tlbwi(core),
+            0o10 => tlbp(core),
             0o30 => eret(core),
             func => unimplemented!(
                 "COP0 RS=10000 FN={:06b} ({:08X}: {:08X})",
@@ -173,12 +174,35 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
 fn tlbwi(core: &mut Core<impl Bus>) {
     debug!("{:08X} TLBWI", core.pc);
 
-    let tlb_entry = &mut core.cop0.tlb_entries[core.cop0.index as usize & 31];
+    let tlb_entry = &mut core.cop0.tlb_entries[core.cop0.index as usize];
     tlb_entry.lo0 = core.cop0.lo0;
     tlb_entry.lo1 = core.cop0.lo1;
     tlb_entry.hi = core.cop0.hi;
 
     debug!("TLB Entry {}: {:X?}", core.cop0.index, tlb_entry);
+}
+
+fn tlbp(core: &mut Core<impl Bus>) {
+    debug!("{:08X} TLBP", core.pc);
+
+    let index = core.cop0.tlb_entries.iter().position(|entry| {
+        let mask = if ((entry.lo0 & entry.lo0) & 1) != 0 {
+            // G flag is set
+            0xffff_e000
+        } else {
+            0xffff_e0ff
+        };
+
+        (entry.hi & mask) == (core.cop0.hi & mask)
+    });
+
+    if let Some(index) = index {
+        core.cop0.index = index as u32;
+    } else {
+        core.cop0.index |= 0x8000_0000;
+    }
+
+    debug!("  COP0 Index: {}", core.cop0.index);
 }
 
 fn eret(core: &mut Core<impl Bus>) {
