@@ -14,6 +14,7 @@ pub struct Cop0 {
     lo0: u32,
     lo1: u32,
     hi: u32,
+    epc: u32,
     tlb_entries: [TlbEntry; 32],
 }
 
@@ -53,6 +54,7 @@ fn mfc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
             // TODO: Interrupts/Exceptions
             0x3000_0000
         }
+        14 => core.cop0.epc,
         _ => todo!("COP0 Register Read: ${}", rd),
     };
 
@@ -71,15 +73,15 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
         }
         2 => {
             core.cop0.lo0 = value;
-            debug!("  COP0 LO0: {:08X}", value);
+            debug!("  COP0 LO0: {:08X}", core.cop0.lo0);
         }
         3 => {
             core.cop0.lo1 = value;
-            debug!("  COP0 LO1: {:08X}", value);
+            debug!("  COP0 LO1: {:08X}", core.cop0.lo1);
         }
         10 => {
             core.cop0.hi = value;
-            debug!("  COP0 HI: {:08X}", value);
+            debug!("  COP0 HI: {:08X}", core.cop0.hi);
         }
         12 => {
             // STATUS
@@ -87,6 +89,10 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
             if value != 0x3000_0000 {
                 todo!("COP0 Status Register")
             }
+        }
+        14 => {
+            core.cop0.epc = value;
+            debug!("  COP0 EPC: {:08X}", core.cop0.epc);
         }
         _ => {
             if value != 0 {
