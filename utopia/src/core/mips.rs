@@ -23,7 +23,8 @@ pub struct Core<T: Bus> {
     pc: u32,
     next: [u32; 2],
     regs: [u64; 32],
-    hi_lo: u64,
+    hi: u64,
+    lo: u64,
     cop0: Cop0,
     cop1: Cop1,
     bus: T,
@@ -44,7 +45,8 @@ impl<T: Bus> Core<T> {
             pc: 0,
             next: [pc, pc.wrapping_add(4)],
             regs: initial_state.regs,
-            hi_lo: 0,
+            hi: 0,
+            lo: 0,
             cop0: Cop0::default(),
             cop1: Cop1::default(),
             bus,
@@ -82,6 +84,24 @@ impl<T: Bus> Core<T> {
 
         self.regs[reg] = value;
         debug!("  {}: {:016X}", REGS[reg], value);
+    }
+
+    fn lo(&self) -> u32 {
+        self.lo as u32
+    }
+
+    fn set_lo(&mut self, value: u32) {
+        self.lo = value as i32 as i64 as u64;
+        debug!("  LO: {:08X}", value);
+    }
+
+    fn hi(&self) -> u32 {
+        self.hi as u32
+    }
+
+    fn set_hi(&mut self, value: u32) {
+        self.hi = value as i32 as i64 as u64;
+        debug!("  HI: {:08X}", value);
     }
 
     fn read_byte(&mut self, address: u32) -> u8 {
