@@ -1,14 +1,53 @@
 use crate::util::facade::{DataReader, DataWriter};
 
-pub struct SerialInterface {}
+pub struct SerialBus {
+    interface: Interface,
+}
 
-impl SerialInterface {
+impl SerialBus {
+    pub fn new() -> Self {
+        Self {
+            interface: Interface::new(),
+        }
+    }
+
+    pub fn interface(&self) -> &Interface {
+        &self.interface
+    }
+
+    pub fn interface_mut(&mut self) -> &mut Interface {
+        &mut self.interface
+    }
+}
+
+impl DataReader for SerialBus {
+    type Address = u32;
+    type Value = u32;
+
+    fn read(&self, address: u32) -> u32 {
+        match address {
+            _ => unimplemented!("Serial Bus Read: {:08X}", address),
+        }
+    }
+}
+
+impl DataWriter for SerialBus {
+    fn write(&mut self, address: u32, value: u32) {
+        match address {
+            _ => unimplemented!("Serial Bus Write: {:08X} <= {:08X}", address, value),
+        }
+    }
+}
+
+pub struct Interface {}
+
+impl Interface {
     pub fn new() -> Self {
         Self {}
     }
 }
 
-impl DataReader for SerialInterface {
+impl DataReader for Interface {
     type Address = u32;
     type Value = u32;
 
@@ -24,7 +63,7 @@ impl DataReader for SerialInterface {
     }
 }
 
-impl DataWriter for SerialInterface {
+impl DataWriter for Interface {
     fn write(&mut self, address: u32, value: u32) {
         match address {
             0x18 => {

@@ -7,7 +7,7 @@ use mips::MipsInterface;
 use peripheral::{Dma, DmaRequest, PeripheralInterface};
 use rdram::Rdram;
 use rsp::{Rsp, DMEM_SIZE};
-use serial::SerialInterface;
+use serial::SerialBus;
 use std::error::Error;
 use tracing::{debug, info};
 
@@ -91,7 +91,7 @@ struct Hardware {
     mips: MipsInterface,
     audio: AudioInterface,
     peripheral: PeripheralInterface,
-    serial: SerialInterface,
+    serial: SerialBus,
     rom: Vec<u8>,
 }
 
@@ -103,7 +103,7 @@ impl Hardware {
             mips: MipsInterface::new(),
             audio: AudioInterface::new(),
             peripheral: PeripheralInterface::new(),
-            serial: SerialInterface::new(),
+            serial: SerialBus::new(),
             rom,
         }
     }
@@ -120,10 +120,10 @@ impl Hardware {
             0x045 => self.audio.read_be(address & 0x000f_ffff),
             0x046 => self.peripheral.read_be(address & 0x000f_ffff),
             0x047 => self.rdram.read_interface(address & 0x000f_ffff),
-            0x048 => self.serial.read_be(address & 0x000f_ffff),
+            0x048 => self.serial.interface().read_be(address & 0x000f_ffff),
             0x080..=0x0ff => todo!("SRAM Reads"),
             0x100..=0x1fb => self.rom.read_be((address & 0x0fff_ffff) as usize),
-            0x1fc => todo!("Serial Bus Reads"),
+            0x1fc => self.serial.read_le(address & 0x000f_ffff),
             _ => panic!("Read from open bus: {:08X}", address),
         }
     }
@@ -148,10 +148,13 @@ impl Hardware {
                 }
             }
             0x047 => self.rdram.write_interface(address & 0x000f_ffff, value),
-            0x048 => self.serial.write_be(address & 0x000f_ffff, value),
+            0x048 => self
+                .serial
+                .interface_mut()
+                .write_be(address & 0x000f_ffff, value),
             0x080..=0x0ff => todo!("SRAM Writes"),
             0x100..=0x1fb => panic!("Write to ROM area: {:08X}", address),
-            0x1fc => todo!("Serial Bus Writes"),
+            0x1fc => self.serial.write_le(address & 0x000f_ffff, value),
             _ => panic!("Write to open bus: {:08X}", address),
         }
     }
