@@ -42,6 +42,7 @@ pub fn dispatch(core: &mut Core<impl Bus>, word: u32) {
         0b00000 => type_r(core, mfc0, word),
         0b00100 => type_r(core, mtc0, word),
         0b10000..=0b11111 => match word & 63 {
+            0o01 => tlbr(core),
             0o02 => tlbwi(core),
             0o10 => tlbp(core),
             0o30 => eret(core),
@@ -171,6 +172,21 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
     }
 }
 
+fn tlbr(core: &mut Core<impl Bus>) {
+    debug!("{:08X} TLBR", core.pc);
+
+    let tlb_entry = &core.cop0.tlb_entries[core.cop0.index as usize];
+
+    let global = tlb_entry.lo0 & tlb_entry.lo1 & 1;
+    core.cop0.lo0 = (tlb_entry.lo0 & 0xffff_fffe) | global;
+    core.cop0.lo1 = (tlb_entry.lo1 & 0xffff_fffe) | global;
+    core.cop0.hi = tlb_entry.hi;
+
+    debug!("  COP0 LO0: {:08X}", core.cop0.lo0);
+    debug!("  COP0 LO1: {:08X}", core.cop0.lo1);
+    debug!("  COP0 HI: {:08X}", core.cop0.hi);
+}
+
 fn tlbwi(core: &mut Core<impl Bus>) {
     debug!("{:08X} TLBWI", core.pc);
 
@@ -187,7 +203,7 @@ fn tlbp(core: &mut Core<impl Bus>) {
 
     let index = core.cop0.tlb_entries.iter().position(|entry| {
         let mask = if ((entry.lo0 & entry.lo0) & 1) != 0 {
-            // G flag is set
+            // Global flag is set
             0xffff_e000
         } else {
             0xffff_e0ff
