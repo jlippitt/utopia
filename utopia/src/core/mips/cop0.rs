@@ -30,6 +30,8 @@ pub struct Cop0 {
     index: u32,
     lo0: u32,
     lo1: u32,
+    page_mask: u32,
+    wired: u32,
     hi: u32,
     status: Status,
     epc: u32,
@@ -70,6 +72,8 @@ fn mfc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
         0 => core.cop0.index,
         2 => core.cop0.lo0,
         3 => core.cop0.lo1,
+        4 => core.cop0.page_mask,
+        5 => core.cop0.wired,
         10 => core.cop0.hi,
         12 => {
             let status = &mut core.cop0.status;
@@ -105,7 +109,7 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
 
     match rd {
         0 => {
-            core.cop0.index = value;
+            core.cop0.index = value & 0x8000_003f;
             debug!("  COP0 Index: {}", core.cop0.index);
         }
         2 => {
@@ -115,6 +119,14 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
         3 => {
             core.cop0.lo1 = value;
             debug!("  COP0 LO1: {:08X}", core.cop0.lo1);
+        }
+        4 => {
+            core.cop0.page_mask = value & 0x01ff_e000;
+            debug!("  COP0 Page Mask: {:08X}", core.cop0.page_mask);
+        }
+        5 => {
+            core.cop0.wired = value & 0x0000_003f;
+            debug!("  COP0 Wired: {:08X}", core.cop0.wired);
         }
         10 => {
             core.cop0.hi = value;
