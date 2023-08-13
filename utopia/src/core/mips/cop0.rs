@@ -12,7 +12,16 @@ pub struct TlbEntry {
 pub struct Status {
     ie: bool,
     exl: bool,
+    erl: bool,
+    mode: u32,
+    ux: bool,
+    sx: bool,
+    kx: bool,
     im: u8,
+    ds: u32,
+    re: bool,
+    fr: bool,
+    rp: bool,
     cu: [bool; 4],
 }
 
@@ -64,7 +73,16 @@ fn mfc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
             let mut value = 0x3000_0000;
             value |= if status.ie { 0x0000_0001 } else { 0 };
             value |= if status.exl { 0x0000_0002 } else { 0 };
+            value |= if status.erl { 0x0000_0004 } else { 0 };
+            value |= status.mode << 3;
+            value |= if status.ux { 0x0000_0020 } else { 0 };
+            value |= if status.sx { 0x0000_0040 } else { 0 };
+            value |= if status.kx { 0x0000_0080 } else { 0 };
             value |= (status.im as u32) << 8;
+            value |= status.ds << 16;
+            value |= if status.re { 0x0200_0000 } else { 0 };
+            value |= if status.fr { 0x0400_0000 } else { 0 };
+            value |= if status.rp { 0x0800_0000 } else { 0 };
             value |= if status.cu[0] { 0x1000_0000 } else { 0 };
             value |= if status.cu[1] { 0x2000_0000 } else { 0 };
             value |= if status.cu[2] { 0x4000_0000 } else { 0 };
@@ -100,20 +118,34 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
             debug!("  COP0 HI: {:08X}", core.cop0.hi);
         }
         12 => {
-            if (value & 0x0fff_00fc) != 0 {
-                todo!("COP0 Status Register: {:08X}", value);
-            }
-
             let status = &mut core.cop0.status;
             status.ie = (value & 0x0000_0001) != 0;
             status.exl = (value & 0x0000_0002) != 0;
+            status.erl = (value & 0x0000_0004) != 0;
+            status.mode = (value >> 3) & 3;
+            status.ux = (value & 0x0000_0020) != 0;
+            status.sx = (value & 0x0000_0020) != 0;
+            status.kx = (value & 0x0000_0020) != 0;
             status.im = (value >> 8) as u8;
+            status.ds = (value >> 16) & 511;
+            status.re = (value & 0x0200_0000) != 0;
+            status.fr = (value & 0x0400_0000) != 0;
+            status.rp = (value & 0x0800_0000) != 0;
             status.cu[0] = (value & 0x1000_0000) != 0;
             status.cu[1] = (value & 0x2000_0000) != 0;
             status.cu[2] = (value & 0x4000_0000) != 0;
             status.cu[3] = (value & 0x6000_0000) != 0;
             debug!("  COP0 IE: {}", status.ie);
             debug!("  COP0 EXL: {}", status.exl);
+            debug!("  COP0 ERL: {}", status.erl);
+            debug!("  COP0 Mode: {:02b}", status.mode);
+            debug!("  COP0 UX: {}", status.ux);
+            debug!("  COP0 SX: {}", status.sx);
+            debug!("  COP0 KX: {}", status.kx);
+            debug!("  COP0 DS: {}", status.ds);
+            debug!("  COP0 RE: {}", status.re);
+            debug!("  COP0 FR: {}", status.fr);
+            debug!("  COP0 RP: {}", status.rp);
             debug!("  COP0 IM: {:08b}", status.im);
             debug!("  COP0 CU: {:?}", status.cu);
         }
