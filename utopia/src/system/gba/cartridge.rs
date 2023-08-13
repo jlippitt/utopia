@@ -28,8 +28,6 @@ impl Cartridge {
     pub fn new(rom: Vec<u8>) -> Self {
         let title = String::from_utf8_lossy(&rom[0xa0..=0xab]).into_owned();
 
-        info!("Title: {}", title);
-
         let backup_type =
             BACKUP_TYPES
                 .iter()
@@ -46,6 +44,8 @@ impl Cartridge {
                     *backup_type
                 });
 
+        info!("Title: {}", title);
+        info!("ROM Size: {}", rom.len());
         info!("Backup Type: {}", backup_type);
 
         Self { rom, backup_type }
