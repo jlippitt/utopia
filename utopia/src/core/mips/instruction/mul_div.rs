@@ -11,6 +11,16 @@ pub fn multu(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u
     core.set_lo(result as u32);
 }
 
+pub fn dmultu(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u32) {
+    debug!("{:08X} DMULTU {}, {}", core.pc, REGS[rs], REGS[rt]);
+    let lhs = core.get(rs) as u128;
+    let rhs = core.get(rt) as u128;
+    let result = lhs * rhs;
+    debug!("  {} * {} = {}", lhs, rhs, result);
+    core.setd_hi((result >> 64) as u64);
+    core.setd_lo(result as u64);
+}
+
 pub fn mflo(core: &mut Core<impl Bus>, _rs: usize, _rt: usize, rd: usize, _sa: u32) {
     debug!("{:08X} MFLO {}", core.pc, REGS[rd]);
     core.set(rd, core.lo());
