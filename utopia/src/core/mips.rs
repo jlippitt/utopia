@@ -86,10 +86,6 @@ impl<T: Bus> Core<T> {
         debug!("  {}: {:016X}", REGS[reg], value);
     }
 
-    fn lo(&self) -> u32 {
-        self.lo as u32
-    }
-
     fn set_lo(&mut self, value: u32) {
         self.lo = value as i32 as i64 as u64;
         debug!("  LO: {:08X}", value);
@@ -98,10 +94,6 @@ impl<T: Bus> Core<T> {
     fn setd_lo(&mut self, value: u64) {
         self.lo = value;
         debug!("  LO: {:016X}", value);
-    }
-
-    fn hi(&self) -> u32 {
-        self.hi as u32
     }
 
     fn set_hi(&mut self, value: u32) {

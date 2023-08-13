@@ -23,10 +23,10 @@ pub fn dmultu(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: 
 
 pub fn mflo(core: &mut Core<impl Bus>, _rs: usize, _rt: usize, rd: usize, _sa: u32) {
     debug!("{:08X} MFLO {}", core.pc, REGS[rd]);
-    core.set(rd, core.lo());
+    core.setd(rd, core.lo);
 }
 
 pub fn mfhi(core: &mut Core<impl Bus>, _rs: usize, _rt: usize, rd: usize, _sa: u32) {
     debug!("{:08X} MFHI {}", core.pc, REGS[rd]);
-    core.set(rd, core.hi());
+    core.setd(rd, core.hi);
 }
