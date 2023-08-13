@@ -116,6 +116,12 @@ impl<T: Bus> Core<T> {
         value
     }
 
+    fn read_halfword(&mut self, address: u32) -> u16 {
+        let value = self.bus.read(address);
+        debug!("  [{:08X}] => {:04X}", address, value);
+        value
+    }
+
     fn read_word(&mut self, address: u32) -> u32 {
         assert!((address & 3) == 0);
         let value = self.bus.read(address);
