@@ -4,13 +4,15 @@ use crate::util::facade::{ReadFacade, Value, WriteFacade};
 use crate::util::MirrorVec;
 use crate::JoypadState;
 use audio::Audio;
+use cartridge::Cartridge;
 use dma::Dma;
 use ppu::Ppu;
 use registers::Registers;
 use std::error::Error;
-use tracing::{info, warn};
+use tracing::warn;
 
 mod audio;
+mod cartridge;
 mod dma;
 mod ppu;
 mod registers;
@@ -73,11 +75,11 @@ impl System for GameBoyAdvance {
 }
 
 struct Hardware {
-    rom: Vec<u8>,
-    bios: Vec<u8>,
-    regs: Registers,
+    cartridge: Cartridge,
     iwram: MirrorVec<u8>,
     ewram: MirrorVec<u8>,
+    bios: Vec<u8>,
+    regs: Registers,
     ppu: Ppu,
     audio: Audio,
     dma: Dma,
@@ -85,16 +87,12 @@ struct Hardware {
 
 impl Hardware {
     pub fn new(rom: Vec<u8>, bios: Vec<u8>) -> Self {
-        let title = String::from_utf8_lossy(&rom[0xa0..=0xab]).into_owned();
-
-        info!("Title: {}", title);
-
         Self {
-            rom,
-            bios,
-            regs: Registers::new(),
+            cartridge: Cartridge::new(rom),
             iwram: MirrorVec::new(IWRAM_SIZE),
             ewram: MirrorVec::new(EWRAM_SIZE),
+            bios,
+            regs: Registers::new(),
             ppu: Ppu::new(),
             audio: Audio::new(),
             dma: Dma::new(),
@@ -119,15 +117,7 @@ impl Bus for Hardware {
             0x05 => todo!("Palette RAM Reads"),
             0x06 => self.ppu.vram().read_le(address as usize & 0x00ff_ffff),
             0x07 => todo!("OAM Reads"),
-            0x08..=0x0d => {
-                let index = address as usize & 0x01ff_ffff;
-
-                if index < self.rom.len() {
-                    self.rom.read_le(index)
-                } else {
-                    T::default()
-                }
-            }
+            0x08..=0x0d => self.cartridge.read_le(address),
             0xe0 => todo!("SRAM Reads"),
             _ => panic!("Unmapped Read: {:08X}", address),
         }
