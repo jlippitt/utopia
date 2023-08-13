@@ -133,9 +133,9 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
             debug!("  COP0 HI: {:08X}", core.cop0.hi);
         }
         12 => {
-            if (value & 0x0fff_00f8) != 0 {
-                unimplemented!("COP0 Feature: {:08X}", value);
-            }
+            // if (value & 0x0fff_00f8) != 0 {
+            //     unimplemented!("COP0 Feature: {:08X}", value);
+            // }
 
             let status = &mut core.cop0.status;
             status.ie = (value & 0x0000_0001) != 0;
