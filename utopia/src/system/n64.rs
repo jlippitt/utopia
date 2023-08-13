@@ -123,7 +123,7 @@ impl Hardware {
             0x048 => self.serial.interface().read_be(address & 0x000f_ffff),
             0x080..=0x0ff => todo!("SRAM Reads"),
             0x100..=0x1fb => self.rom.read_be((address & 0x0fff_ffff) as usize),
-            0x1fc => self.serial.read_le(address & 0x000f_ffff),
+            0x1fc => self.serial.read(address & 0x000f_ffff),
             _ => panic!("Read from open bus: {:08X}", address),
         }
     }
@@ -154,7 +154,7 @@ impl Hardware {
                 .write_be(address & 0x000f_ffff, value),
             0x080..=0x0ff => todo!("SRAM Writes"),
             0x100..=0x1fb => panic!("Write to ROM area: {:08X}", address),
-            0x1fc => self.serial.write_le(address & 0x000f_ffff, value),
+            0x1fc => self.serial.write(address & 0x000f_ffff, value),
             _ => panic!("Write to open bus: {:08X}", address),
         }
     }
