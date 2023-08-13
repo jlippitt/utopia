@@ -33,6 +33,7 @@ pub struct Cop0 {
     hi: u32,
     status: Status,
     epc: u32,
+    error_epc: u32,
     tlb_entries: [TlbEntry; 32],
 }
 
@@ -153,6 +154,10 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
             core.cop0.epc = value;
             debug!("  COP0 EPC: {:08X}", core.cop0.epc);
         }
+        30 => {
+            core.cop0.error_epc = value;
+            debug!("  COP0 Error EPC: {:08X}", core.cop0.error_epc);
+        }
         _ => {
             if value != 0 {
                 todo!("COP0 Register Write: ${} <= {:08X}", rd, value);
@@ -174,8 +179,14 @@ fn tlbwi(core: &mut Core<impl Bus>) {
 
 fn eret(core: &mut Core<impl Bus>) {
     debug!("{:08X} ERET", core.pc);
-    // TODO: ERL bit
-    core.pc = core.cop0.epc;
-    core.cop0.status.exl = false;
-    debug!("  COP0 EXL: {}", core.cop0.status.exl);
+
+    if core.cop0.status.erl {
+        core.next[0] = core.cop0.error_epc;
+        core.cop0.status.erl = false;
+        debug!("  COP0 ERL: {}", core.cop0.status.erl);
+    } else {
+        core.next[0] = core.cop0.epc;
+        core.cop0.status.exl = false;
+        debug!("  COP0 EXL: {}", core.cop0.status.exl);
+    }
 }
