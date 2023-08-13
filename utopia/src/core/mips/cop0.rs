@@ -19,6 +19,10 @@ fn mfc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
     debug!("{:08X} MFC0 {}, ${}", core.pc, REGS[rt], rd);
 
     let result = match rd {
+        10 => {
+            // ENTRY_HI
+            0
+        }
         12 => {
             // STATUS
             // TODO: Interrupts/Exceptions
