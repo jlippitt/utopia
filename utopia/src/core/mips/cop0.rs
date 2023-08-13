@@ -32,7 +32,8 @@ pub fn dispatch(core: &mut Core<impl Bus>, word: u32) {
         0b00000 => type_r(core, mfc0, word),
         0b00100 => type_r(core, mtc0, word),
         0b10000..=0b11111 => match word & 63 {
-            0b000010 => tlbwi(core),
+            0o02 => tlbwi(core),
+            0o30 => eret(core),
             func => unimplemented!(
                 "COP0 RS=10000 FN={:06b} ({:08X}: {:08X})",
                 func,
@@ -137,4 +138,12 @@ fn tlbwi(core: &mut Core<impl Bus>) {
     tlb_entry.hi = core.cop0.hi;
 
     debug!("TLB Entry {}: {:X?}", core.cop0.index, tlb_entry);
+}
+
+fn eret(core: &mut Core<impl Bus>) {
+    debug!("{:08X} ERET", core.pc);
+    // TODO: ERL bit
+    core.pc = core.cop0.epc;
+    core.cop0.status.exl = false;
+    debug!("  COP0 EXL: {}", core.cop0.status.exl);
 }
