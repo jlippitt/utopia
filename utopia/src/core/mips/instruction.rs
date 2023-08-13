@@ -1,17 +1,16 @@
-pub use control::*;
-pub use cop::*;
-pub use immediate::*;
-pub use load::*;
-pub use misc::*;
-pub use mul_div::*;
-pub use register::*;
-pub use store::*;
-
 use super::operator;
 use super::{Bus, Core};
+use control::*;
+use cop0::*;
+use immediate::*;
+use load::*;
+use misc::*;
+use mul_div::*;
+use register::*;
+use store::*;
 
 mod control;
-mod cop;
+mod cop0;
 mod immediate;
 mod load;
 mod misc;
@@ -38,7 +37,7 @@ pub fn dispatch(core: &mut Core<impl Bus>, word: u32) {
         0o15 => type_i(core, ori, word),
         0o16 => type_i(core, xori, word),
         0o17 => type_i(core, lui, word),
-        0o20 => cop::<0>(core, word),
+        0o20 => cop0(core, word),
         0o24 => type_i(core, branch::<op::Beq, false, true>, word),
         0o25 => type_i(core, branch::<op::Bne, false, true>, word),
         0o26 => type_i(core, branch::<op::Blez, false, true>, word),
@@ -93,12 +92,6 @@ fn regimm(core: &mut Core<impl Bus>, word: u32) {
         0b10010 => type_i(core, branch::<op::Bltz, true, true>, word),
         0b10011 => type_i(core, branch::<op::Bgez, true, true>, word),
         rt => unimplemented!("REGIMM RT={:05b} ({:08X}: {:08X})", rt, core.pc, word),
-    }
-}
-fn cop<const COP: usize>(core: &mut Core<impl Bus>, word: u32) {
-    match (word >> 21) & 31 {
-        0b00100 => type_r(core, mtc::<COP>, word),
-        rs => unimplemented!("COP{} RS={:05b} ({:08X}: {:08X})", COP, rs, core.pc, word),
     }
 }
 
