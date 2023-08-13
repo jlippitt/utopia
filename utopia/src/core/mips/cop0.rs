@@ -9,11 +9,20 @@ pub struct TlbEntry {
 }
 
 #[derive(Default)]
+pub struct Status {
+    ie: bool,
+    exl: bool,
+    im: u8,
+    cu: [bool; 4],
+}
+
+#[derive(Default)]
 pub struct Cop0 {
     index: u32,
     lo0: u32,
     lo1: u32,
     hi: u32,
+    status: Status,
     epc: u32,
     tlb_entries: [TlbEntry; 32],
 }
@@ -50,11 +59,17 @@ fn mfc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
         3 => core.cop0.lo1,
         10 => core.cop0.hi,
         12 => {
-            // STATUS
-            // TODO: Interrupts/Exceptions
-            0x3000_0000
+            let status = &mut core.cop0.status;
+            let mut value = 0x3000_0000;
+            value |= if status.ie { 0x0000_0001 } else { 0 };
+            value |= if status.exl { 0x0000_0002 } else { 0 };
+            value |= (status.im as u32) << 8;
+            value |= if status.cu[0] { 0x1000_0000 } else { 0 };
+            value |= if status.cu[1] { 0x2000_0000 } else { 0 };
+            value |= if status.cu[2] { 0x4000_0000 } else { 0 };
+            value |= if status.cu[3] { 0x8000_0000 } else { 0 };
+            value
         }
-        14 => core.cop0.epc,
         _ => todo!("COP0 Register Read: ${}", rd),
     };
 
@@ -84,11 +99,22 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
             debug!("  COP0 HI: {:08X}", core.cop0.hi);
         }
         12 => {
-            // STATUS
-            // TODO: Interrupts/Exceptions
-            if value != 0x3000_0000 {
-                todo!("COP0 Status Register")
+            if (value & 0x0fff_00fc) != 0 {
+                todo!("COP0 Status Register: {:08X}", value);
             }
+
+            let status = &mut core.cop0.status;
+            status.ie = (value & 0x0000_0001) != 0;
+            status.exl = (value & 0x0000_0002) != 0;
+            status.im = (value >> 8) as u8;
+            status.cu[0] = (value & 0x1000_0000) != 0;
+            status.cu[1] = (value & 0x2000_0000) != 0;
+            status.cu[2] = (value & 0x4000_0000) != 0;
+            status.cu[3] = (value & 0x6000_0000) != 0;
+            debug!("  COP0 IE: {}", status.ie);
+            debug!("  COP0 EXL: {}", status.exl);
+            debug!("  COP0 IM: {:08b}", status.im);
+            debug!("  COP0 CU: {:?}", status.cu);
         }
         14 => {
             core.cop0.epc = value;
