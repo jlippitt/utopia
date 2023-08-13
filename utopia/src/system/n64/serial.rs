@@ -13,7 +13,12 @@ impl DataReader for SerialInterface {
     type Value = u32;
 
     fn read(&self, address: u32) -> u32 {
-        match address & 0x0f {
+        match address {
+            0x18 => {
+                // SI_STATUS
+                // TODO
+                0
+            }
             _ => unimplemented!("Serial Interface Read: {:08X}", address),
         }
     }
