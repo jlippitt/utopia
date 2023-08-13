@@ -59,8 +59,11 @@ impl DataReader for Cartridge {
     fn read(&self, address: u32) -> u8 {
         let index = address as usize & 0x01ff_ffff;
 
+        // TODO: ROM sizes >32MB
         if index < self.rom.len() {
             self.rom.read_le(index)
+        } else if index >= 0x0100_0000 && self.backup_type == BackupType::Eeprom {
+            todo!("EEPROM reads");
         } else {
             0
         }
