@@ -61,7 +61,7 @@ pub fn branch<Op: BranchOperator, const LINK: bool, const LIKELY: bool>(
         core.set(31, core.next[1]);
     }
 
-    if Op::apply(core.get(rs), core.get(rt)) {
+    if Op::apply(core.getd(rs), core.getd(rt)) {
         debug!("  Branch taken");
         core.next[1] = core.next[0].wrapping_add(offset as u32);
     } else {
