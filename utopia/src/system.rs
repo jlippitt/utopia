@@ -33,9 +33,8 @@ pub struct JoypadState {
 pub type AudioQueue = VecDeque<(f32, f32)>;
 
 pub trait System {
-    fn width(&self) -> usize;
-    fn height(&self) -> usize;
     fn pixels(&self) -> &[u8];
+    fn pitch(&self) -> usize;
     fn run_frame(&mut self, joypad_state: &JoypadState);
 
     fn sample_rate(&self) -> u64 {
@@ -46,11 +45,19 @@ pub trait System {
         None
     }
 
-    fn clip_top(&self) -> usize {
+    fn screen_width(&self) -> u32 {
+        (self.pitch() / 4).try_into().unwrap()
+    }
+
+    fn screen_height(&self) -> u32 {
+        (self.pixels().len() / self.pitch()).try_into().unwrap()
+    }
+
+    fn screen_clip_top(&self) -> u32 {
         0
     }
 
-    fn clip_bottom(&self) -> usize {
+    fn screen_clip_bottom(&self) -> u32 {
         0
     }
 }

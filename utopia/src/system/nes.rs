@@ -13,7 +13,7 @@ use std::fmt;
 use tracing::debug;
 
 const WRAM_SIZE: usize = 2048;
-const CLIP_AMOUNT: usize = 8;
+const CLIP_AMOUNT: u32 = 8;
 
 mod apu;
 mod cartridge;
@@ -37,24 +37,20 @@ impl<T: Mapped> Nes<T> {
 }
 
 impl<T: Mapped> System for Nes<T> {
-    fn width(&self) -> usize {
-        ppu::WIDTH
-    }
-
-    fn height(&self) -> usize {
-        ppu::HEIGHT
-    }
-
-    fn clip_top(&self) -> usize {
-        CLIP_AMOUNT
-    }
-
-    fn clip_bottom(&self) -> usize {
-        CLIP_AMOUNT
-    }
-
     fn pixels(&self) -> &[u8] {
         self.core.bus().ppu.pixels()
+    }
+
+    fn pitch(&self) -> usize {
+        ppu::WIDTH * 4
+    }
+
+    fn screen_clip_top(&self) -> u32 {
+        CLIP_AMOUNT
+    }
+
+    fn screen_clip_bottom(&self) -> u32 {
+        CLIP_AMOUNT
     }
 
     fn sample_rate(&self) -> u64 {

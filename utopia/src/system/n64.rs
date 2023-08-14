@@ -66,20 +66,14 @@ impl N64 {
 }
 
 impl System for N64 {
-    fn width(&self) -> usize {
-        // TODO: Support for multiple resolutions
-        // (Needs front-end changes!)
-        WIDTH
-    }
-
-    fn height(&self) -> usize {
-        // TODO: Support for multiple resolutions
-        // (Needs front-end changes!)
-        HEIGHT
-    }
-
     fn pixels(&self) -> &[u8] {
         self.core.bus().video.pixels()
+    }
+
+    fn pitch(&self) -> usize {
+        // TODO: Support for multiple resolutions
+        // (Needs front-end changes!)
+        WIDTH * 4
     }
 
     fn run_frame(&mut self, _joypad_state: &JoypadState) {

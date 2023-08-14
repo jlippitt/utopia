@@ -52,22 +52,25 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let sdl_context = sdl2::init()?;
 
+    let audio_enabled = system.audio_queue().is_some();
+
     let mut video = Video::new(
         &sdl_context,
+        system.as_ref(),
         VideoOptions {
-            width: system.width().try_into()?,
-            height: system.height().try_into()?,
-            clip_top: system.clip_top().try_into()?,
-            clip_bottom: system.clip_bottom().try_into()?,
             upscale: args.upscale,
             full_screen: args.full_screen,
-            disable_vsync: args.disable_vsync || system.audio_queue().is_some(),
+            disable_vsync: audio_enabled || args.disable_vsync,
         },
     )?;
 
     let texture_creator = video.texture_creator();
 
-    let mut texture = video.create_texture(&texture_creator)?;
+    let mut texture = video.create_texture(
+        &texture_creator,
+        system.screen_width(),
+        system.screen_height(),
+    )?;
 
     let sample_rate = system.sample_rate();
 
@@ -115,7 +118,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         system.run_frame(joypad.state());
 
-        video.update(&mut texture, system.pixels())?;
+        video.update(&mut texture, system.pixels(), system.pitch())?;
 
         if let Some(audio_queue) = system.audio_queue() {
             audio.sync(audio_queue);

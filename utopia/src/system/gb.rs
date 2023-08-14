@@ -64,16 +64,12 @@ impl<T: Mapped> GameBoy<T> {
 }
 
 impl<T: Mapped> System for GameBoy<T> {
-    fn width(&self) -> usize {
-        ppu::WIDTH
-    }
-
-    fn height(&self) -> usize {
-        ppu::HEIGHT
-    }
-
     fn pixels(&self) -> &[u8] {
         self.core.bus().ppu.pixels()
+    }
+
+    fn pitch(&self) -> usize {
+        ppu::WIDTH * 4
     }
 
     fn sample_rate(&self) -> u64 {

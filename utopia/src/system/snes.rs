@@ -6,7 +6,7 @@ use clock::{Clock, Event, FAST_CYCLES, TIMER_IRQ};
 use dma::Dma;
 use joypad::Joypad;
 use memory::{Page, TOTAL_PAGES};
-use ppu::{Ppu, HEIGHT, WIDTH};
+use ppu::Ppu;
 use registers::Registers;
 use std::error::Error;
 use std::fmt;
@@ -39,16 +39,12 @@ impl<T: Mapped> Snes<T> {
 }
 
 impl<T: Mapped> System for Snes<T> {
-    fn width(&self) -> usize {
-        WIDTH
-    }
-
-    fn height(&self) -> usize {
-        HEIGHT
-    }
-
     fn pixels(&self) -> &[u8] {
         self.core.bus().ppu.pixels()
+    }
+
+    fn pitch(&self) -> usize {
+        ppu::WIDTH * 4
     }
 
     fn sample_rate(&self) -> u64 {

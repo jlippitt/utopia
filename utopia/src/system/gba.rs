@@ -53,16 +53,12 @@ impl GameBoyAdvance {
 }
 
 impl System for GameBoyAdvance {
-    fn width(&self) -> usize {
-        WIDTH
-    }
-
-    fn height(&self) -> usize {
-        HEIGHT
-    }
-
     fn pixels(&self) -> &[u8] {
         &PIXELS
+    }
+
+    fn pitch(&self) -> usize {
+        WIDTH * 4
     }
 
     fn run_frame(&mut self, _joypad_state: &JoypadState) {

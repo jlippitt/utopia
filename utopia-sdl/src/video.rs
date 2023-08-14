@@ -6,15 +6,12 @@ use sdl2::video::{FullscreenType, Window, WindowContext};
 use sdl2::Sdl;
 use sdl2::VideoSubsystem;
 use std::error::Error;
+use utopia::System;
 use viewport::Viewport;
 
 mod viewport;
 
 pub struct VideoOptions {
-    pub width: u32,
-    pub height: u32,
-    pub clip_top: u32,
-    pub clip_bottom: u32,
     pub disable_vsync: bool,
     pub full_screen: bool,
     pub upscale: Option<u32>,
@@ -23,9 +20,6 @@ pub struct VideoOptions {
 pub struct Video {
     video: VideoSubsystem,
     mouse: MouseUtil,
-    width: u32,
-    height: u32,
-    pitch: usize,
     canvas: Canvas<Window>,
     viewport: Viewport,
     source_rect: Rect,
@@ -34,15 +28,18 @@ pub struct Video {
 }
 
 impl Video {
-    pub fn new(sdl_context: &Sdl, options: VideoOptions) -> Result<Self, Box<dyn Error>> {
+    pub fn new(
+        sdl_context: &Sdl,
+        system: &dyn System,
+        options: VideoOptions,
+    ) -> Result<Self, Box<dyn Error>> {
         let video = sdl_context.video()?;
         let mouse = sdl_context.mouse();
 
-        let pitch = options.width as usize * 4;
+        let clipped_height =
+            system.screen_height() - system.screen_clip_top() - system.screen_clip_bottom();
 
-        let clipped_height = options.height - options.clip_top - options.clip_bottom;
-
-        let display_mode = Viewport::new(options.width, clipped_height, options.upscale);
+        let display_mode = Viewport::new(system.screen_width(), clipped_height, options.upscale);
 
         let (window_width, window_height) =
             display_mode.window_size(&video, options.full_screen)?;
@@ -69,8 +66,8 @@ impl Video {
 
         let source_rect = Rect::new(
             0,
-            options.clip_top.try_into()?,
-            options.width,
+            system.screen_clip_top().try_into()?,
+            system.screen_width(),
             clipped_height,
         );
 
@@ -79,9 +76,6 @@ impl Video {
         Ok(Self {
             video,
             mouse,
-            width: options.width,
-            height: options.height,
-            pitch,
             canvas,
             viewport: display_mode,
             source_rect,
@@ -97,8 +91,14 @@ impl Video {
     pub fn create_texture<'a>(
         &mut self,
         texture_creator: &'a TextureCreator<WindowContext>,
+        screen_width: u32,
+        screen_height: u32,
     ) -> Result<Texture<'a>, TextureValueError> {
-        texture_creator.create_texture_streaming(PixelFormatEnum::BGR888, self.width, self.height)
+        texture_creator.create_texture_streaming(
+            PixelFormatEnum::BGR888,
+            screen_width,
+            screen_height,
+        )
     }
 
     pub fn toggle_full_screen(&mut self) -> Result<(), String> {
@@ -127,8 +127,9 @@ impl Video {
         &mut self,
         texture: &mut Texture<'_>,
         pixels: &[u8],
+        pitch: usize,
     ) -> Result<(), Box<dyn Error>> {
-        texture.update(None, pixels, self.pitch)?;
+        texture.update(None, pixels, pitch)?;
 
         self.canvas.clear();
         self.canvas
