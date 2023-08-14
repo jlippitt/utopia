@@ -58,7 +58,7 @@ pub fn branch<Op: BranchOperator, const LINK: bool, const LIKELY: bool>(
     }
 
     if LINK {
-        core.set(31, core.next[1]);
+        core.setd(31, core.next[1] as u64);
     }
 
     if Op::apply(core.getd(rs), core.getd(rt)) {
