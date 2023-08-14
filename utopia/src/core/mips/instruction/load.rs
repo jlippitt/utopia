@@ -42,6 +42,18 @@ pub fn lw(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     core.set(rt, result);
 }
 
+pub fn lwu(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+    debug!(
+        "{:08X} LWU {}, {}({})",
+        core.pc, REGS[rt], value as i16, REGS[rs]
+    );
+
+    let ivalue = value as i16 as i32 as u32;
+    let address = core.get(rs).wrapping_add(ivalue);
+    let result = core.read_word(address);
+    core.setd(rt, result as u64);
+}
+
 pub fn ld(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     debug!(
         "{:08X} LD {}, {}({})",
