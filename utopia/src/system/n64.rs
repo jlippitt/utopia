@@ -22,9 +22,6 @@ mod rsp;
 mod serial;
 mod video;
 
-const WIDTH: usize = 320;
-const HEIGHT: usize = 240;
-
 const CYCLES_PER_STEP: u64 = 2;
 
 const IPL3_START_ADDRESS: u32 = 0xA4000040;
@@ -71,9 +68,7 @@ impl System for N64 {
     }
 
     fn pitch(&self) -> usize {
-        // TODO: Support for multiple resolutions
-        // (Needs front-end changes!)
-        WIDTH * 4
+        self.core.bus().video.pitch()
     }
 
     fn run_frame(&mut self, _joypad_state: &JoypadState) {

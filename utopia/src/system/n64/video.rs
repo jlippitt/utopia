@@ -3,8 +3,11 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use tracing::debug;
 
+const WIDTH: usize = 320;
+const HEIGHT: usize = 200;
+
 // TODO: Resolutions other than 320*200
-const PIXEL_BUFFER_SIZE: usize = super::WIDTH * super::HEIGHT * 4;
+const PIXEL_BUFFER_SIZE: usize = WIDTH * HEIGHT * 4;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, FromPrimitive)]
 enum ColorMode {
@@ -26,6 +29,10 @@ struct Registers {
     v_current: u32,
     v_sync: u32,
     h_sync: u32,
+    h_start: u32,
+    h_end: u32,
+    v_start: u32,
+    v_end: u32,
 }
 
 pub struct VideoInterface {
@@ -54,6 +61,10 @@ impl VideoInterface {
                 v_current: 0,
                 v_sync: 0x3ff,
                 h_sync: 0x7ff,
+                h_start: 0x06c,
+                h_end: 0x2ec,
+                v_start: 0x025,
+                v_end: 0x01f,
             },
             pixels: vec![0; PIXEL_BUFFER_SIZE],
         }
@@ -69,6 +80,10 @@ impl VideoInterface {
 
     pub fn pixels(&self) -> &[u8] {
         &self.pixels
+    }
+
+    pub fn pitch(&self) -> usize {
+        WIDTH * 4
     }
 
     pub fn step(&mut self, cycles: u64) {
@@ -170,10 +185,16 @@ impl DataWriter for VideoInterface {
                 // VI_H_SYNC_LEAP: Ignore for now
             }
             0x24 => {
-                // VI_H_VIDEO: Ignore for now
+                self.regs.h_start = (value >> 16) & 0x3ff;
+                self.regs.h_end = value & 0x3ff;
+                debug!("VI_H_START: {}", self.regs.h_start);
+                debug!("VI_H_END: {}", self.regs.h_end);
             }
             0x28 => {
-                // VI_V_VIDEO: Ignore for now
+                self.regs.v_start = (value >> 16) & 0x3ff;
+                self.regs.v_end = value & 0x3ff;
+                debug!("VI_V_START: {}", self.regs.v_start);
+                debug!("VI_V_END: {}", self.regs.v_end);
             }
             0x2c => {
                 // VI_V_BURST: Ignore for now
