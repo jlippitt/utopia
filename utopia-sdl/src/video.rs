@@ -101,6 +101,18 @@ impl Video {
         )
     }
 
+    pub fn set_screen_size(
+        &mut self,
+        screen_width: u32,
+        screen_height: u32,
+    ) -> Result<(), Box<dyn Error>> {
+        self.canvas
+            .window_mut()
+            .set_size(screen_width, screen_height)?;
+
+        Ok(())
+    }
+
     pub fn toggle_full_screen(&mut self) -> Result<(), String> {
         self.full_screen = !self.full_screen;
 
@@ -117,7 +129,7 @@ impl Video {
         Ok(())
     }
 
-    pub fn on_size_changed(&mut self) -> Result<(), Box<dyn Error>> {
+    pub fn on_window_size_changed(&mut self) -> Result<(), Box<dyn Error>> {
         self.target_rect = self.viewport.target_rect(&self.video, self.full_screen)?;
 
         Ok(())

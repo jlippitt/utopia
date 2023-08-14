@@ -72,6 +72,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         system.screen_height(),
     )?;
 
+    let mut prev_resolution = system.screen_resolution();
+
     let sample_rate = system.sample_rate();
 
     let mut joypad = Joypad::new(&sdl_context)?;
@@ -110,13 +112,25 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Event::Window {
                     win_event: WindowEvent::SizeChanged(_, _),
                     ..
-                } => video.on_size_changed()?,
+                } => video.on_window_size_changed()?,
                 Event::Quit { .. } => break 'outer,
                 _ => (),
             }
         }
 
         system.run_frame(joypad.state());
+
+        if system.screen_resolution() != prev_resolution {
+            video.set_screen_size(system.screen_width(), system.screen_height())?;
+
+            texture = video.create_texture(
+                &texture_creator,
+                system.screen_width(),
+                system.screen_height(),
+            )?;
+
+            prev_resolution = system.screen_resolution();
+        }
 
         video.update(&mut texture, system.pixels(), system.pitch())?;
 

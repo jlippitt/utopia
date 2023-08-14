@@ -53,6 +53,10 @@ pub trait System {
         (self.pixels().len() / self.pitch()).try_into().unwrap()
     }
 
+    fn screen_resolution(&self) -> (u32, u32) {
+        (self.screen_width(), self.screen_height())
+    }
+
     fn screen_clip_top(&self) -> u32 {
         0
     }
