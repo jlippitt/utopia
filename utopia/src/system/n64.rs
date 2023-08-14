@@ -81,16 +81,6 @@ impl System for N64 {
         // TODO: Timing
         loop {
             self.core.step();
-
-            let r30 = self.core.r30();
-
-            if r30 == u64::MAX {
-                println!("Passed");
-                std::process::exit(0);
-            } else if r30 != 0 {
-                println!("Failed: {}", r30);
-                std::process::exit(1);
-            }
         }
     }
 }
