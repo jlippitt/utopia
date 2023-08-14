@@ -24,6 +24,7 @@ pub fn dispatch(core: &mut Core<impl Bus>, word: u32) {
     match word >> 26 {
         0o00 => special(core, word),
         0o01 => regimm(core, word),
+        0o02 => type_j(core, j, word),
         0o03 => type_j(core, jal, word),
         0o04 => type_i(core, branch::<op::Beq, false, false>, word),
         0o05 => type_i(core, branch::<op::Bne, false, false>, word),
