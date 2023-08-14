@@ -33,3 +33,43 @@ pub fn dsllv(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u3
     let result = core.getd(rt) << (core.getd(rs) & 63);
     core.setd(rd, result);
 }
+
+pub fn and(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
+    debug!(
+        "{:08X} AND {}, {}, {}",
+        core.pc, REGS[rd], REGS[rs], REGS[rt]
+    );
+
+    let result = core.getd(rs) & core.getd(rt);
+    core.setd(rd, result);
+}
+
+pub fn or(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
+    debug!(
+        "{:08X} OR {}, {}, {}",
+        core.pc, REGS[rd], REGS[rs], REGS[rt]
+    );
+
+    let result = core.getd(rs) | core.getd(rt);
+    core.setd(rd, result);
+}
+
+pub fn xor(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
+    debug!(
+        "{:08X} XOR {}, {}, {}",
+        core.pc, REGS[rd], REGS[rs], REGS[rt]
+    );
+
+    let result = core.getd(rs) ^ core.getd(rt);
+    core.setd(rd, result);
+}
+
+pub fn nor(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
+    debug!(
+        "{:08X} NOR {}, {}, {}",
+        core.pc, REGS[rd], REGS[rs], REGS[rt]
+    );
+
+    let result = !(core.getd(rs) | core.getd(rt));
+    core.setd(rd, result);
+}

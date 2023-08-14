@@ -101,36 +101,6 @@ pub fn subu(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32
     core.set(rd, result);
 }
 
-pub fn and(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
-    debug!(
-        "{:08X} AND {}, {}, {}",
-        core.pc, REGS[rd], REGS[rs], REGS[rt]
-    );
-
-    let result = core.get(rs) & core.get(rt);
-    core.set(rd, result);
-}
-
-pub fn or(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
-    debug!(
-        "{:08X} OR {}, {}, {}",
-        core.pc, REGS[rd], REGS[rs], REGS[rt]
-    );
-
-    let result = core.get(rs) | core.get(rt);
-    core.set(rd, result);
-}
-
-pub fn xor(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
-    debug!(
-        "{:08X} XOR {}, {}, {}",
-        core.pc, REGS[rd], REGS[rs], REGS[rt]
-    );
-
-    let result = core.get(rs) ^ core.get(rt);
-    core.set(rd, result);
-}
-
 pub fn slt(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
     debug!(
         "{:08X} SLT {}, {}, {}",

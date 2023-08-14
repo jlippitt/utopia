@@ -87,6 +87,7 @@ fn special(core: &mut Core<impl Bus>, word: u32) {
         0o44 => type_r(core, and, word),
         0o45 => type_r(core, or, word),
         0o46 => type_r(core, xor, word),
+        0o47 => type_r(core, nor, word),
         0o52 => type_r(core, slt, word),
         0o53 => type_r(core, sltu, word),
         0o70 => type_r(core, dsll, word),
