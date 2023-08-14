@@ -5,6 +5,7 @@ pub struct VideoInterface {
     cycles: u64,
     line: u32,
     field: bool,
+    v_intr: u32,
     v_current: u32,
     v_sync: u32,
     h_sync: u32,
@@ -16,6 +17,7 @@ impl VideoInterface {
             cycles: 0,
             line: 0,
             field: false,
+            v_intr: 0x3ff,
             v_current: 0,
             v_sync: 0x3ff,
             h_sync: 0x7ff,
@@ -55,6 +57,7 @@ impl DataReader for VideoInterface {
 
     fn read(&self, address: u32) -> u32 {
         match address {
+            0x0c => self.v_intr,
             0x10 => self.v_current,
             0x18 => self.v_sync,
             0x1c => self.h_sync,
@@ -66,10 +69,26 @@ impl DataReader for VideoInterface {
 impl DataWriter for VideoInterface {
     fn write(&mut self, address: u32, value: u32) {
         match address {
+            0x00 => {
+                // VI_CTRL: Ignore for now
+            }
+            0x04 => {
+                // VI_ORIGIN: Ignore for now
+            }
+            0x08 => {
+                // VI_WIDTH: Ignore for now
+            }
+            0x0c => {
+                self.v_intr = value & 0x3ff;
+                debug!("VI_V_INTR: {}", self.v_intr);
+            }
             0x10 => {
                 self.v_current = value & 0x3ff;
                 debug!("VI_V_CURRENT: {}", self.v_current);
                 // TODO: Clear interrupt
+            }
+            0x14 => {
+                // VI_BURST: Ignore for now
             }
             0x18 => {
                 self.v_sync = value & 0x3ff;
@@ -79,6 +98,24 @@ impl DataWriter for VideoInterface {
                 self.h_sync = value & 0x7ff;
                 debug!("VI_H_SYNC: {}", self.h_sync);
                 // TODO: Leap (PAL only)
+            }
+            0x20 => {
+                // VI_H_SYNC_LEAP: Ignore for now
+            }
+            0x24 => {
+                // VI_H_VIDEO: Ignore for now
+            }
+            0x28 => {
+                // VI_V_VIDEO: Ignore for now
+            }
+            0x2c => {
+                // VI_V_BURST: Ignore for now
+            }
+            0x30 => {
+                // VI_X_SCALE: Ignore for now
+            }
+            0x34 => {
+                // VI_Y_SCALE: Ignore for now
             }
             _ => unimplemented!("Video Interface Write: {:08X} <= {:08X}", address, value),
         }
