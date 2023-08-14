@@ -20,7 +20,7 @@ pub fn srl(core: &mut Core<impl Bus>, _rs: usize, rt: usize, rd: usize, sa: u32)
 
 pub fn sra(core: &mut Core<impl Bus>, _rs: usize, rt: usize, rd: usize, sa: u32) {
     debug!("{:08X} SRA {}, {}, {}", core.pc, REGS[rd], REGS[rt], sa);
-    let result = (core.get(rt) as i32 >> sa) as u32;
+    let result = (core.getd(rt) as i64 >> sa) as u32;
     core.set(rd, result);
 }
 
@@ -47,7 +47,7 @@ pub fn srav(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32
         "{:08X} SRAV {}, {}, {}",
         core.pc, REGS[rd], REGS[rt], REGS[rs]
     );
-    let result = (core.get(rt) as i32 >> (core.get(rs) & 31)) as u32;
+    let result = (core.getd(rt) as i64 >> (core.get(rs) & 31)) as u32;
     core.set(rd, result);
 }
 
