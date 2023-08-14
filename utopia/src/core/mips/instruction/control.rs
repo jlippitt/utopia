@@ -14,6 +14,12 @@ pub fn jr(core: &mut Core<impl Bus>, rs: usize, _rt: usize, _rd: usize, _sa: u32
     core.next[1] = core.get(rs);
 }
 
+pub fn jalr(core: &mut Core<impl Bus>, rs: usize, _rt: usize, _rd: usize, _sa: u32) {
+    debug!("{:08X} JALR {}", core.pc, REGS[rs]);
+    core.set(31, core.next[1]);
+    core.next[1] = core.get(rs);
+}
+
 pub fn branch<Op: BranchOperator, const LINK: bool, const LIKELY: bool>(
     core: &mut Core<impl Bus>,
     rs: usize,
