@@ -23,6 +23,8 @@ const WIDTH: usize = 320;
 const HEIGHT: usize = 240;
 const PIXELS: [u8; WIDTH * 4 * HEIGHT] = [0; WIDTH * 4 * HEIGHT];
 
+const CYCLES_PER_STEP: u64 = 2;
+
 const IPL3_START_ADDRESS: u32 = 0xA4000040;
 
 pub struct N64 {
@@ -87,6 +89,7 @@ impl System for N64 {
 }
 
 struct Hardware {
+    cycles: u64,
     rdram: Rdram,
     rsp: Rsp,
     mips: MipsInterface,
@@ -99,6 +102,7 @@ struct Hardware {
 impl Hardware {
     pub fn new(rom: Vec<u8>) -> Self {
         Self {
+            cycles: 0,
             rdram: Rdram::new(),
             rsp: Rsp::new(&rom[0..DMEM_SIZE]),
             mips: MipsInterface::new(),
@@ -207,5 +211,9 @@ impl Bus for Hardware {
             5 => self.write_physical(address - 0xa000_0000, value),
             _ => todo!("TLB"),
         }
+    }
+
+    fn step(&mut self) {
+        self.cycles += CYCLES_PER_STEP;
     }
 }

@@ -17,6 +17,7 @@ const REGS: [&str; 32] = [
 pub trait Bus {
     fn read<T: Value>(&mut self, address: u32) -> T;
     fn write<T: Value>(&mut self, address: u32, value: T);
+    fn step(&mut self);
 }
 
 pub struct Core<T: Bus> {
@@ -61,7 +62,10 @@ impl<T: Bus> Core<T> {
         assert!((self.pc & 3) == 0);
 
         let word = self.bus.read::<u32>(self.pc);
+
         instruction::dispatch(self, word);
+
+        self.bus.step();
     }
 
     fn get(&self, reg: usize) -> u32 {
