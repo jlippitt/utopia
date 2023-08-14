@@ -9,7 +9,7 @@ use rdram::Rdram;
 use rsp::{Rsp, DMEM_SIZE};
 use serial::SerialBus;
 use std::error::Error;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 mod audio;
 mod header;
@@ -136,7 +136,7 @@ impl Hardware {
             0x041 => todo!("RDP Command Register Writes"),
             0x042 => todo!("RDP Span Register Writes"),
             0x043 => self.mips.write_be(address & 0x000f_ffff, value),
-            0x044 => todo!("Video Interface Writes"),
+            0x044 => warn!("Video Interface Writes"),
             0x045 => self.audio.write_be(address & 0x000f_ffff, value),
             0x046 => {
                 self.peripheral.write_be(address & 0x000f_ffff, value);
