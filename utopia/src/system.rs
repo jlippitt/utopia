@@ -81,19 +81,19 @@ pub fn create<T: MemoryMapper + 'static, U: BiosLoader>(
 ) -> Result<Box<dyn System>, Box<dyn Error>> {
     let extension = Path::new(rom_path)
         .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("");
+        .and_then(|ext| Some(ext.to_string_lossy().to_lowercase()))
+        .unwrap_or("".to_owned());
 
-    Ok(match extension {
+    Ok(match extension.as_str() {
         "gb" => Box::new(GameBoy::<T::Mapped>::new(rom_data, options)?),
         "gba" => Box::new(GameBoyAdvance::new(
             rom_data,
             &options.bios_loader,
             options.skip_boot,
         )?),
+        "n64" | "z64" => Box::new(N64::new(rom_data)?),
         "nes" => Box::new(Nes::new(rom_data, &options.memory_mapper)?),
         "sfc" | "smc" => Box::new(Snes::new(rom_data, options)?),
-        "z64" => Box::new(N64::new(rom_data)?),
         _ => Err("ROM type not supported".to_owned())?,
     })
 }
