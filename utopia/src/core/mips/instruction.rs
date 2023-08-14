@@ -48,6 +48,8 @@ pub fn dispatch(core: &mut Core<impl Bus>, word: u32) {
         0o27 => type_i(core, branch::<op::Bgtz, false, true>, word),
         0o30 => type_i(core, daddi, word),
         0o31 => type_i(core, daddiu, word),
+        0o40 => type_i(core, lb, word),
+        0o41 => type_i(core, lh, word),
         0o43 => type_i(core, lw, word),
         0o44 => type_i(core, lbu, word),
         0o45 => type_i(core, lhu, word),

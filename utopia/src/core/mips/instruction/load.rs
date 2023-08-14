@@ -6,15 +6,15 @@ pub fn lui(core: &mut Core<impl Bus>, _rs: usize, rt: usize, value: u32) {
     core.set(rt, value << 16);
 }
 
-pub fn lhu(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+pub fn lb(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     debug!(
-        "{:08X} LHU {}, {}({})",
+        "{:08X} LB {}, {}({})",
         core.pc, REGS[rt], value as i16, REGS[rs]
     );
 
     let ivalue = value as i16 as i32 as u32;
     let address = core.get(rs).wrapping_add(ivalue);
-    let result = core.read_halfword(address);
+    let result = core.read_byte(address) as i8;
     core.set(rt, result as u32);
 }
 
@@ -27,6 +27,30 @@ pub fn lbu(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     let ivalue = value as i16 as i32 as u32;
     let address = core.get(rs).wrapping_add(ivalue);
     let result = core.read_byte(address);
+    core.set(rt, result as u32);
+}
+
+pub fn lh(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+    debug!(
+        "{:08X} LH {}, {}({})",
+        core.pc, REGS[rt], value as i16, REGS[rs]
+    );
+
+    let ivalue = value as i16 as i32 as u32;
+    let address = core.get(rs).wrapping_add(ivalue);
+    let result = core.read_byte(address) as i16;
+    core.set(rt, result as u32);
+}
+
+pub fn lhu(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+    debug!(
+        "{:08X} LHU {}, {}({})",
+        core.pc, REGS[rt], value as i16, REGS[rs]
+    );
+
+    let ivalue = value as i16 as i32 as u32;
+    let address = core.get(rs).wrapping_add(ivalue);
+    let result = core.read_halfword(address);
     core.set(rt, result as u32);
 }
 
