@@ -53,6 +53,10 @@ impl<T: Bus> Core<T> {
         }
     }
 
+    pub fn r30(&self) -> u64 {
+        self.regs[30]
+    }
+
     pub fn step(&mut self) {
         self.pc = self.next[0];
         self.next[0] = self.next[1];
