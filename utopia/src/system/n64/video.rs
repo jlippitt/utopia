@@ -44,6 +44,10 @@ impl VideoInterface {
         self.ready = false;
     }
 
+    pub fn pixels<'a>(&self, rdram: &'a [u8]) -> &'a [u8] {
+        &rdram[self.regs.origin as usize..]
+    }
+
     pub fn step(&mut self, cycles: u64) {
         self.cycles += cycles;
 

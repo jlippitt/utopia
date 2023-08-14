@@ -24,7 +24,6 @@ mod video;
 
 const WIDTH: usize = 320;
 const HEIGHT: usize = 240;
-const PIXELS: [u8; WIDTH * 4 * HEIGHT] = [0; WIDTH * 4 * HEIGHT];
 
 const CYCLES_PER_STEP: u64 = 2;
 
@@ -80,7 +79,8 @@ impl System for N64 {
     }
 
     fn pixels(&self) -> &[u8] {
-        &PIXELS
+        let bus = self.core.bus();
+        bus.video.pixels(bus.rdram.data())
     }
 
     fn run_frame(&mut self, _joypad_state: &JoypadState) {

@@ -38,6 +38,10 @@ impl Rdram {
         }
     }
 
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
+
     pub fn read_data<T: Value>(&self, address: u32) -> T {
         self.data.read_be(address as usize)
     }
