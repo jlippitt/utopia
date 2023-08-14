@@ -79,8 +79,7 @@ impl System for N64 {
     }
 
     fn pixels(&self) -> &[u8] {
-        let bus = self.core.bus();
-        bus.video.pixels(bus.rdram.data())
+        self.core.bus().video.pixels()
     }
 
     fn run_frame(&mut self, _joypad_state: &JoypadState) {
@@ -91,6 +90,9 @@ impl System for N64 {
         while !core.bus().video.ready() {
             core.step();
         }
+
+        let bus = core.bus_mut();
+        bus.video.update_pixel_buffer(bus.rdram.data());
     }
 }
 

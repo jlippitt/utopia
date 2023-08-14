@@ -1,7 +1,25 @@
 use crate::util::facade::{DataReader, DataWriter};
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
 use tracing::debug;
 
+// TODO: Resolutions other than 320*200
+const PIXEL_BUFFER_SIZE: usize = super::WIDTH * super::HEIGHT * 4;
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, FromPrimitive)]
+enum ColorMode {
+    Blank = 0,
+    Reserved = 1,
+    Color16 = 2,
+    Color32 = 3,
+}
+
+struct Control {
+    color_mode: ColorMode,
+}
+
 struct Registers {
+    ctrl: Control,
     origin: u32,
     width: u32,
     v_intr: u32,
@@ -16,6 +34,7 @@ pub struct VideoInterface {
     line: u32,
     field: bool,
     regs: Registers,
+    pixels: Vec<u8>,
 }
 
 impl VideoInterface {
@@ -26,6 +45,9 @@ impl VideoInterface {
             line: 0,
             field: false,
             regs: Registers {
+                ctrl: Control {
+                    color_mode: ColorMode::Blank,
+                },
                 origin: 0,
                 width: 0,
                 v_intr: 0x3ff,
@@ -33,6 +55,7 @@ impl VideoInterface {
                 v_sync: 0x3ff,
                 h_sync: 0x7ff,
             },
+            pixels: vec![0; PIXEL_BUFFER_SIZE],
         }
     }
 
@@ -44,8 +67,8 @@ impl VideoInterface {
         self.ready = false;
     }
 
-    pub fn pixels<'a>(&self, rdram: &'a [u8]) -> &'a [u8] {
-        &rdram[self.regs.origin as usize..]
+    pub fn pixels(&self) -> &[u8] {
+        &self.pixels
     }
 
     pub fn step(&mut self, cycles: u64) {
@@ -74,6 +97,19 @@ impl VideoInterface {
             debug!("Line: {}", self.line);
         }
     }
+
+    pub fn update_pixel_buffer(&mut self, rdram: &[u8]) {
+        match self.regs.ctrl.color_mode {
+            ColorMode::Color32 => {
+                let start = self.regs.origin as usize;
+                self.pixels
+                    .copy_from_slice(&rdram[start..(start + PIXEL_BUFFER_SIZE)]);
+            }
+            ColorMode::Color16 => todo!("16-bit color"),
+            ColorMode::Reserved => panic!("Using 'reserved' color mode"),
+            ColorMode::Blank => self.pixels.fill(0),
+        }
+    }
 }
 
 impl DataReader for VideoInterface {
@@ -97,7 +133,9 @@ impl DataWriter for VideoInterface {
     fn write(&mut self, address: u32, value: u32) {
         match address {
             0x00 => {
-                // VI_CTRL: Ignore for now
+                // VI_CTRL: TODO
+                self.regs.ctrl.color_mode = ColorMode::from_u32(value & 3).unwrap();
+                debug!("VI_CTRL Color Mode: {:?}", self.regs.ctrl.color_mode);
             }
             0x04 => {
                 self.regs.origin = value & 0x00ff_ffff;
