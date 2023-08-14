@@ -1,15 +1,21 @@
 use crate::util::facade::{DataReader, DataWriter};
 use tracing::debug;
 
+struct Registers {
+    origin: u32,
+    width: u32,
+    v_intr: u32,
+    v_current: u32,
+    v_sync: u32,
+    h_sync: u32,
+}
+
 pub struct VideoInterface {
     ready: bool,
     cycles: u64,
     line: u32,
     field: bool,
-    v_intr: u32,
-    v_current: u32,
-    v_sync: u32,
-    h_sync: u32,
+    regs: Registers,
 }
 
 impl VideoInterface {
@@ -19,10 +25,14 @@ impl VideoInterface {
             cycles: 0,
             line: 0,
             field: false,
-            v_intr: 0x3ff,
-            v_current: 0,
-            v_sync: 0x3ff,
-            h_sync: 0x7ff,
+            regs: Registers {
+                origin: 0,
+                width: 0,
+                v_intr: 0x3ff,
+                v_current: 0,
+                v_sync: 0x3ff,
+                h_sync: 0x7ff,
+            },
         }
     }
 
@@ -38,7 +48,7 @@ impl VideoInterface {
         self.cycles += cycles;
 
         // Runs approximately half as fast as the CPU
-        let cycles_per_line = (self.h_sync as u64) << 1;
+        let cycles_per_line = (self.regs.h_sync as u64) << 1;
 
         if self.cycles >= cycles_per_line {
             self.cycles -= cycles_per_line;
@@ -46,13 +56,13 @@ impl VideoInterface {
 
             // VCurrent & VSync are given in half lines, with the low bit
             // representing the field in interlace mode
-            self.v_current = (self.line << 1) | (self.field as u32);
+            self.regs.v_current = (self.line << 1) | (self.field as u32);
 
             // (TODO: Interlace mode)
-            if self.v_current >= self.v_sync {
+            if self.regs.v_current >= self.regs.v_sync {
                 self.line = 0;
                 self.field = !self.field;
-                self.v_current = self.field as u32;
+                self.regs.v_current = self.field as u32;
                 self.ready = true;
                 debug!("Field: {}", self.field as u32);
             }
@@ -68,10 +78,12 @@ impl DataReader for VideoInterface {
 
     fn read(&self, address: u32) -> u32 {
         match address {
-            0x0c => self.v_intr,
-            0x10 => self.v_current,
-            0x18 => self.v_sync,
-            0x1c => self.h_sync,
+            0x04 => self.regs.origin,
+            0x08 => self.regs.width,
+            0x0c => self.regs.v_intr,
+            0x10 => self.regs.v_current,
+            0x18 => self.regs.v_sync,
+            0x1c => self.regs.h_sync,
             _ => unimplemented!("Video Interface Read: {:08X}", address),
         }
     }
@@ -84,30 +96,32 @@ impl DataWriter for VideoInterface {
                 // VI_CTRL: Ignore for now
             }
             0x04 => {
-                // VI_ORIGIN: Ignore for now
+                self.regs.origin = value & 0x00ff_ffff;
+                debug!("VI_ORIGIN: {:08X}", self.regs.origin);
             }
             0x08 => {
-                // VI_WIDTH: Ignore for now
+                self.regs.width = value & 0x0fff;
+                debug!("VI_WIDTH: {}", self.regs.width);
             }
             0x0c => {
-                self.v_intr = value & 0x3ff;
-                debug!("VI_V_INTR: {}", self.v_intr);
+                self.regs.v_intr = value & 0x3ff;
+                debug!("VI_V_INTR: {}", self.regs.v_intr);
             }
             0x10 => {
-                self.v_current = value & 0x3ff;
-                debug!("VI_V_CURRENT: {}", self.v_current);
+                self.regs.v_current = value & 0x3ff;
+                debug!("VI_V_CURRENT: {}", self.regs.v_current);
                 // TODO: Clear interrupt
             }
             0x14 => {
                 // VI_BURST: Ignore for now
             }
             0x18 => {
-                self.v_sync = value & 0x3ff;
-                debug!("VI_V_SYNC: {}", self.v_sync);
+                self.regs.v_sync = value & 0x3ff;
+                debug!("VI_V_SYNC: {}", self.regs.v_sync);
             }
             0x1c => {
-                self.h_sync = value & 0x7ff;
-                debug!("VI_H_SYNC: {}", self.h_sync);
+                self.regs.h_sync = value & 0x7ff;
+                debug!("VI_H_SYNC: {}", self.regs.h_sync);
                 // TODO: Leap (PAL only)
             }
             0x20 => {
