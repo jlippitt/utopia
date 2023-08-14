@@ -1,3 +1,5 @@
+use self::video::VideoInterface;
+
 use super::System;
 use crate::core::mips::{Bus, Core, State};
 use crate::util::facade::{ReadFacade, Value, WriteFacade};
@@ -9,7 +11,7 @@ use rdram::Rdram;
 use rsp::{Rsp, DMEM_SIZE};
 use serial::SerialBus;
 use std::error::Error;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 mod audio;
 mod header;
@@ -18,6 +20,7 @@ mod peripheral;
 mod rdram;
 mod rsp;
 mod serial;
+mod video;
 
 const WIDTH: usize = 320;
 const HEIGHT: usize = 240;
@@ -93,6 +96,7 @@ struct Hardware {
     rdram: Rdram,
     rsp: Rsp,
     mips: MipsInterface,
+    video: VideoInterface,
     audio: AudioInterface,
     peripheral: PeripheralInterface,
     serial: SerialBus,
@@ -106,6 +110,7 @@ impl Hardware {
             rdram: Rdram::new(),
             rsp: Rsp::new(&rom[0..DMEM_SIZE]),
             mips: MipsInterface::new(),
+            video: VideoInterface::new(),
             audio: AudioInterface::new(),
             peripheral: PeripheralInterface::new(),
             serial: SerialBus::new(),
@@ -121,7 +126,7 @@ impl Hardware {
             0x041 => todo!("RDP Command Register Reads"),
             0x042 => todo!("RDP Span Register Reads"),
             0x043 => self.mips.read_be(address & 0x000f_ffff),
-            0x044 => todo!("Video Interface Reads"),
+            0x044 => self.video.read_be(address & 0x000f_ffff),
             0x045 => self.audio.read_be(address & 0x000f_ffff),
             0x046 => self.peripheral.read_be(address & 0x000f_ffff),
             0x047 => self.rdram.read_interface(address & 0x000f_ffff),
@@ -150,7 +155,7 @@ impl Hardware {
             0x041 => todo!("RDP Command Register Writes"),
             0x042 => todo!("RDP Span Register Writes"),
             0x043 => self.mips.write_be(address & 0x000f_ffff, value),
-            0x044 => warn!("Video Interface Writes"),
+            0x044 => self.video.write_be(address & 0x000f_ffff, value),
             0x045 => self.audio.write_be(address & 0x000f_ffff, value),
             0x046 => {
                 self.peripheral.write_be(address & 0x000f_ffff, value);
@@ -215,5 +220,6 @@ impl Bus for Hardware {
 
     fn step(&mut self) {
         self.cycles += CYCLES_PER_STEP;
+        self.video.step(CYCLES_PER_STEP);
     }
 }
