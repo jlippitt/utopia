@@ -123,7 +123,16 @@ impl Hardware {
             0x047 => self.rdram.read_interface(address & 0x000f_ffff),
             0x048 => self.serial.interface().read_be(address & 0x000f_ffff),
             0x080..=0x0ff => todo!("SRAM Reads"),
-            0x100..=0x1fb => self.rom.read_be((address & 0x0fff_ffff) as usize),
+            0x100..=0x1fb => {
+                let index = address as usize & 0x0fff_ffff;
+
+                if index < self.rom.len() {
+                    self.rom.read_be(index)
+                } else {
+                    // TODO: Open bus behaviour?
+                    T::default()
+                }
+            }
             0x1fc => self.serial.read(address & 0x000f_ffff),
             _ => panic!("Read from open bus: {:08X}", address),
         }
