@@ -100,21 +100,3 @@ pub fn subu(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32
     let result = core.get(rs).wrapping_sub(core.get(rt));
     core.set(rd, result);
 }
-
-pub fn slt(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
-    debug!(
-        "{:08X} SLT {}, {}, {}",
-        core.pc, REGS[rd], REGS[rs], REGS[rt]
-    );
-    let result = (core.get(rs) as i32) < (core.get(rt) as i32);
-    core.set(rd, result as u32);
-}
-
-pub fn sltu(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
-    debug!(
-        "{:08X} SLTU {}, {}, {}",
-        core.pc, REGS[rd], REGS[rs], REGS[rt]
-    );
-    let result = core.get(rs) < core.get(rt);
-    core.set(rd, result as u32);
-}

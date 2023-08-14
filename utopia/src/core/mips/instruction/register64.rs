@@ -73,3 +73,21 @@ pub fn nor(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32)
     let result = !(core.getd(rs) | core.getd(rt));
     core.setd(rd, result);
 }
+
+pub fn slt(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
+    debug!(
+        "{:08X} SLT {}, {}, {}",
+        core.pc, REGS[rd], REGS[rs], REGS[rt]
+    );
+    let result = (core.getd(rs) as i64) < (core.getd(rt) as i64);
+    core.setd(rd, result as u64);
+}
+
+pub fn sltu(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
+    debug!(
+        "{:08X} SLTU {}, {}, {}",
+        core.pc, REGS[rd], REGS[rs], REGS[rt]
+    );
+    let result = core.getd(rs) < core.getd(rt);
+    core.setd(rd, result as u64);
+}
