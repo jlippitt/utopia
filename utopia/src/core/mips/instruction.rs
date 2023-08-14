@@ -1,7 +1,8 @@
 use super::operator;
 use super::{cop0, cop1, Bus, Core};
 use control::*;
-use immediate::*;
+use immediate32::*;
+use immediate64::*;
 use load::*;
 use misc::*;
 use mul_div::*;
@@ -10,7 +11,8 @@ use register64::*;
 use store::*;
 
 mod control;
-mod immediate;
+mod immediate32;
+mod immediate64;
 mod load;
 mod misc;
 mod mul_div;
@@ -44,6 +46,8 @@ pub fn dispatch(core: &mut Core<impl Bus>, word: u32) {
         0o25 => type_i(core, branch::<op::Bne, false, true>, word),
         0o26 => type_i(core, branch::<op::Blez, false, true>, word),
         0o27 => type_i(core, branch::<op::Bgtz, false, true>, word),
+        0o30 => type_i(core, daddi, word),
+        0o31 => type_i(core, daddiu, word),
         0o43 => type_i(core, lw, word),
         0o44 => type_i(core, lbu, word),
         0o45 => type_i(core, lhu, word),
