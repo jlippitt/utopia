@@ -84,9 +84,12 @@ impl System for N64 {
     }
 
     fn run_frame(&mut self, _joypad_state: &JoypadState) {
-        // TODO: Timing
-        loop {
-            self.core.step();
+        let core = &mut self.core;
+
+        core.bus_mut().video.start_frame();
+
+        while !core.bus().video.ready() {
+            core.step();
         }
     }
 }

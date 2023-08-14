@@ -2,6 +2,7 @@ use crate::util::facade::{DataReader, DataWriter};
 use tracing::debug;
 
 pub struct VideoInterface {
+    ready: bool,
     cycles: u64,
     line: u32,
     field: bool,
@@ -14,6 +15,7 @@ pub struct VideoInterface {
 impl VideoInterface {
     pub fn new() -> Self {
         Self {
+            ready: false,
             cycles: 0,
             line: 0,
             field: false,
@@ -22,6 +24,14 @@ impl VideoInterface {
             v_sync: 0x3ff,
             h_sync: 0x7ff,
         }
+    }
+
+    pub fn ready(&self) -> bool {
+        self.ready
+    }
+
+    pub fn start_frame(&mut self) {
+        self.ready = false;
     }
 
     pub fn step(&mut self, cycles: u64) {
@@ -43,6 +53,7 @@ impl VideoInterface {
                 self.line = 0;
                 self.field = !self.field;
                 self.v_current = self.field as u32;
+                self.ready = true;
                 debug!("Field: {}", self.field as u32);
             }
 
