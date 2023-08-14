@@ -34,6 +34,7 @@ impl N64 {
         let header = header::parse(&rom_data);
 
         info!("Title: {}", header.title);
+        info!("ROM Size: {}", rom_data.len());
         info!("Boot Address: {:08X}", header.boot_address);
 
         let hw = Hardware::new(rom_data);
