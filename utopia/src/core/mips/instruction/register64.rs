@@ -121,3 +121,53 @@ pub fn sltu(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32
     let result = core.getd(rs) < core.getd(rt);
     core.setd(rd, result as u64);
 }
+
+pub fn dadd(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
+    debug!(
+        "{:08X} DADD {}, {}, {}",
+        core.pc, REGS[rd], REGS[rs], REGS[rt]
+    );
+
+    let (result, overflow) = (core.getd(rs) as i64).overflowing_add(core.getd(rt) as i64);
+
+    if overflow {
+        todo!("Overflow exceptions");
+    }
+
+    core.setd(rd, result as u64);
+}
+
+pub fn daddu(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
+    debug!(
+        "{:08X} DADDU {}, {}, {}",
+        core.pc, REGS[rd], REGS[rs], REGS[rt]
+    );
+
+    let result = core.getd(rs).wrapping_add(core.getd(rt));
+    core.setd(rd, result);
+}
+
+pub fn dsub(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
+    debug!(
+        "{:08X} DSUB {}, {}, {}",
+        core.pc, REGS[rd], REGS[rs], REGS[rt]
+    );
+
+    let (result, overflow) = (core.getd(rs) as i64).overflowing_sub(core.getd(rt) as i64);
+
+    if overflow {
+        todo!("Overflow exceptions");
+    }
+
+    core.setd(rd, result as u64);
+}
+
+pub fn dsubu(core: &mut Core<impl Bus>, rs: usize, rt: usize, rd: usize, _sa: u32) {
+    debug!(
+        "{:08X} DSUBU {}, {}, {}",
+        core.pc, REGS[rd], REGS[rs], REGS[rt]
+    );
+
+    let result = core.getd(rs).wrapping_sub(core.getd(rt));
+    core.setd(rd, result);
+}
