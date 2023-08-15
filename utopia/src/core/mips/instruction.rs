@@ -62,6 +62,8 @@ pub fn dispatch(core: &mut Core<impl Bus>, word: u32) {
         0o51 => type_i(core, sh, word),
         0o52 => type_i(core, swl, word),
         0o53 => type_i(core, sw, word),
+        0o54 => type_i(core, sdl, word),
+        0o55 => type_i(core, sdr, word),
         0o56 => type_i(core, swr, word),
         0o57 => type_i(core, cache, word),
         0o67 => type_i(core, ld, word),

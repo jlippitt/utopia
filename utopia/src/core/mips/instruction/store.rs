@@ -74,3 +74,33 @@ pub fn sd(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     let address = core.get(rs).wrapping_add(ivalue);
     core.write_doubleword(address, core.getd(rt));
 }
+
+pub fn sdl(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+    debug!(
+        "{:08X} SDL {}, {}({})",
+        core.pc, REGS[rt], value as i16, REGS[rs]
+    );
+
+    let ivalue = value as i16 as i32 as u32;
+    let address = core.get(rs).wrapping_add(ivalue);
+    let bytes = core.getd(rt).to_be_bytes();
+
+    for index in 0..=(address & 7 ^ 7) {
+        core.write_byte(address.wrapping_add(index), bytes[index as usize]);
+    }
+}
+
+pub fn sdr(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+    debug!(
+        "{:08X} SDR {}, {}({})",
+        core.pc, REGS[rt], value as i16, REGS[rs]
+    );
+
+    let ivalue = value as i16 as i32 as u32;
+    let address = core.get(rs).wrapping_add(ivalue);
+    let bytes = core.getd(rt).to_be_bytes();
+
+    for index in 0..=(address & 7) {
+        core.write_byte(address.wrapping_sub(index), bytes[(index ^ 7) as usize]);
+    }
+}
