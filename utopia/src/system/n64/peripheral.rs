@@ -19,6 +19,7 @@ pub struct PeripheralInterface {
     dma_requested: Dma,
     dram_address: u32,
     cart_address: u32,
+    interrupt: bool,
 }
 
 impl PeripheralInterface {
@@ -27,6 +28,7 @@ impl PeripheralInterface {
             dma_requested: Dma::None,
             dram_address: 0,
             cart_address: 0,
+            interrupt: false,
         }
     }
 
@@ -36,6 +38,8 @@ impl PeripheralInterface {
 
     pub fn finish_dma(&mut self) {
         self.dma_requested = Dma::None;
+        self.interrupt = true;
+        debug!("PI Interrupt Raised");
     }
 }
 
@@ -50,10 +54,16 @@ impl DataReader for PeripheralInterface {
             0x0c => 0x7f,
             0x10 => {
                 // TODO: Other PI_STATUS bits
-                match self.dma_requested {
+                let mut value = 0;
+
+                value |= if self.interrupt { 0x08 } else { 0 };
+
+                value |= match self.dma_requested {
                     Dma::None => 0,
-                    _ => 1,
-                }
+                    _ => 0x01,
+                };
+
+                value
             }
             0x14 => {
                 // PI_BSD_DOM1_LAT
@@ -105,7 +115,11 @@ impl DataWriter for PeripheralInterface {
             }
             0x10 => {
                 // PI_STATUS
-                // TODO: Clear interrupt
+                if (value & 2) != 0 {
+                    self.interrupt = false;
+                    debug!("PI Interrupt Cleared");
+                }
+
                 // TODO: Reset DMA controller
             }
             _ => unimplemented!(
