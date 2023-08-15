@@ -108,8 +108,8 @@ fn mfc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
         0 => core.cop0.index,
         2 => core.cop0.lo0,
         3 => core.cop0.lo1,
-        4 => core.cop0.page_mask,
-        5 => core.cop0.wired,
+        5 => core.cop0.page_mask,
+        6 => core.cop0.wired,
         10 => core.cop0.hi,
         12 => {
             let status = &mut core.cop0.status;
@@ -156,11 +156,11 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
             core.cop0.lo1 = value;
             debug!("  COP0 LO1: {:08X}", core.cop0.lo1);
         }
-        4 => {
+        5 => {
             core.cop0.page_mask = value & 0x01ff_e000;
             debug!("  COP0 Page Mask: {:08X}", core.cop0.page_mask);
         }
-        5 => {
+        6 => {
             core.cop0.wired = value & 0x0000_003f;
             debug!("  COP0 Wired: {:08X}", core.cop0.wired);
         }
