@@ -77,7 +77,7 @@ fn mfc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
         10 => core.cop0.hi,
         12 => {
             let status = &mut core.cop0.status;
-            let mut value = 0x3000_0000;
+            let mut value = 0;
             value |= if status.ie { 0x0000_0001 } else { 0 };
             value |= if status.exl { 0x0000_0002 } else { 0 };
             value |= if status.erl { 0x0000_0004 } else { 0 };
