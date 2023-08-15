@@ -3,11 +3,8 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use tracing::debug;
 
-const WIDTH: usize = 320;
-const HEIGHT: usize = 200;
-
-// TODO: Resolutions other than 320*200
-const PIXEL_BUFFER_SIZE: usize = WIDTH * HEIGHT * 4;
+const DEFAULT_WIDTH: u32 = 640;
+const DEFAULT_HEIGHT: u32 = 474;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, FromPrimitive)]
 enum ColorMode {
@@ -62,11 +59,11 @@ impl VideoInterface {
                 v_sync: 0x3ff,
                 h_sync: 0x7ff,
                 h_start: 0x06c,
-                h_end: 0x2ec,
+                h_end: 0x06c + DEFAULT_WIDTH,
                 v_start: 0x025,
-                v_end: 0x01f,
+                v_end: 0x025 + DEFAULT_HEIGHT,
             },
-            pixels: vec![0; PIXEL_BUFFER_SIZE],
+            pixels: vec![0; DEFAULT_WIDTH as usize * (DEFAULT_HEIGHT / 2) as usize * 4],
         }
     }
 
@@ -83,7 +80,7 @@ impl VideoInterface {
     }
 
     pub fn pitch(&self) -> usize {
-        WIDTH * 4
+        ((self.regs.h_end - self.regs.h_start) as usize * 4) / 2
     }
 
     pub fn step(&mut self, cycles: u64) {
@@ -114,11 +111,34 @@ impl VideoInterface {
     }
 
     pub fn update_pixel_buffer(&mut self, rdram: &[u8]) {
+        let pitch = self.pitch();
+        let height = ((self.regs.v_end - self.regs.v_start) as usize) / 2;
+
+        let pixel_buffer_size = pitch * height;
+
+        if pixel_buffer_size != self.pixels.len() {
+            self.pixels.resize(pixel_buffer_size, 0);
+        }
+
         match self.regs.ctrl.color_mode {
             ColorMode::Color32 => {
                 let start = self.regs.origin as usize;
+
                 self.pixels
-                    .copy_from_slice(&rdram[start..(start + PIXEL_BUFFER_SIZE)]);
+                    .copy_from_slice(&rdram[start..(start + pixel_buffer_size)]);
+
+                // self.pixels[write_pos..(write_pos + pitch)]
+                //     .copy_from_slice(&rdram[read_pos..(read_pos + pitch)]);
+                // let mut read_pos = self.regs.origin as usize;
+                // let mut write_pos = 0;
+
+                // while write_pos < pixel_buffer_size {
+                //     self.pixels[write_pos..(write_pos + pitch)]
+                //         .copy_from_slice(&rdram[read_pos..(read_pos + pitch)]);
+                //     read_pos += self.regs.width as usize;
+                //     write_pos += pitch;
+                //     println!("{}, {:08X}", write_pos, read_pos);
+                // }
             }
             ColorMode::Color16 => todo!("16-bit color"),
             ColorMode::Reserved => panic!("Using 'reserved' color mode"),

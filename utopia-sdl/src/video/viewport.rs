@@ -18,6 +18,11 @@ impl Viewport {
         }
     }
 
+    pub fn set_base_resolution(&mut self, width: u32, height: u32) {
+        self.width = width;
+        self.height = height;
+    }
+
     pub fn window_size(
         &self,
         video: &VideoSubsystem,
