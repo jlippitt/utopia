@@ -74,31 +74,13 @@ pub fn lwl(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
 
     let ivalue = value as i16 as i32 as u32;
     let address = core.get(rs).wrapping_add(ivalue);
+    let mut result = core.get(rt);
 
-    let prev_bytes = core.get(rt).to_be_bytes();
-
-    let result = match address & 3 {
-        0 => core.read_word(address),
-        1 => u32::from_be_bytes([
-            core.read_byte(address),
-            core.read_byte(address.wrapping_add(1)),
-            core.read_byte(address.wrapping_add(2)),
-            prev_bytes[3],
-        ]),
-        2 => u32::from_be_bytes([
-            core.read_byte(address),
-            core.read_byte(address.wrapping_add(1)),
-            prev_bytes[2],
-            prev_bytes[3],
-        ]),
-        3 => u32::from_be_bytes([
-            core.read_byte(address),
-            prev_bytes[1],
-            prev_bytes[2],
-            prev_bytes[3],
-        ]),
-        _ => unreachable!(),
-    };
+    for index in 0..=(address & 3 ^ 3) {
+        let shift = (index ^ 3) << 3;
+        result &= !0xffu32.rotate_left(shift);
+        result |= (core.read_byte(address.wrapping_add(index)) as u32) << shift;
+    }
 
     core.set(rt, result);
 }
@@ -112,30 +94,13 @@ pub fn lwr(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     let ivalue = value as i16 as i32 as u32;
     let address = core.get(rs).wrapping_add(ivalue);
 
-    let prev_bytes = core.get(rt).to_be_bytes();
+    let mut result = core.get(rt);
 
-    let result = match address & 3 {
-        0 => u32::from_be_bytes([
-            prev_bytes[0],
-            prev_bytes[1],
-            prev_bytes[2],
-            core.read_byte(address),
-        ]),
-        1 => u32::from_be_bytes([
-            prev_bytes[0],
-            prev_bytes[1],
-            core.read_byte(address.wrapping_sub(1)),
-            core.read_byte(address),
-        ]),
-        2 => u32::from_be_bytes([
-            prev_bytes[0],
-            core.read_byte(address.wrapping_sub(2)),
-            core.read_byte(address.wrapping_sub(1)),
-            core.read_byte(address),
-        ]),
-        3 => core.read_word(address.wrapping_sub(3)),
-        _ => unreachable!(),
-    };
+    for index in 0..=(address & 3) {
+        let shift = index << 3;
+        result &= !0xffu32.rotate_left(shift);
+        result |= (core.read_byte(address.wrapping_sub(index)) as u32) << shift;
+    }
 
     core.set(rt, result);
 }

@@ -44,22 +44,9 @@ pub fn swl(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     let address = core.get(rs).wrapping_add(ivalue);
     let bytes = core.get(rt).to_be_bytes();
 
-    match address & 3 {
-        0 => core.write_word(address, u32::from_be_bytes(bytes)),
-        1 => {
-            core.write_byte(address, bytes[0]);
-            core.write_byte(address.wrapping_add(1), bytes[1]);
-            core.write_byte(address.wrapping_add(2), bytes[2]);
-        }
-        2 => {
-            core.write_byte(address, bytes[0]);
-            core.write_byte(address.wrapping_add(1), bytes[1]);
-        }
-        3 => {
-            core.write_byte(address, bytes[0]);
-        }
-        _ => unreachable!(),
-    };
+    for index in 0..=(address & 3 ^ 3) {
+        core.write_byte(address.wrapping_add(index), bytes[index as usize]);
+    }
 }
 
 pub fn swr(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
@@ -72,21 +59,8 @@ pub fn swr(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     let address = core.get(rs).wrapping_add(ivalue);
     let bytes = core.get(rt).to_be_bytes();
 
-    match address & 3 {
-        0 => {
-            core.write_byte(address, bytes[3]);
-        }
-        1 => {
-            core.write_byte(address.wrapping_sub(1), bytes[2]);
-            core.write_byte(address, bytes[3]);
-        }
-        2 => {
-            core.write_byte(address.wrapping_sub(2), bytes[1]);
-            core.write_byte(address.wrapping_sub(1), bytes[2]);
-            core.write_byte(address, bytes[3]);
-        }
-        3 => core.write_word(address.wrapping_sub(3), u32::from_be_bytes(bytes)),
-        _ => unreachable!(),
+    for index in 0..=(address & 3) {
+        core.write_byte(address.wrapping_sub(index), bytes[(index ^ 3) as usize]);
     }
 }
 
