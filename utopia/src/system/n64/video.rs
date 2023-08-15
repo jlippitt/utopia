@@ -139,11 +139,33 @@ impl VideoInterface {
                 while write_pos < pixel_buffer_size {
                     self.pixels[write_pos..(write_pos + pitch)]
                         .copy_from_slice(&rdram[read_pos..(read_pos + pitch)]);
+
                     read_pos += self.regs.width as usize * 4;
                     write_pos += pitch;
                 }
             }
-            ColorMode::Color16 => todo!("16-bit color"),
+            ColorMode::Color16 => {
+                let mut read_pos = self.regs.origin as usize;
+                let mut write_pos = 0;
+
+                while write_pos < pixel_buffer_size {
+                    let iter =
+                        rdram[read_pos..(read_pos + pitch / 2)]
+                            .chunks(2)
+                            .flat_map(|bytes| {
+                                let color = u16::from_be_bytes([bytes[0], bytes[1]]);
+                                let red = color as u8 & 31;
+                                let green = (color >> 5) as u8 & 31;
+                                let blue = (color >> 10) as u8 & 31;
+                                [blue << 3, green << 3, red << 3, 0]
+                            });
+
+                    self.pixels.splice(write_pos..(write_pos + pitch), iter);
+
+                    read_pos += self.regs.width as usize * 2;
+                    write_pos += pitch;
+                }
+            }
             ColorMode::Reserved => panic!("Using 'reserved' color mode"),
             ColorMode::Blank => self.pixels.fill(0),
         }
