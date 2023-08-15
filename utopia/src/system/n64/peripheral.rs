@@ -55,6 +55,31 @@ impl DataReader for PeripheralInterface {
                     _ => 1,
                 }
             }
+            0x14 => {
+                // PI_BSD_DOM1_LAT
+                // TODO: Set from ROM header
+                64
+            }
+            0x18 => {
+                // PI_BSD_DOM1_PWD
+                // TODO: Set from ROM header
+                18
+            }
+            0x1c => {
+                // PI_BSD_DOM1_PGS
+                // TODO: Set from ROM header
+                7
+            }
+            0x20 => {
+                // PI_BSD_DOM1_RLS
+                // TODO: Set from ROM header
+                3
+            }
+            0x24 | 0x28 | 0x2c | 0x30 => {
+                // PI_BSD_DOM2
+                // TODO
+                0
+            }
             _ => unimplemented!("Peripheral Interface Read: {:08X}", address),
         }
     }
