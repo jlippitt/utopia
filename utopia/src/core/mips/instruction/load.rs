@@ -93,7 +93,6 @@ pub fn lwr(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
 
     let ivalue = value as i16 as i32 as u32;
     let address = core.get(rs).wrapping_add(ivalue);
-
     let mut result = core.get(rt);
 
     for index in 0..=(address & 3) {
@@ -126,5 +125,43 @@ pub fn ld(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     let ivalue = value as i16 as i32 as u32;
     let address = core.get(rs).wrapping_add(ivalue);
     let result = core.read_doubleword(address);
+    core.setd(rt, result);
+}
+
+pub fn ldl(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+    debug!(
+        "{:08X} LDL {}, {}({})",
+        core.pc, REGS[rt], value as i16, REGS[rs]
+    );
+
+    let ivalue = value as i16 as i32 as u32;
+    let address = core.get(rs).wrapping_add(ivalue);
+    let mut result = core.getd(rt);
+
+    for index in 0..=(address & 7 ^ 7) {
+        let shift = (index ^ 7) << 3;
+        result &= !0xffu64.rotate_left(shift);
+        result |= (core.read_byte(address.wrapping_add(index)) as u64) << shift;
+    }
+
+    core.setd(rt, result);
+}
+
+pub fn ldr(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+    debug!(
+        "{:08X} LDR {}, {}({})",
+        core.pc, REGS[rt], value as i16, REGS[rs]
+    );
+
+    let ivalue = value as i16 as i32 as u32;
+    let address = core.get(rs).wrapping_add(ivalue);
+    let mut result = core.getd(rt);
+
+    for index in 0..=(address & 7) {
+        let shift = index << 3;
+        result &= !0xffu64.rotate_left(shift);
+        result |= (core.read_byte(address.wrapping_sub(index)) as u64) << shift;
+    }
+
     core.setd(rt, result);
 }
