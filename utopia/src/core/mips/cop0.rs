@@ -184,8 +184,8 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
             status.erl = (value & 0x0000_0004) != 0;
             status.mode = (value >> 3) & 3;
             status.ux = (value & 0x0000_0020) != 0;
-            status.sx = (value & 0x0000_0020) != 0;
-            status.kx = (value & 0x0000_0020) != 0;
+            status.sx = (value & 0x0000_0040) != 0;
+            status.kx = (value & 0x0000_0080) != 0;
             status.im = (value >> 8) as u8;
             status.ds = (value >> 16) & 511;
             status.re = (value & 0x0200_0000) != 0;
