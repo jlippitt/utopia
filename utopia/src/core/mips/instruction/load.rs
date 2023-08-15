@@ -66,6 +66,42 @@ pub fn lw(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     core.set(rt, result);
 }
 
+pub fn lwl(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+    debug!(
+        "{:08X} LWL {}, {}({})",
+        core.pc, REGS[rt], value as i16, REGS[rs]
+    );
+
+    let ivalue = value as i16 as i32 as u32;
+    let address = core.get(rs).wrapping_add(ivalue);
+
+    let new_value = core.read_word(address & !3);
+    let shift = (address & 3) << 3;
+    let mask_old = 0xffff_ffffu32.checked_shr(32 - shift).unwrap_or(0);
+
+    let result = (core.get(rt) & mask_old) | (new_value << shift);
+
+    core.set(rt, result);
+}
+
+pub fn lwr(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+    debug!(
+        "{:08X} LWR {}, {}({})",
+        core.pc, REGS[rt], value as i16, REGS[rs]
+    );
+
+    let ivalue = value as i16 as i32 as u32;
+    let address = core.get(rs).wrapping_add(ivalue);
+
+    let new_value = core.read_word(address & !3);
+    let shift = ((address & 3) + 1) << 3;
+    let mask_old = 0xffff_ffffu32.checked_shl(shift).unwrap_or(0);
+
+    let result = (core.get(rt) & mask_old) | (new_value >> (32 - shift));
+
+    core.set(rt, result);
+}
+
 pub fn lwu(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     debug!(
         "{:08X} LWU {}, {}({})",
