@@ -129,6 +129,7 @@ impl<T: Bus> Core<T> {
     }
 
     fn read_halfword(&mut self, address: u32) -> u16 {
+        assert!((address & 1) == 0);
         let value = self.bus.read(address);
         debug!("  [{:08X}] => {:04X}", address, value);
         value
@@ -154,6 +155,7 @@ impl<T: Bus> Core<T> {
     }
 
     fn write_halfword(&mut self, address: u32, value: u16) {
+        assert!((address & 1) == 0);
         debug!("  [{:08X}] <= {:04X}", address, value);
         self.bus.write(address, value);
     }
@@ -162,5 +164,11 @@ impl<T: Bus> Core<T> {
         assert!((address & 3) == 0);
         debug!("  [{:08X}] <= {:08X}", address, value);
         self.bus.write(address, value);
+    }
+
+    fn write_doubleword(&mut self, address: u32, value: u64) {
+        assert!((address & 3) == 0);
+        self.write_word(address, (value >> 32) as u32);
+        self.write_word(address.wrapping_add(4), value as u32);
     }
 }

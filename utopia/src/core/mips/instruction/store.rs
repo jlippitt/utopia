@@ -33,3 +33,14 @@ pub fn sw(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     let address = core.get(rs).wrapping_add(ivalue);
     core.write_word(address, core.get(rt));
 }
+
+pub fn sd(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+    debug!(
+        "{:08X} SD {}, {}({})",
+        core.pc, REGS[rt], value as i16, REGS[rs]
+    );
+
+    let ivalue = value as i16 as i32 as u32;
+    let address = core.get(rs).wrapping_add(ivalue);
+    core.write_doubleword(address, core.getd(rt));
+}
