@@ -41,8 +41,8 @@ const CREGS: [&str; 32] = [
 pub struct TlbEntry {
     lo0: u32,
     lo1: u32,
-    hi: u32,
     page_mask: u32,
+    hi: u32,
 }
 
 #[derive(Default)]
@@ -229,13 +229,13 @@ fn tlbr(core: &mut Core<impl Bus>) {
     let global = tlb_entry.lo0 & tlb_entry.lo1 & 1;
     core.cop0.lo0 = (tlb_entry.lo0 & 0xffff_fffe) | global;
     core.cop0.lo1 = (tlb_entry.lo1 & 0xffff_fffe) | global;
-    core.cop0.hi = tlb_entry.hi;
     core.cop0.page_mask = tlb_entry.page_mask;
+    core.cop0.hi = tlb_entry.hi;
 
     debug!("  COP0 LO0: {:08X}", core.cop0.lo0);
     debug!("  COP0 LO1: {:08X}", core.cop0.lo1);
-    debug!("  COP0 HI: {:08X}", core.cop0.hi);
     debug!("  COP0 Page Mask: {:08X}", core.cop0.page_mask);
+    debug!("  COP0 HI: {:08X}", core.cop0.hi);
 }
 
 fn tlbwi(core: &mut Core<impl Bus>) {
@@ -244,8 +244,8 @@ fn tlbwi(core: &mut Core<impl Bus>) {
     let tlb_entry = &mut core.cop0.tlb_entries[core.cop0.index as usize];
     tlb_entry.lo0 = core.cop0.lo0;
     tlb_entry.lo1 = core.cop0.lo1;
-    tlb_entry.hi = core.cop0.hi;
     tlb_entry.page_mask = core.cop0.page_mask;
+    tlb_entry.hi = core.cop0.hi & !core.cop0.page_mask;
 
     debug!("TLB Entry {}: {:X?}", core.cop0.index, tlb_entry);
 }
