@@ -75,11 +75,30 @@ pub fn lwl(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     let ivalue = value as i16 as i32 as u32;
     let address = core.get(rs).wrapping_add(ivalue);
 
-    let new_value = core.read_word(address & !3);
-    let shift = (address & 3) << 3;
-    let mask_old = 0xffff_ffffu32.checked_shr(32 - shift).unwrap_or(0);
+    let prev_bytes = core.get(rt).to_be_bytes();
 
-    let result = (core.get(rt) & mask_old) | (new_value << shift);
+    let result = match address & 3 {
+        0 => core.read_word(address),
+        1 => u32::from_be_bytes([
+            core.read_byte(address),
+            core.read_byte(address.wrapping_add(1)),
+            core.read_byte(address.wrapping_add(2)),
+            prev_bytes[3],
+        ]),
+        2 => u32::from_be_bytes([
+            core.read_byte(address),
+            core.read_byte(address.wrapping_add(1)),
+            prev_bytes[2],
+            prev_bytes[3],
+        ]),
+        3 => u32::from_be_bytes([
+            core.read_byte(address),
+            prev_bytes[1],
+            prev_bytes[2],
+            prev_bytes[3],
+        ]),
+        _ => unreachable!(),
+    };
 
     core.set(rt, result);
 }
@@ -93,11 +112,30 @@ pub fn lwr(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     let ivalue = value as i16 as i32 as u32;
     let address = core.get(rs).wrapping_add(ivalue);
 
-    let new_value = core.read_word(address & !3);
-    let shift = ((address & 3) + 1) << 3;
-    let mask_old = 0xffff_ffffu32.checked_shl(shift).unwrap_or(0);
+    let prev_bytes = core.get(rt).to_be_bytes();
 
-    let result = (core.get(rt) & mask_old) | (new_value >> (32 - shift));
+    let result = match address & 3 {
+        0 => u32::from_be_bytes([
+            prev_bytes[0],
+            prev_bytes[1],
+            prev_bytes[2],
+            core.read_byte(address),
+        ]),
+        1 => u32::from_be_bytes([
+            prev_bytes[0],
+            prev_bytes[1],
+            core.read_byte(address.wrapping_sub(1)),
+            core.read_byte(address),
+        ]),
+        2 => u32::from_be_bytes([
+            prev_bytes[0],
+            core.read_byte(address.wrapping_sub(2)),
+            core.read_byte(address.wrapping_sub(1)),
+            core.read_byte(address),
+        ]),
+        3 => core.read_word(address.wrapping_sub(3)),
+        _ => unreachable!(),
+    };
 
     core.set(rt, result);
 }
