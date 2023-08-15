@@ -24,8 +24,13 @@ pub fn divu(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u3
     debug!("{:08X} DIVU {}, {}", core.pc, REGS[rs], REGS[rt]);
     let lhs = core.get(rs);
     let rhs = core.get(rt);
-    let quotient = lhs / rhs;
-    let remainder = lhs % rhs;
+
+    let (quotient, remainder) = if rhs != 0 {
+        (lhs / rhs, lhs % rhs)
+    } else {
+        (u32::MAX, lhs)
+    };
+
     debug!("  {} * {} = {} ({})", lhs, rhs, quotient, remainder);
     core.set_hi(remainder);
     core.set_lo(quotient);
@@ -35,8 +40,13 @@ pub fn ddivu(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u
     debug!("{:08X} DDIVU {}, {}", core.pc, REGS[rs], REGS[rt]);
     let lhs = core.getd(rs);
     let rhs = core.getd(rt);
-    let quotient = lhs / rhs;
-    let remainder = lhs % rhs;
+
+    let (quotient, remainder) = if rhs != 0 {
+        (lhs / rhs, lhs % rhs)
+    } else {
+        (u64::MAX, lhs)
+    };
+
     debug!("  {} * {} = {} ({})", lhs, rhs, quotient, remainder);
     core.setd_hi(remainder);
     core.setd_lo(quotient);
