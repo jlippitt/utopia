@@ -39,6 +39,38 @@ pub fn dmultu(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: 
     core.setd_lo(result as u64);
 }
 
+pub fn div(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u32) {
+    debug!("{:08X} DIV {}, {}", core.pc, REGS[rs], REGS[rt]);
+    let lhs = core.get(rs) as i32;
+    let rhs = core.get(rt) as i32;
+
+    let (quotient, remainder) = if rhs != 0 {
+        (lhs.wrapping_div(rhs), lhs.wrapping_rem(rhs))
+    } else {
+        (-lhs.signum(), lhs)
+    };
+
+    debug!("  {} * {} = {} ({})", lhs, rhs, quotient, remainder);
+    core.set_hi(remainder as u32);
+    core.set_lo(quotient as u32);
+}
+
+pub fn ddiv(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u32) {
+    debug!("{:08X} DDIV {}, {}", core.pc, REGS[rs], REGS[rt]);
+    let lhs = core.getd(rs) as i64;
+    let rhs = core.getd(rt) as i64;
+
+    let (quotient, remainder) = if rhs != 0 {
+        (lhs.wrapping_div(rhs), lhs.wrapping_rem(rhs))
+    } else {
+        (-lhs.signum(), lhs)
+    };
+
+    debug!("  {} * {} = {} ({})", lhs, rhs, quotient, remainder);
+    core.setd_hi(remainder as u64);
+    core.setd_lo(quotient as u64);
+}
+
 pub fn divu(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u32) {
     debug!("{:08X} DIVU {}, {}", core.pc, REGS[rs], REGS[rt]);
     let lhs = core.get(rs);
