@@ -30,6 +30,10 @@ struct Registers {
     h_end: u32,
     v_start: u32,
     v_end: u32,
+    x_offset: u32,
+    x_scale: u32,
+    y_offset: u32,
+    y_scale: u32,
 }
 
 pub struct VideoInterface {
@@ -62,6 +66,10 @@ impl VideoInterface {
                 h_end: 0x06c + DEFAULT_WIDTH,
                 v_start: 0x025,
                 v_end: 0x025 + DEFAULT_HEIGHT,
+                x_offset: 0,
+                x_scale: 0,
+                y_offset: 0,
+                y_scale: 0,
             },
             pixels: vec![0; DEFAULT_WIDTH as usize * (DEFAULT_HEIGHT / 2) as usize * 4],
         }
@@ -220,10 +228,16 @@ impl DataWriter for VideoInterface {
                 // VI_V_BURST: Ignore for now
             }
             0x30 => {
-                // VI_X_SCALE: Ignore for now
+                self.regs.x_offset = (value >> 16) & 0x0fff;
+                self.regs.x_scale = value & 0x0fff;
+                debug!("VI_X_OFFSET: {}", self.regs.x_offset);
+                debug!("VI_X_SCALE: {}", self.regs.x_scale);
             }
             0x34 => {
-                // VI_Y_SCALE: Ignore for now
+                self.regs.y_offset = (value >> 16) & 0x0fff;
+                self.regs.y_scale = value & 0x0fff;
+                debug!("VI_Y_OFFSET: {}", self.regs.y_offset);
+                debug!("VI_Y_SCALE: {}", self.regs.y_scale);
             }
             _ => unimplemented!("Video Interface Write: {:08X} <= {:08X}", address, value),
         }
