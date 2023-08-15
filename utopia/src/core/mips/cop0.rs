@@ -45,7 +45,6 @@ pub struct TlbEntry {
     hi: u32,
 }
 
-#[derive(Default)]
 pub struct Status {
     ie: bool,
     exl: bool,
@@ -194,7 +193,7 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
             status.cu[0] = (value & 0x1000_0000) != 0;
             status.cu[1] = (value & 0x2000_0000) != 0;
             status.cu[2] = (value & 0x4000_0000) != 0;
-            status.cu[3] = (value & 0x6000_0000) != 0;
+            status.cu[3] = (value & 0x8000_0000) != 0;
             debug!("  COP0 IE: {}", status.ie);
             debug!("  COP0 EXL: {}", status.exl);
             debug!("  COP0 ERL: {}", status.erl);
@@ -288,5 +287,25 @@ fn eret(core: &mut Core<impl Bus>) {
         core.next[0] = core.cop0.epc;
         core.cop0.status.exl = false;
         debug!("  COP0 EXL: {}", core.cop0.status.exl);
+    }
+}
+
+impl Default for Status {
+    fn default() -> Self {
+        Self {
+            ie: false,
+            exl: false,
+            erl: false,
+            mode: 0,
+            ux: false,
+            sx: false,
+            kx: false,
+            im: 0,
+            ds: 0,
+            re: false,
+            fr: true,
+            rp: false,
+            cu: [true, true, false, false],
+        }
     }
 }

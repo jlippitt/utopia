@@ -4,12 +4,13 @@ use tracing::debug;
 const MI_VERSION: u32 = 0x0202_0102;
 
 pub struct MipsInterface {
-    mi_mode: u16,
+    mode: u16,
+    mask: u16,
 }
 
 impl MipsInterface {
     pub fn new() -> Self {
-        Self { mi_mode: 0 }
+        Self { mode: 0, mask: 0 }
     }
 }
 
@@ -19,7 +20,7 @@ impl DataReader for MipsInterface {
 
     fn read(&self, address: u32) -> u32 {
         match address & 0x0f {
-            0x00 => self.mi_mode as u32 & 0x03ff,
+            0x00 => self.mode as u32 & 0x03ff,
             0x04 => MI_VERSION,
             _ => unimplemented!("MIPS Interface Read: {:08X}", address),
         }
@@ -30,11 +31,20 @@ impl DataWriter for MipsInterface {
     fn write(&mut self, address: u32, value: u32) {
         match address {
             0x00 => {
-                self.mi_mode = (value as u16) & 0x3fff;
-                debug!("MI_MODE: {:04X}", value);
+                self.mode = (value as u16) & 0x3fff;
+                debug!("MI_MODE: {:04X}", self.mode);
             }
             0x0c => {
-                // TODO: MI_MASK
+                for bit in 0..6 {
+                    match (value >> (bit << 1)) & 3 {
+                        0 => (),
+                        1 => self.mask &= !(1 << bit),
+                        2 => self.mask |= 1 << bit,
+                        _ => panic!("Invalid MI_MASK write: {:012b}", value),
+                    }
+                }
+
+                debug!("MI_MASK: {:06b}", self.mask);
             }
             _ => unimplemented!("MIPS Interface Write: {:08X} <= {:08X}", address, value),
         }
