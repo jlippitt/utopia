@@ -22,7 +22,6 @@ pub struct Video {
     mouse: MouseUtil,
     canvas: Canvas<Window>,
     viewport: Viewport,
-    //source_rect: Rect,
     target_rect: Rect,
     full_screen: bool,
 }
@@ -36,10 +35,11 @@ impl Video {
         let video = sdl_context.video()?;
         let mouse = sdl_context.mouse();
 
-        let clipped_height =
-            system.screen_height() - system.screen_clip_top() - system.screen_clip_bottom();
-
-        let display_mode = Viewport::new(system.screen_width(), clipped_height, options.upscale);
+        let display_mode = Viewport::new(
+            system.screen_width(),
+            system.screen_height(),
+            options.upscale,
+        );
 
         let (window_width, window_height) =
             display_mode.window_size(&video, options.full_screen)?;
@@ -64,14 +64,6 @@ impl Video {
 
         let canvas = canvas_builder.build()?;
 
-        /*
-        let source_rect = Rect::new(
-            0,
-            system.screen_clip_top().try_into()?,
-            system.screen_width(),
-            clipped_height,
-        );*/
-
         let target_rect = display_mode.target_rect(&video, options.full_screen)?;
 
         Ok(Self {
@@ -79,7 +71,6 @@ impl Video {
             mouse,
             canvas,
             viewport: display_mode,
-            //source_rect,
             target_rect,
             full_screen: options.full_screen,
         })
@@ -150,8 +141,7 @@ impl Video {
         texture.update(None, pixels, pitch)?;
 
         self.canvas.clear();
-        self.canvas
-            .copy(texture, /*self.source_rect*/ None, self.target_rect)?;
+        self.canvas.copy(texture, None, self.target_rect)?;
         self.canvas.present();
 
         Ok(())

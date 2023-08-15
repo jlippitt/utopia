@@ -56,14 +56,6 @@ pub trait System {
     fn screen_resolution(&self) -> (u32, u32) {
         (self.screen_width(), self.screen_height())
     }
-
-    fn screen_clip_top(&self) -> u32 {
-        0
-    }
-
-    fn screen_clip_bottom(&self) -> u32 {
-        0
-    }
 }
 
 pub trait BiosLoader {
