@@ -1,6 +1,42 @@
 use super::{Bus, Core, REGS};
 use tracing::debug;
 
+#[rustfmt::skip]
+const CREGS: [&str; 32] = [
+    "Index",
+    "Random",
+    "EntryLo0",
+    "EntryLo1",
+    "Context",
+    "PageMask",
+    "Wired",
+    "$7",
+    "BadVAddr",
+    "Count",
+    "EntryHi",
+    "Compare",
+    "Status",
+    "Cause",
+    "EPC",
+    "PRId",
+    "Config",
+    "LLAddr",
+    "WatchLo",
+    "WatchHi",
+    "XContext",
+    "$21",
+    "$22",
+    "$23",
+    "$24",
+    "$25",
+    "Parity Error",
+    "Cache Error",
+    "TagLo",
+    "TagHi",
+    "ErrorEPC",
+    "$31",
+];
+
 #[derive(Default, Debug)]
 pub struct TlbEntry {
     lo0: u32,
@@ -66,7 +102,7 @@ fn type_r<T: Bus>(core: &mut Core<T>, instr: impl Fn(&mut Core<T>, usize, usize)
 }
 
 fn mfc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
-    debug!("{:08X} MFC0 {}, ${}", core.pc, REGS[rt], rd);
+    debug!("{:08X} MFC0 {}, {}", core.pc, REGS[rt], CREGS[rd]);
 
     let result = match rd {
         0 => core.cop0.index,
@@ -96,14 +132,14 @@ fn mfc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
             value |= if status.cu[3] { 0x8000_0000 } else { 0 };
             value
         }
-        _ => todo!("COP0 Register Read: ${}", rd),
+        _ => todo!("COP0 Register Read: {}", CREGS[rd]),
     };
 
     core.set(rt, result);
 }
 
 fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
-    debug!("{:08X} MTC0 {}, ${}", core.pc, REGS[rt], rd);
+    debug!("{:08X} MTC0 {}, {}", core.pc, REGS[rt], CREGS[rd]);
 
     let value = core.get(rt);
 
@@ -178,7 +214,7 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
         }
         _ => {
             if value != 0 {
-                todo!("COP0 Register Write: ${} <= {:08X}", rd, value);
+                todo!("COP0 Register Write: {} <= {:08X}", CREGS[rd], value);
             }
         }
     }
