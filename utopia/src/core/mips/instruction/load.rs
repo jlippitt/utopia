@@ -38,7 +38,7 @@ pub fn lh(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
 
     let ivalue = value as i16 as i32 as u32;
     let address = core.get(rs).wrapping_add(ivalue);
-    let result = core.read_byte(address) as i16;
+    let result = core.read_halfword(address) as i16;
     core.set(rt, result as u32);
 }
 
