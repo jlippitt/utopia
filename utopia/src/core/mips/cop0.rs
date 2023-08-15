@@ -133,6 +133,10 @@ fn mfc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
             value |= if status.cu[3] { 0x8000_0000 } else { 0 };
             value
         }
+        13 => {
+            // TODO: Cause
+            0
+        }
         _ => todo!("COP0 Register Read: {}", CREGS[rd]),
     };
 
