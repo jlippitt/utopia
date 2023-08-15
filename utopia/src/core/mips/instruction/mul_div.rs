@@ -1,6 +1,25 @@
 use super::super::{Bus, Core, REGS};
 use tracing::debug;
 
+pub fn mult(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u32) {
+    debug!("{:08X} MULT {}, {}", core.pc, REGS[rs], REGS[rt]);
+    let lhs = core.get(rs) as i32 as i64;
+    let rhs = core.get(rt) as i32 as i64;
+    let result = lhs * rhs;
+    debug!("  {} * {} = {}", lhs, rhs, result);
+    core.set_hi((result >> 32) as u32);
+    core.set_lo(result as u32);
+}
+
+pub fn dmult(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u32) {
+    debug!("{:08X} DMULT {}, {}", core.pc, REGS[rs], REGS[rt]);
+    let lhs = core.getd(rs) as i64 as i128;
+    let rhs = core.getd(rt) as i64 as i128;
+    let result = lhs * rhs;
+    core.setd_hi((result >> 64) as u64);
+    core.setd_lo(result as u64);
+}
+
 pub fn multu(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u32) {
     debug!("{:08X} MULTU {}, {}", core.pc, REGS[rs], REGS[rt]);
     let lhs = core.get(rs) as u64;
