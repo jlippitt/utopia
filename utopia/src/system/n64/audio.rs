@@ -1,4 +1,5 @@
 use crate::util::facade::{DataReader, DataWriter};
+use tracing::warn;
 
 pub struct AudioInterface {}
 
@@ -26,7 +27,7 @@ impl DataWriter for AudioInterface {
                 // AI_STATUS
                 // TODO: Acknowledge AI interrupt
             }
-            _ => unimplemented!("Audio Interface Write: {:08X} <= {:08X}", address, value),
+            _ => warn!("Audio Interface Write: {:08X} <= {:08X}", address, value),
         }
     }
 }
