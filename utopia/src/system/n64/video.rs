@@ -17,6 +17,7 @@ enum ColorMode {
 
 struct Control {
     color_mode: ColorMode,
+    interlace: bool,
 }
 
 struct Registers {
@@ -58,6 +59,7 @@ impl VideoInterface {
             regs: Registers {
                 ctrl: Control {
                     color_mode: ColorMode::Blank,
+                    interlace: false,
                 },
                 origin: 0,
                 width: 0,
@@ -108,16 +110,14 @@ impl VideoInterface {
             // representing the field in interlace mode
             self.regs.v_current = (self.line << 1) | (self.field as u32);
 
-            // (TODO: Interlace mode)
             if self.regs.v_current >= self.regs.v_sync {
                 self.line = 0;
-                self.field = !self.field;
+                self.field ^= self.regs.ctrl.interlace;
                 self.regs.v_current = self.field as u32;
                 self.ready = true;
-                debug!("Field: {}", self.field as u32);
             }
 
-            debug!("Line: {}", self.line);
+            debug!("Line: {} ({})", self.line, self.field as u32);
 
             if self.regs.v_current == self.regs.v_intr {
                 self.interrupt.raise(RcpIntType::VI);
@@ -201,7 +201,9 @@ impl DataWriter for VideoInterface {
         match address {
             0x00 => {
                 // VI_CTRL: TODO
+                self.regs.ctrl.interlace = (value & 0x40) != 0;
                 self.regs.ctrl.color_mode = ColorMode::from_u32(value & 3).unwrap();
+                debug!("VI_CTRL Interlace: {}", self.regs.ctrl.interlace);
                 debug!("VI_CTRL Color Mode: {:?}", self.regs.ctrl.color_mode);
             }
             0x04 => {
