@@ -92,6 +92,7 @@ pub struct Cop0 {
     lo1: u32,
     page_mask: u32,
     wired: u32,
+    count: u32,
     hi: u32,
     status: Status,
     cause: Cause,
@@ -100,7 +101,10 @@ pub struct Cop0 {
     tlb_entries: [TlbEntry; 32],
 }
 
-pub fn poll_for_interrupts(core: &mut Core<impl Bus>) {
+pub fn update(core: &mut Core<impl Bus>) {
+    core.cop0.count = core.cop0.count.wrapping_add(1);
+
+    // Test for interrupts
     let cop0 = &mut core.cop0;
 
     // If IE=0, EXL=1 or ERL=1, no interrupt for you
@@ -114,6 +118,7 @@ pub fn poll_for_interrupts(core: &mut Core<impl Bus>) {
         return;
     }
 
+    // Handle interrupt exception
     debug!("-- Exception: {:08b} --", int_active);
 
     let int_pending = (cop0.cause.ip() & 0x83) | (int_active & 0x7c);
@@ -169,6 +174,7 @@ fn mfc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
         3 => core.cop0.lo1,
         5 => core.cop0.page_mask,
         6 => core.cop0.wired,
+        9 => core.cop0.count,
         10 => core.cop0.hi,
         12 => u32::from(core.cop0.status) & !0x0088_0000,
         13 => core.cop0.cause.into(),

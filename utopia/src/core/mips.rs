@@ -47,8 +47,8 @@ impl<T: Bus> Core<T> {
         let pc = initial_state.pc;
 
         Self {
-            pc: 0,
-            next: [pc, pc.wrapping_add(4)],
+            pc,
+            next: [pc.wrapping_add(4), pc.wrapping_add(8)],
             regs: initial_state.regs,
             delay: 0,
             hi: 0,
@@ -68,13 +68,6 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn step(&mut self) {
-        cop0::poll_for_interrupts(self);
-
-        self.pc = self.next[0];
-        self.next[0] = self.next[1];
-        self.next[1] = self.next[1].wrapping_add(4);
-        self.delay >>= 1;
-
         assert!((self.pc & 3) == 0);
 
         let word = self.bus.read::<u32>(self.pc);
@@ -82,6 +75,13 @@ impl<T: Bus> Core<T> {
         instruction::dispatch(self, word);
 
         self.bus.step();
+
+        cop0::update(self);
+
+        self.pc = self.next[0];
+        self.next[0] = self.next[1];
+        self.next[1] = self.next[1].wrapping_add(4);
+        self.delay >>= 1;
     }
 
     fn get(&self, reg: usize) -> u32 {
