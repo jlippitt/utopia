@@ -116,9 +116,9 @@ pub fn poll_for_interrupts(core: &mut Core<impl Bus>) {
     cop0.cause.set_bd(core.delay > 0);
 
     core.cop0.epc = if core.delay > 0 {
-        core.pc.wrapping_sub(4)
+        core.next[0].wrapping_sub(4)
     } else {
-        core.pc
+        core.next[0]
     };
 
     core.cop0.status.exl = true;
@@ -331,10 +331,12 @@ fn eret(core: &mut Core<impl Bus>) {
 
     if core.cop0.status.erl {
         core.next[0] = core.cop0.error_epc;
+        core.next[1] = core.next[0].wrapping_add(4);
         core.cop0.status.erl = false;
         debug!("  COP0 ERL: {}", core.cop0.status.erl);
     } else {
         core.next[0] = core.cop0.epc;
+        core.next[1] = core.next[0].wrapping_add(4);
         core.cop0.status.exl = false;
         debug!("  COP0 EXL: {}", core.cop0.status.exl);
     }
