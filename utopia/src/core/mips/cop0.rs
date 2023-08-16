@@ -63,20 +63,26 @@ pub struct Cause {
     bd: bool,
 }
 
+#[bitfield(u32, default = false)]
 pub struct Status {
     ie: bool,
     exl: bool,
     erl: bool,
-    mode: u32,
+    #[bits(2)]
+    mode: u8,
     ux: bool,
-    sx: bool,
+    x: bool,
     kx: bool,
     im: u8,
-    ds: u32,
+    #[bits(9)]
+    ds: u16,
     re: bool,
     fr: bool,
     rp: bool,
-    cu: [bool; 4],
+    cu0: bool,
+    cu1: bool,
+    cu2: bool,
+    cu3: bool,
 }
 
 #[derive(Default)]
@@ -97,11 +103,12 @@ pub struct Cop0 {
 pub fn poll_for_interrupts(core: &mut Core<impl Bus>) {
     let cop0 = &mut core.cop0;
 
-    if !cop0.status.ie || cop0.status.exl || cop0.status.erl {
+    // If IE=0, EXL=1 or ERL=1, no interrupt for you
+    if (u32::from(cop0.status) ^ 0x01) & 0x07 != 0 {
         return;
     }
 
-    let int_active = core.bus.poll() & cop0.status.im;
+    let int_active = core.bus.poll() & cop0.status.im();
 
     if int_active == 0 {
         return;
@@ -121,7 +128,7 @@ pub fn poll_for_interrupts(core: &mut Core<impl Bus>) {
         core.next[0]
     };
 
-    core.cop0.status.exl = true;
+    core.cop0.status.set_exl(true);
 
     core.next[0] = 0x8000_0180;
     core.next[1] = core.next[0].wrapping_add(4);
@@ -163,27 +170,7 @@ fn mfc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
         5 => core.cop0.page_mask,
         6 => core.cop0.wired,
         10 => core.cop0.hi,
-        12 => {
-            let status = &mut core.cop0.status;
-            let mut value = 0;
-            value |= if status.ie { 0x0000_0001 } else { 0 };
-            value |= if status.exl { 0x0000_0002 } else { 0 };
-            value |= if status.erl { 0x0000_0004 } else { 0 };
-            value |= status.mode << 3;
-            value |= if status.ux { 0x0000_0020 } else { 0 };
-            value |= if status.sx { 0x0000_0040 } else { 0 };
-            value |= if status.kx { 0x0000_0080 } else { 0 };
-            value |= (status.im as u32) << 8;
-            value |= status.ds << 16;
-            value |= if status.re { 0x0200_0000 } else { 0 };
-            value |= if status.fr { 0x0400_0000 } else { 0 };
-            value |= if status.rp { 0x0800_0000 } else { 0 };
-            value |= if status.cu[0] { 0x1000_0000 } else { 0 };
-            value |= if status.cu[1] { 0x2000_0000 } else { 0 };
-            value |= if status.cu[2] { 0x4000_0000 } else { 0 };
-            value |= if status.cu[3] { 0x8000_0000 } else { 0 };
-            value
-        }
+        12 => u32::from(core.cop0.status) & !0x0088_0000,
         13 => core.cop0.cause.into(),
         14 => core.cop0.epc,
         _ => todo!("COP0 Register Read: {}", CREGS[rd]),
@@ -223,40 +210,8 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
             debug!("  COP0 HI: {:08X}", core.cop0.hi);
         }
         12 => {
-            // if (value & 0x0fff_00f8) != 0 {
-            //     unimplemented!("COP0 Feature: {:08X}", value);
-            // }
-
-            let status = &mut core.cop0.status;
-            status.ie = (value & 0x0000_0001) != 0;
-            status.exl = (value & 0x0000_0002) != 0;
-            status.erl = (value & 0x0000_0004) != 0;
-            status.mode = (value >> 3) & 3;
-            status.ux = (value & 0x0000_0020) != 0;
-            status.sx = (value & 0x0000_0040) != 0;
-            status.kx = (value & 0x0000_0080) != 0;
-            status.im = (value >> 8) as u8;
-            status.ds = (value >> 16) & 511;
-            status.re = (value & 0x0200_0000) != 0;
-            status.fr = (value & 0x0400_0000) != 0;
-            status.rp = (value & 0x0800_0000) != 0;
-            status.cu[0] = (value & 0x1000_0000) != 0;
-            status.cu[1] = (value & 0x2000_0000) != 0;
-            status.cu[2] = (value & 0x4000_0000) != 0;
-            status.cu[3] = (value & 0x8000_0000) != 0;
-            debug!("  COP0 IE: {}", status.ie);
-            debug!("  COP0 EXL: {}", status.exl);
-            debug!("  COP0 ERL: {}", status.erl);
-            debug!("  COP0 Mode: {:02b}", status.mode);
-            debug!("  COP0 UX: {}", status.ux);
-            debug!("  COP0 SX: {}", status.sx);
-            debug!("  COP0 KX: {}", status.kx);
-            debug!("  COP0 IM: {:08b}", status.im);
-            debug!("  COP0 DS: {}", status.ds);
-            debug!("  COP0 RE: {}", status.re);
-            debug!("  COP0 FR: {}", status.fr);
-            debug!("  COP0 RP: {}", status.rp);
-            debug!("  COP0 CU: {:?}", status.cu);
+            core.cop0.status = value.into();
+            debug!("  COP0 Status: {:?}", core.cop0.status);
         }
         14 => {
             core.cop0.epc = value;
@@ -329,35 +284,19 @@ fn tlbp(core: &mut Core<impl Bus>) {
 fn eret(core: &mut Core<impl Bus>) {
     debug!("{:08X} ERET", core.pc);
 
-    if core.cop0.status.erl {
+    if core.cop0.status.erl() {
         core.next[0] = core.cop0.error_epc;
         core.next[1] = core.next[0].wrapping_add(4);
-        core.cop0.status.erl = false;
-        debug!("  COP0 ERL: {}", core.cop0.status.erl);
+        core.cop0.status.set_erl(false);
     } else {
         core.next[0] = core.cop0.epc;
         core.next[1] = core.next[0].wrapping_add(4);
-        core.cop0.status.exl = false;
-        debug!("  COP0 EXL: {}", core.cop0.status.exl);
+        core.cop0.status.set_exl(false);
     }
 }
 
 impl Default for Status {
     fn default() -> Self {
-        Self {
-            ie: false,
-            exl: false,
-            erl: false,
-            mode: 0,
-            ux: false,
-            sx: false,
-            kx: false,
-            im: 0,
-            ds: 0,
-            re: false,
-            fr: true,
-            rp: false,
-            cu: [true, true, false, false],
-        }
+        Self::new().with_fr(true).with_cu0(true).with_cu1(true)
     }
 }
