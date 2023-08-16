@@ -1,3 +1,4 @@
+use super::interrupt::{RcpIntType, RcpInterrupt};
 use crate::util::facade::{DataReader, DataWriter};
 use tracing::debug;
 
@@ -19,16 +20,16 @@ pub struct PeripheralInterface {
     dma_requested: Dma,
     dram_address: u32,
     cart_address: u32,
-    interrupt: bool,
+    interrupt: RcpInterrupt,
 }
 
 impl PeripheralInterface {
-    pub fn new() -> Self {
+    pub fn new(interrupt: RcpInterrupt) -> Self {
         Self {
             dma_requested: Dma::None,
             dram_address: 0,
             cart_address: 0,
-            interrupt: false,
+            interrupt,
         }
     }
 
@@ -38,8 +39,7 @@ impl PeripheralInterface {
 
     pub fn finish_dma(&mut self) {
         self.dma_requested = Dma::None;
-        self.interrupt = true;
-        debug!("PI Interrupt Raised");
+        self.interrupt.raise(RcpIntType::PI);
     }
 }
 
@@ -56,7 +56,11 @@ impl DataReader for PeripheralInterface {
                 // TODO: Other PI_STATUS bits
                 let mut value = 0;
 
-                value |= if self.interrupt { 0x08 } else { 0 };
+                value |= if self.interrupt.has(RcpIntType::PI) {
+                    0x08
+                } else {
+                    0
+                };
 
                 value |= match self.dma_requested {
                     Dma::None => 0,
@@ -116,8 +120,7 @@ impl DataWriter for PeripheralInterface {
             0x10 => {
                 // PI_STATUS
                 if (value & 2) != 0 {
-                    self.interrupt = false;
-                    debug!("PI Interrupt Cleared");
+                    self.interrupt.clear(RcpIntType::PI);
                 }
 
                 // TODO: Reset DMA controller

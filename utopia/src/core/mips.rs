@@ -14,6 +14,8 @@ const REGS: [&str; 32] = [
     "$K0", "$K1", "$GP", "$SP", "$FP", "$RA",
 ];
 
+pub type Interrupt = u8;
+
 pub trait Bus {
     fn read<T: Value>(&mut self, address: u32) -> T;
     fn write<T: Value>(&mut self, address: u32, value: T);

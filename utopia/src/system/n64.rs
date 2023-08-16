@@ -5,6 +5,7 @@ use crate::core::mips::{Bus, Core, State};
 use crate::util::facade::{ReadFacade, Value, WriteFacade};
 use crate::JoypadState;
 use audio::AudioInterface;
+use interrupt::{CpuInterrupt, RcpInterrupt};
 use mips::MipsInterface;
 use peripheral::{Dma, DmaRequest, PeripheralInterface};
 use rdram::Rdram;
@@ -15,6 +16,7 @@ use tracing::{debug, info};
 
 mod audio;
 mod header;
+mod interrupt;
 mod mips;
 mod peripheral;
 mod rdram;
@@ -87,6 +89,7 @@ impl System for N64 {
 
 struct Hardware {
     cycles: u64,
+    interrupt: CpuInterrupt,
     rdram: Rdram,
     rsp: Rsp,
     mips: MipsInterface,
@@ -99,14 +102,18 @@ struct Hardware {
 
 impl Hardware {
     pub fn new(rom: Vec<u8>) -> Self {
+        let interrupt = CpuInterrupt::new();
+        let rcp_interrupt = RcpInterrupt::new(interrupt.clone());
+
         Self {
             cycles: 0,
+            interrupt,
             rdram: Rdram::new(),
             rsp: Rsp::new(&rom[0..DMEM_SIZE]),
             mips: MipsInterface::new(),
             video: VideoInterface::new(),
             audio: AudioInterface::new(),
-            peripheral: PeripheralInterface::new(),
+            peripheral: PeripheralInterface::new(rcp_interrupt),
             serial: SerialBus::new(),
             rom,
         }
