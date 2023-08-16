@@ -1,9 +1,6 @@
-use self::video::VideoInterface;
-
-use super::System;
-use crate::core::mips::{Bus, Core, State};
+use super::{JoypadState, System};
+use crate::core::mips::{Bus, Core, Interrupt, State};
 use crate::util::facade::{ReadFacade, Value, WriteFacade};
-use crate::JoypadState;
 use audio::AudioInterface;
 use interrupt::{CpuInterrupt, RcpInterrupt};
 use mips::MipsInterface;
@@ -13,6 +10,7 @@ use rsp::{Rsp, DMEM_SIZE};
 use serial::SerialBus;
 use std::error::Error;
 use tracing::{debug, info};
+use video::VideoInterface;
 
 mod audio;
 mod header;
@@ -222,5 +220,9 @@ impl Bus for Hardware {
     fn step(&mut self) {
         self.cycles += CYCLES_PER_STEP;
         self.video.step(CYCLES_PER_STEP);
+    }
+
+    fn poll(&self) -> Interrupt {
+        self.interrupt.poll()
     }
 }

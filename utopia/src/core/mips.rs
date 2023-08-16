@@ -20,12 +20,14 @@ pub trait Bus {
     fn read<T: Value>(&mut self, address: u32) -> T;
     fn write<T: Value>(&mut self, address: u32, value: T);
     fn step(&mut self);
+    fn poll(&self) -> Interrupt;
 }
 
 pub struct Core<T: Bus> {
     pc: u32,
     next: [u32; 2],
     regs: [u64; 32],
+    delay: u32,
     hi: u64,
     lo: u64,
     cop0: Cop0,
@@ -48,6 +50,7 @@ impl<T: Bus> Core<T> {
             pc: 0,
             next: [pc, pc.wrapping_add(4)],
             regs: initial_state.regs,
+            delay: 0,
             hi: 0,
             lo: 0,
             cop0: Cop0::default(),
@@ -65,9 +68,12 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn step(&mut self) {
+        cop0::poll_for_interrupts(self);
+
         self.pc = self.next[0];
         self.next[0] = self.next[1];
         self.next[1] = self.next[1].wrapping_add(4);
+        self.delay >>= 1;
 
         assert!((self.pc & 3) == 0);
 

@@ -1,4 +1,5 @@
 use super::{Bus, Core, REGS};
+use bitfield_struct::bitfield;
 use tracing::debug;
 
 #[rustfmt::skip]
@@ -45,6 +46,23 @@ pub struct TlbEntry {
     hi: u32,
 }
 
+#[bitfield(u32)]
+pub struct Cause {
+    #[bits(2)]
+    __: u8,
+    #[bits(5)]
+    exc_code: u8,
+    __: bool,
+    #[bits(8)]
+    ip: u8,
+    #[bits(12)]
+    __: u16,
+    #[bits(2)]
+    ce: u8,
+    __: bool,
+    bd: bool,
+}
+
 pub struct Status {
     ie: bool,
     exl: bool,
@@ -70,9 +88,43 @@ pub struct Cop0 {
     wired: u32,
     hi: u32,
     status: Status,
+    cause: Cause,
     epc: u32,
     error_epc: u32,
     tlb_entries: [TlbEntry; 32],
+}
+
+pub fn poll_for_interrupts(core: &mut Core<impl Bus>) {
+    let cop0 = &mut core.cop0;
+
+    if !cop0.status.ie || cop0.status.exl || cop0.status.erl {
+        return;
+    }
+
+    let int_active = core.bus.poll() & cop0.status.im;
+
+    if int_active == 0 {
+        return;
+    }
+
+    debug!("-- Exception: {:08b} --", int_active);
+
+    let int_pending = (cop0.cause.ip() & 0x83) | (int_active & 0x7c);
+    cop0.cause.set_ip(int_pending);
+
+    cop0.cause.set_exc_code(0);
+    cop0.cause.set_bd(core.delay > 0);
+
+    core.cop0.epc = if core.delay > 0 {
+        core.pc.wrapping_sub(4)
+    } else {
+        core.pc
+    };
+
+    core.cop0.status.exl = true;
+
+    core.next[0] = 0x8000_0180;
+    core.next[1] = core.next[0].wrapping_add(4);
 }
 
 pub fn dispatch(core: &mut Core<impl Bus>, word: u32) {
