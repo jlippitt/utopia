@@ -4,6 +4,7 @@ use std::rc::Rc;
 use tracing::debug;
 
 #[repr(u8)]
+#[allow(dead_code)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum CpuIntType {
     Rcp = 0x04,
@@ -11,6 +12,7 @@ pub enum CpuIntType {
 }
 
 #[repr(u8)]
+#[allow(dead_code)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum RcpIntType {
     SP = 0x01,
