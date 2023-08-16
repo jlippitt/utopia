@@ -28,6 +28,7 @@ impl DataReader for MipsInterface {
         match address & 0x0f {
             0x00 => self.mode as u32 & 0x03ff,
             0x04 => MI_VERSION,
+            0x08 => self.interrupt.poll() as u32,
             0x0c => self.mask as u32,
             _ => unimplemented!("MIPS Interface Read: {:08X}", address),
         }

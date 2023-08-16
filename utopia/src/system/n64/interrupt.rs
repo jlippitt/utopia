@@ -72,14 +72,18 @@ impl RcpInterrupt {
         }
     }
 
-    pub fn set_mask(&mut self, mask: u8) {
-        self.mask.set(mask);
-        debug!("RCP Interrupt Mask: {:06b}", mask);
-        self.update();
+    pub fn poll(&self) -> u8 {
+        self.status.get()
     }
 
     pub fn has(&self, int_type: RcpIntType) -> bool {
         (self.status.get() & int_type as u8) != 0
+    }
+
+    pub fn set_mask(&mut self, mask: u8) {
+        self.mask.set(mask);
+        debug!("RCP Interrupt Mask: {:06b}", mask);
+        self.update();
     }
 
     pub fn raise(&mut self, int_type: RcpIntType) {
