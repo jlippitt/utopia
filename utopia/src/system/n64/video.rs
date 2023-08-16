@@ -40,8 +40,8 @@ struct Registers {
 
 pub struct VideoInterface {
     ready: bool,
-    cycles: u64,
-    line: u32,
+    h_counter: u64,
+    v_counter: u32,
     field: bool,
     interrupt: RcpInterrupt,
     regs: Registers,
@@ -52,8 +52,8 @@ impl VideoInterface {
     pub fn new(interrupt: RcpInterrupt) -> Self {
         Self {
             ready: false,
-            cycles: 0,
-            line: 0,
+            h_counter: 0,
+            v_counter: 0,
             field: false,
             interrupt,
             regs: Registers {
@@ -97,29 +97,26 @@ impl VideoInterface {
     }
 
     pub fn step(&mut self, cycles: u64) {
-        self.cycles += cycles;
+        self.h_counter += cycles;
 
-        // Runs approximately half as fast as the CPU
-        let cycles_per_line = (self.regs.h_sync as u64) << 1;
-
-        if self.cycles >= cycles_per_line {
-            self.cycles -= cycles_per_line;
-            self.line += 1;
+        if self.h_counter >= self.regs.h_sync as u64 {
+            self.h_counter -= self.regs.h_sync as u64;
+            self.v_counter += 1;
 
             // VCurrent & VSync are given in half lines, with the low bit
             // representing the field in interlace mode
-            self.regs.v_current = (self.line << 1) | (self.field as u32);
+            self.regs.v_current = (self.v_counter & !1) | (self.field as u32);
 
-            if self.regs.v_current >= self.regs.v_sync {
-                self.line = 0;
+            if self.v_counter >= self.regs.v_sync {
+                self.v_counter = 0;
                 self.field ^= self.regs.ctrl.interlace;
                 self.regs.v_current = self.field as u32;
                 self.ready = true;
             }
 
-            debug!("Line: {} ({})", self.line, self.field as u32);
+            debug!("V Counter: {}", self.v_counter);
 
-            if self.regs.v_current == self.regs.v_intr {
+            if self.v_counter == (self.regs.v_intr >> 1) {
                 self.interrupt.raise(RcpIntType::VI);
             }
         }
