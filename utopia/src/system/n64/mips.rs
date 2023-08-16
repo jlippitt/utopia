@@ -1,3 +1,4 @@
+use super::interrupt::RcpInterrupt;
 use crate::util::facade::{DataReader, DataWriter};
 use tracing::debug;
 
@@ -5,12 +6,17 @@ const MI_VERSION: u32 = 0x0202_0102;
 
 pub struct MipsInterface {
     mode: u16,
-    mask: u16,
+    mask: u8,
+    interrupt: RcpInterrupt,
 }
 
 impl MipsInterface {
-    pub fn new() -> Self {
-        Self { mode: 0, mask: 0 }
+    pub fn new(interrupt: RcpInterrupt) -> Self {
+        Self {
+            mode: 0,
+            mask: 0,
+            interrupt,
+        }
     }
 }
 
@@ -44,7 +50,7 @@ impl DataWriter for MipsInterface {
                     }
                 }
 
-                debug!("MI_MASK: {:06b}", self.mask);
+                self.interrupt.set_mask(self.mask);
             }
             _ => unimplemented!("MIPS Interface Write: {:08X} <= {:08X}", address, value),
         }

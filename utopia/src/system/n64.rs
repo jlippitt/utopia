@@ -110,7 +110,7 @@ impl Hardware {
             interrupt,
             rdram: Rdram::new(),
             rsp: Rsp::new(&rom[0..DMEM_SIZE]),
-            mips: MipsInterface::new(),
+            mips: MipsInterface::new(rcp_interrupt.clone()),
             video: VideoInterface::new(),
             audio: AudioInterface::new(),
             peripheral: PeripheralInterface::new(rcp_interrupt),
