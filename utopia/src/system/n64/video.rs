@@ -1,3 +1,4 @@
+use super::interrupt::{RcpIntType, RcpInterrupt};
 use crate::util::facade::{DataReader, DataWriter};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
@@ -41,17 +42,19 @@ pub struct VideoInterface {
     cycles: u64,
     line: u32,
     field: bool,
+    interrupt: RcpInterrupt,
     regs: Registers,
     pixels: Vec<u8>,
 }
 
 impl VideoInterface {
-    pub fn new() -> Self {
+    pub fn new(interrupt: RcpInterrupt) -> Self {
         Self {
             ready: false,
             cycles: 0,
             line: 0,
             field: false,
+            interrupt,
             regs: Registers {
                 ctrl: Control {
                     color_mode: ColorMode::Blank,
@@ -115,6 +118,10 @@ impl VideoInterface {
             }
 
             debug!("Line: {}", self.line);
+
+            if self.regs.v_current == self.regs.v_intr {
+                self.interrupt.raise(RcpIntType::VI);
+            }
         }
     }
 
@@ -208,11 +215,12 @@ impl DataWriter for VideoInterface {
             0x0c => {
                 self.regs.v_intr = value & 0x3ff;
                 debug!("VI_V_INTR: {}", self.regs.v_intr);
+                // TODO: Can writing here trigger an immediate interrupt if it equals V_CURRENT?
             }
             0x10 => {
                 self.regs.v_current = value & 0x3ff;
                 debug!("VI_V_CURRENT: {}", self.regs.v_current);
-                // TODO: Clear interrupt
+                self.interrupt.clear(RcpIntType::VI);
             }
             0x14 => {
                 // VI_BURST: Ignore for now
