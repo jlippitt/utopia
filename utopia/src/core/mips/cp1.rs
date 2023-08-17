@@ -1,6 +1,7 @@
 use super::{Bus, Core, REGS};
 use arithmetic::*;
 use compare::*;
+use control::*;
 use convert::*;
 use num_derive::{FromPrimitive, ToPrimitive};
 use std::fmt;
@@ -9,6 +10,7 @@ use transfer::*;
 
 mod arithmetic;
 mod compare;
+mod control;
 mod convert;
 mod transfer;
 
@@ -186,10 +188,21 @@ pub fn cop1(core: &mut Core<impl Bus>, word: u32) {
         0b00010 => type_r(core, cfc1, word),
         0b00100 => type_r(core, mtc1, word),
         0b00110 => type_r(core, ctc1, word),
+        0b01000 => format_b(core, word),
         0b10000 => format_s(core, word),
         0b10001 => format_d(core, word),
         0b10100 => format_w(core, word),
         rs => unimplemented!("CP1 RS={:05b} ({:08X}: {:08X})", rs, core.pc, word),
+    }
+}
+
+fn format_b(core: &mut Core<impl Bus>, word: u32) {
+    match (word >> 16) & 31 {
+        0b00000 => branch::<false, false>(core, word),
+        0b00001 => branch::<true, false>(core, word),
+        0b00010 => branch::<false, true>(core, word),
+        0b00011 => branch::<true, true>(core, word),
+        cond => unimplemented!("CP1.B COND={:05b} ({:08X}: {:08X})", cond, core.pc, word),
     }
 }
 

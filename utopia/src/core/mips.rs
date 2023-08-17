@@ -14,6 +14,8 @@ const REGS: [&str; 32] = [
     "$K0", "$K1", "$GP", "$SP", "$FP", "$RA",
 ];
 
+const JUMP_DELAY: u32 = 2;
+
 pub type Interrupt = u8;
 
 pub trait Bus {
@@ -178,5 +180,10 @@ impl<T: Bus> Core<T> {
         assert!((address & 3) == 0);
         self.write_word(address, (value >> 32) as u32);
         self.write_word(address.wrapping_add(4), value as u32);
+    }
+
+    fn jump_delayed(&mut self, address: u32) {
+        self.next[1] = address;
+        self.delay = JUMP_DELAY;
     }
 }
