@@ -10,6 +10,7 @@ pub struct AudioInterface {
     dacrate: u32,
     bitrate: u32,
     dma_count: u32,
+    samples: [i64; 2],
     counter: i64,
 }
 
@@ -22,6 +23,7 @@ impl AudioInterface {
             dacrate: 0,
             bitrate: 0,
             dma_count: 0,
+            samples: [0; 2],
             counter: 0,
         }
     }
@@ -31,8 +33,10 @@ impl AudioInterface {
 
         if self.counter < 0 && self.dma_count > 0 {
             self.dma_count -= 1;
+            debug!("AI DMA Count: {}", self.dma_count);
 
             if self.dma_count > 0 {
+                self.samples[0] = self.samples[1];
                 self.start_dma();
             }
         }
@@ -40,10 +44,8 @@ impl AudioInterface {
 
     fn start_dma(&mut self) {
         let frequency = DAC_FREQUENCY / (self.dacrate as i64 + 1);
-        // TODO: Should use length from queued data
-        let samples = self.length as i64 / 4;
-        self.counter = (125000000 * samples) / frequency;
-        debug!("AI DMA Counter: {}", self.counter);
+        self.counter = (125000000 * self.samples[0]) / frequency;
+        debug!("AI Counter: {}", self.counter);
     }
 }
 
@@ -87,10 +89,15 @@ impl DataWriter for AudioInterface {
                 self.length = value & 0x0003_fff8;
                 debug!("AI_LENGTH: {}", self.length);
 
-                self.dma_count += 1;
-
                 if self.dma_count < 2 {
-                    self.start_dma();
+                    self.samples[self.dma_count as usize] = self.length as i64 / 4;
+
+                    self.dma_count += 1;
+                    debug!("AI DMA Count: {}", self.dma_count);
+
+                    if self.dma_count < 2 {
+                        self.start_dma();
+                    }
                 }
             }
             0x08 => {
