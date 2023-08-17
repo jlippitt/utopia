@@ -1,13 +1,13 @@
 use super::{JoypadState, System};
 use crate::core::mips::{Bus, Core, Interrupt, State};
-use crate::util::facade::{ReadFacade, Value, WriteFacade};
+use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
 use audio::AudioInterface;
 use interrupt::{CpuInterrupt, RcpInterrupt};
 use mips::MipsInterface;
 use peripheral::{Dma, DmaRequest, PeripheralInterface};
 use rdram::Rdram;
 use rsp::{Rsp, DMEM_SIZE};
-use serial::{PifDma, PifDmaRequest, SerialBus};
+use serial::{PifDma, PifDmaRequest, SerialInterface};
 use std::error::Error;
 use tracing::{debug, info};
 use video::VideoInterface;
@@ -94,7 +94,7 @@ struct Hardware {
     video: VideoInterface,
     audio: AudioInterface,
     peripheral: PeripheralInterface,
-    serial: SerialBus,
+    serial: SerialInterface,
     rom: Vec<u8>,
 }
 
@@ -112,7 +112,7 @@ impl Hardware {
             video: VideoInterface::new(rcp_interrupt.clone()),
             audio: AudioInterface::new(),
             peripheral: PeripheralInterface::new(rcp_interrupt.clone()),
-            serial: SerialBus::new(rcp_interrupt),
+            serial: SerialInterface::new(rcp_interrupt),
             rom,
         }
     }
@@ -129,7 +129,7 @@ impl Hardware {
             0x045 => self.audio.read_be(address & 0x000f_ffff),
             0x046 => self.peripheral.read_be(address & 0x000f_ffff),
             0x047 => self.rdram.read_interface(address & 0x000f_ffff),
-            0x048 => self.serial.interface().read_be(address & 0x000f_ffff),
+            0x048 => self.serial.read_be(address & 0x000f_ffff),
             0x080..=0x0ff => todo!("SRAM Reads"),
             0x100..=0x1fb => {
                 let index = address as usize & 0x0fff_ffff;
@@ -141,7 +141,7 @@ impl Hardware {
                     T::default()
                 }
             }
-            0x1fc => self.serial.read(address & 0x000f_ffff),
+            0x1fc => self.serial.pif().read_be(address & 0x000f_ffff),
             _ => panic!("Read from open bus: {:08X}", address),
         }
     }
@@ -167,9 +167,7 @@ impl Hardware {
             }
             0x047 => self.rdram.write_interface(address & 0x000f_ffff, value),
             0x048 => {
-                self.serial
-                    .interface_mut()
-                    .write_be(address & 0x000f_ffff, value);
+                self.serial.write_be(address & 0x000f_ffff, value);
 
                 match self.serial.dma_requested() {
                     PifDma::None => (),
@@ -179,7 +177,7 @@ impl Hardware {
             }
             0x080..=0x0ff => todo!("SRAM Writes"),
             0x100..=0x1fb => panic!("Write to ROM area: {:08X}", address),
-            0x1fc => self.serial.write(address & 0x000f_ffff, value),
+            0x1fc => self.serial.pif_mut().write_be(address & 0x000f_ffff, value),
             _ => panic!("Write to open bus: {:08X}", address),
         }
     }
@@ -208,7 +206,8 @@ impl Hardware {
 
     fn read_pif_dma(&mut self, request: PifDmaRequest) {
         for index in 0..request.len {
-            let value: u8 = self.serial.read(request.pif_addr.wrapping_add(index));
+            let value: u8 = self.serial.pif().read(request.pif_addr.wrapping_add(index));
+
             self.rdram
                 .write_data(request.dram_addr.wrapping_add(index), value);
         }
@@ -224,7 +223,9 @@ impl Hardware {
     fn write_pif_dma(&mut self, request: PifDmaRequest) {
         for index in 0..request.len {
             let value: u8 = self.rdram.read_data(request.dram_addr.wrapping_add(index));
+
             self.serial
+                .pif_mut()
                 .write(request.pif_addr.wrapping_add(index), value);
         }
 

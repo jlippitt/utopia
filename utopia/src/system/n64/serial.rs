@@ -1,55 +1,9 @@
 use super::interrupt::{RcpIntType, RcpInterrupt};
-use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
+use crate::util::facade::{DataReader, DataWriter};
+use pif::Pif;
 use tracing::debug;
 
-pub struct SerialBus {
-    interface: Interface,
-    pif: [u8; 2048],
-}
-
-impl SerialBus {
-    pub fn new(interrupt: RcpInterrupt) -> Self {
-        Self {
-            interface: Interface::new(interrupt),
-            pif: [0; 2048],
-        }
-    }
-
-    pub fn interface(&self) -> &Interface {
-        &self.interface
-    }
-
-    pub fn interface_mut(&mut self) -> &mut Interface {
-        &mut self.interface
-    }
-
-    pub fn read<T: Value>(&self, address: u32) -> T {
-        match address {
-            0x0000_00000..=0x0000_007ff => self.pif.as_slice().read_be(address as usize),
-            _ => unimplemented!("Serial Bus Read: {:08X}", address),
-        }
-    }
-
-    pub fn write<T: Value>(&mut self, address: u32, value: T) {
-        match address {
-            0x0000_007c0..=0x0000_007ff => {
-                // Only the top 64 bytes (PIF RAM) are writable
-                self.pif.as_mut_slice().write_be(address as usize, value)
-            }
-            _ => unimplemented!("Serial Bus Write: {:08X} <= {:08X}", address, value),
-        }
-    }
-
-    pub fn dma_requested(&self) -> PifDma {
-        self.interface.dma_requested
-    }
-
-    pub fn finish_dma(&mut self) {
-        self.interface.dma_requested = PifDma::None;
-        self.interface.interrupt.raise(RcpIntType::SI);
-        debug!("{:X?}", &self.pif[0x07c0..]);
-    }
-}
+mod pif;
 
 #[derive(Copy, Clone, Debug)]
 pub struct PifDmaRequest {
@@ -65,23 +19,43 @@ pub enum PifDma {
     Write(PifDmaRequest),
 }
 
-pub struct Interface {
+pub struct SerialInterface {
     dma_requested: PifDma,
     dram_addr: u32,
     interrupt: RcpInterrupt,
+    pif: Pif,
 }
 
-impl Interface {
+impl SerialInterface {
     pub fn new(interrupt: RcpInterrupt) -> Self {
         Self {
             dma_requested: PifDma::None,
             dram_addr: 0,
             interrupt,
+            pif: Pif::new(),
         }
+    }
+
+    pub fn pif(&self) -> &Pif {
+        &self.pif
+    }
+
+    pub fn pif_mut(&mut self) -> &mut Pif {
+        &mut self.pif
+    }
+
+    pub fn dma_requested(&self) -> PifDma {
+        self.dma_requested
+    }
+
+    pub fn finish_dma(&mut self) {
+        self.dma_requested = PifDma::None;
+        self.interrupt.raise(RcpIntType::SI);
+        self.pif.upload();
     }
 }
 
-impl DataReader for Interface {
+impl DataReader for SerialInterface {
     type Address = u32;
     type Value = u32;
 
@@ -99,7 +73,7 @@ impl DataReader for Interface {
     }
 }
 
-impl DataWriter for Interface {
+impl DataWriter for SerialInterface {
     fn write(&mut self, address: u32, value: u32) {
         match address {
             0x00 => {
@@ -107,6 +81,8 @@ impl DataWriter for Interface {
                 debug!("SI_DRAM_ADDR: {:08X}", self.dram_addr);
             }
             0x04 => {
+                self.pif.process();
+
                 self.dma_requested = PifDma::Read(PifDmaRequest {
                     dram_addr: self.dram_addr,
                     pif_addr: value & 0x07fc,
