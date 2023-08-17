@@ -16,10 +16,18 @@ pub enum Dma {
     Write(DmaRequest),
 }
 
+struct BsdDom {
+    lat: u8,
+    pwd: u8,
+    pgs: u8,
+    rls: u8,
+}
+
 pub struct PeripheralInterface {
     dma_requested: Dma,
     dram_address: u32,
     cart_address: u32,
+    bsd_dom: [BsdDom; 2],
     interrupt: RcpInterrupt,
 }
 
@@ -29,6 +37,21 @@ impl PeripheralInterface {
             dma_requested: Dma::None,
             dram_address: 0,
             cart_address: 0,
+            bsd_dom: [
+                // TODO: Set from ROM header
+                BsdDom {
+                    lat: 64,
+                    pwd: 18,
+                    pgs: 7,
+                    rls: 3,
+                },
+                BsdDom {
+                    lat: 0,
+                    pwd: 0,
+                    pgs: 0,
+                    rls: 0,
+                },
+            ],
             interrupt,
         }
     }
@@ -69,31 +92,14 @@ impl DataReader for PeripheralInterface {
 
                 value
             }
-            0x14 => {
-                // PI_BSD_DOM1_LAT
-                // TODO: Set from ROM header
-                64
-            }
-            0x18 => {
-                // PI_BSD_DOM1_PWD
-                // TODO: Set from ROM header
-                18
-            }
-            0x1c => {
-                // PI_BSD_DOM1_PGS
-                // TODO: Set from ROM header
-                7
-            }
-            0x20 => {
-                // PI_BSD_DOM1_RLS
-                // TODO: Set from ROM header
-                3
-            }
-            0x24 | 0x28 | 0x2c | 0x30 => {
-                // PI_BSD_DOM2
-                // TODO
-                0
-            }
+            0x14 => self.bsd_dom[0].lat as u32,
+            0x18 => self.bsd_dom[0].pwd as u32,
+            0x1c => self.bsd_dom[0].pgs as u32,
+            0x20 => self.bsd_dom[0].rls as u32,
+            0x24 => self.bsd_dom[1].lat as u32,
+            0x28 => self.bsd_dom[1].pwd as u32,
+            0x2c => self.bsd_dom[1].pgs as u32,
+            0x30 => self.bsd_dom[1].rls as u32,
             _ => unimplemented!("Peripheral Interface Read: {:08X}", address),
         }
     }
@@ -124,6 +130,38 @@ impl DataWriter for PeripheralInterface {
                 }
 
                 // TODO: Reset DMA controller
+            }
+            0x14 => {
+                self.bsd_dom[0].lat = value as u8;
+                debug!("PI BSD DOM1 LAT: {}", self.bsd_dom[0].lat);
+            }
+            0x18 => {
+                self.bsd_dom[0].pwd = value as u8;
+                debug!("PI BSD DOM1 PWD: {}", self.bsd_dom[0].pwd);
+            }
+            0x1c => {
+                self.bsd_dom[0].pgs = value as u8 & 15;
+                debug!("PI BSD DOM1 PGS: {}", self.bsd_dom[0].pgs);
+            }
+            0x20 => {
+                self.bsd_dom[0].rls = value as u8 & 3;
+                debug!("PI BSD DOM1 RLS: {}", self.bsd_dom[0].rls);
+            }
+            0x24 => {
+                self.bsd_dom[1].lat = value as u8;
+                debug!("PI BSD DOM2 LAT: {}", self.bsd_dom[1].lat);
+            }
+            0x28 => {
+                self.bsd_dom[1].pwd = value as u8;
+                debug!("PI BSD DOM2 PWD: {}", self.bsd_dom[1].pwd);
+            }
+            0x2c => {
+                self.bsd_dom[1].pgs = value as u8 & 15;
+                debug!("PI BSD DOM2 PGS: {}", self.bsd_dom[1].pgs);
+            }
+            0x30 => {
+                self.bsd_dom[1].rls = value as u8 & 3;
+                debug!("PI BSD DOM2 RLS: {}", self.bsd_dom[1].rls);
             }
             _ => unimplemented!(
                 "Peripheral Interface Write: {:08X} <= {:08X}",
