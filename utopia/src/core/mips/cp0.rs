@@ -86,7 +86,7 @@ pub struct Status {
 }
 
 #[derive(Default)]
-pub struct Cop0 {
+pub struct Cp0 {
     index: u32,
     lo0: u32,
     lo1: u32,
@@ -102,17 +102,17 @@ pub struct Cop0 {
 }
 
 pub fn update(core: &mut Core<impl Bus>) {
-    core.cop0.count = core.cop0.count.wrapping_add(1);
+    core.cp0.count = core.cp0.count.wrapping_add(1);
 
     // Test for interrupts
-    let cop0 = &mut core.cop0;
+    let cp0 = &mut core.cp0;
 
     // If IE=0, EXL=1 or ERL=1, no interrupt for you
-    if (u32::from(cop0.status) ^ 0x01) & 0x07 != 0 {
+    if (u32::from(cp0.status) ^ 0x01) & 0x07 != 0 {
         return;
     }
 
-    let int_active = core.bus.poll() & cop0.status.im();
+    let int_active = core.bus.poll() & cp0.status.im();
 
     if int_active == 0 {
         return;
@@ -121,19 +121,19 @@ pub fn update(core: &mut Core<impl Bus>) {
     // Handle interrupt exception
     debug!("-- Exception: {:08b} --", int_active);
 
-    let int_pending = (cop0.cause.ip() & 0x83) | (int_active & 0x7c);
-    cop0.cause.set_ip(int_pending);
+    let int_pending = (cp0.cause.ip() & 0x83) | (int_active & 0x7c);
+    cp0.cause.set_ip(int_pending);
 
-    cop0.cause.set_exc_code(0);
-    cop0.cause.set_bd(core.delay > 0);
+    cp0.cause.set_exc_code(0);
+    cp0.cause.set_bd(core.delay > 0);
 
-    core.cop0.epc = if core.delay > 0 {
+    core.cp0.epc = if core.delay > 0 {
         core.next[0].wrapping_sub(4)
     } else {
         core.next[0]
     };
 
-    core.cop0.status.set_exl(true);
+    core.cp0.status.set_exl(true);
 
     core.next[0] = 0x8000_0180;
     core.next[1] = core.next[0].wrapping_add(4);
@@ -149,13 +149,13 @@ pub fn dispatch(core: &mut Core<impl Bus>, word: u32) {
             0o10 => tlbp(core),
             0o30 => eret(core),
             func => unimplemented!(
-                "COP0 RS=10000 FN={:06b} ({:08X}: {:08X})",
+                "CP0 RS=10000 FN={:06b} ({:08X}: {:08X})",
                 func,
                 core.pc,
                 word
             ),
         },
-        rs => unimplemented!("COP0 RS={:05b} ({:08X}: {:08X})", rs, core.pc, word),
+        rs => unimplemented!("CP0 RS={:05b} ({:08X}: {:08X})", rs, core.pc, word),
     }
 }
 
@@ -169,17 +169,17 @@ fn mfc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
     debug!("{:08X} MFC0 {}, {}", core.pc, REGS[rt], CREGS[rd]);
 
     let result = match rd {
-        0 => core.cop0.index,
-        2 => core.cop0.lo0,
-        3 => core.cop0.lo1,
-        5 => core.cop0.page_mask,
-        6 => core.cop0.wired,
-        9 => core.cop0.count,
-        10 => core.cop0.hi,
-        12 => u32::from(core.cop0.status) & !0x0088_0000,
-        13 => core.cop0.cause.into(),
-        14 => core.cop0.epc,
-        _ => todo!("COP0 Register Read: {}", CREGS[rd]),
+        0 => core.cp0.index,
+        2 => core.cp0.lo0,
+        3 => core.cp0.lo1,
+        5 => core.cp0.page_mask,
+        6 => core.cp0.wired,
+        9 => core.cp0.count,
+        10 => core.cp0.hi,
+        12 => u32::from(core.cp0.status) & !0x0088_0000,
+        13 => core.cp0.cause.into(),
+        14 => core.cp0.epc,
+        _ => todo!("CP0 Register Read: {}", CREGS[rd]),
     };
 
     core.set(rt, result);
@@ -192,44 +192,44 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
 
     match rd {
         0 => {
-            core.cop0.index = value & 0x8000_003f;
-            debug!("  COP0 Index: {}", core.cop0.index);
+            core.cp0.index = value & 0x8000_003f;
+            debug!("  CP0 Index: {}", core.cp0.index);
         }
         2 => {
-            core.cop0.lo0 = value;
-            debug!("  COP0 LO0: {:08X}", core.cop0.lo0);
+            core.cp0.lo0 = value;
+            debug!("  CP0 LO0: {:08X}", core.cp0.lo0);
         }
         3 => {
-            core.cop0.lo1 = value;
-            debug!("  COP0 LO1: {:08X}", core.cop0.lo1);
+            core.cp0.lo1 = value;
+            debug!("  CP0 LO1: {:08X}", core.cp0.lo1);
         }
         5 => {
-            core.cop0.page_mask = value & 0x01ff_e000;
-            debug!("  COP0 Page Mask: {:08X}", core.cop0.page_mask);
+            core.cp0.page_mask = value & 0x01ff_e000;
+            debug!("  CP0 Page Mask: {:08X}", core.cp0.page_mask);
         }
         6 => {
-            core.cop0.wired = value & 0x0000_003f;
-            debug!("  COP0 Wired: {:08X}", core.cop0.wired);
+            core.cp0.wired = value & 0x0000_003f;
+            debug!("  CP0 Wired: {:08X}", core.cp0.wired);
         }
         10 => {
-            core.cop0.hi = value;
-            debug!("  COP0 HI: {:08X}", core.cop0.hi);
+            core.cp0.hi = value;
+            debug!("  CP0 HI: {:08X}", core.cp0.hi);
         }
         12 => {
-            core.cop0.status = value.into();
-            debug!("  COP0 Status: {:?}", core.cop0.status);
+            core.cp0.status = value.into();
+            debug!("  CP0 Status: {:?}", core.cp0.status);
         }
         14 => {
-            core.cop0.epc = value;
-            debug!("  COP0 EPC: {:08X}", core.cop0.epc);
+            core.cp0.epc = value;
+            debug!("  CP0 EPC: {:08X}", core.cp0.epc);
         }
         30 => {
-            core.cop0.error_epc = value;
-            debug!("  COP0 Error EPC: {:08X}", core.cop0.error_epc);
+            core.cp0.error_epc = value;
+            debug!("  CP0 Error EPC: {:08X}", core.cp0.error_epc);
         }
         _ => {
             if value != 0 {
-                todo!("COP0 Register Write: {} <= {:08X}", CREGS[rd], value);
+                todo!("CP0 Register Write: {} <= {:08X}", CREGS[rd], value);
             }
         }
     }
@@ -238,36 +238,36 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
 fn tlbr(core: &mut Core<impl Bus>) {
     debug!("{:08X} TLBR", core.pc);
 
-    let tlb_entry = &core.cop0.tlb_entries[core.cop0.index as usize];
+    let tlb_entry = &core.cp0.tlb_entries[core.cp0.index as usize];
 
     let global = tlb_entry.lo0 & tlb_entry.lo1 & 1;
-    core.cop0.lo0 = (tlb_entry.lo0 & 0xffff_fffe) | global;
-    core.cop0.lo1 = (tlb_entry.lo1 & 0xffff_fffe) | global;
-    core.cop0.page_mask = tlb_entry.page_mask;
-    core.cop0.hi = tlb_entry.hi;
+    core.cp0.lo0 = (tlb_entry.lo0 & 0xffff_fffe) | global;
+    core.cp0.lo1 = (tlb_entry.lo1 & 0xffff_fffe) | global;
+    core.cp0.page_mask = tlb_entry.page_mask;
+    core.cp0.hi = tlb_entry.hi;
 
-    debug!("  COP0 LO0: {:08X}", core.cop0.lo0);
-    debug!("  COP0 LO1: {:08X}", core.cop0.lo1);
-    debug!("  COP0 Page Mask: {:08X}", core.cop0.page_mask);
-    debug!("  COP0 HI: {:08X}", core.cop0.hi);
+    debug!("  CP0 LO0: {:08X}", core.cp0.lo0);
+    debug!("  CP0 LO1: {:08X}", core.cp0.lo1);
+    debug!("  CP0 Page Mask: {:08X}", core.cp0.page_mask);
+    debug!("  CP0 HI: {:08X}", core.cp0.hi);
 }
 
 fn tlbwi(core: &mut Core<impl Bus>) {
     debug!("{:08X} TLBWI", core.pc);
 
-    let tlb_entry = &mut core.cop0.tlb_entries[core.cop0.index as usize];
-    tlb_entry.lo0 = core.cop0.lo0;
-    tlb_entry.lo1 = core.cop0.lo1;
-    tlb_entry.page_mask = core.cop0.page_mask;
-    tlb_entry.hi = core.cop0.hi & !core.cop0.page_mask;
+    let tlb_entry = &mut core.cp0.tlb_entries[core.cp0.index as usize];
+    tlb_entry.lo0 = core.cp0.lo0;
+    tlb_entry.lo1 = core.cp0.lo1;
+    tlb_entry.page_mask = core.cp0.page_mask;
+    tlb_entry.hi = core.cp0.hi & !core.cp0.page_mask;
 
-    debug!("TLB Entry {}: {:X?}", core.cop0.index, tlb_entry);
+    debug!("TLB Entry {}: {:X?}", core.cp0.index, tlb_entry);
 }
 
 fn tlbp(core: &mut Core<impl Bus>) {
     debug!("{:08X} TLBP", core.pc);
 
-    let index = core.cop0.tlb_entries.iter().position(|entry| {
+    let index = core.cp0.tlb_entries.iter().position(|entry| {
         let mask = if ((entry.lo0 & entry.lo0) & 1) != 0 {
             // Global flag is set
             0xffff_e000
@@ -275,29 +275,29 @@ fn tlbp(core: &mut Core<impl Bus>) {
             0xffff_e0ff
         };
 
-        (entry.hi & mask) == (core.cop0.hi & mask)
+        (entry.hi & mask) == (core.cp0.hi & mask)
     });
 
     if let Some(index) = index {
-        core.cop0.index = index as u32;
+        core.cp0.index = index as u32;
     } else {
-        core.cop0.index |= 0x8000_0000;
+        core.cp0.index |= 0x8000_0000;
     }
 
-    debug!("  COP0 Index: {}", core.cop0.index);
+    debug!("  CP0 Index: {}", core.cp0.index);
 }
 
 fn eret(core: &mut Core<impl Bus>) {
     debug!("{:08X} ERET", core.pc);
 
-    if core.cop0.status.erl() {
-        core.next[0] = core.cop0.error_epc;
+    if core.cp0.status.erl() {
+        core.next[0] = core.cp0.error_epc;
         core.next[1] = core.next[0].wrapping_add(4);
-        core.cop0.status.set_erl(false);
+        core.cp0.status.set_erl(false);
     } else {
-        core.next[0] = core.cop0.epc;
+        core.next[0] = core.cp0.epc;
         core.next[1] = core.next[0].wrapping_add(4);
-        core.cop0.status.set_exl(false);
+        core.cp0.status.set_exl(false);
     }
 }
 

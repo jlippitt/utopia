@@ -34,7 +34,7 @@ struct Control {
 }
 
 #[derive(Default)]
-pub struct Cop1 {
+pub struct Cp1 {
     ctrl: Control,
 }
 
@@ -42,7 +42,7 @@ pub fn dispatch(core: &mut Core<impl Bus>, word: u32) {
     match (word >> 21) & 31 {
         0b00010 => type_r(core, cfc1, word),
         0b00110 => type_r(core, ctc1, word),
-        rs => unimplemented!("COP1 RS={:05b} ({:08X}: {:08X})", rs, core.pc, word),
+        rs => unimplemented!("CP1 RS={:05b} ({:08X}: {:08X})", rs, core.pc, word),
     }
 }
 
@@ -58,7 +58,7 @@ fn cfc1(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
     let result = match rd {
         31 => {
             // CONTROL/STATUS
-            let ctrl = &core.cop1.ctrl;
+            let ctrl = &core.cp1.ctrl;
             let mut value = 0;
             value |= ctrl.rm.to_u32().unwrap();
             value |= Into::<u32>::into(ctrl.flags) << 2;
@@ -68,7 +68,7 @@ fn cfc1(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
             value |= (ctrl.fs as u32) << 24;
             value
         }
-        _ => todo!("COP1 Register Read: ${}", rd),
+        _ => todo!("CP1 Register Read: ${}", rd),
     };
 
     core.set(rt, result);
@@ -82,21 +82,21 @@ fn ctc1(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
     match rd {
         31 => {
             // CONTROL/STATUS
-            let ctrl = &mut core.cop1.ctrl;
+            let ctrl = &mut core.cp1.ctrl;
             ctrl.rm = RoundingMode::from_u32(value & 3).unwrap();
             ctrl.flags = Flags::from((value >> 2) & 31);
             ctrl.enable = Flags::from((value >> 7) & 31);
             ctrl.cause = Flags::from((value >> 12) & 63);
             ctrl.c = (value & 0x0080_0000) != 0;
             ctrl.fs = (value & 0x0100_0000) != 0;
-            debug!("  COP1 Rounding Mode: {:?}", ctrl.rm);
-            debug!("  COP1 Flags: {}", ctrl.flags);
-            debug!("  COP1 Enable: {}", ctrl.enable);
-            debug!("  COP1 Cause: {}", ctrl.cause);
-            debug!("  COP1 Compare: {}", ctrl.c);
-            debug!("  COP1 Flash: {}", ctrl.fs);
+            debug!("  CP1 Rounding Mode: {:?}", ctrl.rm);
+            debug!("  CP1 Flags: {}", ctrl.flags);
+            debug!("  CP1 Enable: {}", ctrl.enable);
+            debug!("  CP1 Cause: {}", ctrl.cause);
+            debug!("  CP1 Compare: {}", ctrl.c);
+            debug!("  CP1 Flash: {}", ctrl.fs);
         }
-        _ => todo!("COP1 Register Write: ${} <= {:08X}", rd, value),
+        _ => todo!("CP1 Register Write: ${} <= {:08X}", rd, value),
     }
 }
 

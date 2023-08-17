@@ -1,10 +1,10 @@
 use crate::util::facade::Value;
-use cop0::Cop0;
-use cop1::Cop1;
+use cp0::Cp0;
+use cp1::Cp1;
 use tracing::debug;
 
-mod cop0;
-mod cop1;
+mod cp0;
+mod cp1;
 mod instruction;
 mod operator;
 
@@ -30,8 +30,8 @@ pub struct Core<T: Bus> {
     delay: u32,
     hi: u64,
     lo: u64,
-    cop0: Cop0,
-    cop1: Cop1,
+    cp0: Cp0,
+    cp1: Cp1,
     bus: T,
 }
 
@@ -53,8 +53,8 @@ impl<T: Bus> Core<T> {
             delay: 0,
             hi: 0,
             lo: 0,
-            cop0: Cop0::default(),
-            cop1: Cop1::default(),
+            cp0: Cp0::default(),
+            cp1: Cp1::default(),
             bus,
         }
     }
@@ -76,7 +76,7 @@ impl<T: Bus> Core<T> {
 
         self.bus.step();
 
-        cop0::update(self);
+        cp0::update(self);
 
         self.pc = self.next[0];
         self.next[0] = self.next[1];
