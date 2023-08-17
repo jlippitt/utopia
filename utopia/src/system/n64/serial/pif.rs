@@ -97,6 +97,19 @@ impl Pif {
                     _ => panic!("Invalid JoyBus channel: {}", channel),
                 }
             }
+            0x02 => {
+                if channel > 3 {
+                    panic!("Invalid JoyBus channel: {}", channel);
+                }
+
+                warn!("Controller Pak reads not yet implemented");
+
+                for _ in 0..32 {
+                    output.push(0);
+                }
+
+                output.push(crc(&output[0..32]));
+            }
             0x03 => {
                 if channel > 3 {
                     panic!("Invalid JoyBus channel: {}", channel);
