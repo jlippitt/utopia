@@ -90,12 +90,20 @@ impl Pif {
                     0 => {
                         output.push(0x05);
                         output.push(0x00);
-                        output.push(0x00); // TODO: Controller Pak
+                        output.push(0x02); // TODO: Controller Pak
                     }
                     1 | 2 | 3 => return None,
                     4 => todo!("EEPROM"),
                     _ => panic!("Invalid JoyBus channel: {}", channel),
                 }
+            }
+            0x03 => {
+                if channel > 3 {
+                    panic!("Invalid JoyBus channel: {}", channel);
+                }
+
+                warn!("Controller Pak writes not yet implemented");
+                output.push(crc(&input[3..35]));
             }
             _ => panic!("Unknown JoyBus command: {:02X}", input[0]),
         }
@@ -127,4 +135,25 @@ impl DataWriter for Pif {
             _ => unimplemented!("Serial Bus Write: {:08X} <= {:08X}", address, value),
         }
     }
+}
+
+pub fn crc(data: &[u8]) -> u8 {
+    assert!(data.len() == 32);
+
+    let mut result: u8 = 0;
+
+    for index in 0..=data.len() {
+        for bit in (0..=7).rev() {
+            let xor_tap = if (result & 0x80) != 0 { 0x85 } else { 0 };
+            result <<= 1;
+
+            if index < data.len() && (data[index] & (1 << bit)) != 0 {
+                result |= 1;
+            }
+
+            result ^= xor_tap;
+        }
+    }
+
+    result
 }
