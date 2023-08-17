@@ -64,6 +64,20 @@ impl Cp1 {
         self.reg_size = reg_size;
     }
 
+    fn d(&self, reg: usize) -> f64 {
+        if self.reg_size {
+            unsafe { self.regs[reg].d }
+        } else if (reg & 1) == 0 {
+            let low = unsafe { self.regs[reg].w.to_le_bytes() };
+            let high = unsafe { self.regs[reg + 1].w.to_le_bytes() };
+            f64::from_le_bytes([
+                low[0], low[1], low[2], low[3], high[0], high[1], high[2], high[3],
+            ])
+        } else {
+            panic!("Tried to get odd-numbered CP1 register when FR=0");
+        }
+    }
+
     fn w(&self, reg: usize) -> i32 {
         unsafe { self.regs[reg].w }
     }
@@ -155,8 +169,16 @@ pub fn cop1(core: &mut Core<impl Bus>, word: u32) {
         0b00010 => type_r(core, cfc1, word),
         0b00100 => type_r(core, mtc1, word),
         0b00110 => type_r(core, ctc1, word),
+        0b10001 => format_d(core, word),
         0b10100 => format_w(core, word),
         rs => unimplemented!("CP1 RS={:05b} ({:08X}: {:08X})", rs, core.pc, word),
+    }
+}
+
+fn format_d(core: &mut Core<impl Bus>, word: u32) {
+    match word & 0o77 {
+        0o40 => type_f(core, cvt_s_d, word),
+        func => unimplemented!("CP1.W FN={:02o} ({:08X}: {:08X})", func, core.pc, word),
     }
 }
 

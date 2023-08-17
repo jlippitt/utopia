@@ -3,6 +3,11 @@ use tracing::debug;
 
 // TODO: Rounding modes
 
+pub fn cvt_s_d(core: &mut Core<impl Bus>, fs: usize, fd: usize) {
+    debug!("{:08X} CVT.S.D $F{}, $F{}", core.pc, fd, fs);
+    core.cp1.set_s(fd, core.cp1.d(fs) as f32);
+}
+
 pub fn cvt_s_w(core: &mut Core<impl Bus>, fs: usize, fd: usize) {
     debug!("{:08X} CVT.S.W $F{}, $F{}", core.pc, fd, fs);
     core.cp1.set_s(fd, core.cp1.w(fs) as f32);
