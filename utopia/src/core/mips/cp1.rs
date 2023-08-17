@@ -4,6 +4,7 @@ use compare::*;
 use control::*;
 use convert::*;
 use num_derive::{FromPrimitive, ToPrimitive};
+use round::*;
 use std::fmt;
 use tracing::debug;
 use transfer::*;
@@ -12,6 +13,7 @@ mod arithmetic;
 mod compare;
 mod control;
 mod convert;
+mod round;
 mod transfer;
 
 #[derive(Copy, Clone, Default)]
@@ -209,7 +211,10 @@ fn format_b(core: &mut Core<impl Bus>, word: u32) {
 fn format_s(core: &mut Core<impl Bus>, word: u32) {
     match word & 0o77 {
         0o00 => type_f(core, add_s, word),
+        0o01 => type_f(core, sub_s, word),
+        0o02 => type_f(core, mul_s, word),
         0o03 => type_f(core, div_s, word),
+        0o15 => type_f(core, trunc_w_s, word),
         0o76 => type_f(core, c_le_s, word),
         func => unimplemented!("CP1.W FN={:02o} ({:08X}: {:08X})", func, core.pc, word),
     }
