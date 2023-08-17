@@ -23,8 +23,7 @@ impl Pif {
 
     pub fn process(&mut self) {
         if (self.input[0x3f] & 0x01) == 0 {
-            warn!("Non-JoyBus PIF request");
-            return;
+            panic!("Non-JoyBus PIF request");
         }
 
         debug!("PIF JoyBus Input: {:X?}", self.input);
@@ -76,6 +75,8 @@ impl Pif {
 
             channel += 1;
         }
+
+        self.ram[0x3f] = 0;
 
         debug!("PIF JoyBus Output: {:X?}", self.ram);
     }
