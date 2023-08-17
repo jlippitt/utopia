@@ -98,6 +98,20 @@ impl Cp1 {
         unsafe { self.regs[reg].w }
     }
 
+    fn l(&self, reg: usize) -> i64 {
+        if self.reg_size {
+            unsafe { self.regs[reg].l }
+        } else if (reg & 1) == 0 {
+            let low = unsafe { self.regs[reg].w.to_le_bytes() };
+            let high = unsafe { self.regs[reg + 1].w.to_le_bytes() };
+            i64::from_le_bytes([
+                low[0], low[1], low[2], low[3], high[0], high[1], high[2], high[3],
+            ])
+        } else {
+            panic!("Tried to get odd-numbered CP1 register when FR=0");
+        }
+    }
+
     fn set_c(&mut self, value: bool) {
         self.ctrl.c = value;
         debug!("  C = {}", value as u32);
@@ -129,6 +143,20 @@ impl Cp1 {
     fn set_w(&mut self, reg: usize, value: i32) {
         self.regs[reg].w = value;
         debug!("  $F{}.W = {}", reg, value);
+    }
+
+    fn set_l(&mut self, reg: usize, value: i64) {
+        if self.reg_size {
+            self.regs[reg].l = value;
+        } else if (reg & 1) == 0 {
+            let bytes = value.to_le_bytes();
+            self.regs[reg].w = i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+            self.regs[reg + 1].w = i32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]);
+        } else {
+            panic!("Tried to set odd-numbered CP1 register when FR=0");
+        }
+
+        debug!("  $F{}.L = {}", reg, value);
     }
 }
 
@@ -183,6 +211,29 @@ pub fn lwc1(core: &mut Core<impl Bus>, base: usize, ft: usize, value: u32) {
     let address = core.get(base).wrapping_add(ivalue);
     let result = core.read_word(address);
     core.cp1.set_w(ft, result as i32);
+}
+
+pub fn ldc1(core: &mut Core<impl Bus>, base: usize, ft: usize, value: u32) {
+    debug!(
+        "{:08X} LDC1 $F{}, {}({})",
+        core.pc, ft, value as i16, REGS[base]
+    );
+
+    let ivalue = value as i16 as i32 as u32;
+    let address = core.get(base).wrapping_add(ivalue);
+    let result = core.read_doubleword(address);
+    core.cp1.set_l(ft, result as i64);
+}
+
+pub fn sdc1(core: &mut Core<impl Bus>, base: usize, ft: usize, value: u32) {
+    debug!(
+        "{:08X} SDC1 $F{}, {}({})",
+        core.pc, ft, value as i16, REGS[base]
+    );
+
+    let ivalue = value as i16 as i32 as u32;
+    let address = core.get(base).wrapping_add(ivalue);
+    core.write_doubleword(address, core.cp1.l(ft) as u64);
 }
 
 pub fn cop1(core: &mut Core<impl Bus>, word: u32) {
