@@ -53,5 +53,5 @@ pub fn ctc1(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
 
 pub fn mtc1(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
     debug!("{:08X} MTC1 {}, $F{}", core.pc, REGS[rt], rd);
-    core.cp1.setw(rd, core.get(rt));
+    core.cp1.setw(rd, core.get(rt) as i32);
 }

@@ -218,6 +218,7 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
         12 => {
             core.cp0.status = value.into();
             debug!("  CP0 Status: {:?}", core.cp0.status);
+            core.cp1.set_reg_size(core.cp0.status.fr());
         }
         14 => {
             core.cp0.epc = value;

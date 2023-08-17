@@ -1,9 +1,11 @@
 use super::{Bus, Core};
+use convert::*;
 use num_derive::{FromPrimitive, ToPrimitive};
 use std::fmt;
 use tracing::debug;
 use transfer::*;
 
+mod convert;
 mod transfer;
 
 #[derive(Copy, Clone, Default)]
@@ -39,26 +41,50 @@ struct Control {
 union Register {
     f: f32,
     d: f64,
-    w: u32,
-    l: u64,
+    w: i32,
+    l: i64,
 }
 
 pub struct Cp1 {
-    ctrl: Control,
     regs: [Register; 32],
+    ctrl: Control,
+    reg_size: bool,
 }
 
 impl Cp1 {
     pub fn new() -> Self {
         Self {
-            ctrl: Control::default(),
             regs: [Register { l: 0 }; 32],
+            ctrl: Control::default(),
+            reg_size: false,
         }
     }
 
-    pub fn setw(&mut self, reg: usize, value: u32) {
+    pub fn set_reg_size(&mut self, reg_size: bool) {
+        self.reg_size = reg_size;
+    }
+
+    fn getw(&self, reg: usize) -> i32 {
+        unsafe { self.regs[reg].w }
+    }
+
+    fn setd(&mut self, reg: usize, value: f64) {
+        if self.reg_size {
+            self.regs[reg].d = value;
+        } else if (reg & 1) == 0 {
+            let bytes = value.to_le_bytes();
+            self.regs[reg].w = i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+            self.regs[reg + 1].w = i32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]);
+        } else {
+            panic!("Tried to set double value to odd-numbered register");
+        }
+
+        debug!("  $F{}.D = {}", reg, value);
+    }
+
+    fn setw(&mut self, reg: usize, value: i32) {
         self.regs[reg].w = value;
-        debug!("  $F{}.W = {:08X}", reg, value);
+        debug!("  $F{}.W = {}", reg, value);
     }
 }
 
@@ -108,7 +134,15 @@ pub fn cop1(core: &mut Core<impl Bus>, word: u32) {
         0b00010 => type_r(core, cfc1, word),
         0b00100 => type_r(core, mtc1, word),
         0b00110 => type_r(core, ctc1, word),
+        0b10100 => format_w(core, word),
         rs => unimplemented!("CP1 RS={:05b} ({:08X}: {:08X})", rs, core.pc, word),
+    }
+}
+
+fn format_w(core: &mut Core<impl Bus>, word: u32) {
+    match word & 0o77 {
+        0o41 => type_f(core, cvt_d_w, word),
+        func => unimplemented!("CP1.W FN={:02o} ({:08X}: {:08X})", func, core.pc, word),
     }
 }
 
@@ -116,4 +150,10 @@ fn type_r<T: Bus>(core: &mut Core<T>, instr: impl Fn(&mut Core<T>, usize, usize)
     let rt = ((word >> 16) & 31) as usize;
     let rd = ((word >> 11) & 31) as usize;
     instr(core, rt, rd);
+}
+
+fn type_f<T: Bus>(core: &mut Core<T>, instr: impl Fn(&mut Core<T>, usize, usize), word: u32) {
+    let fs = ((word >> 11) & 31) as usize;
+    let fd = ((word >> 6) & 31) as usize;
+    instr(core, fs, fd);
 }
