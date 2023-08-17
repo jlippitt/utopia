@@ -187,6 +187,7 @@ pub fn lwc1(core: &mut Core<impl Bus>, base: usize, ft: usize, value: u32) {
 
 pub fn cop1(core: &mut Core<impl Bus>, word: u32) {
     match (word >> 21) & 31 {
+        0b00000 => type_r(core, mfc1, word),
         0b00010 => type_r(core, cfc1, word),
         0b00100 => type_r(core, mtc1, word),
         0b00110 => type_r(core, ctc1, word),

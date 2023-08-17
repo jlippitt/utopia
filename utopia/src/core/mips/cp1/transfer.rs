@@ -51,6 +51,11 @@ pub fn ctc1(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
     }
 }
 
+pub fn mfc1(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
+    debug!("{:08X} MFC1 {}, $F{}", core.pc, REGS[rt], rd);
+    core.set(rt, core.cp1.w(rd) as u32);
+}
+
 pub fn mtc1(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
     debug!("{:08X} MTC1 {}, $F{}", core.pc, REGS[rt], rd);
     core.cp1.set_w(rd, core.get(rt) as i32);
