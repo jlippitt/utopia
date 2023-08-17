@@ -133,9 +133,9 @@ pub fn update(core: &mut Core<impl Bus>) {
     cp0.cause.set_ip(int_pending);
 
     cp0.cause.set_exc_code(0);
-    cp0.cause.set_bd(core.delay > 0);
+    cp0.cause.set_bd(core.delay);
 
-    core.cp0.epc = if core.delay > 0 {
+    core.cp0.epc = if core.delay {
         core.next[0].wrapping_sub(4)
     } else {
         core.next[0]

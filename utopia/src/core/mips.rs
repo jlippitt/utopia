@@ -14,8 +14,6 @@ const REGS: [&str; 32] = [
     "$K0", "$K1", "$GP", "$SP", "$FP", "$RA",
 ];
 
-const JUMP_DELAY: u32 = 2;
-
 pub type Interrupt = u8;
 
 pub trait Bus {
@@ -29,7 +27,7 @@ pub struct Core<T: Bus> {
     pc: u32,
     next: [u32; 2],
     regs: [u64; 32],
-    delay: u32,
+    delay: bool,
     hi: u64,
     lo: u64,
     cp0: Cp0,
@@ -52,7 +50,7 @@ impl<T: Bus> Core<T> {
             pc,
             next: [pc.wrapping_add(4), pc.wrapping_add(8)],
             regs: initial_state.regs,
-            delay: 0,
+            delay: false,
             hi: 0,
             lo: 0,
             cp0: Cp0::default(),
@@ -83,7 +81,7 @@ impl<T: Bus> Core<T> {
         self.pc = self.next[0];
         self.next[0] = self.next[1];
         self.next[1] = self.next[1].wrapping_add(4);
-        self.delay >>= 1;
+        self.delay = false;
     }
 
     fn get(&self, reg: usize) -> u32 {
@@ -184,6 +182,6 @@ impl<T: Bus> Core<T> {
 
     fn jump_delayed(&mut self, address: u32) {
         self.next[1] = address;
-        self.delay = JUMP_DELAY;
+        self.delay = true;
     }
 }
