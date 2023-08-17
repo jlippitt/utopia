@@ -7,7 +7,7 @@ use mips::MipsInterface;
 use peripheral::{Dma, DmaRequest, PeripheralInterface};
 use rdram::Rdram;
 use rsp::{Rsp, DMEM_SIZE};
-use serial::SerialBus;
+use serial::{PifDma, PifDmaRequest, SerialBus};
 use std::error::Error;
 use tracing::{debug, info};
 use video::VideoInterface;
@@ -111,8 +111,8 @@ impl Hardware {
             mips: MipsInterface::new(rcp_interrupt.clone()),
             video: VideoInterface::new(rcp_interrupt.clone()),
             audio: AudioInterface::new(),
-            peripheral: PeripheralInterface::new(rcp_interrupt),
-            serial: SerialBus::new(),
+            peripheral: PeripheralInterface::new(rcp_interrupt.clone()),
+            serial: SerialBus::new(rcp_interrupt),
             rom,
         }
     }
@@ -161,15 +161,22 @@ impl Hardware {
 
                 match self.peripheral.dma_requested() {
                     Dma::None => (),
-                    //Dma::Read(..) => todo!("DMA reads"),
+                    // Dma::Read(..) => todo!("DMA reads"),
                     Dma::Write(request) => self.write_dma(request),
                 }
             }
             0x047 => self.rdram.write_interface(address & 0x000f_ffff, value),
-            0x048 => self
-                .serial
-                .interface_mut()
-                .write_be(address & 0x000f_ffff, value),
+            0x048 => {
+                self.serial
+                    .interface_mut()
+                    .write_be(address & 0x000f_ffff, value);
+
+                match self.serial.dma_requested() {
+                    PifDma::None => (),
+                    // PifDma::Read(..) => todo!("DMA reads"),
+                    PifDma::Write(request) => self.write_pif_dma(request),
+                }
+            }
             0x080..=0x0ff => todo!("SRAM Writes"),
             0x100..=0x1fb => panic!("Write to ROM area: {:08X}", address),
             0x1fc => self.serial.write(address & 0x000f_ffff, value),
@@ -189,14 +196,29 @@ impl Hardware {
             self.write_physical(request.dram_address.wrapping_add(index), value);
         }
 
-        self.peripheral.finish_dma();
-
         debug!(
             "DMA: {} bytes written from {:08X} to {:08X}",
             request.len + 1,
             request.cart_address,
             request.dram_address
-        )
+        );
+
+        self.peripheral.finish_dma();
+    }
+
+    fn write_pif_dma(&mut self, request: PifDmaRequest) {
+        for index in 0..request.len {
+            let value: u8 = self.rdram.read_data(request.dram_addr.wrapping_add(index));
+            self.serial
+                .write(request.pif_addr.wrapping_add(index), value);
+        }
+
+        debug!(
+            "PIF DMA: {} bytes written from {:08X} to {:08X}",
+            request.len, request.dram_addr, request.pif_addr
+        );
+
+        self.serial.finish_dma();
     }
 }
 
