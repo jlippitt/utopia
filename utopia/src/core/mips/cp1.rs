@@ -123,7 +123,7 @@ impl Cp1 {
         }
 
         self.regs[reg].s = value;
-        debug!("  $F{}.S = {}", reg, value);
+        debug!("  $F{}.S: {}", reg, value);
     }
 
     fn set_d(&mut self, reg: usize, value: f64) {
@@ -137,12 +137,12 @@ impl Cp1 {
             panic!("Tried to set odd-numbered CP1 register when FR=0");
         }
 
-        debug!("  $F{}.D = {}", reg, value);
+        debug!("  $F{}.D: {}", reg, value);
     }
 
     fn set_w(&mut self, reg: usize, value: i32) {
         self.regs[reg].w = value;
-        debug!("  $F{}.W = {}", reg, value);
+        debug!("  $F{}.W: {:08X}", reg, value);
     }
 
     fn set_l(&mut self, reg: usize, value: i64) {
@@ -156,7 +156,7 @@ impl Cp1 {
             panic!("Tried to set odd-numbered CP1 register when FR=0");
         }
 
-        debug!("  $F{}.L = {}", reg, value);
+        debug!("  $F{}.L: {:016X}", reg, value);
     }
 }
 
@@ -266,6 +266,10 @@ fn format_s(core: &mut Core<impl Bus>, word: u32) {
         0o01 => type_f(core, sub_s, word),
         0o02 => type_f(core, mul_s, word),
         0o03 => type_f(core, div_s, word),
+        //0o04 => type_f(core, sqrt_s, word),
+        //0o05 => type_f(core, abs_s, word),
+        0o06 => type_f(core, mov_s, word),
+        //0o07 => type_f(core, neg_s, word),
         0o15 => type_f(core, trunc_w_s, word),
         0o76 => type_f(core, c_le_s, word),
         func => unimplemented!("CP1.W FN={:02o} ({:08X}: {:08X})", func, core.pc, word),
