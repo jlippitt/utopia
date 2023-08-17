@@ -1,4 +1,4 @@
-use super::{Bus, Core, REGS};
+use super::{Bus, Core, Interrupt, REGS};
 use bitfield_struct::bitfield;
 use tracing::debug;
 
@@ -37,6 +37,8 @@ const CREGS: [&str; 32] = [
     "ErrorEPC",
     "$31",
 ];
+
+const INT_TIMER: Interrupt = 0x80;
 
 #[derive(Default, Debug)]
 pub struct TlbEntry {
@@ -94,15 +96,21 @@ pub struct Cp0 {
     wired: u32,
     count: u32,
     hi: u32,
+    compare: u32,
     status: Status,
     cause: Cause,
     epc: u32,
     error_epc: u32,
+    int_active: u8,
     tlb_entries: [TlbEntry; 32],
 }
 
 pub fn update(core: &mut Core<impl Bus>) {
     core.cp0.count = core.cp0.count.wrapping_add(1);
+
+    if core.cp0.count == core.cp0.compare {
+        core.cp0.int_active |= INT_TIMER;
+    }
 
     // Test for interrupts
     let cp0 = &mut core.cp0;
@@ -112,7 +120,7 @@ pub fn update(core: &mut Core<impl Bus>) {
         return;
     }
 
-    let int_active = core.bus.poll() & cp0.status.im();
+    let int_active = (cp0.int_active | core.bus.poll()) & cp0.status.im();
 
     if int_active == 0 {
         return;
@@ -121,7 +129,7 @@ pub fn update(core: &mut Core<impl Bus>) {
     // Handle interrupt exception
     debug!("-- Exception: {:08b} --", int_active);
 
-    let int_pending = (cp0.cause.ip() & 0x83) | (int_active & 0x7c);
+    let int_pending = (cp0.cause.ip() & 0x03) | (int_active & 0xfc);
     cp0.cause.set_ip(int_pending);
 
     cp0.cause.set_exc_code(0);
@@ -176,6 +184,7 @@ fn mfc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
         6 => core.cp0.wired,
         9 => core.cp0.count,
         10 => core.cp0.hi,
+        11 => core.cp0.compare,
         12 => u32::from(core.cp0.status) & !0x0088_0000,
         13 => core.cp0.cause.into(),
         14 => core.cp0.epc,
@@ -214,6 +223,11 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
         10 => {
             core.cp0.hi = value;
             debug!("  CP0 HI: {:08X}", core.cp0.hi);
+        }
+        11 => {
+            core.cp0.compare = value;
+            debug!("  CP0 Compare: {:08X}", core.cp0.compare);
+            core.cp0.int_active &= !INT_TIMER;
         }
         12 => {
             core.cp0.status = value.into();
