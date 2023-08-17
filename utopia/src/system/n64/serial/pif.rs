@@ -43,6 +43,11 @@ impl Pif {
                 continue;
             }
 
+            if send_bytes == 0 {
+                channel += 1;
+                continue;
+            }
+
             let recv_bytes = self.input[index] as usize;
             index += 1;
 
