@@ -47,6 +47,7 @@ impl SerialBus {
     pub fn finish_dma(&mut self) {
         self.interface.dma_requested = PifDma::None;
         self.interface.interrupt.raise(RcpIntType::SI);
+        debug!("{:X?}", &self.pif[0x07c0..]);
     }
 }
 
