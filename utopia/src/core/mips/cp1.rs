@@ -1,5 +1,6 @@
 use super::{Bus, Core, REGS};
 use arithmetic::*;
+use compare::*;
 use convert::*;
 use num_derive::{FromPrimitive, ToPrimitive};
 use std::fmt;
@@ -7,6 +8,7 @@ use tracing::debug;
 use transfer::*;
 
 mod arithmetic;
+mod compare;
 mod convert;
 mod transfer;
 
@@ -90,6 +92,11 @@ impl Cp1 {
 
     fn w(&self, reg: usize) -> i32 {
         unsafe { self.regs[reg].w }
+    }
+
+    fn set_c(&mut self, value: bool) {
+        self.ctrl.c = value;
+        debug!("  C = {}", value as u32);
     }
 
     fn set_s(&mut self, reg: usize, value: f32) {
@@ -190,6 +197,7 @@ fn format_s(core: &mut Core<impl Bus>, word: u32) {
     match word & 0o77 {
         0o00 => type_f(core, add_s, word),
         0o03 => type_f(core, div_s, word),
+        0o76 => type_f(core, c_le_s, word),
         func => unimplemented!("CP1.W FN={:02o} ({:08X}: {:08X})", func, core.pc, word),
     }
 }
