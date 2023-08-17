@@ -188,6 +188,7 @@ pub fn cop1(core: &mut Core<impl Bus>, word: u32) {
 
 fn format_s(core: &mut Core<impl Bus>, word: u32) {
     match word & 0o77 {
+        0o00 => type_f(core, add_s, word),
         0o03 => type_f(core, div_s, word),
         func => unimplemented!("CP1.W FN={:02o} ({:08X}: {:08X})", func, core.pc, word),
     }
