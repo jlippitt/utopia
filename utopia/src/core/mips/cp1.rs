@@ -1,10 +1,12 @@
 use super::{Bus, Core, REGS};
+use arithmetic::*;
 use convert::*;
 use num_derive::{FromPrimitive, ToPrimitive};
 use std::fmt;
 use tracing::debug;
 use transfer::*;
 
+mod arithmetic;
 mod convert;
 mod transfer;
 
@@ -62,6 +64,14 @@ impl Cp1 {
 
     pub fn set_reg_size(&mut self, reg_size: bool) {
         self.reg_size = reg_size;
+    }
+
+    fn s(&self, reg: usize) -> f32 {
+        if !self.reg_size && (reg & 1) != 0 {
+            panic!("Tried to get odd-numbered CP1 register when FR=0");
+        }
+
+        unsafe { self.regs[reg].s }
     }
 
     fn d(&self, reg: usize) -> f64 {
@@ -169,9 +179,17 @@ pub fn cop1(core: &mut Core<impl Bus>, word: u32) {
         0b00010 => type_r(core, cfc1, word),
         0b00100 => type_r(core, mtc1, word),
         0b00110 => type_r(core, ctc1, word),
+        0b10000 => format_s(core, word),
         0b10001 => format_d(core, word),
         0b10100 => format_w(core, word),
         rs => unimplemented!("CP1 RS={:05b} ({:08X}: {:08X})", rs, core.pc, word),
+    }
+}
+
+fn format_s(core: &mut Core<impl Bus>, word: u32) {
+    match word & 0o77 {
+        0o03 => type_f(core, div_s, word),
+        func => unimplemented!("CP1.W FN={:02o} ({:08X}: {:08X})", func, core.pc, word),
     }
 }
 
@@ -196,8 +214,13 @@ fn type_r<T: Bus>(core: &mut Core<T>, instr: impl Fn(&mut Core<T>, usize, usize)
     instr(core, rt, rd);
 }
 
-fn type_f<T: Bus>(core: &mut Core<T>, instr: impl Fn(&mut Core<T>, usize, usize), word: u32) {
+fn type_f<T: Bus>(
+    core: &mut Core<T>,
+    instr: impl Fn(&mut Core<T>, usize, usize, usize),
+    word: u32,
+) {
+    let ft = ((word >> 16) & 31) as usize;
     let fs = ((word >> 11) & 31) as usize;
     let fd = ((word >> 6) & 31) as usize;
-    instr(core, fs, fd);
+    instr(core, ft, fs, fd);
 }
