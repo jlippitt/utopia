@@ -60,7 +60,7 @@ pub struct PifDmaRequest {
 #[derive(Copy, Clone, Debug)]
 pub enum PifDma {
     None,
-    //Read(PifDmaRequest),
+    Read(PifDmaRequest),
     Write(PifDmaRequest),
 }
 
@@ -104,6 +104,13 @@ impl DataWriter for Interface {
             0x00 => {
                 self.dram_addr = value & 0x00ff_ffff;
                 debug!("SI_DRAM_ADDR: {:08X}", self.dram_addr);
+            }
+            0x04 => {
+                self.dma_requested = PifDma::Read(PifDmaRequest {
+                    dram_addr: self.dram_addr,
+                    pif_addr: value & 0x07fc,
+                    len: 64,
+                });
             }
             0x10 => {
                 self.dma_requested = PifDma::Write(PifDmaRequest {

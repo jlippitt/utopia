@@ -173,7 +173,7 @@ impl Hardware {
 
                 match self.serial.dma_requested() {
                     PifDma::None => (),
-                    // PifDma::Read(..) => todo!("DMA reads"),
+                    PifDma::Read(request) => self.read_pif_dma(request),
                     PifDma::Write(request) => self.write_pif_dma(request),
                 }
             }
@@ -204,6 +204,21 @@ impl Hardware {
         );
 
         self.peripheral.finish_dma();
+    }
+
+    fn read_pif_dma(&mut self, request: PifDmaRequest) {
+        for index in 0..request.len {
+            let value: u8 = self.serial.read(request.pif_addr.wrapping_add(index));
+            self.rdram
+                .write_data(request.dram_addr.wrapping_add(index), value);
+        }
+
+        debug!(
+            "PIF DMA: {} bytes read from {:08X} to {:08X}",
+            request.len, request.pif_addr, request.dram_addr,
+        );
+
+        self.serial.finish_dma();
     }
 
     fn write_pif_dma(&mut self, request: PifDmaRequest) {
