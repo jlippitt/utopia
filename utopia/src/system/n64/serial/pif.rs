@@ -102,6 +102,17 @@ impl Pif {
                     _ => panic!("Invalid JoyBus channel: {}", channel),
                 }
             }
+            0x01 => {
+                if channel > 3 {
+                    panic!("Invalid JoyBus channel: {}", channel);
+                }
+
+                // TODO: Controller button reads
+                output.push(0x00);
+                output.push(0x00);
+                output.push(0x00);
+                output.push(0x00);
+            }
             0x02 => {
                 if channel > 3 {
                     panic!("Invalid JoyBus channel: {}", channel);
