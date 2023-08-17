@@ -71,7 +71,7 @@ pub struct Status {
     #[bits(2)]
     mode: u8,
     ux: bool,
-    x: bool,
+    sx: bool,
     kx: bool,
     im: u8,
     #[bits(9)]
