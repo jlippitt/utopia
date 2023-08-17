@@ -139,7 +139,7 @@ pub fn update(core: &mut Core<impl Bus>) {
     core.next[1] = core.next[0].wrapping_add(4);
 }
 
-pub fn dispatch(core: &mut Core<impl Bus>, word: u32) {
+pub fn cop0(core: &mut Core<impl Bus>, word: u32) {
     match (word >> 21) & 31 {
         0b00000 => type_r(core, mfc0, word),
         0b00100 => type_r(core, mtc0, word),

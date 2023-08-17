@@ -1,8 +1,10 @@
-use super::{Bus, Core, REGS};
+use super::{Bus, Core};
 use num_derive::{FromPrimitive, ToPrimitive};
-use num_traits::{FromPrimitive, ToPrimitive};
 use std::fmt;
 use tracing::debug;
+use transfer::*;
+
+mod transfer;
 
 #[derive(Copy, Clone, Default)]
 struct Flags {
@@ -33,70 +35,30 @@ struct Control {
     rm: RoundingMode,
 }
 
-#[derive(Default)]
+#[derive(Copy, Clone)]
+union Register {
+    f: f32,
+    d: f64,
+    w: u32,
+    l: u64,
+}
+
 pub struct Cp1 {
     ctrl: Control,
+    regs: [Register; 32],
 }
 
-pub fn dispatch(core: &mut Core<impl Bus>, word: u32) {
-    match (word >> 21) & 31 {
-        0b00010 => type_r(core, cfc1, word),
-        0b00110 => type_r(core, ctc1, word),
-        rs => unimplemented!("CP1 RS={:05b} ({:08X}: {:08X})", rs, core.pc, word),
+impl Cp1 {
+    pub fn new() -> Self {
+        Self {
+            ctrl: Control::default(),
+            regs: [Register { l: 0 }; 32],
+        }
     }
-}
 
-fn type_r<T: Bus>(core: &mut Core<T>, instr: impl Fn(&mut Core<T>, usize, usize), word: u32) {
-    let rt = ((word >> 16) & 31) as usize;
-    let rd = ((word >> 11) & 31) as usize;
-    instr(core, rt, rd);
-}
-
-fn cfc1(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
-    debug!("{:08X} CFC1 {}, ${}", core.pc, REGS[rt], rd);
-
-    let result = match rd {
-        31 => {
-            // CONTROL/STATUS
-            let ctrl = &core.cp1.ctrl;
-            let mut value = 0;
-            value |= ctrl.rm.to_u32().unwrap();
-            value |= Into::<u32>::into(ctrl.flags) << 2;
-            value |= Into::<u32>::into(ctrl.enable) << 7;
-            value |= Into::<u32>::into(ctrl.cause) << 12;
-            value |= (ctrl.c as u32) << 23;
-            value |= (ctrl.fs as u32) << 24;
-            value
-        }
-        _ => todo!("CP1 Register Read: ${}", rd),
-    };
-
-    core.set(rt, result);
-}
-
-fn ctc1(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
-    debug!("{:08X} CTC1 {}, ${}", core.pc, REGS[rt], rd);
-
-    let value = core.get(rt);
-
-    match rd {
-        31 => {
-            // CONTROL/STATUS
-            let ctrl = &mut core.cp1.ctrl;
-            ctrl.rm = RoundingMode::from_u32(value & 3).unwrap();
-            ctrl.flags = Flags::from((value >> 2) & 31);
-            ctrl.enable = Flags::from((value >> 7) & 31);
-            ctrl.cause = Flags::from((value >> 12) & 63);
-            ctrl.c = (value & 0x0080_0000) != 0;
-            ctrl.fs = (value & 0x0100_0000) != 0;
-            debug!("  CP1 Rounding Mode: {:?}", ctrl.rm);
-            debug!("  CP1 Flags: {}", ctrl.flags);
-            debug!("  CP1 Enable: {}", ctrl.enable);
-            debug!("  CP1 Cause: {}", ctrl.cause);
-            debug!("  CP1 Compare: {}", ctrl.c);
-            debug!("  CP1 Flash: {}", ctrl.fs);
-        }
-        _ => todo!("CP1 Register Write: ${} <= {:08X}", rd, value),
+    pub fn setw(&mut self, reg: usize, value: u32) {
+        self.regs[reg].w = value;
+        debug!("  $F{}.W = {:08X}", reg, value);
     }
 }
 
@@ -139,4 +101,19 @@ impl fmt::Display for Flags {
             if self.i { 'I' } else { '-' },
         )
     }
+}
+
+pub fn cop1(core: &mut Core<impl Bus>, word: u32) {
+    match (word >> 21) & 31 {
+        0b00010 => type_r(core, cfc1, word),
+        0b00100 => type_r(core, mtc1, word),
+        0b00110 => type_r(core, ctc1, word),
+        rs => unimplemented!("CP1 RS={:05b} ({:08X}: {:08X})", rs, core.pc, word),
+    }
+}
+
+fn type_r<T: Bus>(core: &mut Core<T>, instr: impl Fn(&mut Core<T>, usize, usize), word: u32) {
+    let rt = ((word >> 16) & 31) as usize;
+    let rd = ((word >> 11) & 31) as usize;
+    instr(core, rt, rd);
 }

@@ -54,7 +54,7 @@ impl<T: Bus> Core<T> {
             hi: 0,
             lo: 0,
             cp0: Cp0::default(),
-            cp1: Cp1::default(),
+            cp1: Cp1::new(),
             bus,
         }
     }
