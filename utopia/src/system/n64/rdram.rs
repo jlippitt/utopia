@@ -1,9 +1,7 @@
 use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
 use tracing::debug;
 
-// TODO: Eventually we will support 8MB, but this in theory makes it easier to
-// spot memory mapping issues early on
-const RDRAM_SIZE: usize = 1024 * 1024 * 4;
+const RDRAM_SIZE: usize = 1024 * 1024 * 8;
 
 pub struct Registers {
     device_id: u16,
