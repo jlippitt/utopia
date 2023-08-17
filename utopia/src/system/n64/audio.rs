@@ -1,12 +1,16 @@
 use crate::util::facade::{DataReader, DataWriter};
 use tracing::debug;
 
+const DAC_FREQUENCY: i64 = 48681812;
+
 pub struct AudioInterface {
     dram_addr: u32,
     length: u32,
     dma_enabled: bool,
     dacrate: u32,
     bitrate: u32,
+    dma_count: u32,
+    counter: i64,
 }
 
 impl AudioInterface {
@@ -17,7 +21,29 @@ impl AudioInterface {
             dma_enabled: false,
             dacrate: 0,
             bitrate: 0,
+            dma_count: 0,
+            counter: 0,
         }
+    }
+
+    pub fn step(&mut self, cycles: u64) {
+        self.counter -= cycles as i64;
+
+        if self.counter < 0 && self.dma_count > 0 {
+            self.dma_count -= 1;
+
+            if self.dma_count > 0 {
+                self.start_dma();
+            }
+        }
+    }
+
+    fn start_dma(&mut self) {
+        let frequency = DAC_FREQUENCY / (self.dacrate as i64 + 1);
+        // TODO: Should use length from queued data
+        let samples = self.length as i64 / 4;
+        self.counter = (125000000 * samples) / frequency;
+        debug!("AI DMA Counter: {}", self.counter);
     }
 }
 
@@ -35,6 +61,14 @@ impl DataReader for AudioInterface {
                     value |= 0x0200_0000;
                 }
 
+                if self.dma_count >= 1 {
+                    value |= 0x4000_0000;
+
+                    if self.dma_count >= 2 {
+                        value |= 0x8000_0000;
+                    }
+                }
+
                 value
             }
             _ => unimplemented!("Audio Interface Read: {:08X}", address),
@@ -46,12 +80,18 @@ impl DataWriter for AudioInterface {
     fn write(&mut self, address: u32, value: u32) {
         match address {
             0x00 => {
-                self.dram_addr = value & 0x00ff_ffff;
+                self.dram_addr = value & 0x00ff_fff8;
                 debug!("AI_DRAM_ADDR: {:08X}", self.dram_addr);
             }
             0x04 => {
                 self.length = value & 0x0003_fff8;
-                debug!("AI_LENGTH: {:08X}", self.length);
+                debug!("AI_LENGTH: {}", self.length);
+
+                self.dma_count += 1;
+
+                if self.dma_count < 2 {
+                    self.start_dma();
+                }
             }
             0x08 => {
                 self.dma_enabled = (value & 1) != 0;

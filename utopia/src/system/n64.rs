@@ -258,6 +258,7 @@ impl Bus for Hardware {
     fn step(&mut self) {
         self.cycles += CYCLES_PER_STEP;
         self.video.step(CYCLES_PER_STEP);
+        self.audio.step(CYCLES_PER_STEP);
     }
 
     fn poll(&self) -> Interrupt {
