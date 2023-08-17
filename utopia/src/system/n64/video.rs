@@ -93,7 +93,10 @@ impl VideoInterface {
     }
 
     pub fn pitch(&self) -> usize {
-        ((self.regs.h_end - self.regs.h_start) as usize * 4 * self.regs.x_scale as usize) / 1024
+        let width =
+            ((self.regs.h_end - self.regs.h_start) as usize * self.regs.x_scale as usize) / 1024;
+
+        width.max(DEFAULT_WIDTH as usize) * 4
     }
 
     pub fn step(&mut self, cycles: u64) {
@@ -129,7 +132,7 @@ impl VideoInterface {
             * self.regs.y_scale as usize)
             / 1024;
 
-        let pixel_buffer_size = pitch * height;
+        let pixel_buffer_size = pitch * height.max(DEFAULT_HEIGHT as usize / 2);
 
         if pixel_buffer_size != self.pixels.len() {
             self.pixels.resize(pixel_buffer_size, 0);
