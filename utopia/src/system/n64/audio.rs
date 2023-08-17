@@ -1,3 +1,4 @@
+use super::interrupt::{RcpIntType, RcpInterrupt};
 use crate::util::facade::{DataReader, DataWriter};
 use tracing::debug;
 
@@ -12,10 +13,11 @@ pub struct AudioInterface {
     dma_count: u32,
     samples: [i64; 2],
     counter: i64,
+    interrupt: RcpInterrupt,
 }
 
 impl AudioInterface {
-    pub fn new() -> Self {
+    pub fn new(interrupt: RcpInterrupt) -> Self {
         Self {
             dram_addr: 0,
             length: 0,
@@ -25,6 +27,7 @@ impl AudioInterface {
             dma_count: 0,
             samples: [0; 2],
             counter: 0,
+            interrupt,
         }
     }
 
@@ -46,6 +49,7 @@ impl AudioInterface {
         let frequency = DAC_FREQUENCY / (self.dacrate as i64 + 1);
         self.counter = (125000000 * self.samples[0]) / frequency;
         debug!("AI Counter: {}", self.counter);
+        self.interrupt.raise(RcpIntType::AI);
     }
 }
 
@@ -106,7 +110,7 @@ impl DataWriter for AudioInterface {
             }
             0x0c => {
                 // AI_STATUS
-                // TODO: Acknowledge AI interrupt
+                self.interrupt.clear(RcpIntType::AI);
             }
             0x10 => {
                 self.dacrate = value & 0x3fff;
