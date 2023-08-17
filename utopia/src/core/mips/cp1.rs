@@ -225,6 +225,17 @@ pub fn ldc1(core: &mut Core<impl Bus>, base: usize, ft: usize, value: u32) {
     core.cp1.set_l(ft, result as i64);
 }
 
+pub fn swc1(core: &mut Core<impl Bus>, base: usize, ft: usize, value: u32) {
+    debug!(
+        "{:08X} SWC1 $F{}, {}({})",
+        core.pc, ft, value as i16, REGS[base]
+    );
+
+    let ivalue = value as i16 as i32 as u32;
+    let address = core.get(base).wrapping_add(ivalue);
+    core.write_word(address, core.cp1.w(ft) as u32);
+}
+
 pub fn sdc1(core: &mut Core<impl Bus>, base: usize, ft: usize, value: u32) {
     debug!(
         "{:08X} SDC1 $F{}, {}({})",
