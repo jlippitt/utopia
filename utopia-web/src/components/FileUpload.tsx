@@ -1,3 +1,5 @@
 export default () => (
-    <div>File Upload goes here</div>
-)
+    <div>
+        Upload ROM: <input type="file"></input>
+    </div>
+);

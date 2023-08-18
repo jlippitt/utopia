@@ -8,7 +8,7 @@
   "scripts": {
     "build": "yarn tsc --noEmit && esbuild ./src/index.tsx --bundle --outfile=./public/utopia.js",
     "start": "yarn build && esbuild --servedir=./public",
-    "start:dev": "yarn build && esbuild --servedir=./public --watch"
+    "start:dev": "yarn build --servedir=./public --watch"
   },
   "dependencies": {
     "react": "^18.2.0",
