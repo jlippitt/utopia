@@ -1,4 +1,5 @@
 use crate::util::facade::{DataReader, DataWriter, ReadFacade, WriteFacade};
+use crate::JoypadState;
 use arrayvec::ArrayVec;
 use tracing::{debug, warn};
 
@@ -6,6 +7,7 @@ pub struct Pif {
     rom: [u8; 2048],
     ram: [u8; 64],
     input: [u8; 64],
+    joypads: [[u8; 4]; 4],
 }
 
 impl Pif {
@@ -14,7 +16,35 @@ impl Pif {
             rom: [0; 2048],
             ram: [0; 64],
             input: [0; 64],
+            joypads: [[0; 4]; 4],
         }
+    }
+
+    pub fn update_joypad(&mut self, state: &JoypadState) {
+        let JoypadState { buttons, axes } = &state;
+        let joypad = &mut self.joypads[0];
+
+        joypad[0] = axes[1] as u8;
+        joypad[1] = axes[0] as u8;
+
+        joypad[2] = 0;
+        // RST 'button' possibly doesn't need to be implemented?
+        joypad[2] |= if buttons[6] { 0x20 } else { 0 };
+        joypad[2] |= if buttons[5] { 0x10 } else { 0 };
+        joypad[2] |= if axes[3] < (i32::MIN / 2) { 0x08 } else { 0 };
+        joypad[2] |= if axes[3] > (i32::MAX / 2) { 0x04 } else { 0 };
+        joypad[2] |= if axes[2] > (i32::MAX / 2) { 0x01 } else { 0 };
+        joypad[2] |= if axes[2] < (i32::MIN / 2) { 0x02 } else { 0 };
+
+        joypad[3] = 0;
+        joypad[3] |= if buttons[0] { 0x80 } else { 0 };
+        joypad[3] |= if buttons[2] { 0x40 } else { 0 };
+        joypad[3] |= if buttons[4] { 0x20 } else { 0 };
+        joypad[3] |= if buttons[9] { 0x10 } else { 0 };
+        joypad[3] |= if buttons[12] { 0x08 } else { 0 };
+        joypad[3] |= if buttons[13] { 0x04 } else { 0 };
+        joypad[3] |= if buttons[14] { 0x02 } else { 0 };
+        joypad[3] |= if buttons[15] { 0x01 } else { 0 };
     }
 
     pub fn upload(&mut self) {
@@ -107,11 +137,9 @@ impl Pif {
                     panic!("Invalid JoyBus channel: {}", channel);
                 }
 
-                // TODO: Controller button reads
-                output.push(0x00);
-                output.push(0x00);
-                output.push(0x00);
-                output.push(0x00);
+                output
+                    .try_extend_from_slice(&self.joypads[channel])
+                    .unwrap();
             }
             0x02 => {
                 if channel > 3 {

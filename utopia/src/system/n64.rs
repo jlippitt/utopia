@@ -71,9 +71,10 @@ impl System for N64 {
         self.core.bus().video.pitch()
     }
 
-    fn run_frame(&mut self, _joypad_state: &JoypadState) {
+    fn run_frame(&mut self, joypad_state: &JoypadState) {
         let core = &mut self.core;
 
+        core.bus_mut().serial.update_joypad(joypad_state);
         core.bus_mut().video.start_frame();
 
         while !core.bus().video.ready() {

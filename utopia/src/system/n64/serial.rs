@@ -1,5 +1,6 @@
 use super::interrupt::{RcpIntType, RcpInterrupt};
 use crate::util::facade::{DataReader, DataWriter};
+use crate::JoypadState;
 use pif::Pif;
 use tracing::debug;
 
@@ -52,6 +53,10 @@ impl SerialInterface {
         self.dma_requested = PifDma::None;
         self.interrupt.raise(RcpIntType::SI);
         self.pif.upload();
+    }
+
+    pub fn update_joypad(&mut self, state: &JoypadState) {
+        self.pif.update_joypad(state);
     }
 }
 
