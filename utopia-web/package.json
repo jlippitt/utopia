@@ -1,0 +1,19 @@
+{
+  "name": "utopia-web",
+  "version": "0.1.0",
+  "description": "Utopia Web Client",
+  "repository": "https://github.com/jlippitt/utopia.git",
+  "author": "James Lippitt <james.lippitt@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "build": "esbuild ./src/index.jsx --bundle --outfile=./public/utopia.js",
+    "start": "esbuild ./src/index.jsx --bundle --outfile=./public/utopia.js --servedir=./public"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.19.2"
+  }
+}
