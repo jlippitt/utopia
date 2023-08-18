@@ -43,19 +43,21 @@ impl Joypad {
     }
 
     pub fn key_event(&mut self, scancode: Scancode, pressed: bool) {
+        let JoypadState { buttons, .. } = &mut self.state;
+
         match scancode {
-            Scancode::Up => self.state.up = pressed,
-            Scancode::Down => self.state.down = pressed,
-            Scancode::Left => self.state.left = pressed,
-            Scancode::Right => self.state.right = pressed,
-            Scancode::X => self.state.a = pressed,
-            Scancode::Z => self.state.b = pressed,
-            Scancode::S => self.state.x = pressed,
-            Scancode::A => self.state.y = pressed,
-            Scancode::D => self.state.l = pressed,
-            Scancode::C => self.state.r = pressed,
-            Scancode::Space => self.state.select = pressed,
-            Scancode::Return => self.state.start = pressed,
+            Scancode::Z => buttons[0] = pressed,
+            Scancode::X => buttons[1] = pressed,
+            Scancode::A => buttons[2] = pressed,
+            Scancode::S => buttons[3] = pressed,
+            Scancode::D => buttons[4] = pressed,
+            Scancode::C => buttons[5] = pressed,
+            Scancode::Space => buttons[8] = pressed,
+            Scancode::Return => buttons[9] = pressed,
+            Scancode::Up => buttons[12] = pressed,
+            Scancode::Down => buttons[13] = pressed,
+            Scancode::Left => buttons[14] = pressed,
+            Scancode::Right => buttons[15] = pressed,
             _ => (),
         }
     }
@@ -65,19 +67,21 @@ impl Joypad {
             return;
         }
 
+        let JoypadState { buttons, .. } = &mut self.state;
+
         match button {
-            Button::DPadUp => self.state.up = pressed,
-            Button::DPadDown => self.state.down = pressed,
-            Button::DPadLeft => self.state.left = pressed,
-            Button::DPadRight => self.state.right = pressed,
-            Button::B => self.state.a = pressed,
-            Button::A => self.state.b = pressed,
-            Button::Y => self.state.x = pressed,
-            Button::X => self.state.y = pressed,
-            Button::LeftShoulder => self.state.l = pressed,
-            Button::RightShoulder => self.state.r = pressed,
-            Button::Back => self.state.select = pressed,
-            Button::Start => self.state.start = pressed,
+            Button::A => buttons[0] = pressed,
+            Button::B => buttons[1] = pressed,
+            Button::X => buttons[2] = pressed,
+            Button::Y => buttons[3] = pressed,
+            Button::LeftShoulder => buttons[4] = pressed,
+            Button::RightShoulder => buttons[5] = pressed,
+            Button::Back => buttons[8] = pressed,
+            Button::Start => buttons[9] = pressed,
+            Button::DPadUp => buttons[12] = pressed,
+            Button::DPadDown => buttons[13] = pressed,
+            Button::DPadLeft => buttons[14] = pressed,
+            Button::DPadRight => buttons[15] = pressed,
             _ => (),
         }
     }

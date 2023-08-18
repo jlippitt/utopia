@@ -29,19 +29,21 @@ impl Joypad {
     }
 
     pub fn update(&mut self, new_state: &JoypadState) {
+        let JoypadState { buttons, .. } = &new_state;
+
         self.current_state[0] = 0;
-        self.current_state[0] |= if new_state.b { 0x8000 } else { 0 };
-        self.current_state[0] |= if new_state.y { 0x4000 } else { 0 };
-        self.current_state[0] |= if new_state.select { 0x2000 } else { 0 };
-        self.current_state[0] |= if new_state.start { 0x1000 } else { 0 };
-        self.current_state[0] |= if new_state.up { 0x0800 } else { 0 };
-        self.current_state[0] |= if new_state.down { 0x0400 } else { 0 };
-        self.current_state[0] |= if new_state.left { 0x0200 } else { 0 };
-        self.current_state[0] |= if new_state.right { 0x0100 } else { 0 };
-        self.current_state[0] |= if new_state.a { 0x0080 } else { 0 };
-        self.current_state[0] |= if new_state.x { 0x0040 } else { 0 };
-        self.current_state[0] |= if new_state.l { 0x0020 } else { 0 };
-        self.current_state[0] |= if new_state.r { 0x0010 } else { 0 };
+        self.current_state[0] |= if buttons[0] { 0x8000 } else { 0 };
+        self.current_state[0] |= if buttons[2] { 0x4000 } else { 0 };
+        self.current_state[0] |= if buttons[8] { 0x2000 } else { 0 };
+        self.current_state[0] |= if buttons[9] { 0x1000 } else { 0 };
+        self.current_state[0] |= if buttons[12] { 0x0800 } else { 0 };
+        self.current_state[0] |= if buttons[13] { 0x0400 } else { 0 };
+        self.current_state[0] |= if buttons[14] { 0x0200 } else { 0 };
+        self.current_state[0] |= if buttons[15] { 0x0100 } else { 0 };
+        self.current_state[0] |= if buttons[1] { 0x0080 } else { 0 };
+        self.current_state[0] |= if buttons[3] { 0x0040 } else { 0 };
+        self.current_state[0] |= if buttons[4] { 0x0020 } else { 0 };
+        self.current_state[0] |= if buttons[5] { 0x0010 } else { 0 };
     }
 
     pub fn read_serial(&mut self, address: u8, prev_value: u8) -> u8 {

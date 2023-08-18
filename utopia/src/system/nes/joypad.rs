@@ -17,15 +17,17 @@ impl Joypad {
     }
 
     pub fn update(&mut self, new_state: &JoypadState) {
+        let JoypadState { buttons, .. } = &new_state;
+
         self.current_state[0] = 0;
-        self.current_state[0] |= if new_state.a { 0x01 } else { 0 };
-        self.current_state[0] |= if new_state.b { 0x02 } else { 0 };
-        self.current_state[0] |= if new_state.select { 0x04 } else { 0 };
-        self.current_state[0] |= if new_state.start { 0x08 } else { 0 };
-        self.current_state[0] |= if new_state.up { 0x10 } else { 0 };
-        self.current_state[0] |= if new_state.down { 0x20 } else { 0 };
-        self.current_state[0] |= if new_state.left { 0x40 } else { 0 };
-        self.current_state[0] |= if new_state.right { 0x80 } else { 0 };
+        self.current_state[0] |= if buttons[1] { 0x01 } else { 0 };
+        self.current_state[0] |= if buttons[0] { 0x02 } else { 0 };
+        self.current_state[0] |= if buttons[8] { 0x04 } else { 0 };
+        self.current_state[0] |= if buttons[9] { 0x08 } else { 0 };
+        self.current_state[0] |= if buttons[12] { 0x10 } else { 0 };
+        self.current_state[0] |= if buttons[13] { 0x20 } else { 0 };
+        self.current_state[0] |= if buttons[14] { 0x40 } else { 0 };
+        self.current_state[0] |= if buttons[15] { 0x80 } else { 0 };
     }
 
     pub fn read_register(&mut self, address: u16, prev_value: u8) -> u8 {

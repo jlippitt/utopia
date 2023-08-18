@@ -26,17 +26,19 @@ impl Joypad {
     }
 
     pub fn update(&mut self, state: &JoypadState) {
+        let JoypadState { buttons, .. } = &state;
+
         self.direction_state = 0;
-        self.direction_state |= if state.right { 0x01 } else { 0 };
-        self.direction_state |= if state.left { 0x02 } else { 0 };
-        self.direction_state |= if state.up { 0x04 } else { 0 };
-        self.direction_state |= if state.down { 0x08 } else { 0 };
+        self.direction_state |= if buttons[15] { 0x01 } else { 0 };
+        self.direction_state |= if buttons[14] { 0x02 } else { 0 };
+        self.direction_state |= if buttons[12] { 0x04 } else { 0 };
+        self.direction_state |= if buttons[13] { 0x08 } else { 0 };
 
         self.action_state = 0;
-        self.action_state |= if state.a { 0x01 } else { 0 };
-        self.action_state |= if state.b { 0x02 } else { 0 };
-        self.action_state |= if state.select { 0x04 } else { 0 };
-        self.action_state |= if state.start { 0x08 } else { 0 };
+        self.action_state |= if buttons[1] { 0x01 } else { 0 };
+        self.action_state |= if buttons[0] { 0x02 } else { 0 };
+        self.action_state |= if buttons[8] { 0x04 } else { 0 };
+        self.action_state |= if buttons[9] { 0x08 } else { 0 };
     }
 
     pub fn read(&self) -> u8 {

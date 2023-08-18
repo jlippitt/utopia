@@ -16,18 +16,8 @@ mod snes;
 
 #[derive(Clone, Default, Debug, Eq, PartialEq)]
 pub struct JoypadState {
-    pub up: bool,
-    pub down: bool,
-    pub left: bool,
-    pub right: bool,
-    pub a: bool,
-    pub b: bool,
-    pub x: bool,
-    pub y: bool,
-    pub l: bool,
-    pub r: bool,
-    pub select: bool,
-    pub start: bool,
+    pub buttons: [bool; 17],
+    pub axes: [i32; 4],
 }
 
 pub type AudioQueue = VecDeque<(f32, f32)>;
