@@ -1,9 +1,7 @@
 import Canvas from './components/Canvas';
 import FileUpload from './components/FileUpload';
 import styled from 'styled-components';
-import * as utopia from 'utopia-wasm-bindings';
-
-utopia.greet();
+import { Utopia } from 'utopia-wasm-bindings';
 
 export const Wrapper = styled.div`
     display: flex;
@@ -11,9 +9,18 @@ export const Wrapper = styled.div`
     height: 100%;
 `;
 
-export default () => (
-    <Wrapper>
-        <FileUpload />
-        <Canvas />
-    </Wrapper>
-);
+export default () => {
+    const onRomUpload = async (file: File) => {
+        const data = new Uint8Array(await file.arrayBuffer());
+        const utopia = new Utopia(file.name, data);
+        console.log(utopia.getScreenWidth());
+        console.log(utopia.getScreenHeight());
+    };
+
+    return (
+        <Wrapper>
+            <FileUpload onRomUpload={onRomUpload} />
+            <Canvas />
+        </Wrapper>
+    );
+};

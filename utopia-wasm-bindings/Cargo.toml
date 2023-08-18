@@ -9,4 +9,5 @@ name = "utopia"
 crate-type = ["cdylib"]
 
 [dependencies]
+utopia = { path = "../utopia" }
 wasm-bindgen = "0.2.87"
