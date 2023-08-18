@@ -91,6 +91,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Event::ControllerButtonUp { which, button, .. } => {
                     joypad.button_event(which, button, false)
                 }
+                Event::ControllerAxisMotion {
+                    which, axis, value, ..
+                } => {
+                    joypad.axis_event(which, axis, value);
+                }
                 Event::KeyDown {
                     scancode: Some(scancode),
                     ..

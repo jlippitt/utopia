@@ -1,4 +1,4 @@
-use sdl2::controller::{Button, GameController};
+use sdl2::controller::{Axis, Button, GameController};
 use sdl2::keyboard::Scancode;
 use sdl2::{GameControllerSubsystem, Sdl};
 use std::error::Error;
@@ -83,6 +83,23 @@ impl Joypad {
             Button::DPadLeft => buttons[14] = pressed,
             Button::DPadRight => buttons[15] = pressed,
             _ => (),
+        }
+    }
+
+    pub fn axis_event(&mut self, id: u32, axis: Axis, value: i16) {
+        if !self.is_controller_connected(id) {
+            return;
+        }
+
+        let JoypadState { axes, buttons } = &mut self.state;
+
+        match axis {
+            Axis::LeftX => axes[0] = (value as i32) << 16,
+            Axis::LeftY => axes[1] = (value as i32) << 16,
+            Axis::RightX => axes[2] = (value as i32) << 16,
+            Axis::RightY => axes[3] = (value as i32) << 16,
+            Axis::TriggerLeft => buttons[6] = value >= (i16::MAX / 2) || value <= (i16::MIN / 2),
+            Axis::TriggerRight => buttons[7] = value >= (i16::MAX / 2) || value <= (i16::MIN / 2),
         }
     }
 
