@@ -6,14 +6,19 @@
   "author": "James Lippitt <james.lippitt@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "build": "esbuild ./src/index.jsx --bundle --outfile=./public/utopia.js",
-    "start": "esbuild ./src/index.jsx --bundle --outfile=./public/utopia.js --servedir=./public"
+    "build": "yarn tsc --noEmit && esbuild ./src/index.tsx --bundle --outfile=./public/utopia.js",
+    "start": "yarn build && esbuild --servedir=./public",
+    "start:dev": "yarn build && esbuild --servedir=./public --watch"
   },
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "esbuild": "^0.19.2"
+    "@tsconfig/recommended": "^1.0.2",
+    "@types/react": "^18.2.20",
+    "@types/react-dom": "^18.2.7",
+    "esbuild": "^0.19.2",
+    "typescript": "^5.1.6"
   }
 }
