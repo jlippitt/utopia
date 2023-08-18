@@ -31,6 +31,7 @@ Once that is done, run:
     utopia [OPTIONS] <ROM_PATH>
 
 | Option                       | Description |
+| ---------------------------- | ----------- |
 | -f, --full-screen            | Enables full-screen mode. This can also be toggled while in-game using F11. |
 
 ## Important Note
