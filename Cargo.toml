@@ -2,7 +2,7 @@
 
 members = [
     "utopia",
-    "utopia-sdl",
+    "utopia-cli",
     "cpu-tests",
     "disasm",
 ]

@@ -1,8 +1,8 @@
 [package]
-name = "utopia-sdl"
+name = "utopia-cli"
 version = "0.1.0"
 edition = "2021"
-default-run = "utopia-sdl"
+default-run = "utopia-cli"
 
 [dependencies]
 clap = { version = "4.2.7", features = ["derive"] }
