@@ -1,5 +1,5 @@
-import * as React from 'react';
 import { createRoot } from 'react-dom/client';
+import App from './App';
 
 const rootElement = document.getElementById('utopia');
 
@@ -8,4 +8,4 @@ if (rootElement === null) {
 }
 
 const root = createRoot(rootElement);
-root.render(<h1>Hello, TypeScript</h1>);
+root.render(<App />);
