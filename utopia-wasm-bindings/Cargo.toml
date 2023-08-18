@@ -1,0 +1,12 @@
+[package]
+name = "utopia-wasm-bindings"
+version = "0.1.0"
+authors = ["James Lippitt <james.lippitt@gmail.com>"]
+edition = "2021"
+
+[lib]
+name = "utopia"
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2.87"

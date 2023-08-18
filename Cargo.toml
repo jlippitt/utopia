@@ -3,6 +3,7 @@
 members = [
     "utopia",
     "utopia-cli",
+    "utopia-wasm-bindings",
     "cpu-tests",
     "disasm",
 ]

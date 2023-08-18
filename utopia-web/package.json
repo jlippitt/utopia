@@ -6,9 +6,9 @@
   "author": "James Lippitt <james.lippitt@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "build": "yarn tsc --noEmit && esbuild ./src/index.tsx --bundle --outfile=./public/utopia.js",
-    "start": "yarn build && esbuild --servedir=./public",
-    "start:dev": "yarn build --servedir=./public --watch"
+    "build": "yarn tsc --noEmit && node ./scripts/build.mjs",
+    "start": "yarn tsc --noEmit && node ./scripts/start.mjs",
+    "start:dev": "yarn tsc --noEmit && node ./scripts/start-dev.mjs"
   },
   "prettier": {
     "singleQuote": true,
@@ -16,13 +16,17 @@
   },
   "dependencies": {
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "styled-components": "^6.0.7",
+    "utopia-wasm-bindings": "file:../utopia-wasm-bindings/pkg"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.2",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
+    "@types/styled-components": "^5.1.26",
     "esbuild": "^0.19.2",
+    "esbuild-plugin-wasm": "^1.1.0",
     "typescript": "^5.1.6"
   }
 }
