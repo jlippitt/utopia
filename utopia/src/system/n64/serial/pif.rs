@@ -24,8 +24,8 @@ impl Pif {
         let JoypadState { buttons, axes } = &state;
         let joypad = &mut self.joypads[0];
 
-        joypad[0] = axes[1] as u8;
-        joypad[1] = axes[0] as u8;
+        joypad[0] = (axes[1] >> 24) as u8;
+        joypad[1] = (axes[0] >> 24) as u8;
 
         joypad[2] = 0;
         // RST 'button' possibly doesn't need to be implemented?
