@@ -175,7 +175,8 @@ impl<T: Mapped> Bus for Hardware<T> {
             self.transfer_dma();
         }
 
-        self.step_all();
+        self.step_ppu();
+        self.step_ppu();
 
         self.mdr = self.cartridge.read_prg(address, self.mdr);
 
@@ -190,11 +191,13 @@ impl<T: Mapped> Bus for Hardware<T> {
             _ => self.mdr,
         };
 
+        self.step_ppu();
+        self.step_others();
         self.mdr
     }
 
     fn write(&mut self, address: u16, value: u8) {
-        self.step_ppu();
+        self.step_all();
 
         self.mdr = value;
 
@@ -214,10 +217,6 @@ impl<T: Mapped> Bus for Hardware<T> {
             },
             _ => (),
         };
-
-        self.step_ppu();
-        self.step_ppu();
-        self.step_others();
     }
 
     fn poll(&mut self) -> mos6502::Interrupt {
