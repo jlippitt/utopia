@@ -25,3 +25,15 @@ Once that is done, run:
     git clone https://github.com/jlippitt/utopia.git
     cd ./utopia
     cargo install --path utopia-cli
+
+## Command Line Interface
+
+    utopia [OPTIONS] <ROM_PATH>
+
+| Option                       | Description |
+| -f, --full-screen            | Enables full-screen mode. This can also be toggled while in-game using F11. |
+
+## Important Note
+
+For the SNES emulator to work, you will need a copy of a 64-byte IPL ROM which can be found elsewhere. This should be placed in the same
+directory (folder) as the ROM, with the name 'ipl_rom.bin'.
