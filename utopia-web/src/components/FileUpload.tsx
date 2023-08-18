@@ -1,5 +1,14 @@
+import styled from 'styled-components';
+
+export const Wrapper = styled.div`
+    display: flex;
+    justify-content: center;
+`;
+
 export default () => (
-    <div>
-        Upload ROM: <input type="file"></input>
-    </div>
+    <Wrapper>
+        <div>
+            Upload ROM: <input type="file" />
+        </div>
+    </Wrapper>
 );

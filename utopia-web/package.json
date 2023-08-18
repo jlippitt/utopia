@@ -10,6 +10,10 @@
     "start": "yarn build && esbuild --servedir=./public",
     "start:dev": "yarn build --servedir=./public --watch"
   },
+  "prettier": {
+    "singleQuote": true,
+    "tabWidth": 4
+  },
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
