@@ -8,6 +8,11 @@ const Wrapper = styled.div`
     height: 100%;
 `;
 
+const Canvas = styled.canvas`
+    width: ${({ width }) => width}px;
+    height: ${({ height }) => height}px;
+`;
+
 interface Props {
     width: number;
     height: number;
@@ -88,7 +93,7 @@ export default ({ width, height, pixels }: Props) => {
 
     return (
         <Wrapper ref={wrapperRef}>
-            <canvas
+            <Canvas
                 ref={targetCanvasRef}
                 width={width * scaleFactor}
                 height={height * scaleFactor}
