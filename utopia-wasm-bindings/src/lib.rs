@@ -49,6 +49,47 @@ impl utopia::MemoryMapper for MemoryMapper {
 }
 
 #[wasm_bindgen]
+pub struct JoypadState {
+    inner: utopia::JoypadState,
+}
+
+#[wasm_bindgen]
+impl JoypadState {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        Self {
+            inner: Default::default(),
+        }
+    }
+
+    #[wasm_bindgen(js_name = getAxis)]
+    pub fn axis(&self, index: usize) -> f64 {
+        self.inner.axes[index] as f64 / i32::MAX as f64
+    }
+
+    #[wasm_bindgen(js_name = setAxis)]
+    pub fn set_axis(&mut self, index: usize, value: f64) {
+        self.inner.axes[index] = (value * i32::MAX as f64) as i32;
+    }
+
+    #[wasm_bindgen(js_name = getButton)]
+    pub fn button(&self, index: usize) -> bool {
+        self.inner.buttons[index]
+    }
+
+    #[wasm_bindgen(js_name = setButton)]
+    pub fn set_button(&mut self, index: usize, value: bool) {
+        self.inner.buttons[index] = value;
+    }
+}
+
+impl From<JoypadState> for utopia::JoypadState {
+    fn from(value: JoypadState) -> Self {
+        value.inner
+    }
+}
+
+#[wasm_bindgen]
 pub struct Utopia {
     system: Box<dyn System>,
 }
@@ -85,7 +126,7 @@ impl Utopia {
     }
 
     #[wasm_bindgen(js_name = runFrame)]
-    pub fn run_frame(&mut self) {
-        self.system.run_frame(&Default::default());
+    pub fn run_frame(&mut self, joypad_state: JoypadState) {
+        self.system.run_frame(&joypad_state.into())
     }
 }

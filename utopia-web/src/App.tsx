@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Canvas from './components/Canvas';
 import FileUpload from './components/FileUpload';
 import styled from 'styled-components';
-import { Utopia } from 'utopia-wasm-bindings';
+import { Utopia, JoypadState } from 'utopia-wasm-bindings';
 
 const DEFAULT_WIDTH = 256;
 const DEFAULT_HEIGHT = 224;
@@ -42,7 +42,24 @@ export default () => {
         const utopia = utopiaRef.current;
 
         if (utopia) {
-            utopia.runFrame();
+            const joypadState = new JoypadState();
+            const gamepad = navigator.getGamepads()[0];
+
+            if (gamepad) {
+                for (let index = 0; index < gamepad.axes.length; ++index) {
+                    joypadState.setAxis(index, gamepad.axes[index]);
+                }
+
+                for (let index = 0; index < gamepad.buttons.length; ++index) {
+                    joypadState.setButton(
+                        index,
+                        gamepad.buttons[index].pressed
+                    );
+                }
+            }
+
+            utopia.runFrame(joypadState);
+
             setWidth(utopia.getScreenWidth());
             setHeight(utopia.getScreenHeight());
             setPixels(utopia.getPixels());
