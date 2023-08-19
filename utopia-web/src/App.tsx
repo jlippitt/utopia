@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Canvas from './components/Canvas';
 import FileUpload, { Rom } from './components/FileUpload';
 import styled from 'styled-components';
+import AudioController from './lib/AudioController';
 import { Utopia, JoypadState } from 'utopia-wasm-bindings';
 
 const DEFAULT_WIDTH = 256;
@@ -50,7 +51,7 @@ export default () => {
     const frameRef = useRef(0);
     const keyStateRef = useRef(Array(17).fill(false));
     const utopiaRef = useRef<Utopia | null>(null);
-    const audioCtxRef = useRef<AudioContext | null>(null);
+    const audioControllerRef = useRef<AudioController | null>(null);
 
     const [width, setWidth] = useState(DEFAULT_WIDTH);
     const [height, setHeight] = useState(DEFAULT_HEIGHT);
@@ -88,29 +89,11 @@ export default () => {
             setHeight(utopia.getScreenHeight());
             setPixels(utopia.getPixels());
 
-            const audioCtx = audioCtxRef.current;
-
-            if (!audioCtx) {
+            if (!audioControllerRef.current) {
                 return;
             }
 
-            const sampleBuffer = utopia.getSampleBuffer();
-            const left = sampleBuffer.getLeft();
-            const right = sampleBuffer.getRight();
-
-            const audioBuffer = audioCtx.createBuffer(
-                2,
-                left.length + right.length,
-                utopia.getSampleRate()
-            );
-
-            audioBuffer.copyToChannel(left, 0);
-            audioBuffer.copyToChannel(right, 1);
-
-            const bufferSource = audioCtx.createBufferSource();
-            bufferSource.buffer = audioBuffer;
-            bufferSource.connect(audioCtx.destination);
-            bufferSource.start(0);
+            audioControllerRef.current.send(utopia.getSampleBuffer());
         }
 
         frameRef.current = requestAnimationFrame(runFrame);
@@ -118,7 +101,7 @@ export default () => {
 
     const onRomUpload = async (rom: Rom) => {
         utopiaRef.current?.free();
-        audioCtxRef.current?.close();
+        audioControllerRef.current?.close();
 
         utopiaRef.current = new Utopia(
             rom.path,
@@ -126,11 +109,9 @@ export default () => {
             rom.bios ?? undefined
         );
 
-        audioCtxRef.current = new AudioContext({
-            sampleRate: utopiaRef.current.getSampleRate(),
-        });
-
-        audioCtxRef.current.resume();
+        audioControllerRef.current = new AudioController(
+            utopiaRef.current.getSampleRate()
+        );
     };
 
     const onKeyEvent = (value: boolean) => (event: KeyboardEvent) => {
