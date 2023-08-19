@@ -38,6 +38,10 @@ export default class AudioController {
 
         this.bufferStartTime += this.buffer.duration;
 
+        if (this.bufferStartTime < this.ctx.currentTime) {
+            this.bufferStartTime = this.ctx.currentTime;
+        }
+
         const bufferSource = this.ctx.createBufferSource();
         bufferSource.buffer = this.buffer;
         bufferSource.connect(this.ctx.destination);
