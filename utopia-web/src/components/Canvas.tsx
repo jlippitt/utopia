@@ -13,6 +13,13 @@ interface CanvasProps {
 }
 
 const Canvas = styled.canvas<CanvasProps>`
+    image-rendering: optimizeSpeed;
+    image-rendering: crisp-edges;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -o-crisp-edges;
+    image-rendering: -webkit-optimize-contrast;
+    -ms-interpolation-mode: nearest-neighbor;
+
     ${(props) => `
         width: ${props.$scaleFactor * +(props.width ?? 0)}px;
         height: ${props.$scaleFactor * +(props.height ?? 0)}px;
@@ -49,6 +56,7 @@ export default ({ width, height, pixels }: Props) => {
 
         ctxRef.current = ctx;
         imageRef.current = ctx.getImageData(0, 0, width, height);
+        ctx.imageSmoothingEnabled = false;
 
         if (!wrapperRef.current) {
             return;
