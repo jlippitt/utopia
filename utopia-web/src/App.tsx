@@ -27,6 +27,7 @@ export const Wrapper = styled.div`
     height: 100%;
     background-color: #111;
     color: #eee;
+    font-family: monospace;
 `;
 
 export default () => {
