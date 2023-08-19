@@ -102,7 +102,7 @@ export default () => {
     const onKeyEvent = (value: boolean) => (event: KeyboardEvent) => {
         const index = KEY_MAP.get(event.code);
 
-        if (index) {
+        if (index !== undefined) {
             keyStateRef.current[index] = value;
         }
     };
