@@ -56,9 +56,6 @@ export default ({ width, height, pixels }: Props) => {
             return;
         }
 
-        sourceCtx.imageSmoothingEnabled = false;
-        targetCtx.imageSmoothingEnabled = false;
-
         sourceCtxRef.current = sourceCtx;
         targetCtxRef.current = targetCtx;
 
@@ -89,6 +86,15 @@ export default ({ width, height, pixels }: Props) => {
             height * scaleFactor
         );
     }, [pixels]);
+
+    useEffect(() => {
+        if (!sourceCtxRef.current || !targetCtxRef.current) {
+            return;
+        }
+
+        sourceCtxRef.current.imageSmoothingEnabled = false;
+        targetCtxRef.current.imageSmoothingEnabled = false;
+    }, [width, height, scaleFactor]);
 
     useEffect(() => {
         window.addEventListener('resize', updateScaleFactor);
