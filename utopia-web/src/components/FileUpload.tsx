@@ -1,10 +1,13 @@
 import { ChangeEvent, useState } from 'react';
 import styled from 'styled-components';
 
-export const Wrapper = styled.div`
+const Wrapper = styled.div`
     display: flex;
     justify-content: center;
-    padding: 8px;
+`;
+
+const Uploader = styled.div`
+    margin: 8px 16px;
 `;
 
 export interface Rom {
@@ -85,15 +88,19 @@ export default ({ onRomUpload }: Props) => {
 
     return (
         <Wrapper>
-            <div>
-                Upload Game ROM:{' '}
-                <input type="file" onChange={onGameRomUpload} />
-            </div>
+            <Uploader>
+                <label>
+                    Upload Game ROM:{' '}
+                    <input type="file" onChange={onGameRomUpload} />
+                </label>
+            </Uploader>
             {showBiosUpload && (
-                <div>
-                    Upload IPL ROM:{' '}
-                    <input type="file" onChange={onIplRomUpload} />
-                </div>
+                <Uploader>
+                    <label>
+                        Upload IPL ROM:{' '}
+                        <input type="file" onChange={onIplRomUpload} />
+                    </label>
+                </Uploader>
             )}
         </Wrapper>
     );
