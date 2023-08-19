@@ -25,6 +25,8 @@ export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
     height: 100%;
+    background-color: #111;
+    color: #eee;
 `;
 
 export default () => {
