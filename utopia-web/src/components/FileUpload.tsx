@@ -24,6 +24,8 @@ export default ({ onRomUpload }: Props) => {
     const [biosData, setBiosData] = useState<Uint8Array | null>(null);
 
     const onGameRomUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+        event.target.blur();
+
         const file = event.target.files?.[0];
 
         if (!file) {
@@ -58,6 +60,8 @@ export default ({ onRomUpload }: Props) => {
     };
 
     const onIplRomUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+        event.target.blur();
+
         const file = event.target.files?.[0];
 
         if (!file) {

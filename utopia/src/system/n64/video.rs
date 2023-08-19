@@ -164,7 +164,7 @@ impl VideoInterface {
                                 let red = color as u8 & 31;
                                 let green = (color >> 5) as u8 & 31;
                                 let blue = (color >> 10) as u8 & 31;
-                                [blue << 3, green << 3, red << 3, 0]
+                                [blue << 3, green << 3, red << 3, 0xff]
                             });
 
                     self.pixels.splice(write_pos..(write_pos + pitch), iter);
