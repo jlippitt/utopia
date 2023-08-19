@@ -27,13 +27,16 @@ impl fmt::Display for UtopiaError {
 
 impl Error for UtopiaError {}
 
-pub struct BiosLoader;
+pub struct BiosLoader(Option<Vec<u8>>);
 
 impl utopia::BiosLoader for BiosLoader {
     fn load(&self, _name: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        Err(Box::new(UtopiaError::new(
-            "BIOS loading not supported yet in WASM front-end",
-        )))
+        let bios = self
+            .0
+            .as_ref()
+            .ok_or_else(|| UtopiaError::new("No bios provided"))?;
+
+        Ok(bios.clone())
     }
 }
 
@@ -97,9 +100,13 @@ pub struct Utopia {
 #[wasm_bindgen]
 impl Utopia {
     #[wasm_bindgen(constructor)]
-    pub fn new(rom_path: &str, rom_data: Vec<u8>) -> Result<Utopia, UtopiaError> {
+    pub fn new(
+        rom_path: &str,
+        rom_data: Vec<u8>,
+        bios_data: Option<Vec<u8>>,
+    ) -> Result<Utopia, UtopiaError> {
         let options = Options {
-            bios_loader: BiosLoader,
+            bios_loader: BiosLoader(bios_data),
             memory_mapper: MemoryMapper,
             skip_boot: true,
         };

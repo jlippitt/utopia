@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Canvas from './components/Canvas';
-import FileUpload from './components/FileUpload';
+import FileUpload, { Rom } from './components/FileUpload';
 import styled from 'styled-components';
 import { Utopia, JoypadState } from 'utopia-wasm-bindings';
 
@@ -49,7 +49,6 @@ export default () => {
     const frameRef = useRef(0);
     const utopiaRef = useRef<Utopia | null>(null);
     const keyStateRef = useRef(Array(17).fill(false));
-
     const [width, setWidth] = useState(DEFAULT_WIDTH);
     const [height, setHeight] = useState(DEFAULT_HEIGHT);
     const [pixels, setPixels] = useState(DEFAULT_PIXELS);
@@ -90,10 +89,14 @@ export default () => {
         frameRef.current = requestAnimationFrame(runFrame);
     };
 
-    const onRomUpload = async (file: File) => {
+    const onRomUpload = async (rom: Rom) => {
         utopiaRef.current?.free();
-        const data = new Uint8Array(await file.arrayBuffer());
-        utopiaRef.current = new Utopia(file.name, data);
+
+        utopiaRef.current = new Utopia(
+            rom.path,
+            rom.data,
+            rom.bios ?? undefined
+        );
     };
 
     const onKeyEvent = (value: boolean) => (event: KeyboardEvent) => {
