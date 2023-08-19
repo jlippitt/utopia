@@ -8,7 +8,8 @@
   "scripts": {
     "build": "yarn tsc --noEmit && node ./scripts/build.mjs",
     "start": "yarn tsc --noEmit && node ./scripts/start.mjs",
-    "start:dev": "yarn tsc --noEmit && node ./scripts/start-dev.mjs"
+    "start:dev": "yarn tsc --noEmit && node ./scripts/start-dev.mjs",
+    "lint": "yarn eslint src/**"
   },
   "prettier": {
     "singleQuote": true,
