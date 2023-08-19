@@ -6,6 +6,7 @@ export default class AudioController {
     private ctx: AudioContext;
     private buffer: AudioBuffer;
     private bufferPos: number = 0;
+    private bufferStartTime: number;
 
     public constructor(sampleRate: number) {
         this.ctx = new AudioContext({
@@ -13,7 +14,7 @@ export default class AudioController {
         });
 
         this.buffer = this.ctx.createBuffer(2, BUFFER_LENGTH, this.ctx.sampleRate);
-
+        this.bufferStartTime = this.ctx.currentTime;
         this.ctx.resume();
     }
 
@@ -35,10 +36,12 @@ export default class AudioController {
 
         this.bufferPos -= this.buffer.length;
 
+        this.bufferStartTime += this.buffer.duration;
+
         const bufferSource = this.ctx.createBufferSource();
         bufferSource.buffer = this.buffer;
         bufferSource.connect(this.ctx.destination);
-        bufferSource.start(0);
+        bufferSource.start(this.bufferStartTime);
 
         this.buffer = this.ctx.createBuffer(2, BUFFER_LENGTH, this.ctx.sampleRate);
         this.buffer.copyToChannel(left.slice(-this.bufferPos), 0);
