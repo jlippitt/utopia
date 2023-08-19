@@ -6,6 +6,7 @@ import { Utopia, JoypadState } from 'utopia-wasm-bindings';
 
 const DEFAULT_WIDTH = 256;
 const DEFAULT_HEIGHT = 224;
+
 const DEFAULT_PIXELS = (() => {
     const pixels = new Uint8ClampedArray(DEFAULT_WIDTH * DEFAULT_HEIGHT * 4);
 
