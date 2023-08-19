@@ -74,9 +74,11 @@ impl Screen {
             output[0] = red;
             output[1] = green;
             output[2] = blue;
+            output[3] = 0xff;
             output[4] = red;
             output[5] = green;
             output[6] = blue;
+            output[7] = 0xff;
 
             self.index += 8;
         }
@@ -94,6 +96,7 @@ impl Screen {
                 output[0] = red;
                 output[1] = green;
                 output[2] = blue;
+                output[3] = 0xff;
             }
 
             {
@@ -101,6 +104,7 @@ impl Screen {
                 output[4] = red;
                 output[5] = green;
                 output[6] = blue;
+                output[7] = 0xff;
             }
 
             self.index += 8;
@@ -109,7 +113,12 @@ impl Screen {
 
     pub fn force_blank(&mut self) {
         let end = self.index + PITCH;
-        self.output[self.index..end].fill(0);
+
+        // This creates a repeating [0, 0, 0, 0xff] sequence
+        let iter = (0..PITCH).map(|index| ((index == 3) as u8).wrapping_neg());
+
+        self.output.splice(self.index..end, iter);
+
         self.index = end;
     }
 
