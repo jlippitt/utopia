@@ -21,6 +21,21 @@ const DEFAULT_PIXELS = (() => {
     return pixels;
 })();
 
+const KEY_MAP = new Map<String, number>([
+    ['KeyZ', 0],
+    ['KeyX', 1],
+    ['KeyA', 2],
+    ['KeyS', 3],
+    ['KeyD', 4],
+    ['KeyC', 5],
+    ['Space', 8],
+    ['Enter', 9],
+    ['ArrowUp', 12],
+    ['ArrowDown', 13],
+    ['ArrowLeft', 14],
+    ['ArrowRight', 15],
+]);
+
 export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
@@ -33,6 +48,7 @@ export const Wrapper = styled.div`
 export default () => {
     const frameRef = useRef(0);
     const utopiaRef = useRef<Utopia | null>(null);
+    const keyStateRef = useRef(Array(17).fill(false));
 
     const [width, setWidth] = useState(DEFAULT_WIDTH);
     const [height, setHeight] = useState(DEFAULT_HEIGHT);
@@ -56,6 +72,12 @@ export default () => {
                         gamepad.buttons[index].pressed
                     );
                 }
+            } else {
+                const keyState = keyStateRef.current;
+
+                for (let index = 0; index < keyState.length; ++index) {
+                    joypadState.setButton(index, keyState[index]);
+                }
             }
 
             utopia.runFrame(joypadState);
@@ -74,9 +96,27 @@ export default () => {
         utopiaRef.current = new Utopia(file.name, data);
     };
 
+    const onKeyEvent = (value: boolean) => (event: KeyboardEvent) => {
+        const index = KEY_MAP.get(event.code);
+
+        if (index) {
+            keyStateRef.current[index] = value;
+        }
+    };
+
     useEffect(() => {
+        const onKeyDown = onKeyEvent(true);
+        const onKeyUp = onKeyEvent(false);
+
+        window.addEventListener('keydown', onKeyDown);
+        window.addEventListener('keyup', onKeyUp);
         frameRef.current = requestAnimationFrame(runFrame);
-        return () => cancelAnimationFrame(frameRef.current);
+
+        return () => {
+            window.removeEventListener('keydown', onKeyUp);
+            window.removeEventListener('keyup', onKeyUp);
+            cancelAnimationFrame(frameRef.current);
+        };
     }, []);
 
     return (
