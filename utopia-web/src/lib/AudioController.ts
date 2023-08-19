@@ -1,12 +1,18 @@
 import { SampleBuffer } from 'utopia-wasm-bindings';
 
+const BUFFER_LENGTH = 8192;
+
 export default class AudioController {
     private ctx: AudioContext;
+    private buffer: AudioBuffer;
+    private bufferPos: number = 0;
 
     public constructor(sampleRate: number) {
         this.ctx = new AudioContext({
             sampleRate,
         });
+
+        this.buffer = this.ctx.createBuffer(2, BUFFER_LENGTH, this.ctx.sampleRate);
 
         this.ctx.resume();
     }
@@ -19,18 +25,23 @@ export default class AudioController {
         const left = sampleBuffer.getLeft();
         const right = sampleBuffer.getRight();
 
-        const audioBuffer = this.ctx.createBuffer(
-            2,
-            left.length + right.length,
-            this.ctx.sampleRate
-        );
+        this.buffer.copyToChannel(left, 0, this.bufferPos);
+        this.buffer.copyToChannel(right, 1, this.bufferPos);
+        this.bufferPos += left.length;
 
-        audioBuffer.copyToChannel(left, 0);
-        audioBuffer.copyToChannel(right, 1);
+        if (this.bufferPos < this.buffer.length) {
+            return;
+        }
+
+        this.bufferPos -= this.buffer.length;
 
         const bufferSource = this.ctx.createBufferSource();
-        bufferSource.buffer = audioBuffer;
+        bufferSource.buffer = this.buffer;
         bufferSource.connect(this.ctx.destination);
         bufferSource.start(0);
+
+        this.buffer = this.ctx.createBuffer(2, BUFFER_LENGTH, this.ctx.sampleRate);
+        this.buffer.copyToChannel(left.slice(-this.bufferPos), 0);
+        this.buffer.copyToChannel(right.slice(-this.bufferPos), 1);
     }
 }
