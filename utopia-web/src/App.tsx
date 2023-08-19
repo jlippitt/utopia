@@ -21,7 +21,7 @@ const DEFAULT_PIXELS = (() => {
     return pixels;
 })();
 
-const KEY_MAP = new Map<String, number>([
+const KEY_MAP = new Map<string, number>([
     ['KeyZ', 0],
     ['KeyX', 1],
     ['KeyA', 2],
@@ -53,7 +53,7 @@ export default () => {
     const [height, setHeight] = useState(DEFAULT_HEIGHT);
     const [pixels, setPixels] = useState(DEFAULT_PIXELS);
 
-    const runFrame = (_timestamp: number) => {
+    const runFrame = () => {
         const utopia = utopiaRef.current;
 
         if (utopia) {
