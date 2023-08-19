@@ -81,15 +81,7 @@ impl Utopia {
 
     #[wasm_bindgen(js_name = getPixels)]
     pub fn pixels(&self) -> Clamped<Vec<u8>> {
-        // Web front-end actually needs alpha channel set
-        let pixels: Vec<u8> = self
-            .system
-            .pixels()
-            .chunks_exact(4)
-            .flat_map(|bytes| [bytes[0], bytes[1], bytes[2], 0xff])
-            .collect();
-
-        Clamped(pixels)
+        Clamped(Vec::from(self.system.pixels()))
     }
 
     #[wasm_bindgen(js_name = runFrame)]
