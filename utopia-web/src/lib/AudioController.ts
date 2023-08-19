@@ -1,6 +1,7 @@
 import { SampleBuffer } from 'utopia-wasm-bindings';
 
 const BUFFER_LENGTH = 8192;
+const DESYNC_TOLERANCE = 0.5;
 
 export default class AudioController {
     private ctx: AudioContext;
@@ -38,7 +39,9 @@ export default class AudioController {
 
         this.bufferStartTime += this.buffer.duration;
 
-        if (this.bufferStartTime < this.ctx.currentTime) {
+        let delta = this.bufferStartTime - this.ctx.currentTime;
+
+        if (delta < 0 || delta >= DESYNC_TOLERANCE) {
             this.bufferStartTime = this.ctx.currentTime;
         }
 
