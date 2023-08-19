@@ -1,10 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 
-export const Wrapper = styled.div`
+const Wrapper = styled.div`
     display: flex;
     justify-content: center;
     align-items: top;
+    height: 100%;
+`;
+
+interface CanvasProps {
+    $scaleFactor: number;
+}
+
+const Canvas = styled.canvas<CanvasProps>`
+    ${(props) => `
+        width: ${props.$scaleFactor * +(props.width ?? 0)}px;
+        height: ${props.$scaleFactor * +(props.height ?? 0)}px;
+    `}
 `;
 
 interface Props {
@@ -14,25 +26,38 @@ interface Props {
 }
 
 export default ({ width, height, pixels }: Props) => {
-    let canvasRef = useRef<HTMLCanvasElement>(null);
-    let ctxRef = useRef<CanvasRenderingContext2D | null>(null);
-    let imageRef = useRef<ImageData | null>(null);
+    const wrapperRef = useRef<HTMLDivElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+    const imageRef = useRef<ImageData | null>(null);
+
+    const [scaleFactor, setScaleFactor] = useState(1);
 
     useEffect(() => {
         if (!canvasRef.current) {
             return;
         }
 
-        ctxRef.current = canvasRef.current.getContext('2d', {
+        const ctx = canvasRef.current.getContext('2d', {
             alpha: false,
             willReadFrequently: true,
         });
 
-        if (!ctxRef.current) {
+        if (!ctx) {
             return;
         }
 
-        imageRef.current = ctxRef.current.getImageData(0, 0, width, height);
+        ctxRef.current = ctx;
+        imageRef.current = ctx.getImageData(0, 0, width, height);
+
+        if (!wrapperRef.current) {
+            return;
+        }
+
+        const bounds = wrapperRef.current.getBoundingClientRect();
+        const maxWidthScale = Math.floor(bounds.width / width);
+        const maxHeightScale = Math.floor(bounds.height / height);
+        setScaleFactor(Math.min(maxWidthScale, maxHeightScale));
     }, [width, height]);
 
     useEffect(() => {
@@ -45,8 +70,13 @@ export default ({ width, height, pixels }: Props) => {
     }, [pixels]);
 
     return (
-        <Wrapper>
-            <canvas ref={canvasRef} width={width} height={height} />
+        <Wrapper ref={wrapperRef}>
+            <Canvas
+                ref={canvasRef}
+                width={width}
+                height={height}
+                $scaleFactor={scaleFactor}
+            />
         </Wrapper>
     );
 };

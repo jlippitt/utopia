@@ -4,8 +4,8 @@ import FileUpload from './components/FileUpload';
 import styled from 'styled-components';
 import { Utopia } from 'utopia-wasm-bindings';
 
-const DEFAULT_WIDTH = 512;
-const DEFAULT_HEIGHT = 448;
+const DEFAULT_WIDTH = 256;
+const DEFAULT_HEIGHT = 224;
 const DEFAULT_PIXELS = (() => {
     const pixels = new Uint8ClampedArray(DEFAULT_WIDTH * DEFAULT_HEIGHT * 4);
 
