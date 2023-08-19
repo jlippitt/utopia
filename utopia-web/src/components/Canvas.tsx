@@ -8,24 +8,6 @@ const Wrapper = styled.div`
     height: 100%;
 `;
 
-interface CanvasProps {
-    $scaleFactor: number;
-}
-
-const Canvas = styled.canvas<CanvasProps>`
-    image-rendering: optimizeSpeed;
-    image-rendering: crisp-edges;
-    image-rendering: -moz-crisp-edges;
-    image-rendering: -o-crisp-edges;
-    image-rendering: -webkit-optimize-contrast;
-    -ms-interpolation-mode: nearest-neighbor;
-
-    ${(props) => `
-        width: ${props.$scaleFactor * +(props.width ?? 0)}px;
-        height: ${props.$scaleFactor * +(props.height ?? 0)}px;
-    `}
-`;
-
 interface Props {
     width: number;
     height: number;
@@ -34,29 +16,42 @@ interface Props {
 
 export default ({ width, height, pixels }: Props) => {
     const wrapperRef = useRef<HTMLDivElement>(null);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+    const targetCanvasRef = useRef<HTMLCanvasElement>(null);
+    const targetCtxRef = useRef<CanvasRenderingContext2D | null>(null);
+    const sourceCanvasRef = useRef<OffscreenCanvas | null>(null);
+    const sourceCtxRef = useRef<OffscreenCanvasRenderingContext2D | null>(null);
     const imageRef = useRef<ImageData | null>(null);
 
     const [scaleFactor, setScaleFactor] = useState(1);
 
     useEffect(() => {
-        if (!canvasRef.current) {
+        if (!targetCanvasRef.current) {
             return;
         }
 
-        const ctx = canvasRef.current.getContext('2d', {
+        sourceCanvasRef.current = new OffscreenCanvas(width, height);
+
+        const sourceCtx = sourceCanvasRef.current.getContext('2d', {
             alpha: false,
             willReadFrequently: true,
         });
 
-        if (!ctx) {
+        const targetCtx = targetCanvasRef.current.getContext('2d', {
+            alpha: false,
+            willReadFrequently: true,
+        });
+
+        if (!sourceCtx || !targetCtx) {
             return;
         }
 
-        ctxRef.current = ctx;
-        imageRef.current = ctx.getImageData(0, 0, width, height);
-        ctx.imageSmoothingEnabled = false;
+        sourceCtx.imageSmoothingEnabled = false;
+        targetCtx.imageSmoothingEnabled = false;
+
+        sourceCtxRef.current = sourceCtx;
+        targetCtxRef.current = targetCtx;
+
+        imageRef.current = sourceCtx.getImageData(0, 0, width, height);
 
         if (!wrapperRef.current) {
             return;
@@ -69,21 +64,34 @@ export default ({ width, height, pixels }: Props) => {
     }, [width, height]);
 
     useEffect(() => {
-        if (!ctxRef.current || !imageRef.current) {
+        if (
+            !sourceCanvasRef.current ||
+            !sourceCtxRef.current ||
+            !targetCtxRef.current ||
+            !imageRef.current
+        ) {
             return;
         }
 
         imageRef.current?.data.set(pixels);
-        ctxRef.current.putImageData(imageRef.current, 0, 0);
+
+        sourceCtxRef.current.putImageData(imageRef.current, 0, 0);
+
+        targetCtxRef.current.drawImage(
+            sourceCanvasRef.current,
+            0,
+            0,
+            width * scaleFactor,
+            height * scaleFactor
+        );
     }, [pixels]);
 
     return (
         <Wrapper ref={wrapperRef}>
-            <Canvas
-                ref={canvasRef}
-                width={width}
-                height={height}
-                $scaleFactor={scaleFactor}
+            <canvas
+                ref={targetCanvasRef}
+                width={width * scaleFactor}
+                height={height * scaleFactor}
             />
         </Wrapper>
     );
