@@ -1,26 +1,22 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 
 export const Wrapper = styled.div`
     display: flex;
     justify-content: center;
-    align-items: center;
-    height: 100%;
+    align-items: top;
 `;
 
 interface Props {
     width: number;
     height: number;
+    pixels: Uint8ClampedArray;
 }
 
-export default ({ width, height }: Props) => {
+export default ({ width, height, pixels }: Props) => {
     let canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
-        if (width === 0 || height === 0) {
-            return;
-        }
-
         let canvas = canvasRef.current;
 
         if (!canvas) {
@@ -33,19 +29,10 @@ export default ({ width, height }: Props) => {
             return;
         }
 
-        const image = ctx.createImageData(width, height);
-
-        let index = 0;
-
-        while (index < image.data.length) {
-            image.data[index++] = 0;
-            image.data[index++] = 0;
-            image.data[index++] = 0;
-            image.data[index++] = 0xff;
-        }
-
+        let image = ctx.getImageData(0, 0, width, height);
+        image.data.set(pixels);
         ctx.putImageData(image, 0, 0);
-    });
+    }, [width, height, pixels]);
 
     return (
         <Wrapper>
