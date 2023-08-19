@@ -48,8 +48,10 @@ export const Wrapper = styled.div`
 
 export default () => {
     const frameRef = useRef(0);
-    const utopiaRef = useRef<Utopia | null>(null);
     const keyStateRef = useRef(Array(17).fill(false));
+    const utopiaRef = useRef<Utopia | null>(null);
+    const audioCtxRef = useRef<AudioContext | null>(null);
+
     const [width, setWidth] = useState(DEFAULT_WIDTH);
     const [height, setHeight] = useState(DEFAULT_HEIGHT);
     const [pixels, setPixels] = useState(DEFAULT_PIXELS);
@@ -85,6 +87,30 @@ export default () => {
             setWidth(utopia.getScreenWidth());
             setHeight(utopia.getScreenHeight());
             setPixels(utopia.getPixels());
+
+            const audioCtx = audioCtxRef.current;
+
+            if (!audioCtx) {
+                return;
+            }
+
+            const sampleBuffer = utopia.getSampleBuffer();
+            const left = sampleBuffer.getLeft();
+            const right = sampleBuffer.getRight();
+
+            const audioBuffer = audioCtx.createBuffer(
+                2,
+                left.length + right.length,
+                utopia.getSampleRate()
+            );
+
+            audioBuffer.copyToChannel(left, 0);
+            audioBuffer.copyToChannel(right, 1);
+
+            const bufferSource = audioCtx.createBufferSource();
+            bufferSource.buffer = audioBuffer;
+            bufferSource.connect(audioCtx.destination);
+            bufferSource.start(0);
         }
 
         frameRef.current = requestAnimationFrame(runFrame);
@@ -92,12 +118,19 @@ export default () => {
 
     const onRomUpload = async (rom: Rom) => {
         utopiaRef.current?.free();
+        audioCtxRef.current?.close();
 
         utopiaRef.current = new Utopia(
             rom.path,
             rom.data,
             rom.bios ?? undefined
         );
+
+        audioCtxRef.current = new AudioContext({
+            sampleRate: utopiaRef.current.getSampleRate(),
+        });
+
+        audioCtxRef.current.resume();
     };
 
     const onKeyEvent = (value: boolean) => (event: KeyboardEvent) => {
@@ -114,6 +147,7 @@ export default () => {
 
         window.addEventListener('keydown', onKeyDown);
         window.addEventListener('keyup', onKeyUp);
+
         frameRef.current = requestAnimationFrame(runFrame);
 
         return () => {

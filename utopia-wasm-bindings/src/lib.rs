@@ -93,6 +93,25 @@ impl From<JoypadState> for utopia::JoypadState {
 }
 
 #[wasm_bindgen]
+pub struct SampleBuffer {
+    left: Vec<f32>,
+    right: Vec<f32>,
+}
+
+#[wasm_bindgen]
+impl SampleBuffer {
+    #[wasm_bindgen(js_name = getLeft)]
+    pub fn left(&self) -> Vec<f32> {
+        self.left.clone()
+    }
+
+    #[wasm_bindgen(js_name = getRight)]
+    pub fn right(&self) -> Vec<f32> {
+        self.right.clone()
+    }
+}
+
+#[wasm_bindgen]
 pub struct Utopia {
     system: Box<dyn System>,
 }
@@ -130,6 +149,22 @@ impl Utopia {
     #[wasm_bindgen(js_name = getPixels)]
     pub fn pixels(&self) -> Clamped<Vec<u8>> {
         Clamped(Vec::from(self.system.pixels()))
+    }
+
+    #[wasm_bindgen(js_name = getSampleRate)]
+    pub fn sample_rate(&self) -> u32 {
+        self.system.sample_rate().try_into().unwrap()
+    }
+
+    #[wasm_bindgen(js_name = getSampleBuffer)]
+    pub fn sample_buffer(&mut self) -> SampleBuffer {
+        let (left, right) = if let Some(queue) = self.system.audio_queue() {
+            queue.drain(..).unzip()
+        } else {
+            (Vec::new(), Vec::new())
+        };
+
+        SampleBuffer { left, right }
     }
 
     #[wasm_bindgen(js_name = runFrame)]
