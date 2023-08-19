@@ -90,15 +90,13 @@ export default ({ onRomUpload }: Props) => {
         <Wrapper>
             <Uploader>
                 <label>
-                    Upload Game ROM:{' '}
-                    <input type="file" onChange={onGameRomUpload} />
+                    Game ROM: <input type="file" onChange={onGameRomUpload} />
                 </label>
             </Uploader>
             {showBiosUpload && (
                 <Uploader>
                     <label>
-                        Upload IPL ROM:{' '}
-                        <input type="file" onChange={onIplRomUpload} />
+                        IPL ROM: <input type="file" onChange={onIplRomUpload} />
                     </label>
                 </Uploader>
             )}
