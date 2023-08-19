@@ -15,24 +15,34 @@ interface Props {
 
 export default ({ width, height, pixels }: Props) => {
     let canvasRef = useRef<HTMLCanvasElement>(null);
+    let ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+    let imageRef = useRef<ImageData | null>(null);
 
     useEffect(() => {
-        let canvas = canvasRef.current;
-
-        if (!canvas) {
+        if (!canvasRef.current) {
             return;
         }
 
-        let ctx = canvas.getContext('2d');
+        ctxRef.current = canvasRef.current.getContext('2d', {
+            alpha: false,
+            willReadFrequently: true,
+        });
 
-        if (!ctx) {
+        if (!ctxRef.current) {
             return;
         }
 
-        let image = ctx.getImageData(0, 0, width, height);
-        image.data.set(pixels);
-        ctx.putImageData(image, 0, 0);
-    }, [width, height, pixels]);
+        imageRef.current = ctxRef.current.getImageData(0, 0, width, height);
+    }, [width, height]);
+
+    useEffect(() => {
+        if (!ctxRef.current || !imageRef.current) {
+            return;
+        }
+
+        imageRef.current?.data.set(pixels);
+        ctxRef.current.putImageData(imageRef.current, 0, 0);
+    }, [pixels]);
 
     return (
         <Wrapper>
