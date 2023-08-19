@@ -29,6 +29,17 @@ export default ({ width, height, pixels }: Props) => {
 
     const [scaleFactor, setScaleFactor] = useState(1);
 
+    const updateScaleFactor = () => {
+        if (!wrapperRef.current) {
+            return;
+        }
+
+        const bounds = wrapperRef.current.getBoundingClientRect();
+        const maxWidthScale = Math.floor(bounds.width / width);
+        const maxHeightScale = Math.floor(bounds.height / height);
+        setScaleFactor(Math.min(maxWidthScale, maxHeightScale));
+    };
+
     useEffect(() => {
         if (!targetCanvasRef.current) {
             return;
@@ -58,14 +69,7 @@ export default ({ width, height, pixels }: Props) => {
 
         imageRef.current = sourceCtx.getImageData(0, 0, width, height);
 
-        if (!wrapperRef.current) {
-            return;
-        }
-
-        const bounds = wrapperRef.current.getBoundingClientRect();
-        const maxWidthScale = Math.floor(bounds.width / width);
-        const maxHeightScale = Math.floor(bounds.height / height);
-        setScaleFactor(Math.min(maxWidthScale, maxHeightScale));
+        updateScaleFactor();
     }, [width, height]);
 
     useEffect(() => {
@@ -90,6 +94,11 @@ export default ({ width, height, pixels }: Props) => {
             height * scaleFactor
         );
     }, [pixels]);
+
+    useEffect(() => {
+        window.addEventListener('resize', updateScaleFactor);
+        return () => window.removeEventListener('resize', updateScaleFactor);
+    }, []);
 
     return (
         <Wrapper ref={wrapperRef}>
