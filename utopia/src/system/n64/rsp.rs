@@ -1,6 +1,7 @@
 use super::dma::{Dma, DmaRequest};
 use crate::core::mips::{Bus, Core, Interrupt};
 use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
+use crate::util::MirrorVec;
 use tracing::debug;
 
 pub const DMEM_SIZE: usize = 4096;
@@ -11,6 +12,7 @@ pub struct Rsp {
     dma_requested: Dma,
     dma_spaddr: u32,
     dma_ramaddr: u32,
+    single_step: bool,
     core: Core<Hardware>,
 }
 
@@ -24,6 +26,7 @@ impl Rsp {
             dma_requested: Dma::None,
             dma_spaddr: 0,
             dma_ramaddr: 0,
+            single_step: false,
             core: Core::new(Hardware::new(dmem), Default::default()),
         }
     }
@@ -56,7 +59,6 @@ impl Rsp {
 
     pub fn finish_dma(&mut self) {
         self.dma_requested = Dma::None;
-        // TODO: Interrupt?
     }
 }
 
@@ -98,8 +100,24 @@ impl DataWriter for Rsp {
             0x0004_0010 => {
                 // SP_STATUS
                 // TODO
-                if (value & 1) != 0 {
-                    todo!("RSP");
+                if (value & 0x40) != 0 {
+                    self.single_step = true;
+                    debug!("RSP Single Step: {}", self.single_step);
+                }
+
+                if (value & 0x20) != 0 {
+                    self.single_step = false;
+                    debug!("RSP Single Step: {}", self.single_step);
+                }
+
+                if (value & 0x01) != 0 {
+                    if self.single_step {
+                        todo!("Single step");
+                    }
+
+                    loop {
+                        self.core.step();
+                    }
                 }
             }
             0x0008_0000 => {
@@ -112,15 +130,15 @@ impl DataWriter for Rsp {
 }
 
 struct Hardware {
-    dmem: Vec<u8>,
-    imem: Vec<u8>,
+    dmem: MirrorVec<u8>,
+    imem: MirrorVec<u8>,
 }
 
 impl Hardware {
     fn new(dmem: Vec<u8>) -> Self {
         Self {
-            dmem,
-            imem: vec![0; IMEM_SIZE],
+            dmem: dmem.into(),
+            imem: MirrorVec::new(IMEM_SIZE),
         }
     }
 }
