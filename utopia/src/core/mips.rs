@@ -17,10 +17,20 @@ const REGS: [&str; 32] = [
 pub type Interrupt = u8;
 
 pub trait Bus {
+    const CP0: bool;
+    const CP1: bool;
+    const MUL_DIV: bool;
+    const INSTR_64: bool;
+    const PC_MASK: u32 = 0xffff_ffff;
+
     fn read<T: Value>(&mut self, address: u32) -> T;
     fn write<T: Value>(&mut self, address: u32, value: T);
     fn step(&mut self);
     fn poll(&self) -> Interrupt;
+
+    fn read_opcode<T: Value>(&mut self, address: u32) -> T {
+        self.read(address)
+    }
 }
 
 pub struct Core<T: Bus> {
@@ -67,8 +77,18 @@ impl<T: Bus> Core<T> {
         &mut self.bus
     }
 
+    pub fn pc(&self) -> u32 {
+        self.pc
+    }
+
+    pub fn set_pc(&mut self, pc: u32) {
+        self.pc = pc;
+        self.next[0] = pc.wrapping_add(4) & T::PC_MASK;
+        self.next[1] = pc.wrapping_add(8) & T::PC_MASK;
+    }
+
     pub fn step(&mut self) {
-        assert!((self.pc & 3) == 0);
+        debug_assert!((self.pc & 3) == 0);
 
         let word = self.bus.read::<u32>(self.pc);
 
@@ -76,11 +96,13 @@ impl<T: Bus> Core<T> {
 
         self.bus.step();
 
-        cp0::update(self);
+        if T::CP0 {
+            cp0::update(self);
+        }
 
         self.pc = self.next[0];
         self.next[0] = self.next[1];
-        self.next[1] = self.next[1].wrapping_add(4);
+        self.next[1] = self.next[1].wrapping_add(4) & T::PC_MASK;
         self.delay = false;
     }
 
@@ -89,6 +111,7 @@ impl<T: Bus> Core<T> {
     }
 
     fn getd(&self, reg: usize) -> u64 {
+        debug_assert!(T::INSTR_64);
         self.regs[reg]
     }
 
@@ -102,6 +125,8 @@ impl<T: Bus> Core<T> {
     }
 
     fn setd(&mut self, reg: usize, value: u64) {
+        debug_assert!(T::INSTR_64);
+
         if reg == 0 {
             return;
         }
@@ -111,21 +136,27 @@ impl<T: Bus> Core<T> {
     }
 
     fn set_lo(&mut self, value: u32) {
+        debug_assert!(T::MUL_DIV);
         self.lo = value as i32 as i64 as u64;
         debug!("  LO: {:08X}", value);
     }
 
     fn setd_lo(&mut self, value: u64) {
+        debug_assert!(T::MUL_DIV);
+        debug_assert!(T::INSTR_64);
         self.lo = value;
         debug!("  LO: {:016X}", value);
     }
 
     fn set_hi(&mut self, value: u32) {
+        debug_assert!(T::MUL_DIV);
         self.hi = value as i32 as i64 as u64;
         debug!("  HI: {:08X}", value);
     }
 
     fn setd_hi(&mut self, value: u64) {
+        debug_assert!(T::MUL_DIV);
+        debug_assert!(T::INSTR_64);
         self.hi = value;
         debug!("  HI: {:016X}", value);
     }
@@ -137,21 +168,22 @@ impl<T: Bus> Core<T> {
     }
 
     fn read_halfword(&mut self, address: u32) -> u16 {
-        assert!((address & 1) == 0);
+        debug_assert!((address & 1) == 0);
         let value = self.bus.read(address);
         debug!("  [{:08X}] => {:04X}", address, value);
         value
     }
 
     fn read_word(&mut self, address: u32) -> u32 {
-        assert!((address & 3) == 0);
+        debug_assert!((address & 3) == 0);
         let value = self.bus.read(address);
         debug!("  [{:08X}] => {:08X}", address, value);
         value
     }
 
     fn read_doubleword(&mut self, address: u32) -> u64 {
-        assert!((address & 3) == 0);
+        debug_assert!(T::INSTR_64);
+        debug_assert!((address & 3) == 0);
         let high = self.read_word(address);
         let low = self.read_word(address.wrapping_add(4));
         ((high as u64) << 32) | (low as u64)
@@ -163,25 +195,31 @@ impl<T: Bus> Core<T> {
     }
 
     fn write_halfword(&mut self, address: u32, value: u16) {
-        assert!((address & 1) == 0);
+        debug_assert!((address & 1) == 0);
         debug!("  [{:08X}] <= {:04X}", address, value);
         self.bus.write(address, value);
     }
 
     fn write_word(&mut self, address: u32, value: u32) {
-        assert!((address & 3) == 0);
+        debug_assert!((address & 3) == 0);
         debug!("  [{:08X}] <= {:08X}", address, value);
         self.bus.write(address, value);
     }
 
     fn write_doubleword(&mut self, address: u32, value: u64) {
-        assert!((address & 3) == 0);
+        debug_assert!(T::INSTR_64);
+        debug_assert!((address & 3) == 0);
         self.write_word(address, (value >> 32) as u32);
         self.write_word(address.wrapping_add(4), value as u32);
     }
 
+    fn jump_now(&mut self, address: u32) {
+        self.next[0] = address & T::PC_MASK;
+        self.next[1] = address.wrapping_add(4) & T::PC_MASK;
+    }
+
     fn jump_delayed(&mut self, address: u32) {
-        self.next[1] = address;
+        self.next[1] = address & T::PC_MASK;
         self.delay = true;
     }
 }

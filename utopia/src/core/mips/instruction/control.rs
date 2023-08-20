@@ -69,8 +69,7 @@ pub fn branch<Op: BranchOperator, const LINK: bool, const LIKELY: bool>(
 
         if LIKELY {
             // Skip the delay slot
-            core.next[0] = core.next[1];
-            core.next[1] = core.next[1].wrapping_add(4);
+            core.jump_now(core.next[1]);
         }
     }
 }

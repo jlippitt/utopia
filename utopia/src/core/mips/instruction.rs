@@ -20,7 +20,7 @@ mod register32;
 mod register64;
 mod store;
 
-pub fn dispatch(core: &mut Core<impl Bus>, word: u32) {
+pub fn dispatch<T: Bus>(core: &mut Core<T>, word: u32) {
     use operator as op;
 
     match word >> 26 {
@@ -40,8 +40,14 @@ pub fn dispatch(core: &mut Core<impl Bus>, word: u32) {
         0o15 => type_i(core, ori, word),
         0o16 => type_i(core, xori, word),
         0o17 => type_i(core, lui, word),
-        0o20 => cp0::cop0(core, word),
-        0o21 => cp1::cop1(core, word),
+        0o20 => {
+            debug_assert!(T::CP0);
+            cp0::cop0(core, word);
+        }
+        0o21 => {
+            debug_assert!(T::CP1);
+            cp1::cop1(core, word);
+        }
         0o24 => type_i(core, branch::<op::Beq, false, true>, word),
         0o25 => type_i(core, branch::<op::Bne, false, true>, word),
         0o26 => type_i(core, branch::<op::Blez, false, true>, word),
@@ -66,11 +72,23 @@ pub fn dispatch(core: &mut Core<impl Bus>, word: u32) {
         0o55 => type_i(core, sdr, word),
         0o56 => type_i(core, swr, word),
         0o57 => type_i(core, cache, word),
-        0o61 => type_i(core, cp1::lwc1, word),
-        0o65 => type_i(core, cp1::ldc1, word),
+        0o61 => {
+            debug_assert!(T::CP1);
+            type_i(core, cp1::lwc1, word);
+        }
+        0o65 => {
+            debug_assert!(T::CP1);
+            type_i(core, cp1::ldc1, word);
+        }
         0o67 => type_i(core, ld, word),
-        0o71 => type_i(core, cp1::swc1, word),
-        0o75 => type_i(core, cp1::sdc1, word),
+        0o71 => {
+            debug_assert!(T::CP1);
+            type_i(core, cp1::swc1, word);
+        }
+        0o75 => {
+            debug_assert!(T::CP1);
+            type_i(core, cp1::sdc1, word);
+        }
         0o77 => type_i(core, sd, word),
         opcode => unimplemented!("Opcode {:02o} ({:08X}: {:08X})", opcode, core.pc, word),
     }

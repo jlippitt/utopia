@@ -193,6 +193,11 @@ impl Hardware {
 }
 
 impl Bus for Hardware {
+    const CP0: bool = true;
+    const CP1: bool = true;
+    const MUL_DIV: bool = true;
+    const INSTR_64: bool = true;
+
     fn read<T: Value>(&mut self, address: u32) -> T {
         match address >> 29 {
             4 => self.read_physical(address - 0x8000_0000), // TODO: Caching

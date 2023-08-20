@@ -1,41 +1,53 @@
 use super::dma::{Dma, DmaRequest};
+use crate::core::mips::{Bus, Core, Interrupt};
 use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
 use tracing::debug;
 
 pub const DMEM_SIZE: usize = 4096;
 
 const IMEM_SIZE: usize = 4096;
-const RAM_SIZE: usize = DMEM_SIZE + IMEM_SIZE;
 
 pub struct Rsp {
     dma_requested: Dma,
     dma_spaddr: u32,
     dma_ramaddr: u32,
-    hw: Hardware,
+    core: Core<Hardware>,
 }
 
 impl Rsp {
     pub fn new<T: Into<Vec<u8>>>(dmem: T) -> Self {
-        let mut ram = dmem.into();
+        let dmem = dmem.into();
 
-        assert!(ram.len() == DMEM_SIZE);
-
-        ram.resize(RAM_SIZE, 0);
+        assert!(dmem.len() == DMEM_SIZE);
 
         Self {
             dma_requested: Dma::None,
             dma_spaddr: 0,
             dma_ramaddr: 0,
-            hw: Hardware::new(ram),
+            core: Core::new(Hardware::new(dmem), Default::default()),
         }
     }
 
     pub fn read_ram<T: Value>(&self, address: u32) -> T {
-        self.hw.ram.read_be(address as usize)
+        // TODO: Mirroring
+        let address = address as usize;
+
+        if address < DMEM_SIZE {
+            self.core.bus().dmem.read_be(address)
+        } else {
+            self.core.bus().imem.read_be(address)
+        }
     }
 
     pub fn write_ram<T: Value>(&mut self, address: u32, value: T) {
-        self.hw.ram.write_be(address as usize, value);
+        // TODO: Mirroring
+        let address = address as usize;
+
+        if address < DMEM_SIZE {
+            self.core.bus_mut().dmem.write_be(address, value);
+        } else {
+            self.core.bus_mut().imem.write_be(address, value);
+        }
     }
 
     pub fn dma_requested(&self) -> Dma {
@@ -59,7 +71,7 @@ impl DataReader for Rsp {
                 // TODO
                 0x01
             }
-            0x0008_0000 => self.hw.pc,
+            0x0008_0000 => self.core.pc(),
             _ => unimplemented!("RSP Register Read: {:08X}", address),
         }
     }
@@ -91,8 +103,8 @@ impl DataWriter for Rsp {
                 }
             }
             0x0008_0000 => {
-                self.hw.pc = value & 0x0ffc;
-                debug!("RSP Program Counter: {:08X}", self.hw.pc);
+                self.core.set_pc(value & 0x0ffc);
+                debug!("RSP Program Counter: {:04X}", value & 0x0ffc);
             }
             _ => unimplemented!("RSP Register Write: {:08X} <= {:08X}", address, value),
         }
@@ -100,12 +112,44 @@ impl DataWriter for Rsp {
 }
 
 struct Hardware {
-    ram: Vec<u8>,
-    pc: u32,
+    dmem: Vec<u8>,
+    imem: Vec<u8>,
 }
 
 impl Hardware {
-    fn new(ram: Vec<u8>) -> Self {
-        Self { ram, pc: 0 }
+    fn new(dmem: Vec<u8>) -> Self {
+        Self {
+            dmem,
+            imem: vec![0; IMEM_SIZE],
+        }
+    }
+}
+
+impl Bus for Hardware {
+    const CP0: bool = false;
+    const CP1: bool = false;
+    const MUL_DIV: bool = false;
+    const INSTR_64: bool = false;
+    const PC_MASK: u32 = 0xfff;
+
+    fn read_opcode<T: Value>(&mut self, address: u32) -> T {
+        self.imem.read_be(address as usize)
+    }
+
+    fn read<T: Value>(&mut self, address: u32) -> T {
+        self.dmem.read_be(address as usize)
+    }
+
+    fn write<T: Value>(&mut self, address: u32, value: T) {
+        self.dmem.write_be(address as usize, value);
+    }
+
+    fn step(&mut self) {
+        // TODO
+    }
+
+    fn poll(&self) -> Interrupt {
+        // No interrupts in RSP
+        0
     }
 }

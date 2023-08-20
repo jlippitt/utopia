@@ -143,8 +143,7 @@ pub fn update(core: &mut Core<impl Bus>) {
 
     core.cp0.status.set_exl(true);
 
-    core.next[0] = 0x8000_0180;
-    core.next[1] = core.next[0].wrapping_add(4);
+    core.jump_now(0x8000_0180);
 }
 
 pub fn cop0(core: &mut Core<impl Bus>, word: u32) {
@@ -306,12 +305,10 @@ fn eret(core: &mut Core<impl Bus>) {
     debug!("{:08X} ERET", core.pc);
 
     if core.cp0.status.erl() {
-        core.next[0] = core.cp0.error_epc;
-        core.next[1] = core.next[0].wrapping_add(4);
+        core.jump_now(core.cp0.error_epc);
         core.cp0.status.set_erl(false);
     } else {
-        core.next[0] = core.cp0.epc;
-        core.next[1] = core.next[0].wrapping_add(4);
+        core.jump_now(core.cp0.epc);
         core.cp0.status.set_exl(false);
     }
 }
