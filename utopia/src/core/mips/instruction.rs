@@ -1,5 +1,6 @@
+use super::cp1;
 use super::operator;
-use super::{cp0, cp1, Bus, Core};
+use super::{Bus, Coprocessor0, Coprocessor2, Core};
 use control::*;
 use immediate32::*;
 use immediate64::*;
@@ -40,14 +41,12 @@ pub fn dispatch<T: Bus>(core: &mut Core<T>, word: u32) {
         0o15 => type_i(core, ori, word),
         0o16 => type_i(core, xori, word),
         0o17 => type_i(core, lui, word),
-        0o20 => {
-            debug_assert!(T::CP0);
-            cp0::cop0(core, word);
-        }
+        0o20 => T::Cp0::dispatch(core, word),
         0o21 => {
             debug_assert!(T::CP1);
             cp1::cop1(core, word);
         }
+        0o22 => T::Cp2::dispatch(core, word),
         0o24 => type_i(core, branch::<op::Beq, false, true>, word),
         0o25 => type_i(core, branch::<op::Bne, false, true>, word),
         0o26 => type_i(core, branch::<op::Blez, false, true>, word),

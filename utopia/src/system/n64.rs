@@ -1,5 +1,5 @@
 use super::{JoypadState, System};
-use crate::core::mips::{Bus, Core, Interrupt, State};
+use crate::core::mips::{Bus, Core, Cp0, Interrupt, State};
 use crate::util::facade::{ReadFacade, Value, WriteFacade};
 use audio::AudioInterface;
 use interrupt::{CpuInterrupt, RcpInterrupt};
@@ -193,7 +193,9 @@ impl Hardware {
 }
 
 impl Bus for Hardware {
-    const CP0: bool = true;
+    type Cp0 = Cp0;
+    type Cp2 = ();
+
     const CP1: bool = true;
     const MUL_DIV: bool = true;
     const INSTR_64: bool = true;

@@ -146,7 +146,9 @@ impl Hardware {
 }
 
 impl Bus for Hardware {
-    const CP0: bool = false;
+    type Cp0 = ();
+    type Cp2 = ();
+
     const CP1: bool = false;
     const MUL_DIV: bool = false;
     const INSTR_64: bool = false;

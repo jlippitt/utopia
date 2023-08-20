@@ -1,4 +1,4 @@
-use super::{Bus, Core, Interrupt, REGS};
+use super::{Bus, Coprocessor0, Core, Interrupt, REGS};
 use bitfield_struct::bitfield;
 use tracing::debug;
 
@@ -105,64 +105,70 @@ pub struct Cp0 {
     tlb_entries: [TlbEntry; 32],
 }
 
-pub fn update(core: &mut Core<impl Bus>) {
-    core.cp0.count = core.cp0.count.wrapping_add(1);
-
-    if core.cp0.count == core.cp0.compare {
-        core.cp0.int_active |= INT_TIMER;
+impl Coprocessor0 for Cp0 {
+    fn new() -> Self {
+        Self::default()
     }
 
-    // Test for interrupts
-    let cp0 = &mut core.cp0;
-
-    // If IE=0, EXL=1 or ERL=1, no interrupt for you
-    if (u32::from(cp0.status) ^ 0x01) & 0x07 != 0 {
-        return;
+    fn dispatch<T: Bus<Cp0 = Self>>(core: &mut Core<T>, word: u32) {
+        match (word >> 21) & 31 {
+            0b00000 => type_r(core, mfc0, word),
+            0b00100 => type_r(core, mtc0, word),
+            0b10000..=0b11111 => match word & 63 {
+                0o01 => tlbr(core),
+                0o02 => tlbwi(core),
+                0o10 => tlbp(core),
+                0o30 => eret(core),
+                func => unimplemented!(
+                    "CP0 RS=10000 FN={:06b} ({:08X}: {:08X})",
+                    func,
+                    core.pc,
+                    word
+                ),
+            },
+            rs => unimplemented!("CP0 RS={:05b} ({:08X}: {:08X})", rs, core.pc, word),
+        }
     }
 
-    let int_active = (cp0.int_active | core.bus.poll()) & cp0.status.im();
+    fn update<T: Bus<Cp0 = Self>>(core: &mut Core<T>) {
+        core.cp0.count = core.cp0.count.wrapping_add(1);
 
-    if int_active == 0 {
-        return;
-    }
+        if core.cp0.count == core.cp0.compare {
+            core.cp0.int_active |= INT_TIMER;
+        }
 
-    // Handle interrupt exception
-    debug!("-- Exception: {:08b} --", int_active);
+        // Test for interrupts
+        let cp0 = &mut core.cp0;
 
-    let int_pending = (cp0.cause.ip() & 0x03) | (int_active & 0xfc);
-    cp0.cause.set_ip(int_pending);
+        // If IE=0, EXL=1 or ERL=1, no interrupt for you
+        if (u32::from(cp0.status) ^ 0x01) & 0x07 != 0 {
+            return;
+        }
 
-    cp0.cause.set_exc_code(0);
-    cp0.cause.set_bd(core.delay);
+        let int_active = (cp0.int_active | core.bus.poll()) & cp0.status.im();
 
-    core.cp0.epc = if core.delay {
-        core.next[0].wrapping_sub(4)
-    } else {
-        core.next[0]
-    };
+        if int_active == 0 {
+            return;
+        }
 
-    core.cp0.status.set_exl(true);
+        // Handle interrupt exception
+        debug!("-- Exception: {:08b} --", int_active);
 
-    core.jump_now(0x8000_0180);
-}
+        let int_pending = (cp0.cause.ip() & 0x03) | (int_active & 0xfc);
+        cp0.cause.set_ip(int_pending);
 
-pub fn cop0(core: &mut Core<impl Bus>, word: u32) {
-    match (word >> 21) & 31 {
-        0b00000 => type_r(core, mfc0, word),
-        0b00100 => type_r(core, mtc0, word),
-        0b10000..=0b11111 => match word & 63 {
-            0o01 => tlbr(core),
-            0o02 => tlbwi(core),
-            0o10 => tlbp(core),
-            0o30 => eret(core),
-            func => unimplemented!(
-                "CP0 RS=10000 FN={:06b} ({:08X}: {:08X})",
-                func,
-                core.pc,
-                word
-            ),
-        },
-        rs => unimplemented!("CP0 RS={:05b} ({:08X}: {:08X})", rs, core.pc, word),
+        cp0.cause.set_exc_code(0);
+        cp0.cause.set_bd(core.delay);
+
+        core.cp0.epc = if core.delay {
+            core.next[0].wrapping_sub(4)
+        } else {
+            core.next[0]
+        };
+
+        core.cp0.status.set_exl(true);
+
+        core.jump_now(0x8000_0180);
     }
 }
 
@@ -172,7 +178,7 @@ fn type_r<T: Bus>(core: &mut Core<T>, instr: impl Fn(&mut Core<T>, usize, usize)
     instr(core, rt, rd);
 }
 
-fn mfc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
+fn mfc0(core: &mut Core<impl Bus<Cp0 = Cp0>>, rt: usize, rd: usize) {
     debug!("{:08X} MFC0 {}, {}", core.pc, REGS[rt], CREGS[rd]);
 
     let result = match rd {
@@ -193,7 +199,7 @@ fn mfc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
     core.set(rt, result);
 }
 
-fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
+fn mtc0(core: &mut Core<impl Bus<Cp0 = Cp0>>, rt: usize, rd: usize) {
     debug!("{:08X} MTC0 {}, {}", core.pc, REGS[rt], CREGS[rd]);
 
     let value = core.get(rt);
@@ -249,7 +255,7 @@ fn mtc0(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
     }
 }
 
-fn tlbr(core: &mut Core<impl Bus>) {
+fn tlbr(core: &mut Core<impl Bus<Cp0 = Cp0>>) {
     debug!("{:08X} TLBR", core.pc);
 
     let tlb_entry = &core.cp0.tlb_entries[core.cp0.index as usize];
@@ -266,7 +272,7 @@ fn tlbr(core: &mut Core<impl Bus>) {
     debug!("  CP0 HI: {:08X}", core.cp0.hi);
 }
 
-fn tlbwi(core: &mut Core<impl Bus>) {
+fn tlbwi(core: &mut Core<impl Bus<Cp0 = Cp0>>) {
     debug!("{:08X} TLBWI", core.pc);
 
     let tlb_entry = &mut core.cp0.tlb_entries[core.cp0.index as usize];
@@ -278,7 +284,7 @@ fn tlbwi(core: &mut Core<impl Bus>) {
     debug!("TLB Entry {}: {:X?}", core.cp0.index, tlb_entry);
 }
 
-fn tlbp(core: &mut Core<impl Bus>) {
+fn tlbp(core: &mut Core<impl Bus<Cp0 = Cp0>>) {
     debug!("{:08X} TLBP", core.pc);
 
     let index = core.cp0.tlb_entries.iter().position(|entry| {
@@ -301,7 +307,7 @@ fn tlbp(core: &mut Core<impl Bus>) {
     debug!("  CP0 Index: {}", core.cp0.index);
 }
 
-fn eret(core: &mut Core<impl Bus>) {
+fn eret(core: &mut Core<impl Bus<Cp0 = Cp0>>) {
     debug!("{:08X} ERET", core.pc);
 
     if core.cp0.status.erl() {
