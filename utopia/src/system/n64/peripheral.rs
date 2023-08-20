@@ -1,4 +1,4 @@
-use super::dma::{Dma, DmaRequest};
+use super::dma::Dma;
 use super::interrupt::{RcpIntType, RcpInterrupt};
 use crate::util::facade::{DataReader, DataWriter};
 use tracing::debug;
@@ -11,7 +11,7 @@ struct BsdDom {
 }
 
 pub struct PeripheralInterface {
-    dma_requested: Dma,
+    dma_requested: Option<Dma>,
     dram_address: u32,
     cart_address: u32,
     bsd_dom: [BsdDom; 2],
@@ -21,7 +21,7 @@ pub struct PeripheralInterface {
 impl PeripheralInterface {
     pub fn new(interrupt: RcpInterrupt) -> Self {
         Self {
-            dma_requested: Dma::None,
+            dma_requested: None,
             dram_address: 0,
             cart_address: 0,
             bsd_dom: [
@@ -43,12 +43,12 @@ impl PeripheralInterface {
         }
     }
 
-    pub fn dma_requested(&self) -> Dma {
+    pub fn dma_requested(&self) -> Option<Dma> {
         self.dma_requested
     }
 
     pub fn finish_dma(&mut self) {
-        self.dma_requested = Dma::None;
+        self.dma_requested = None;
         self.interrupt.raise(RcpIntType::PI);
     }
 }
@@ -72,9 +72,10 @@ impl DataReader for PeripheralInterface {
                     0
                 };
 
-                value |= match self.dma_requested {
-                    Dma::None => 0,
-                    _ => 0x01,
+                value |= if self.dma_requested.is_some() {
+                    0x01
+                } else {
+                    0
                 };
 
                 value
@@ -104,10 +105,11 @@ impl DataWriter for PeripheralInterface {
                 debug!("PI CART Address: {:08X}", self.cart_address);
             }
             0x0c => {
-                self.dma_requested = Dma::Write(DmaRequest {
+                self.dma_requested = Some(Dma {
                     src_addr: self.cart_address,
                     dst_addr: self.dram_address,
                     len: value & 0x00ff_ffff,
+                    reverse: false,
                 });
             }
             0x10 => {

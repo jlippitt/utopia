@@ -1,4 +1,4 @@
-use super::dma::{Dma, DmaRequest};
+use super::dma::Dma;
 use super::interrupt::{RcpIntType, RcpInterrupt};
 use crate::util::facade::{DataReader, DataWriter};
 use crate::JoypadState;
@@ -8,7 +8,7 @@ use tracing::debug;
 mod pif;
 
 pub struct SerialInterface {
-    dma_requested: Dma,
+    dma_requested: Option<Dma>,
     dram_addr: u32,
     interrupt: RcpInterrupt,
     pif: Pif,
@@ -17,7 +17,7 @@ pub struct SerialInterface {
 impl SerialInterface {
     pub fn new(interrupt: RcpInterrupt) -> Self {
         Self {
-            dma_requested: Dma::None,
+            dma_requested: None,
             dram_addr: 0,
             interrupt,
             pif: Pif::new(),
@@ -32,12 +32,12 @@ impl SerialInterface {
         &mut self.pif
     }
 
-    pub fn dma_requested(&self) -> Dma {
+    pub fn dma_requested(&self) -> Option<Dma> {
         self.dma_requested
     }
 
     pub fn finish_dma(&mut self) {
-        self.dma_requested = Dma::None;
+        self.dma_requested = None;
         self.interrupt.raise(RcpIntType::SI);
         self.pif.upload();
     }
@@ -55,9 +55,10 @@ impl DataReader for SerialInterface {
         match address {
             0x18 => {
                 // SI_STATUS
-                match self.dma_requested {
-                    Dma::None => 0,
-                    _ => 0x1000,
+                if self.dma_requested.is_some() {
+                    0x1000
+                } else {
+                    0
                 }
             }
             _ => unimplemented!("Serial Interface Read: {:08X}", address),
@@ -75,17 +76,19 @@ impl DataWriter for SerialInterface {
             0x04 => {
                 self.pif.process();
 
-                self.dma_requested = Dma::Read(DmaRequest {
+                self.dma_requested = Some(Dma {
                     src_addr: self.dram_addr,
                     dst_addr: value & 0x07fc,
                     len: 64,
+                    reverse: true,
                 });
             }
             0x10 => {
-                self.dma_requested = Dma::Write(DmaRequest {
+                self.dma_requested = Some(Dma {
                     src_addr: self.dram_addr,
                     dst_addr: value & 0x07fc,
                     len: 64,
+                    reverse: false,
                 });
             }
             0x18 => {

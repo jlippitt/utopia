@@ -56,7 +56,7 @@ impl Rsp {
         }
     }
 
-    pub fn dma_requested(&self) -> Dma {
+    pub fn dma_requested(&self) -> Option<Dma> {
         self.regs.borrow().dma_requested()
     }
 
@@ -64,12 +64,12 @@ impl Rsp {
         self.regs.borrow_mut().finish_dma()
     }
 
-    pub fn step(&mut self) -> Dma {
+    pub fn step(&mut self) -> Option<Dma> {
         {
             let regs = self.regs.borrow();
 
             if regs.halted() {
-                return Dma::None;
+                return None;
             }
 
             if regs.single_step() {
@@ -83,7 +83,7 @@ impl Rsp {
 
         debug!("[CPU => RSP]");
 
-        while self.regs.borrow().dma_requested() == Dma::None {
+        while self.regs.borrow().dma_requested().is_none() {
             self.core.step();
         }
 

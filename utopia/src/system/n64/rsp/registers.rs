@@ -1,4 +1,4 @@
-use super::super::dma::{Dma, DmaRequest};
+use super::super::dma::Dma;
 use bitfield_struct::bitfield;
 use tracing::debug;
 
@@ -17,7 +17,7 @@ struct Status {
 }
 
 pub struct Registers {
-    dma_requested: Dma,
+    dma_requested: Option<Dma>,
     dma_spaddr: u32,
     dma_ramaddr: u32,
     status: Status,
@@ -45,7 +45,7 @@ impl Registers {
 
     pub fn new() -> Self {
         Self {
-            dma_requested: Dma::None,
+            dma_requested: None,
             dma_spaddr: 0,
             dma_ramaddr: 0,
             status: Status::new().with_halted(true),
@@ -85,10 +85,11 @@ impl Registers {
                 debug!("SP_DMA_RAMADDR: {:08X}", self.dma_ramaddr);
             }
             2 => {
-                self.dma_requested = Dma::Read(DmaRequest {
+                self.dma_requested = Some(Dma {
                     src_addr: self.dma_spaddr,
                     dst_addr: self.dma_ramaddr,
                     len: value & 0xff8f_fff8,
+                    reverse: true,
                 })
             }
             4 => {
@@ -157,11 +158,11 @@ impl Registers {
         }
     }
 
-    pub fn dma_requested(&self) -> Dma {
+    pub fn dma_requested(&self) -> Option<Dma> {
         self.dma_requested
     }
 
     pub fn finish_dma(&mut self) {
-        self.dma_requested = Dma::None;
+        self.dma_requested = None;
     }
 }

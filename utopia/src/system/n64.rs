@@ -2,7 +2,6 @@ use super::{JoypadState, System};
 use crate::core::mips::{Bus, Core, Cp0, Interrupt, State};
 use crate::util::facade::{ReadFacade, Value, WriteFacade};
 use audio::AudioInterface;
-use dma::Dma;
 use interrupt::{CpuInterrupt, RcpInterrupt};
 use mips::MipsInterface;
 use peripheral::PeripheralInterface;
@@ -170,7 +169,10 @@ impl Hardware {
                     self.rsp.write_ram(index, value);
                 } else {
                     self.rsp.write_be(index, value);
-                    self.rsp_dma();
+
+                    if let Some(request) = self.rsp.dma_requested() {
+                        self.rsp_dma(request);
+                    }
                 }
             }
             0x041 => todo!("RDP Command Register Writes"),
@@ -180,12 +182,18 @@ impl Hardware {
             0x045 => self.audio.write_be(address & 0x000f_ffff, value),
             0x046 => {
                 self.peripheral.write_be(address & 0x000f_ffff, value);
-                self.peripheral_dma();
+
+                if let Some(request) = self.peripheral.dma_requested() {
+                    self.peripheral_dma(request);
+                }
             }
             0x047 => self.rdram.write_interface(address & 0x000f_ffff, value),
             0x048 => {
                 self.serial.write_be(address & 0x000f_ffff, value);
-                self.serial_dma();
+
+                if let Some(request) = self.serial.dma_requested() {
+                    self.serial_dma(request);
+                }
             }
             0x080..=0x0ff => todo!("SRAM Writes"),
             0x100..=0x1fb => panic!("Write to ROM area: {:08X}", address),
@@ -222,7 +230,7 @@ impl Bus for Hardware {
     fn step(&mut self) {
         self.cycles += CYCLES_PER_STEP;
 
-        if self.rsp.step() != Dma::None {
+        if self.rsp.step().is_some() {
             panic!("RSP initiated DMA");
         }
 
