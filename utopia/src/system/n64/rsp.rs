@@ -76,7 +76,7 @@ impl DataWriter for Hardware {
             0x0004_0010 => {
                 // SP_STATUS
                 // TODO
-                if (value & 1) == 0 {
+                if (value & 1) != 0 {
                     todo!("RSP");
                 }
             }
