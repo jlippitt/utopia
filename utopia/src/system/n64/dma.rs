@@ -16,6 +16,42 @@ pub enum Dma {
 }
 
 impl super::Hardware {
+    pub(super) fn rsp_dma(&mut self) {
+        match self.rsp.dma_requested() {
+            Dma::None => (),
+            Dma::Read(DmaRequest {
+                src_addr,
+                dst_addr,
+                len,
+            }) => {
+                let skip = (len >> 20) & 0xff8;
+                let count = (len >> 12) & 0xff;
+                let rdlen = (len & 0xff8) + 8;
+
+                if skip != 0 {
+                    todo!("RSP DMA Skip");
+                }
+
+                if count != 0 {
+                    todo!("RSP DMA Count");
+                }
+
+                for index in 0..rdlen {
+                    let value: u8 = self.rdram.read_data(dst_addr.wrapping_add(index));
+                    self.rsp.write_ram(src_addr.wrapping_add(index), value);
+                }
+
+                debug!(
+                    "SP DMA: {} bytes read from {:08X} to {:08X}",
+                    rdlen, dst_addr, src_addr,
+                );
+
+                self.rsp.finish_dma();
+            }
+            Dma::Write(..) => todo!("RSP DMA Writes"),
+        }
+    }
+
     pub(super) fn peripheral_dma(&mut self) {
         // TODO: As most transfers will have lengths divisible by 4, this can be
         // better optimised. As (presumably) cart_address can only be ROM or
