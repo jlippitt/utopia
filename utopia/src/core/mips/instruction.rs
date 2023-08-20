@@ -2,6 +2,7 @@ use super::cp1;
 use super::operator;
 use super::{Bus, Coprocessor0, Coprocessor2, Core};
 use control::*;
+use coprocessor::*;
 use immediate32::*;
 use immediate64::*;
 use load::*;
@@ -12,6 +13,7 @@ use register64::*;
 use store::*;
 
 mod control;
+mod coprocessor;
 mod immediate32;
 mod immediate64;
 mod load;
@@ -41,12 +43,12 @@ pub fn dispatch<T: Bus>(core: &mut Core<T>, word: u32) {
         0o15 => type_i(core, ori, word),
         0o16 => type_i(core, xori, word),
         0o17 => type_i(core, lui, word),
-        0o20 => T::Cp0::dispatch(core, word),
+        0o20 => cop0(core, word),
         0o21 => {
             debug_assert!(T::CP1);
             cp1::cop1(core, word);
         }
-        0o22 => T::Cp2::dispatch(core, word),
+        0o22 => cop2(core, word),
         0o24 => type_i(core, branch::<op::Beq, false, true>, word),
         0o25 => type_i(core, branch::<op::Bne, false, true>, word),
         0o26 => type_i(core, branch::<op::Blez, false, true>, word),
@@ -161,6 +163,24 @@ fn regimm(core: &mut Core<impl Bus>, word: u32) {
         0b10010 => type_i(core, branch::<op::Bltz, true, true>, word),
         0b10011 => type_i(core, branch::<op::Bgez, true, true>, word),
         rt => unimplemented!("REGIMM RT={:05b} ({:08X}: {:08X})", rt, core.pc, word),
+    }
+}
+
+fn cop0<T: Bus>(core: &mut Core<T>, word: u32) {
+    match (word >> 21) & 31 {
+        0b00000 => type_r(core, mfc0, word),
+        0b00100 => type_r(core, mtc0, word),
+        0b10000..=0b11111 => T::Cp0::dispatch(core, word),
+        rs => unimplemented!("CP0 RS={:05b} ({:08X}: {:08X})", rs, core.pc, word),
+    }
+}
+
+fn cop2<T: Bus>(core: &mut Core<T>, word: u32) {
+    match (word >> 21) & 31 {
+        //0b00000 => type_r(core, mfc2, word),
+        //0b00100 => type_r(core, mtc2, word),
+        0b10000..=0b11111 => T::Cp2::dispatch(core, word),
+        rs => unimplemented!("CP2 RS={:05b} ({:08X}: {:08X})", rs, core.pc, word),
     }
 }
 

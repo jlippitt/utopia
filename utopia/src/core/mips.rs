@@ -10,7 +10,7 @@ mod cp1;
 mod instruction;
 mod operator;
 
-pub const REGS: [&str; 32] = [
+const REGS: [&str; 32] = [
     "$ZERO", "$AT", "$V0", "$V1", "$A0", "$A1", "$A2", "$A3", "$T0", "$T1", "$T2", "$T3", "$T4",
     "$T5", "$T6", "$T7", "$S0", "$S1", "$S2", "$S3", "$S4", "$S5", "$S6", "$S7", "$T8", "$T9",
     "$K0", "$K1", "$GP", "$SP", "$FP", "$RA",
@@ -19,11 +19,24 @@ pub const REGS: [&str; 32] = [
 pub type Interrupt = u8;
 
 pub trait Coprocessor0 {
+    const REGS: [&'static str; 32];
+    fn get(core: &Core<impl Bus<Cp0 = Self>>, index: usize) -> u32;
+    fn set(core: &mut Core<impl Bus<Cp0 = Self>>, index: usize, value: u32);
     fn dispatch(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32);
     fn update(_core: &mut Core<impl Bus<Cp0 = Self>>) {}
 }
 
 impl Coprocessor0 for () {
+    const REGS: [&'static str; 32] = [""; 32];
+
+    fn get(_core: &Core<impl Bus<Cp0 = Self>>, _index: usize) -> u32 {
+        unimplemented!("CP0");
+    }
+
+    fn set(_core: &mut Core<impl Bus<Cp0 = Self>>, _index: usize, _value: u32) {
+        unimplemented!("CP0");
+    }
+
     fn dispatch(_core: &mut Core<impl Bus<Cp0 = Self>>, _word: u32) {
         unimplemented!("CP0");
     }
@@ -139,8 +152,7 @@ impl<T: Bus> Core<T> {
         self.delay = false;
     }
 
-    // TODO: Review need for 'pub'
-    pub fn get(&self, reg: usize) -> u32 {
+    fn get(&self, reg: usize) -> u32 {
         self.regs[reg] as u32
     }
 
@@ -148,8 +160,7 @@ impl<T: Bus> Core<T> {
         self.regs[reg]
     }
 
-    // TODO: Review need for 'pub'
-    pub fn set(&mut self, reg: usize, value: u32) {
+    fn set(&mut self, reg: usize, value: u32) {
         if reg == 0 {
             return;
         }

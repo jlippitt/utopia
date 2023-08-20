@@ -1,42 +1,6 @@
-use super::{Bus, Coprocessor0, Core, Interrupt, REGS};
+use super::{Bus, Coprocessor0, Core, Interrupt};
 use bitfield_struct::bitfield;
 use tracing::debug;
-
-#[rustfmt::skip]
-const CREGS: [&str; 32] = [
-    "Index",
-    "Random",
-    "EntryLo0",
-    "EntryLo1",
-    "Context",
-    "PageMask",
-    "Wired",
-    "$7",
-    "BadVAddr",
-    "Count",
-    "EntryHi",
-    "Compare",
-    "Status",
-    "Cause",
-    "EPC",
-    "PRId",
-    "Config",
-    "LLAddr",
-    "WatchLo",
-    "WatchHi",
-    "XContext",
-    "$21",
-    "$22",
-    "$23",
-    "$24",
-    "$25",
-    "Parity Error",
-    "Cache Error",
-    "TagLo",
-    "TagHi",
-    "ErrorEPC",
-    "$31",
-];
 
 const INT_TIMER: Interrupt = 0x80;
 
@@ -112,23 +76,127 @@ impl Cp0 {
 }
 
 impl Coprocessor0 for Cp0 {
+    #[rustfmt::skip]
+    const REGS: [&'static str; 32] = [
+        "Index",
+        "Random",
+        "EntryLo0",
+        "EntryLo1",
+        "Context",
+        "PageMask",
+        "Wired",
+        "$7",
+        "BadVAddr",
+        "Count",
+        "EntryHi",
+        "Compare",
+        "Status",
+        "Cause",
+        "EPC",
+        "PRId",
+        "Config",
+        "LLAddr",
+        "WatchLo",
+        "WatchHi",
+        "XContext",
+        "$21",
+        "$22",
+        "$23",
+        "$24",
+        "$25",
+        "Parity Error",
+        "Cache Error",
+        "TagLo",
+        "TagHi",
+        "ErrorEPC",
+        "$31",
+    ];
+
+    fn get(core: &Core<impl Bus<Cp0 = Self>>, index: usize) -> u32 {
+        let cp0 = &core.cp0;
+
+        match index {
+            0 => cp0.index,
+            2 => cp0.lo0,
+            3 => cp0.lo1,
+            5 => cp0.page_mask,
+            6 => cp0.wired,
+            9 => cp0.count,
+            10 => cp0.hi,
+            11 => cp0.compare,
+            12 => u32::from(cp0.status) & !0x0088_0000,
+            13 => cp0.cause.into(),
+            14 => cp0.epc,
+            _ => todo!("CP0 Register Read: {}", Self::REGS[index]),
+        }
+    }
+
+    fn set(core: &mut Core<impl Bus<Cp0 = Self>>, index: usize, value: u32) {
+        let cp0 = &mut core.cp0;
+
+        match index {
+            0 => {
+                cp0.index = value & 0x8000_003f;
+                debug!("  CP0 Index: {}", cp0.index);
+            }
+            2 => {
+                cp0.lo0 = value;
+                debug!("  CP0 LO0: {:08X}", cp0.lo0);
+            }
+            3 => {
+                cp0.lo1 = value;
+                debug!("  CP0 LO1: {:08X}", cp0.lo1);
+            }
+            5 => {
+                cp0.page_mask = value & 0x01ff_e000;
+                debug!("  CP0 Page Mask: {:08X}", cp0.page_mask);
+            }
+            6 => {
+                cp0.wired = value & 0x0000_003f;
+                debug!("  CP0 Wired: {:08X}", cp0.wired);
+            }
+            10 => {
+                cp0.hi = value;
+                debug!("  CP0 HI: {:08X}", cp0.hi);
+            }
+            11 => {
+                cp0.compare = value;
+                debug!("  CP0 Compare: {:08X}", cp0.compare);
+                cp0.int_active &= !INT_TIMER;
+            }
+            12 => {
+                cp0.status = value.into();
+                debug!("  CP0 Status: {:?}", cp0.status);
+                core.cp1.set_reg_size(core.cp0.status.fr());
+            }
+            14 => {
+                cp0.epc = value;
+                debug!("  CP0 EPC: {:08X}", cp0.epc);
+            }
+            30 => {
+                cp0.error_epc = value;
+                debug!("  CP0 Error EPC: {:08X}", cp0.error_epc);
+            }
+            _ => {
+                if value != 0 {
+                    todo!("CP0 Register Write: {} <= {:08X}", Self::REGS[index], value);
+                }
+            }
+        }
+    }
+
     fn dispatch(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32) {
-        match (word >> 21) & 31 {
-            0b00000 => type_r(core, mfc0, word),
-            0b00100 => type_r(core, mtc0, word),
-            0b10000..=0b11111 => match word & 63 {
-                0o01 => tlbr(core),
-                0o02 => tlbwi(core),
-                0o10 => tlbp(core),
-                0o30 => eret(core),
-                func => unimplemented!(
-                    "CP0 RS=10000 FN={:06b} ({:08X}: {:08X})",
-                    func,
-                    core.pc,
-                    word
-                ),
-            },
-            rs => unimplemented!("CP0 RS={:05b} ({:08X}: {:08X})", rs, core.pc, word),
+        match word & 63 {
+            0o01 => tlbr(core),
+            0o02 => tlbwi(core),
+            0o10 => tlbp(core),
+            0o30 => eret(core),
+            func => unimplemented!(
+                "CP0 RS=10000 FN={:06b} ({:08X}: {:08X})",
+                func,
+                core.pc,
+                word
+            ),
         }
     }
 
@@ -171,89 +239,6 @@ impl Coprocessor0 for Cp0 {
         core.cp0.status.set_exl(true);
 
         core.jump_now(0x8000_0180);
-    }
-}
-
-fn type_r<T: Bus>(core: &mut Core<T>, instr: impl Fn(&mut Core<T>, usize, usize), word: u32) {
-    let rt = ((word >> 16) & 31) as usize;
-    let rd = ((word >> 11) & 31) as usize;
-    instr(core, rt, rd);
-}
-
-fn mfc0(core: &mut Core<impl Bus<Cp0 = Cp0>>, rt: usize, rd: usize) {
-    debug!("{:08X} MFC0 {}, {}", core.pc, REGS[rt], CREGS[rd]);
-
-    let result = match rd {
-        0 => core.cp0.index,
-        2 => core.cp0.lo0,
-        3 => core.cp0.lo1,
-        5 => core.cp0.page_mask,
-        6 => core.cp0.wired,
-        9 => core.cp0.count,
-        10 => core.cp0.hi,
-        11 => core.cp0.compare,
-        12 => u32::from(core.cp0.status) & !0x0088_0000,
-        13 => core.cp0.cause.into(),
-        14 => core.cp0.epc,
-        _ => todo!("CP0 Register Read: {}", CREGS[rd]),
-    };
-
-    core.set(rt, result);
-}
-
-fn mtc0(core: &mut Core<impl Bus<Cp0 = Cp0>>, rt: usize, rd: usize) {
-    debug!("{:08X} MTC0 {}, {}", core.pc, REGS[rt], CREGS[rd]);
-
-    let value = core.get(rt);
-
-    match rd {
-        0 => {
-            core.cp0.index = value & 0x8000_003f;
-            debug!("  CP0 Index: {}", core.cp0.index);
-        }
-        2 => {
-            core.cp0.lo0 = value;
-            debug!("  CP0 LO0: {:08X}", core.cp0.lo0);
-        }
-        3 => {
-            core.cp0.lo1 = value;
-            debug!("  CP0 LO1: {:08X}", core.cp0.lo1);
-        }
-        5 => {
-            core.cp0.page_mask = value & 0x01ff_e000;
-            debug!("  CP0 Page Mask: {:08X}", core.cp0.page_mask);
-        }
-        6 => {
-            core.cp0.wired = value & 0x0000_003f;
-            debug!("  CP0 Wired: {:08X}", core.cp0.wired);
-        }
-        10 => {
-            core.cp0.hi = value;
-            debug!("  CP0 HI: {:08X}", core.cp0.hi);
-        }
-        11 => {
-            core.cp0.compare = value;
-            debug!("  CP0 Compare: {:08X}", core.cp0.compare);
-            core.cp0.int_active &= !INT_TIMER;
-        }
-        12 => {
-            core.cp0.status = value.into();
-            debug!("  CP0 Status: {:?}", core.cp0.status);
-            core.cp1.set_reg_size(core.cp0.status.fr());
-        }
-        14 => {
-            core.cp0.epc = value;
-            debug!("  CP0 EPC: {:08X}", core.cp0.epc);
-        }
-        30 => {
-            core.cp0.error_epc = value;
-            debug!("  CP0 Error EPC: {:08X}", core.cp0.error_epc);
-        }
-        _ => {
-            if value != 0 {
-                todo!("CP0 Register Write: {} <= {:08X}", CREGS[rd], value);
-            }
-        }
     }
 }
 
