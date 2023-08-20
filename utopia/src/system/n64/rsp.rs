@@ -1,4 +1,5 @@
 use super::dma::Dma;
+use super::rdp::Registers as RdpRegisters;
 use crate::core::mips::{Bus, Core, Interrupt};
 use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
 use crate::util::MirrorVec;
@@ -21,7 +22,7 @@ pub struct Rsp {
 }
 
 impl Rsp {
-    pub fn new<T: Into<Vec<u8>>>(dmem: T) -> Self {
+    pub fn new<T: Into<Vec<u8>>>(dmem: T, rdp_regs: Rc<RefCell<RdpRegisters>>) -> Self {
         let dmem = dmem.into();
 
         assert!(dmem.len() == DMEM_SIZE);
@@ -30,7 +31,12 @@ impl Rsp {
 
         Self {
             regs: regs.clone(),
-            core: Core::new(Hardware::new(dmem), Cp0::new(regs), (), Default::default()),
+            core: Core::new(
+                Hardware::new(dmem),
+                Cp0::new(regs, rdp_regs),
+                (),
+                Default::default(),
+            ),
         }
     }
 

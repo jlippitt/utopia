@@ -5,10 +5,13 @@ use audio::AudioInterface;
 use interrupt::{CpuInterrupt, RcpInterrupt};
 use mips::MipsInterface;
 use peripheral::PeripheralInterface;
+use rdp::{Rdp, Registers as RdpRegisters};
 use rdram::Rdram;
 use rsp::{Rsp, DMEM_SIZE};
 use serial::SerialInterface;
+use std::cell::RefCell;
 use std::error::Error;
+use std::rc::Rc;
 use tracing::info;
 use video::VideoInterface;
 
@@ -18,6 +21,7 @@ mod header;
 mod interrupt;
 mod mips;
 mod peripheral;
+mod rdp;
 mod rdram;
 mod rsp;
 mod serial;
@@ -94,6 +98,7 @@ struct Hardware {
     interrupt: CpuInterrupt,
     rdram: Rdram,
     rsp: Rsp,
+    rdp: Rdp,
     mips: MipsInterface,
     video: VideoInterface,
     audio: AudioInterface,
@@ -106,12 +111,14 @@ impl Hardware {
     pub fn new(rom: Vec<u8>) -> Self {
         let interrupt = CpuInterrupt::new();
         let rcp_interrupt = RcpInterrupt::new(interrupt.clone());
+        let rdp_regs = Rc::new(RefCell::new(RdpRegisters::new()));
 
         Self {
             cycles: 0,
             interrupt,
             rdram: Rdram::new(),
-            rsp: Rsp::new(&rom[0..DMEM_SIZE]),
+            rsp: Rsp::new(&rom[0..DMEM_SIZE], rdp_regs.clone()),
+            rdp: Rdp::new(rdp_regs),
             mips: MipsInterface::new(rcp_interrupt.clone()),
             video: VideoInterface::new(rcp_interrupt.clone()),
             audio: AudioInterface::new(rcp_interrupt.clone()),
@@ -134,8 +141,8 @@ impl Hardware {
                     self.rsp.read_be(index)
                 }
             }
-            0x041 => todo!("RDP Command Register Reads"),
-            0x042 => todo!("RDP Span Register Reads"),
+            0x041 => self.rdp.command().read_be(address & 0x000f_ffff),
+            0x042 => self.rdp.span().read_be(address & 0x000f_ffff),
             0x043 => self.mips.read_be(address & 0x000f_ffff),
             0x044 => self.video.read_be(address & 0x000f_ffff),
             0x045 => self.audio.read_be(address & 0x000f_ffff),
@@ -175,8 +182,11 @@ impl Hardware {
                     }
                 }
             }
-            0x041 => todo!("RDP Command Register Writes"),
-            0x042 => todo!("RDP Span Register Writes"),
+            0x041 => self
+                .rdp
+                .command_mut()
+                .write_be(address & 0x000f_ffff, value),
+            0x042 => self.rdp.span_mut().write_be(address & 0x000f_ffff, value),
             0x043 => self.mips.write_be(address & 0x000f_ffff, value),
             0x044 => self.video.write_be(address & 0x000f_ffff, value),
             0x045 => self.audio.write_be(address & 0x000f_ffff, value),

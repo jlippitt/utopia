@@ -24,7 +24,7 @@ pub struct Registers {
 }
 
 impl Registers {
-    pub const NAMES: [&str; 16] = [
+    pub const NAMES: [&str; 8] = [
         "DMA_CACHE",
         "DMA_DRAM",
         "DMA_READ_LENGTH",
@@ -33,14 +33,6 @@ impl Registers {
         "DMA_FULL",
         "DMA_BUSY",
         "SP_SEMAPHORE",
-        "CMD_START",
-        "CMD_END",
-        "CMD_CURRENT",
-        "CMD_STATUS",
-        "CMD_CLOCK",
-        "CMD_BUSY",
-        "CMD_PIPE_BUSY",
-        "CMD_TMEM_BUSY",
     ];
 
     pub fn new() -> Self {
