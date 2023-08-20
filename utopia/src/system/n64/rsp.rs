@@ -59,6 +59,11 @@ impl DataReader for Hardware {
 
     fn read(&self, address: Self::Address) -> Self::Value {
         match address {
+            0x0004_0010 => {
+                // SP_STATUS
+                // TODO
+                0
+            }
             0x0008_0000 => self.pc,
             _ => unimplemented!("RSP Register Read: {:08X}", address),
         }
@@ -70,7 +75,10 @@ impl DataWriter for Hardware {
         match address {
             0x0004_0010 => {
                 // SP_STATUS
-                // We don't need to deal with this yet
+                // TODO
+                if (value & 1) == 0 {
+                    todo!("RSP");
+                }
             }
             0x0008_0000 => {
                 self.pc = value & 0x0ffc;
