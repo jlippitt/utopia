@@ -1,13 +1,15 @@
 use super::registers::Registers;
 use crate::core::mips::{Bus, Coprocessor0, Core, REGS};
+use std::cell::RefCell;
+use std::rc::Rc;
 use tracing::debug;
 
 pub struct Cp0 {
-    regs: Registers,
+    regs: Rc<RefCell<Registers>>,
 }
 
 impl Cp0 {
-    pub fn new(regs: Registers) -> Self {
+    pub fn new(regs: Rc<RefCell<Registers>>) -> Self {
         Self { regs }
     }
 }
@@ -35,7 +37,7 @@ fn mfc0(core: &mut Core<impl Bus<Cp0 = Cp0>>, rt: usize, rd: usize) {
         REGS[rt],
         Registers::NAMES[rd]
     );
-    let result = core.cp0().regs.get(rd);
+    let result = core.cp0().regs.borrow().get(rd);
     core.set(rt, result);
 }
 
@@ -47,5 +49,5 @@ fn mtc0(core: &mut Core<impl Bus<Cp0 = Cp0>>, rt: usize, rd: usize) {
         Registers::NAMES[rd]
     );
     let value = core.get(rt);
-    core.cp0_mut().regs.set(rd, value);
+    core.cp0_mut().regs.borrow_mut().set(rd, value);
 }

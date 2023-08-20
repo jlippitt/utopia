@@ -2,6 +2,7 @@ use super::{JoypadState, System};
 use crate::core::mips::{Bus, Core, Cp0, Interrupt, State};
 use crate::util::facade::{ReadFacade, Value, WriteFacade};
 use audio::AudioInterface;
+use dma::Dma;
 use interrupt::{CpuInterrupt, RcpInterrupt};
 use mips::MipsInterface;
 use peripheral::PeripheralInterface;
@@ -220,6 +221,11 @@ impl Bus for Hardware {
 
     fn step(&mut self) {
         self.cycles += CYCLES_PER_STEP;
+
+        if self.rsp.step() != Dma::None {
+            panic!("RSP initiated DMA");
+        }
+
         self.video.step(CYCLES_PER_STEP);
         self.audio.step(CYCLES_PER_STEP);
     }

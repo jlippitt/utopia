@@ -4,7 +4,9 @@ use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade
 use crate::util::MirrorVec;
 use cp0::Cp0;
 use registers::Registers;
-use tracing::debug;
+use std::cell::RefCell;
+use std::rc::Rc;
+use tracing::{debug, debug_span};
 
 mod cp0;
 mod registers;
@@ -14,7 +16,7 @@ pub const DMEM_SIZE: usize = 4096;
 const IMEM_SIZE: usize = 4096;
 
 pub struct Rsp {
-    regs: Registers,
+    regs: Rc<RefCell<Registers>>,
     core: Core<Hardware>,
 }
 
@@ -24,7 +26,7 @@ impl Rsp {
 
         assert!(dmem.len() == DMEM_SIZE);
 
-        let regs = Registers::new();
+        let regs = Rc::new(RefCell::new(Registers::new()));
 
         Self {
             regs: regs.clone(),
@@ -55,11 +57,37 @@ impl Rsp {
     }
 
     pub fn dma_requested(&self) -> Dma {
-        self.regs.dma_requested()
+        self.regs.borrow().dma_requested()
     }
 
     pub fn finish_dma(&mut self) {
-        self.regs.finish_dma()
+        self.regs.borrow_mut().finish_dma()
+    }
+
+    pub fn step(&mut self) -> Dma {
+        {
+            let regs = self.regs.borrow();
+
+            if regs.halted() {
+                return Dma::None;
+            }
+
+            if regs.single_step() {
+                todo!("Single step");
+            }
+        }
+
+        debug!("[CPU => RSP]");
+
+        let _span = debug_span!("rsp").entered();
+
+        debug!("[CPU => RSP]");
+
+        while self.regs.borrow().dma_requested() == Dma::None {
+            self.core.step();
+        }
+
+        self.regs.borrow().dma_requested()
     }
 }
 
@@ -69,7 +97,7 @@ impl DataReader for Rsp {
 
     fn read(&self, address: Self::Address) -> Self::Value {
         match address {
-            0x0004_0000..=0x0004_001F => self.regs.get((address as usize >> 2) & 7),
+            0x0004_0000..=0x0004_001F => self.regs.borrow().get((address as usize >> 2) & 7),
             0x0008_0000 => self.core.pc(),
             _ => unimplemented!("RSP Register Read: {:08X}", address),
         }
@@ -80,15 +108,9 @@ impl DataWriter for Rsp {
     fn write(&mut self, address: Self::Address, value: Self::Value) {
         match address {
             0x0004_0000..=0x0004_001F => {
-                let start = self.regs.set((address as usize >> 2) & 7, value);
-
-                if start {
-                    debug!("***BEGIN RSP***");
-
-                    loop {
-                        self.core.step();
-                    }
-                }
+                self.regs
+                    .borrow_mut()
+                    .set((address as usize >> 2) & 7, value);
             }
             0x0008_0000 => {
                 self.core.set_pc(value & 0x0ffc);

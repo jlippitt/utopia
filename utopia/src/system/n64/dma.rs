@@ -1,14 +1,14 @@
 use crate::util::facade::{DataReader, DataWriter};
 use tracing::debug;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct DmaRequest {
     pub src_addr: u32,
     pub dst_addr: u32,
     pub len: u32,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Dma {
     None,
     Read(DmaRequest),
