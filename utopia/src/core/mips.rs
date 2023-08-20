@@ -124,6 +124,11 @@ impl<T: Bus> Core<T> {
     }
 
     fn setd(&mut self, reg: usize, value: u64) {
+        if !T::INSTR_64 {
+            self.set(reg, value as u32);
+            return;
+        }
+
         if reg == 0 {
             return;
         }
