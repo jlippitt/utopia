@@ -230,8 +230,8 @@ impl Bus for Hardware {
     fn step(&mut self) {
         self.cycles += CYCLES_PER_STEP;
 
-        if self.rsp.step().is_some() {
-            panic!("RSP initiated DMA");
+        if let Some(request) = self.rsp.step() {
+            self.rsp_dma(request);
         }
 
         self.video.step(CYCLES_PER_STEP);
