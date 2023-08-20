@@ -59,6 +59,15 @@ impl DataReader for AudioInterface {
 
     fn read(&self, address: u32) -> u32 {
         match address & 0x0f {
+            0x04 => {
+                // AI_LENGTH
+                // TODO: This is currently a bit of a hack
+                if self.dma_count > 0 {
+                    self.length
+                } else {
+                    0
+                }
+            }
             0x0c => {
                 // AI_STATUS
                 let mut value = 0x0110_0000;
