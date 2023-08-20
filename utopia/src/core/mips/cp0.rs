@@ -105,11 +105,13 @@ pub struct Cp0 {
     tlb_entries: [TlbEntry; 32],
 }
 
-impl Coprocessor0 for Cp0 {
-    fn new() -> Self {
+impl Cp0 {
+    pub fn new() -> Self {
         Self::default()
     }
+}
 
+impl Coprocessor0 for Cp0 {
     fn dispatch(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32) {
         match (word >> 21) & 31 {
             0b00000 => type_r(core, mfc0, word),

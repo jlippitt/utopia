@@ -3,15 +3,18 @@ use crate::core::mips::{Bus, Core, Interrupt};
 use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
 use crate::util::MirrorVec;
 use cp0::Cp0;
+use registers::Registers;
 use tracing::debug;
 
 mod cp0;
+mod registers;
 
 pub const DMEM_SIZE: usize = 4096;
 
 const IMEM_SIZE: usize = 4096;
 
 pub struct Rsp {
+    regs: Registers,
     core: Core<Hardware>,
 }
 
@@ -21,8 +24,11 @@ impl Rsp {
 
         assert!(dmem.len() == DMEM_SIZE);
 
+        let regs = Registers::new();
+
         Self {
-            core: Core::new(Hardware::new(dmem), Default::default()),
+            regs: regs.clone(),
+            core: Core::new(Hardware::new(dmem), Cp0::new(regs), (), Default::default()),
         }
     }
 
@@ -49,11 +55,11 @@ impl Rsp {
     }
 
     pub fn dma_requested(&self) -> Dma {
-        self.core.cp0().dma_requested()
+        self.regs.dma_requested()
     }
 
     pub fn finish_dma(&mut self) {
-        self.core.cp0_mut().finish_dma()
+        self.regs.finish_dma()
     }
 }
 
@@ -63,7 +69,7 @@ impl DataReader for Rsp {
 
     fn read(&self, address: Self::Address) -> Self::Value {
         match address {
-            0x0004_0000..=0x0004_001F => self.core.cp0().get((address as usize >> 2) & 7),
+            0x0004_0000..=0x0004_001F => self.regs.get((address as usize >> 2) & 7),
             0x0008_0000 => self.core.pc(),
             _ => unimplemented!("RSP Register Read: {:08X}", address),
         }
@@ -74,7 +80,7 @@ impl DataWriter for Rsp {
     fn write(&mut self, address: Self::Address, value: Self::Value) {
         match address {
             0x0004_0000..=0x0004_001F => {
-                let start = self.core.cp0_mut().set((address as usize >> 2) & 7, value);
+                let start = self.regs.set((address as usize >> 2) & 7, value);
 
                 if start {
                     debug!("***BEGIN RSP***");

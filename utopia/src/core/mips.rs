@@ -19,31 +19,21 @@ pub const REGS: [&str; 32] = [
 pub type Interrupt = u8;
 
 pub trait Coprocessor0 {
-    fn new() -> Self;
     fn dispatch(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32);
     fn update(_core: &mut Core<impl Bus<Cp0 = Self>>) {}
 }
 
 impl Coprocessor0 for () {
-    fn new() -> Self {
-        ()
-    }
-
     fn dispatch(_core: &mut Core<impl Bus<Cp0 = Self>>, _word: u32) {
         unimplemented!("CP0");
     }
 }
 
 pub trait Coprocessor2 {
-    fn new() -> Self;
     fn dispatch(core: &mut Core<impl Bus<Cp2 = Self>>, word: u32);
 }
 
 impl Coprocessor2 for () {
-    fn new() -> Self {
-        ()
-    }
-
     fn dispatch(_core: &mut Core<impl Bus<Cp2 = Self>>, _word: u32) {
         unimplemented!("CP2");
     }
@@ -89,7 +79,7 @@ pub struct State {
 }
 
 impl<T: Bus> Core<T> {
-    pub fn new(bus: T, initial_state: State) -> Self {
+    pub fn new(bus: T, cp0: T::Cp0, cp2: T::Cp2, initial_state: State) -> Self {
         let pc = initial_state.pc;
 
         Self {
@@ -99,9 +89,9 @@ impl<T: Bus> Core<T> {
             delay: false,
             hi: 0,
             lo: 0,
-            cp0: T::Cp0::new(),
+            cp0,
             cp1: Cp1::new(),
-            _cp2: T::Cp2::new(),
+            _cp2: cp2,
             bus,
         }
     }

@@ -52,6 +52,8 @@ impl N64 {
 
         let core = Core::new(
             hw,
+            Cp0::new(),
+            (),
             State {
                 pc: IPL3_START_ADDRESS,
                 regs,
