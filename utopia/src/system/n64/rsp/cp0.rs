@@ -10,7 +10,7 @@ const CREGS: [&str; 16] = [
     "SP_STATUS",
     "DMA_FULL",
     "DMA_BUSY",
-    "SP_RESERVED",
+    "SP_SEMAPHORE",
     "CMD_START",
     "CMD_END",
     "CMD_CURRENT",
@@ -38,6 +38,16 @@ impl Cp0 {
             }
             5 => {
                 // DMA_FULL
+                // TODO
+                0
+            }
+            6 => {
+                // DMA_BUSY
+                // TODO
+                0
+            }
+            7 => {
+                // SP_SEMAPHORE
                 // TODO
                 0
             }
@@ -82,6 +92,9 @@ impl Cp0 {
 
                     return true;
                 }
+            }
+            7 => {
+                // TODO: SP_SEMAPHORE
             }
             _ => unimplemented!("RSP CP0 Register Write: {} <= {:08X}", CREGS[index], value),
         }
