@@ -48,6 +48,10 @@ fn mfc0(core: &mut Core<impl Bus<Cp0 = Cp0>>, rt: usize, rd: usize) {
     debug!("{:08X} MFC0 {}, {}", core.pc(), REGS[rt], CREGS[rd]);
 
     let result = match rd {
+        5 => {
+            // TODO: DMA_FULL
+            0
+        }
         _ => todo!("RSP CP0 Register Read: {}", CREGS[rd]),
     };
 
