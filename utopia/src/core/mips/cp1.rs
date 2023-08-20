@@ -4,6 +4,7 @@ use compare::*;
 use control::*;
 use convert::*;
 use num_derive::{FromPrimitive, ToPrimitive};
+use num_traits::Float;
 use round::*;
 use std::fmt;
 use tracing::debug;
@@ -158,6 +159,17 @@ impl Cp1 {
 
         debug!("  $F{}.L: {:016X}", reg, value);
     }
+
+    fn round<T: Float>(&self, value: T) -> T {
+        use RoundingMode::*;
+
+        match self.ctrl.rm {
+            Nearest => value.round(),
+            Zero => value.trunc(),
+            PlusInfinity => value.ceil(),
+            MinusInfinity => value.floor(),
+        }
+    }
 }
 
 impl From<u32> for Flags {
@@ -282,6 +294,7 @@ fn format_s(core: &mut Core<impl Bus>, word: u32) {
         0o06 => type_f(core, mov_s, word),
         //0o07 => type_f(core, neg_s, word),
         0o15 => type_f(core, trunc_w_s, word),
+        0o44 => type_f(core, cvt_w_s, word),
         0o76 => type_f(core, c_le_s, word),
         func => unimplemented!("CP1.S FN={:02o} ({:08X}: {:08X})", func, core.pc, word),
     }
