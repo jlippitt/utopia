@@ -1,20 +1,7 @@
+use super::dma::{Dma, DmaRequest};
 use super::interrupt::{RcpIntType, RcpInterrupt};
 use crate::util::facade::{DataReader, DataWriter};
 use tracing::debug;
-
-#[derive(Copy, Clone, Debug)]
-pub struct DmaRequest {
-    pub dram_address: u32,
-    pub cart_address: u32,
-    pub len: u32,
-}
-
-#[derive(Copy, Clone, Debug)]
-pub enum Dma {
-    None,
-    //Read(DmaRequest),
-    Write(DmaRequest),
-}
 
 struct BsdDom {
     lat: u8,
@@ -118,8 +105,8 @@ impl DataWriter for PeripheralInterface {
             }
             0x0c => {
                 self.dma_requested = Dma::Write(DmaRequest {
-                    dram_address: self.dram_address,
-                    cart_address: self.cart_address,
+                    src_addr: self.cart_address,
+                    dst_addr: self.dram_address,
                     len: value & 0x00ff_ffff,
                 });
             }

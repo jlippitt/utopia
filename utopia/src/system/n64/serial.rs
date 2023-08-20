@@ -1,3 +1,4 @@
+use super::dma::{Dma, DmaRequest};
 use super::interrupt::{RcpIntType, RcpInterrupt};
 use crate::util::facade::{DataReader, DataWriter};
 use crate::JoypadState;
@@ -6,22 +7,8 @@ use tracing::debug;
 
 mod pif;
 
-#[derive(Copy, Clone, Debug)]
-pub struct PifDmaRequest {
-    pub dram_addr: u32,
-    pub pif_addr: u32,
-    pub len: u32,
-}
-
-#[derive(Copy, Clone, Debug)]
-pub enum PifDma {
-    None,
-    Read(PifDmaRequest),
-    Write(PifDmaRequest),
-}
-
 pub struct SerialInterface {
-    dma_requested: PifDma,
+    dma_requested: Dma,
     dram_addr: u32,
     interrupt: RcpInterrupt,
     pif: Pif,
@@ -30,7 +17,7 @@ pub struct SerialInterface {
 impl SerialInterface {
     pub fn new(interrupt: RcpInterrupt) -> Self {
         Self {
-            dma_requested: PifDma::None,
+            dma_requested: Dma::None,
             dram_addr: 0,
             interrupt,
             pif: Pif::new(),
@@ -45,12 +32,12 @@ impl SerialInterface {
         &mut self.pif
     }
 
-    pub fn dma_requested(&self) -> PifDma {
+    pub fn dma_requested(&self) -> Dma {
         self.dma_requested
     }
 
     pub fn finish_dma(&mut self) {
-        self.dma_requested = PifDma::None;
+        self.dma_requested = Dma::None;
         self.interrupt.raise(RcpIntType::SI);
         self.pif.upload();
     }
@@ -69,7 +56,7 @@ impl DataReader for SerialInterface {
             0x18 => {
                 // SI_STATUS
                 match self.dma_requested {
-                    PifDma::None => 0,
+                    Dma::None => 0,
                     _ => 0x1000,
                 }
             }
@@ -88,16 +75,16 @@ impl DataWriter for SerialInterface {
             0x04 => {
                 self.pif.process();
 
-                self.dma_requested = PifDma::Read(PifDmaRequest {
-                    dram_addr: self.dram_addr,
-                    pif_addr: value & 0x07fc,
+                self.dma_requested = Dma::Read(DmaRequest {
+                    src_addr: self.dram_addr,
+                    dst_addr: value & 0x07fc,
                     len: 64,
                 });
             }
             0x10 => {
-                self.dma_requested = PifDma::Write(PifDmaRequest {
-                    dram_addr: self.dram_addr,
-                    pif_addr: value & 0x07fc,
+                self.dma_requested = Dma::Write(DmaRequest {
+                    src_addr: self.dram_addr,
+                    dst_addr: value & 0x07fc,
                     len: 64,
                 });
             }

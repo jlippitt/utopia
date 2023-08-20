@@ -1,18 +1,19 @@
 use super::{JoypadState, System};
 use crate::core::mips::{Bus, Core, Interrupt, State};
-use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
+use crate::util::facade::{ReadFacade, Value, WriteFacade};
 use audio::AudioInterface;
 use interrupt::{CpuInterrupt, RcpInterrupt};
 use mips::MipsInterface;
-use peripheral::{Dma, DmaRequest, PeripheralInterface};
+use peripheral::PeripheralInterface;
 use rdram::Rdram;
 use rsp::{Rsp, DMEM_SIZE};
-use serial::{PifDma, PifDmaRequest, SerialInterface};
+use serial::SerialInterface;
 use std::error::Error;
-use tracing::{debug, info};
+use tracing::info;
 use video::VideoInterface;
 
 mod audio;
+mod dma;
 mod header;
 mod interrupt;
 mod mips;
@@ -159,83 +160,18 @@ impl Hardware {
             0x045 => self.audio.write_be(address & 0x000f_ffff, value),
             0x046 => {
                 self.peripheral.write_be(address & 0x000f_ffff, value);
-
-                match self.peripheral.dma_requested() {
-                    Dma::None => (),
-                    // Dma::Read(..) => todo!("DMA reads"),
-                    Dma::Write(request) => self.write_dma(request),
-                }
+                self.peripheral_dma();
             }
             0x047 => self.rdram.write_interface(address & 0x000f_ffff, value),
             0x048 => {
                 self.serial.write_be(address & 0x000f_ffff, value);
-
-                match self.serial.dma_requested() {
-                    PifDma::None => (),
-                    PifDma::Read(request) => self.read_pif_dma(request),
-                    PifDma::Write(request) => self.write_pif_dma(request),
-                }
+                self.serial_dma();
             }
             0x080..=0x0ff => todo!("SRAM Writes"),
             0x100..=0x1fb => panic!("Write to ROM area: {:08X}", address),
             0x1fc => self.serial.pif_mut().write_be(address & 0x000f_ffff, value),
             _ => panic!("Write to open bus: {:08X}", address),
         }
-    }
-
-    fn write_dma(&mut self, request: DmaRequest) {
-        // TODO: As most transfers will have lengths divisible by 4, this can be
-        // better optimised. As (presumably) cart_address can only be ROM or
-        // SRAM and dram_address is always RDRAM (possibly registers, though?),
-        // we could also try talking directly to the components to save some
-        // cycles.
-
-        for index in 0..=request.len {
-            let value: u8 = self.read_physical(request.cart_address.wrapping_add(index));
-            self.write_physical(request.dram_address.wrapping_add(index), value);
-        }
-
-        debug!(
-            "DMA: {} bytes written from {:08X} to {:08X}",
-            request.len + 1,
-            request.cart_address,
-            request.dram_address
-        );
-
-        self.peripheral.finish_dma();
-    }
-
-    fn read_pif_dma(&mut self, request: PifDmaRequest) {
-        for index in 0..request.len {
-            let value: u8 = self.serial.pif().read(request.pif_addr.wrapping_add(index));
-
-            self.rdram
-                .write_data(request.dram_addr.wrapping_add(index), value);
-        }
-
-        debug!(
-            "PIF DMA: {} bytes read from {:08X} to {:08X}",
-            request.len, request.pif_addr, request.dram_addr,
-        );
-
-        self.serial.finish_dma();
-    }
-
-    fn write_pif_dma(&mut self, request: PifDmaRequest) {
-        for index in 0..request.len {
-            let value: u8 = self.rdram.read_data(request.dram_addr.wrapping_add(index));
-
-            self.serial
-                .pif_mut()
-                .write(request.pif_addr.wrapping_add(index), value);
-        }
-
-        debug!(
-            "PIF DMA: {} bytes written from {:08X} to {:08X}",
-            request.len, request.dram_addr, request.pif_addr
-        );
-
-        self.serial.finish_dma();
     }
 }
 
