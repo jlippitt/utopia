@@ -111,7 +111,6 @@ impl<T: Bus> Core<T> {
     }
 
     fn getd(&self, reg: usize) -> u64 {
-        debug_assert!(T::INSTR_64);
         self.regs[reg]
     }
 
@@ -125,8 +124,6 @@ impl<T: Bus> Core<T> {
     }
 
     fn setd(&mut self, reg: usize, value: u64) {
-        debug_assert!(T::INSTR_64);
-
         if reg == 0 {
             return;
         }

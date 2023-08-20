@@ -115,6 +115,8 @@ impl DataWriter for Rsp {
                         todo!("Single step");
                     }
 
+                    debug!("***BEGIN RSP***");
+
                     loop {
                         self.core.step();
                     }
