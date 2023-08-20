@@ -114,6 +114,14 @@ impl<T: Bus> Core<T> {
         &mut self.bus
     }
 
+    pub fn cp0(&self) -> &T::Cp0 {
+        &self.cp0
+    }
+
+    pub fn cp0_mut(&mut self) -> &mut T::Cp0 {
+        &mut self.cp0
+    }
+
     pub fn pc(&self) -> u32 {
         self.pc
     }

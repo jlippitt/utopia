@@ -1,4 +1,4 @@
-use super::dma::{Dma, DmaRequest};
+use super::dma::Dma;
 use crate::core::mips::{Bus, Core, Interrupt};
 use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
 use crate::util::MirrorVec;
@@ -12,10 +12,6 @@ pub const DMEM_SIZE: usize = 4096;
 const IMEM_SIZE: usize = 4096;
 
 pub struct Rsp {
-    dma_requested: Dma,
-    dma_spaddr: u32,
-    dma_ramaddr: u32,
-    single_step: bool,
     core: Core<Hardware>,
 }
 
@@ -26,10 +22,6 @@ impl Rsp {
         assert!(dmem.len() == DMEM_SIZE);
 
         Self {
-            dma_requested: Dma::None,
-            dma_spaddr: 0,
-            dma_ramaddr: 0,
-            single_step: false,
             core: Core::new(Hardware::new(dmem), Default::default()),
         }
     }
@@ -57,11 +49,11 @@ impl Rsp {
     }
 
     pub fn dma_requested(&self) -> Dma {
-        self.dma_requested
+        self.core.cp0().dma_requested()
     }
 
     pub fn finish_dma(&mut self) {
-        self.dma_requested = Dma::None;
+        self.core.cp0_mut().finish_dma()
     }
 }
 
@@ -71,11 +63,7 @@ impl DataReader for Rsp {
 
     fn read(&self, address: Self::Address) -> Self::Value {
         match address {
-            0x0004_0010 => {
-                // SP_STATUS
-                // TODO
-                0x01
-            }
+            0x0004_0000..=0x0004_001F => self.core.cp0().get((address as usize >> 2) & 7),
             0x0008_0000 => self.core.pc(),
             _ => unimplemented!("RSP Register Read: {:08X}", address),
         }
@@ -85,39 +73,10 @@ impl DataReader for Rsp {
 impl DataWriter for Rsp {
     fn write(&mut self, address: Self::Address, value: Self::Value) {
         match address {
-            0x0004_0000 => {
-                self.dma_spaddr = value & 0x1ff8;
-                debug!("SP_DMA_SPADDR: {:08X}", self.dma_spaddr);
-            }
-            0x0004_0004 => {
-                self.dma_ramaddr = value & 0x00ff_fff8;
-                debug!("SP_DMA_RAMADDR: {:08X}", self.dma_ramaddr);
-            }
-            0x0004_0008 => {
-                self.dma_requested = Dma::Read(DmaRequest {
-                    src_addr: self.dma_spaddr,
-                    dst_addr: self.dma_ramaddr,
-                    len: value & 0xff8f_fff8,
-                })
-            }
-            0x0004_0010 => {
-                // SP_STATUS
-                // TODO
-                if (value & 0x40) != 0 {
-                    self.single_step = true;
-                    debug!("RSP Single Step: {}", self.single_step);
-                }
+            0x0004_0000..=0x0004_001F => {
+                let start = self.core.cp0_mut().set((address as usize >> 2) & 7, value);
 
-                if (value & 0x20) != 0 {
-                    self.single_step = false;
-                    debug!("RSP Single Step: {}", self.single_step);
-                }
-
-                if (value & 0x01) != 0 {
-                    if self.single_step {
-                        todo!("Single step");
-                    }
-
+                if start {
                     debug!("***BEGIN RSP***");
 
                     loop {
