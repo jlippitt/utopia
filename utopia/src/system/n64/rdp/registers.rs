@@ -1,5 +1,24 @@
+use bitfield_struct::bitfield;
+
+#[bitfield(u32)]
+struct Status {
+    xbus: bool,
+    freeze: bool,
+    flush: bool,
+    start_gclk: bool,
+    tmem_busy: bool,
+    pipe_busy: bool,
+    busy: bool,
+    ready: bool,
+    dma_busy: bool,
+    end_pending: bool,
+    start_pending: bool,
+    #[bits(21)]
+    __: u32,
+}
+
 pub struct Registers {
-    //
+    status: Status,
 }
 
 impl Registers {
@@ -15,11 +34,14 @@ impl Registers {
     ];
 
     pub fn new() -> Self {
-        Self {}
+        Self {
+            status: Status::new(),
+        }
     }
 
     pub fn get(&self, index: usize) -> u32 {
         match index {
+            3 => self.status.into(),
             _ => unimplemented!("RDP Command Register Read: {}", Self::NAMES[index]),
         }
     }
