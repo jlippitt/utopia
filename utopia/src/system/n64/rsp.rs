@@ -2,7 +2,10 @@ use super::dma::{Dma, DmaRequest};
 use crate::core::mips::{Bus, Core, Interrupt};
 use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
 use crate::util::MirrorVec;
+use cp0::Cp0;
 use tracing::debug;
+
+mod cp0;
 
 pub const DMEM_SIZE: usize = 4096;
 
@@ -146,7 +149,7 @@ impl Hardware {
 }
 
 impl Bus for Hardware {
-    type Cp0 = ();
+    type Cp0 = Cp0;
     type Cp2 = ();
 
     const CP1: bool = false;

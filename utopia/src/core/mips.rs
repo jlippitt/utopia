@@ -10,7 +10,7 @@ mod cp1;
 mod instruction;
 mod operator;
 
-const REGS: [&str; 32] = [
+pub const REGS: [&str; 32] = [
     "$ZERO", "$AT", "$V0", "$V1", "$A0", "$A1", "$A2", "$A3", "$T0", "$T1", "$T2", "$T3", "$T4",
     "$T5", "$T6", "$T7", "$S0", "$S1", "$S2", "$S3", "$S4", "$S5", "$S6", "$S7", "$T8", "$T9",
     "$K0", "$K1", "$GP", "$SP", "$FP", "$RA",
@@ -20,8 +20,8 @@ pub type Interrupt = u8;
 
 pub trait Coprocessor0 {
     fn new() -> Self;
-    fn dispatch<T: Bus<Cp0 = Self>>(core: &mut Core<T>, word: u32);
-    fn update<T: Bus<Cp0 = Self>>(_core: &mut Core<T>) {}
+    fn dispatch(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32);
+    fn update(_core: &mut Core<impl Bus<Cp0 = Self>>) {}
 }
 
 impl Coprocessor0 for () {
@@ -29,14 +29,14 @@ impl Coprocessor0 for () {
         ()
     }
 
-    fn dispatch<T: Bus<Cp0 = Self>>(_core: &mut Core<T>, _word: u32) {
+    fn dispatch(_core: &mut Core<impl Bus<Cp0 = Self>>, _word: u32) {
         unimplemented!("CP0");
     }
 }
 
 pub trait Coprocessor2 {
     fn new() -> Self;
-    fn dispatch<T: Bus<Cp2 = Self>>(core: &mut Core<T>, word: u32);
+    fn dispatch(core: &mut Core<impl Bus<Cp2 = Self>>, word: u32);
 }
 
 impl Coprocessor2 for () {
@@ -44,7 +44,7 @@ impl Coprocessor2 for () {
         ()
     }
 
-    fn dispatch<T: Bus<Cp2 = Self>>(_core: &mut Core<T>, _word: u32) {
+    fn dispatch(_core: &mut Core<impl Bus<Cp2 = Self>>, _word: u32) {
         unimplemented!("CP2");
     }
 }
@@ -141,7 +141,8 @@ impl<T: Bus> Core<T> {
         self.delay = false;
     }
 
-    fn get(&self, reg: usize) -> u32 {
+    // TODO: Review need for 'pub'
+    pub fn get(&self, reg: usize) -> u32 {
         self.regs[reg] as u32
     }
 
@@ -149,7 +150,8 @@ impl<T: Bus> Core<T> {
         self.regs[reg]
     }
 
-    fn set(&mut self, reg: usize, value: u32) {
+    // TODO: Review need for 'pub'
+    pub fn set(&mut self, reg: usize, value: u32) {
         if reg == 0 {
             return;
         }

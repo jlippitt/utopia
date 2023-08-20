@@ -110,7 +110,7 @@ impl Coprocessor0 for Cp0 {
         Self::default()
     }
 
-    fn dispatch<T: Bus<Cp0 = Self>>(core: &mut Core<T>, word: u32) {
+    fn dispatch(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32) {
         match (word >> 21) & 31 {
             0b00000 => type_r(core, mfc0, word),
             0b00100 => type_r(core, mtc0, word),
@@ -130,7 +130,7 @@ impl Coprocessor0 for Cp0 {
         }
     }
 
-    fn update<T: Bus<Cp0 = Self>>(core: &mut Core<T>) {
+    fn update(core: &mut Core<impl Bus<Cp0 = Self>>) {
         core.cp0.count = core.cp0.count.wrapping_add(1);
 
         if core.cp0.count == core.cp0.compare {
