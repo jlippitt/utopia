@@ -90,7 +90,7 @@ impl<T: Bus> Core<T> {
     pub fn step(&mut self) {
         debug_assert!((self.pc & 3) == 0);
 
-        let word = self.bus.read::<u32>(self.pc);
+        let word = self.bus.read_opcode::<u32>(self.pc);
 
         instruction::dispatch(self, word);
 
