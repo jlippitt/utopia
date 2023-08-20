@@ -62,7 +62,7 @@ impl DataReader for Hardware {
             0x0004_0010 => {
                 // SP_STATUS
                 // TODO
-                0
+                0x01
             }
             0x0008_0000 => self.pc,
             _ => unimplemented!("RSP Register Read: {:08X}", address),
