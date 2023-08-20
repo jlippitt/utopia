@@ -177,8 +177,8 @@ fn cop0<T: Bus>(core: &mut Core<T>, word: u32) {
 
 fn cop2<T: Bus>(core: &mut Core<T>, word: u32) {
     match (word >> 21) & 31 {
-        //0b00000 => type_r(core, mfc2, word),
-        //0b00100 => type_r(core, mtc2, word),
+        0b00000 => type_r(core, mfc2, word),
+        0b00100 => type_r(core, mtc2, word),
         0b10000..=0b11111 => T::Cp2::dispatch(core, word),
         rs => unimplemented!("CP2 RS={:05b} ({:08X}: {:08X})", rs, core.pc, word),
     }

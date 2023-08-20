@@ -16,6 +16,7 @@ impl Cp0 {
 }
 
 impl Coprocessor0 for Cp0 {
+    #[rustfmt::skip]
     const REGS: [&'static str; 32] = [
         RspRegisters::NAMES[0],
         RspRegisters::NAMES[1],
@@ -33,22 +34,8 @@ impl Coprocessor0 for Cp0 {
         RdpRegisters::NAMES[5],
         RdpRegisters::NAMES[6],
         RdpRegisters::NAMES[7],
-        "$C16",
-        "$C17",
-        "$C18",
-        "$C19",
-        "$C20",
-        "$C21",
-        "$C22",
-        "$C23",
-        "$C24",
-        "$C25",
-        "$C26",
-        "$C27",
-        "$C28",
-        "$C29",
-        "$C30",
-        "$C31",
+        "$C16", "$C17", "$C18", "$C19", "$C20", "$C21", "$C22", "$C23",
+        "$C24", "$C25", "$C26", "$C27", "$C28", "$C29", "$C30", "$C31",
     ];
 
     fn get(core: &Core<impl Bus<Cp0 = Self>>, index: usize) -> u32 {

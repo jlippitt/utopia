@@ -8,9 +8,11 @@ use registers::Registers;
 use std::cell::RefCell;
 use std::rc::Rc;
 use tracing::{debug, debug_span};
+use vector_unit::VectorUnit;
 
 mod cp0;
 mod registers;
+mod vector_unit;
 
 pub const DMEM_SIZE: usize = 4096;
 
@@ -34,7 +36,7 @@ impl Rsp {
             core: Core::new(
                 Hardware::new(dmem),
                 Cp0::new(regs, rdp_regs),
-                (),
+                VectorUnit::new(),
                 Default::default(),
             ),
         }
@@ -143,7 +145,7 @@ impl Hardware {
 
 impl Bus for Hardware {
     type Cp0 = Cp0;
-    type Cp2 = ();
+    type Cp2 = VectorUnit;
 
     const CP1: bool = false;
     const MUL_DIV: bool = false;

@@ -1,3 +1,5 @@
+pub use coprocessor::{Coprocessor0, Coprocessor2};
+
 // Default CP0 implementation is exported
 pub use cp0::Cp0;
 
@@ -5,6 +7,7 @@ use crate::util::facade::Value;
 use cp1::Cp1;
 use tracing::debug;
 
+mod coprocessor;
 mod cp0;
 mod cp1;
 mod instruction;
@@ -17,40 +20,6 @@ const REGS: [&str; 32] = [
 ];
 
 pub type Interrupt = u8;
-
-pub trait Coprocessor0 {
-    const REGS: [&'static str; 32];
-    fn get(core: &Core<impl Bus<Cp0 = Self>>, index: usize) -> u32;
-    fn set(core: &mut Core<impl Bus<Cp0 = Self>>, index: usize, value: u32);
-    fn dispatch(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32);
-    fn update(_core: &mut Core<impl Bus<Cp0 = Self>>) {}
-}
-
-impl Coprocessor0 for () {
-    const REGS: [&'static str; 32] = [""; 32];
-
-    fn get(_core: &Core<impl Bus<Cp0 = Self>>, _index: usize) -> u32 {
-        unimplemented!("CP0");
-    }
-
-    fn set(_core: &mut Core<impl Bus<Cp0 = Self>>, _index: usize, _value: u32) {
-        unimplemented!("CP0");
-    }
-
-    fn dispatch(_core: &mut Core<impl Bus<Cp0 = Self>>, _word: u32) {
-        unimplemented!("CP0");
-    }
-}
-
-pub trait Coprocessor2 {
-    fn dispatch(core: &mut Core<impl Bus<Cp2 = Self>>, word: u32);
-}
-
-impl Coprocessor2 for () {
-    fn dispatch(_core: &mut Core<impl Bus<Cp2 = Self>>, _word: u32) {
-        unimplemented!("CP2");
-    }
-}
 
 pub trait Bus {
     type Cp0: Coprocessor0;
@@ -80,7 +49,7 @@ pub struct Core<T: Bus> {
     lo: u64,
     cp0: T::Cp0,
     cp1: Cp1,
-    _cp2: T::Cp2,
+    cp2: T::Cp2,
     bus: T,
 }
 
@@ -104,7 +73,7 @@ impl<T: Bus> Core<T> {
             lo: 0,
             cp0,
             cp1: Cp1::new(),
-            _cp2: cp2,
+            cp2,
             bus,
         }
     }
@@ -123,6 +92,14 @@ impl<T: Bus> Core<T> {
 
     pub fn cp0_mut(&mut self) -> &mut T::Cp0 {
         &mut self.cp0
+    }
+
+    pub fn cp2(&self) -> &T::Cp2 {
+        &self.cp2
+    }
+
+    pub fn cp2_mut(&mut self) -> &mut T::Cp2 {
+        &mut self.cp2
     }
 
     pub fn pc(&self) -> u32 {
