@@ -26,7 +26,7 @@ pub fn vmulf(
     let mut result = Vector::default();
 
     for lane in 0..8 {
-        let tmp = ((lhs[lane] as i32 * rhs[lane] as i32) << 1) + 32768;
+        let tmp = ((lhs[lane] as i16 as i32 * rhs[lane] as i16 as i32) << 1) + 32768;
         // TODO: Accumulator
         // TODO: Clamping
         result[lane] = (tmp >> 16) as u16;
