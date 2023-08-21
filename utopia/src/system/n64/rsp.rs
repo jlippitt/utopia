@@ -1,4 +1,5 @@
 use super::dma::Dma;
+use super::interrupt::RcpInterrupt;
 use super::rdp::Registers as RdpRegisters;
 use crate::core::mips::{Bus, Core, Interrupt};
 use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
@@ -24,12 +25,16 @@ pub struct Rsp {
 }
 
 impl Rsp {
-    pub fn new<T: Into<Vec<u8>>>(dmem: T, rdp_regs: Rc<RefCell<RdpRegisters>>) -> Self {
+    pub fn new<T: Into<Vec<u8>>>(
+        dmem: T,
+        interrupt: RcpInterrupt,
+        rdp_regs: Rc<RefCell<RdpRegisters>>,
+    ) -> Self {
         let dmem = dmem.into();
 
         assert!(dmem.len() == DMEM_SIZE);
 
-        let regs = Rc::new(RefCell::new(Registers::new()));
+        let regs = Rc::new(RefCell::new(Registers::new(interrupt)));
 
         Self {
             regs: regs.clone(),
@@ -87,12 +92,14 @@ impl Rsp {
 
         debug!("[CPU => RSP]");
 
-        let _span = debug_span!("rsp").entered();
+        {
+            let _span = debug_span!("rsp").entered();
 
-        debug!("[CPU => RSP]");
+            debug!("[CPU => RSP]");
 
-        while self.regs.borrow().dma_requested().is_none() {
-            self.core.step();
+            while !self.regs.borrow().is_done() {
+                self.core.step();
+            }
         }
 
         self.regs.borrow().dma_requested()

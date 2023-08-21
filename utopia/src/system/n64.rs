@@ -117,7 +117,7 @@ impl Hardware {
             cycles: 0,
             interrupt,
             rdram: Rdram::new(),
-            rsp: Rsp::new(&rom[0..DMEM_SIZE], rdp_regs.clone()),
+            rsp: Rsp::new(&rom[0..DMEM_SIZE], rcp_interrupt.clone(), rdp_regs.clone()),
             rdp: Rdp::new(rdp_regs),
             mips: MipsInterface::new(rcp_interrupt.clone()),
             video: VideoInterface::new(rcp_interrupt.clone()),

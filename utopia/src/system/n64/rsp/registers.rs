@@ -1,4 +1,5 @@
 use super::super::dma::Dma;
+use super::super::interrupt::{RcpIntType, RcpInterrupt};
 use bitfield_struct::bitfield;
 use tracing::debug;
 
@@ -21,6 +22,7 @@ pub struct Registers {
     dma_spaddr: u32,
     dma_ramaddr: u32,
     status: Status,
+    interrupt: RcpInterrupt,
 }
 
 impl Registers {
@@ -35,12 +37,13 @@ impl Registers {
         "SP_SEMAPHORE",
     ];
 
-    pub fn new() -> Self {
+    pub fn new(interrupt: RcpInterrupt) -> Self {
         Self {
             dma_requested: None,
             dma_spaddr: 0,
             dma_ramaddr: 0,
             status: Status::new().with_halted(true),
+            interrupt,
         }
     }
 
@@ -82,7 +85,7 @@ impl Registers {
                     dst_addr: self.dma_ramaddr,
                     len: value & 0xff8f_fff8,
                     reverse: true,
-                })
+                });
             }
             3 => {
                 self.dma_requested = Some(Dma {
@@ -90,7 +93,7 @@ impl Registers {
                     dst_addr: self.dma_ramaddr,
                     len: value & 0xff8f_fff8,
                     reverse: false,
-                })
+                });
             }
             4 => {
                 // SP_STATUS
@@ -107,12 +110,11 @@ impl Registers {
                 }
 
                 if (value & 0x08) != 0 {
-                    // TODO: Clear interrupt
+                    self.interrupt.clear(RcpIntType::SP);
                 }
 
                 if (value & 0x10) != 0 {
-                    // TODO: Raise interrupt
-                    todo!("RSP Interrupts");
+                    self.interrupt.raise(RcpIntType::SP);
                 }
 
                 if (value & 0x20) != 0 {
@@ -155,6 +157,19 @@ impl Registers {
                 Self::NAMES[index],
                 value
             ),
+        }
+    }
+
+    pub fn is_done(&self) -> bool {
+        self.dma_requested.is_some() || self.halted()
+    }
+
+    pub fn break_(&mut self) {
+        self.status.set_halted(true);
+        self.status.set_broke(true);
+
+        if self.status.intbreak() {
+            self.interrupt.raise(RcpIntType::SP);
         }
     }
 

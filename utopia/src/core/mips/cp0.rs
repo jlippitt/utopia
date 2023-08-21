@@ -210,6 +210,10 @@ impl Coprocessor0 for Cp0 {
         }
     }
 
+    fn break_(_core: &mut Core<impl Bus<Cp0 = Self>>, _word: u32) {
+        unimplemented!("BREAK");
+    }
+
     fn step(core: &mut Core<impl Bus<Cp0 = Self>>) {
         core.cp0.count = core.cp0.count.wrapping_add(1);
 

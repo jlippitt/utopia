@@ -4,6 +4,7 @@ pub trait Coprocessor0 {
     fn mfc0(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32);
     fn mtc0(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32);
     fn cop0(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32);
+    fn break_(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32);
     fn step(_core: &mut Core<impl Bus<Cp0 = Self>>) {}
 }
 
@@ -17,6 +18,10 @@ impl Coprocessor0 for () {
     }
 
     fn cop0(_core: &mut Core<impl Bus<Cp0 = Self>>, _word: u32) {
+        unimplemented!("COP0");
+    }
+
+    fn break_(_core: &mut Core<impl Bus<Cp0 = Self>>, _word: u32) {
         unimplemented!("COP0");
     }
 }

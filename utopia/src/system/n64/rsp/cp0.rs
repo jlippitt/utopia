@@ -75,4 +75,9 @@ impl Coprocessor0 for Cp0 {
             func => unimplemented!("RSP COP0 FN={:06b} ({:08X}: {:08X})", func, core.pc(), word),
         }
     }
+
+    fn break_(core: &mut Core<impl Bus<Cp0 = Self>>, _word: u32) {
+        debug!("{:08X} BREAK", core.pc());
+        core.cp0_mut().rsp_regs.borrow_mut().break_();
+    }
 }
