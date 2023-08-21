@@ -1,7 +1,7 @@
 import { SampleBuffer } from 'utopia-wasm-bindings';
 
 const BUFFER_LENGTH = 8192;
-const DESYNC_TOLERANCE = 0.5;
+const DESYNC_TOLERANCE = 0.2;
 
 export default class AudioController {
     private ctx: AudioContext;
