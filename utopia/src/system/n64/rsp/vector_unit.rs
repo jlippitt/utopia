@@ -58,7 +58,33 @@ impl VectorUnit {
         self.regs[reg][(elem >> 1) + 3] = value as u16;
 
         debug!(
-            "  $V{:02}: {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}",
+            "  $V{:02}: {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X}",
+            reg,
+            self.regs[reg][0],
+            self.regs[reg][1],
+            self.regs[reg][2],
+            self.regs[reg][3],
+            self.regs[reg][4],
+            self.regs[reg][5],
+            self.regs[reg][6],
+            self.regs[reg][7],
+        )
+    }
+
+    fn setq(&mut self, reg: usize, elem: usize, value: u128) {
+        debug_assert!((elem & 1) == 0);
+
+        self.regs[reg][elem >> 1] = (value >> 112) as u16;
+        self.regs[reg][(elem >> 1) + 1] = (value >> 96) as u16;
+        self.regs[reg][(elem >> 1) + 2] = (value >> 80) as u16;
+        self.regs[reg][(elem >> 1) + 3] = (value >> 64) as u16;
+        self.regs[reg][(elem >> 1) + 4] = (value >> 48) as u16;
+        self.regs[reg][(elem >> 1) + 5] = (value >> 32) as u16;
+        self.regs[reg][(elem >> 1) + 6] = (value >> 16) as u16;
+        self.regs[reg][(elem >> 1) + 7] = value as u16;
+
+        debug!(
+            "  $V{:02}: {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X}",
             reg,
             self.regs[reg][0],
             self.regs[reg][1],
@@ -115,6 +141,7 @@ impl Coprocessor2 for VectorUnit {
 
         match opcode {
             0b00011 => ldv(core, base, vt, elem, offset),
+            0b00100 => lqv(core, base, vt, elem, offset),
             _ => unimplemented!(
                 "RSP LWC2 OP={:05b} ({:08X}: {:08X})",
                 opcode,

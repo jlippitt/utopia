@@ -9,7 +9,7 @@ pub fn sdv(
     elem: usize,
     offset: i32,
 ) {
-    debug_assert!((elem & 1) == 0);
+    debug_assert!((elem & 7) == 0);
     let offset = offset * 8;
 
     debug!(
