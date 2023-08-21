@@ -1,8 +1,10 @@
 use crate::core::mips::{Bus, Coprocessor2, Core, REGS};
 use load::*;
+use store::*;
 use tracing::debug;
 
 mod load;
+mod store;
 
 pub struct VectorUnit {
     regs: [[u16; 8]; 32],
@@ -15,13 +17,23 @@ impl VectorUnit {
 
     fn geth(&self, reg: usize, elem: usize) -> u16 {
         debug_assert!((elem & 1) == 0);
-        self.regs[reg][7 - (elem >> 1)]
+        self.regs[reg][elem >> 1]
+    }
+
+    fn getd(&self, reg: usize, elem: usize) -> u64 {
+        debug_assert!((elem & 1) == 0);
+        let mut value = 0;
+        value |= (self.regs[reg][elem >> 1] as u64) << 48;
+        value |= (self.regs[reg][(elem >> 1) + 1] as u64) << 32;
+        value |= (self.regs[reg][(elem >> 1) + 2] as u64) << 16;
+        value |= self.regs[reg][(elem >> 1) + 3] as u64;
+        value
     }
 
     fn seth(&mut self, reg: usize, elem: usize, value: u16) {
         debug_assert!((elem & 1) == 0);
 
-        self.regs[reg][7 - (elem >> 1)] = value;
+        self.regs[reg][elem >> 1] = value;
 
         debug!(
             "  $V{:02}: {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}",
@@ -40,10 +52,10 @@ impl VectorUnit {
     fn setd(&mut self, reg: usize, elem: usize, value: u64) {
         debug_assert!((elem & 1) == 0);
 
-        self.regs[reg][7 - (elem >> 1)] = (value >> 48) as u16;
-        self.regs[reg][6 - (elem >> 1)] = (value >> 32) as u16;
-        self.regs[reg][5 - (elem >> 1)] = (value >> 16) as u16;
-        self.regs[reg][4 - (elem >> 1)] = value as u16;
+        self.regs[reg][elem >> 1] = (value >> 48) as u16;
+        self.regs[reg][(elem >> 1) + 1] = (value >> 32) as u16;
+        self.regs[reg][(elem >> 1) + 2] = (value >> 16) as u16;
+        self.regs[reg][(elem >> 1) + 3] = value as u16;
 
         debug!(
             "  $V{:02}: {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}",
@@ -113,13 +125,14 @@ impl Coprocessor2 for VectorUnit {
     }
 
     fn swc2(core: &mut Core<impl Bus<Cp2 = Self>>, word: u32) {
-        let _base = ((word >> 21) & 31) as usize;
-        let _vt = ((word >> 16) & 31) as usize;
+        let base = ((word >> 21) & 31) as usize;
+        let vt = ((word >> 16) & 31) as usize;
         let opcode = ((word >> 11) & 31) as usize;
-        let _elem = ((word >> 7) & 15) as usize;
-        let _offset = word & 127;
+        let elem = ((word >> 7) & 15) as usize;
+        let offset = (((word & 127) as i32) << 25) >> 25;
 
         match opcode {
+            0b00011 => sdv(core, base, vt, elem, offset),
             _ => unimplemented!(
                 "RSP SWC2 OP={:05b} ({:08X}: {:08X})",
                 opcode,
