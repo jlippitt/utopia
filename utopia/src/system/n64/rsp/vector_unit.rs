@@ -23,38 +23,38 @@ impl VectorUnit {
         }
     }
 
-    fn getv(&self, reg: usize) -> Vector {
+    fn get_v(&self, reg: usize) -> Vector {
         self.regs[reg]
     }
 
-    fn geth(&self, reg: usize, elem: usize) -> u16 {
+    fn get_h(&self, reg: usize, elem: usize) -> u16 {
         self.regs[reg].u16(elem)
     }
 
-    fn getd(&self, reg: usize, elem: usize) -> u64 {
+    fn get_d(&self, reg: usize, elem: usize) -> u64 {
         self.regs[reg].u64(elem)
     }
 
-    fn getq(&self, reg: usize, elem: usize) -> u128 {
+    fn get_q(&self, reg: usize, elem: usize) -> u128 {
         self.regs[reg].u128(elem)
     }
 
-    fn setv(&mut self, reg: usize, value: Vector) {
+    fn set_v(&mut self, reg: usize, value: Vector) {
         self.regs[reg] = value;
         debug!("  $V{:02}: {}", reg, self.regs[reg]);
     }
 
-    fn seth(&mut self, reg: usize, elem: usize, value: u16) {
+    fn set_h(&mut self, reg: usize, elem: usize, value: u16) {
         self.regs[reg].set_u16(elem, value);
         debug!("  $V{:02}: {}", reg, self.regs[reg]);
     }
 
-    fn setd(&mut self, reg: usize, elem: usize, value: u64) {
+    fn set_d(&mut self, reg: usize, elem: usize, value: u64) {
         self.regs[reg].set_u64(elem, value);
         debug!("  $V{:02}: {}", reg, self.regs[reg]);
     }
 
-    fn setq(&mut self, reg: usize, elem: usize, value: u128) {
+    fn set_q(&mut self, reg: usize, elem: usize, value: u128) {
         self.regs[reg].set_u128(elem, value);
         debug!("  $V{:02}: {}", reg, self.regs[reg]);
     }
@@ -78,7 +78,7 @@ impl Coprocessor2 for VectorUnit {
             elem >> 1
         );
 
-        core.set(rt, core.cp2().geth(vs, elem) as u32);
+        core.set(rt, core.cp2().get_h(vs, elem) as u32);
     }
 
     fn mtc2(core: &mut Core<impl Bus<Cp2 = Self>>, word: u32) {
@@ -95,7 +95,7 @@ impl Coprocessor2 for VectorUnit {
         );
 
         let value = core.get(rt) as u16;
-        core.cp2_mut().seth(vs, elem, value);
+        core.cp2_mut().set_h(vs, elem, value);
     }
 
     fn lwc2(core: &mut Core<impl Bus<Cp2 = Self>>, word: u32) {
@@ -106,6 +106,7 @@ impl Coprocessor2 for VectorUnit {
         let offset = (((word & 127) as i32) << 25) >> 25;
 
         match opcode {
+            0b00001 => lsv(core, base, vt, elem, offset),
             0b00011 => ldv(core, base, vt, elem, offset),
             0b00100 => lqv(core, base, vt, elem, offset),
             _ => unimplemented!(
@@ -125,6 +126,7 @@ impl Coprocessor2 for VectorUnit {
         let offset = (((word & 127) as i32) << 25) >> 25;
 
         match opcode {
+            0b00001 => ssv(core, base, vt, elem, offset),
             0b00011 => sdv(core, base, vt, elem, offset),
             0b00100 => sqv(core, base, vt, elem, offset),
             _ => unimplemented!(

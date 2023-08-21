@@ -21,8 +21,8 @@ pub fn vmulf(
         broadcast,
     );
 
-    let lhs = core.cp2().getv(vs);
-    let rhs = core.cp2().getv(vt).broadcast(broadcast);
+    let lhs = core.cp2().get_v(vs);
+    let rhs = core.cp2().get_v(vt).broadcast(broadcast);
 
     let result = Vector::from_fn(|lane| {
         let tmp = ((lhs[lane] as i16 as i32 * rhs[lane] as i16 as i32) << 1) + 32768;
@@ -31,7 +31,7 @@ pub fn vmulf(
         (tmp >> 16) as u16
     });
 
-    core.cp2_mut().setv(vd, result);
+    core.cp2_mut().set_v(vd, result);
 }
 
 pub fn vmacf(
@@ -52,8 +52,8 @@ pub fn vmacf(
         broadcast,
     );
 
-    let lhs = core.cp2().getv(vs);
-    let rhs = core.cp2().getv(vt).broadcast(broadcast);
+    let lhs = core.cp2().get_v(vs);
+    let rhs = core.cp2().get_v(vt).broadcast(broadcast);
 
     let result = Vector::from_fn(|lane| {
         let tmp = (lhs[lane] as i16 as i32 * rhs[lane] as i16 as i32) << 1;
@@ -62,5 +62,5 @@ pub fn vmacf(
         (tmp >> 16) as u16
     });
 
-    core.cp2_mut().setv(vd, result);
+    core.cp2_mut().set_v(vd, result);
 }
