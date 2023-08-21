@@ -120,7 +120,7 @@ impl Pif {
         let mut output = ArrayVec::new();
 
         match input[0] {
-            0x00 | 0x0f => {
+            0x00 | 0xff => {
                 match channel {
                     0 => {
                         output.push(0x05);
