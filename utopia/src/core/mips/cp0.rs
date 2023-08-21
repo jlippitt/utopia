@@ -1,4 +1,4 @@
-use super::{Bus, Coprocessor0, Core, Interrupt};
+use super::{Bus, Coprocessor0, Core, Interrupt, REGS};
 use bitfield_struct::bitfield;
 use tracing::debug;
 
@@ -70,13 +70,6 @@ pub struct Cp0 {
 }
 
 impl Cp0 {
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
-
-impl Coprocessor0 for Cp0 {
-    #[rustfmt::skip]
     const REGS: [&'static str; 32] = [
         "Index",
         "Random",
@@ -112,10 +105,20 @@ impl Coprocessor0 for Cp0 {
         "$31",
     ];
 
-    fn get(core: &Core<impl Bus<Cp0 = Self>>, index: usize) -> u32 {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Coprocessor0 for Cp0 {
+    fn mfc0(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32) {
+        let rt = ((word >> 16) & 31) as usize;
+        let rd = ((word >> 11) & 31) as usize;
         let cp0 = &core.cp0;
 
-        match index {
+        debug!("{:08X} MFC0 {}, {}", core.pc, REGS[rt], Self::REGS[rd]);
+
+        let result = match rd {
             0 => cp0.index,
             2 => cp0.lo0,
             3 => cp0.lo1,
@@ -127,14 +130,21 @@ impl Coprocessor0 for Cp0 {
             12 => u32::from(cp0.status) & !0x0088_0000,
             13 => cp0.cause.into(),
             14 => cp0.epc,
-            _ => todo!("CP0 Register Read: {}", Self::REGS[index]),
-        }
+            _ => todo!("CP0 Register Read: {}", Self::REGS[rd]),
+        };
+
+        core.set(rt, result);
     }
 
-    fn set(core: &mut Core<impl Bus<Cp0 = Self>>, index: usize, value: u32) {
+    fn mtc0(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32) {
+        let rt = ((word >> 16) & 31) as usize;
+        let rd = ((word >> 11) & 31) as usize;
+        let value = core.get(rt);
         let cp0 = &mut core.cp0;
 
-        match index {
+        debug!("{:08X} MTC0 {}, {}", core.pc, REGS[rt], Self::REGS[rd]);
+
+        match rd {
             0 => {
                 cp0.index = value & 0x8000_003f;
                 debug!("  CP0 Index: {}", cp0.index);
@@ -179,13 +189,13 @@ impl Coprocessor0 for Cp0 {
             }
             _ => {
                 if value != 0 {
-                    todo!("CP0 Register Write: {} <= {:08X}", Self::REGS[index], value);
+                    todo!("CP0 Register Write: {} <= {:08X}", Self::REGS[rd], value);
                 }
             }
         }
     }
 
-    fn dispatch(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32) {
+    fn cop0(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32) {
         match word & 63 {
             0o01 => tlbr(core),
             0o02 => tlbwi(core),
@@ -200,7 +210,7 @@ impl Coprocessor0 for Cp0 {
         }
     }
 
-    fn update(core: &mut Core<impl Bus<Cp0 = Self>>) {
+    fn step(core: &mut Core<impl Bus<Cp0 = Self>>) {
         core.cp0.count = core.cp0.count.wrapping_add(1);
 
         if core.cp0.count == core.cp0.compare {
