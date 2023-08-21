@@ -1,7 +1,5 @@
 # Utopia
 
-A multi-emulator
-
 ## Current Status
 
 | System           | Status |
