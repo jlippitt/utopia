@@ -35,6 +35,10 @@ impl VectorUnit {
         self.regs[reg].u64(elem)
     }
 
+    fn getq(&self, reg: usize, elem: usize) -> u128 {
+        self.regs[reg].u128(elem)
+    }
+
     fn setv(&mut self, reg: usize, value: Vector) {
         self.regs[reg] = value;
         debug!("  $V{:02}: {}", reg, self.regs[reg]);
@@ -122,6 +126,7 @@ impl Coprocessor2 for VectorUnit {
 
         match opcode {
             0b00011 => sdv(core, base, vt, elem, offset),
+            0b00100 => sqv(core, base, vt, elem, offset),
             _ => unimplemented!(
                 "RSP SWC2 OP={:05b} ({:08X}: {:08X})",
                 opcode,

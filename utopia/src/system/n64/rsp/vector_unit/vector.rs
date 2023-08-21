@@ -33,6 +33,20 @@ impl Vector {
         value
     }
 
+    pub fn u128(&self, elem: usize) -> u128 {
+        debug_assert!((elem & 15) == 0);
+        let mut value = 0;
+        value |= (self.0[elem >> 1] as u128) << 112;
+        value |= (self.0[(elem >> 1) + 1] as u128) << 96;
+        value |= (self.0[(elem >> 1) + 2] as u128) << 80;
+        value |= (self.0[(elem >> 1) + 3] as u128) << 64;
+        value |= (self.0[(elem >> 1) + 4] as u128) << 48;
+        value |= (self.0[(elem >> 1) + 5] as u128) << 32;
+        value |= (self.0[(elem >> 1) + 6] as u128) << 16;
+        value |= self.0[(elem >> 1) + 7] as u128;
+        value
+    }
+
     pub fn set_u16(&mut self, elem: usize, value: u16) {
         debug_assert!((elem & 1) == 0);
         self.0[elem >> 1] = value;
