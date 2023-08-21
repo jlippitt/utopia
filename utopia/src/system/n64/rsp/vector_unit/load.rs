@@ -10,6 +10,7 @@ pub fn ldv(
     offset: i32,
 ) {
     debug_assert!((elem & 1) == 0);
+    let offset = offset * 8;
 
     debug!(
         "{:08X} LDV $V{:02},E({}), {},{}",
@@ -20,7 +21,7 @@ pub fn ldv(
         REGS[base]
     );
 
-    let address = core.get(base).wrapping_add((offset * 8) as u32);
+    let address = core.get(base).wrapping_add(offset as u32);
     let result = core.read_doubleword(address);
     core.cp2_mut().setd(vt, elem, result);
 }
