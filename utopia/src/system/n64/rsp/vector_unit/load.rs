@@ -12,7 +12,7 @@ pub fn ldv(
     debug_assert!((elem & 1) == 0);
 
     debug!(
-        "{:08X} LDV $V{:02},E({}) {}({})",
+        "{:08X} LDV $V{:02},E({}), {},{}",
         core.pc(),
         vt,
         elem >> 1,
