@@ -112,10 +112,10 @@ impl BackgroundLayer {
         let tile_x = (coarse_x >> (tile_width as u32)) & self.tile_mirror_x;
 
         let address = self.tile_map
-            | ((tile_y & 0x20) << self.tile_shift_y)
-            | ((tile_x & 0x20) << TILE_SHIFT_32)
-            | ((tile_y & 0x1f) << TILE_SHIFT_32)
-            | (tile_x & 0x1f);
+            + ((tile_y & 0x20) << self.tile_shift_y)
+            + ((tile_x & 0x20) << TILE_SHIFT_32)
+            + ((tile_y & 0x1f) << TILE_SHIFT_32)
+            + (tile_x & 0x1f);
 
         let value = vram.data(address as usize);
         trace!("Tile Load: {:04X} => {:04X}", address, value);
