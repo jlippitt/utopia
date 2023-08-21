@@ -181,7 +181,6 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn read_doubleword(&mut self, address: u32) -> u64 {
-        debug_assert!(T::INSTR_64);
         debug_assert!((address & 3) == 0);
         let high = self.read_word(address);
         let low = self.read_word(address.wrapping_add(4));
@@ -206,7 +205,6 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn write_doubleword(&mut self, address: u32, value: u64) {
-        debug_assert!(T::INSTR_64);
         debug_assert!((address & 3) == 0);
         self.write_word(address, (value >> 32) as u32);
         self.write_word(address.wrapping_add(4), value as u32);

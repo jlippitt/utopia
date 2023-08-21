@@ -72,12 +72,7 @@ impl Coprocessor0 for Cp0 {
 
     fn cop0(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32) {
         match word & 63 {
-            func => unimplemented!(
-                "RSP CP0 RS=10000 FN={:06b} ({:08X}: {:08X})",
-                func,
-                core.pc(),
-                word
-            ),
+            func => unimplemented!("RSP COP0 FN={:06b} ({:08X}: {:08X})", func, core.pc(), word),
         }
     }
 }

@@ -75,6 +75,7 @@ pub fn dispatch<T: Bus>(core: &mut Core<T>, word: u32) {
             debug_assert!(T::CP1);
             type_i(core, cp1::lwc1, word);
         }
+        0o62 => T::Cp2::lwc2(core, word),
         0o65 => {
             debug_assert!(T::CP1);
             type_i(core, cp1::ldc1, word);
@@ -84,6 +85,7 @@ pub fn dispatch<T: Bus>(core: &mut Core<T>, word: u32) {
             debug_assert!(T::CP1);
             type_i(core, cp1::swc1, word);
         }
+        0o72 => T::Cp2::swc2(core, word),
         0o75 => {
             debug_assert!(T::CP1);
             type_i(core, cp1::sdc1, word);
