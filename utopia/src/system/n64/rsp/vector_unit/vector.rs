@@ -1,3 +1,4 @@
+use std::array;
 use std::fmt;
 use std::ops::{Index, IndexMut};
 
@@ -13,6 +14,10 @@ pub enum Broadcast {
 }
 
 impl Vector {
+    pub fn from_fn(cb: impl FnMut(usize) -> u16) -> Self {
+        Self(array::from_fn(cb))
+    }
+
     pub fn u16(&self, elem: usize) -> u16 {
         debug_assert!((elem & 1) == 0);
         self.0[elem >> 1]

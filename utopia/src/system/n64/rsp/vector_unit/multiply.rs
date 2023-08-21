@@ -23,14 +23,13 @@ pub fn vmulf(
 
     let lhs = core.cp2().getv(vs);
     let rhs = core.cp2().getv(vt).broadcast(broadcast);
-    let mut result = Vector::default();
 
-    for lane in 0..8 {
+    let result = Vector::from_fn(|lane| {
         let tmp = ((lhs[lane] as i16 as i32 * rhs[lane] as i16 as i32) << 1) + 32768;
         // TODO: Clamping
         core.cp2_mut().acc[lane] = tmp as i64 as u64;
-        result[lane] = (tmp >> 16) as u16;
-    }
+        (tmp >> 16) as u16
+    });
 
     core.cp2_mut().setv(vd, result);
 }
@@ -55,14 +54,13 @@ pub fn vmacf(
 
     let lhs = core.cp2().getv(vs);
     let rhs = core.cp2().getv(vt).broadcast(broadcast);
-    let mut result = Vector::default();
 
-    for lane in 0..8 {
+    let result = Vector::from_fn(|lane| {
         let tmp = (lhs[lane] as i16 as i32 * rhs[lane] as i16 as i32) << 1;
         // TODO: Clamping
         core.cp2_mut().accumulate(lane, tmp as i64 as u64);
-        result[lane] = (tmp >> 16) as u16;
-    }
+        (tmp >> 16) as u16
+    });
 
     core.cp2_mut().setv(vd, result);
 }
