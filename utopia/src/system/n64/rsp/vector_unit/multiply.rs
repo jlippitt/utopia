@@ -1,3 +1,4 @@
+use super::vector::Vector;
 use super::VectorUnit;
 use crate::core::mips::{Bus, Core};
 use tracing::debug;
@@ -9,20 +10,20 @@ pub fn vmulf(
     vs: usize,
     vd: usize,
 ) {
+    let broadcast = elem.into();
+
     debug!(
-        "{:08X} VMULF $V{:02}, $V{:02}, $V{:02},E({})",
+        "{:08X} VMULF $V{:02}, $V{:02}, $V{:02}{}",
         core.pc(),
         vd,
         vs,
         vt,
-        elem,
+        broadcast,
     );
 
-    debug_assert!((elem & 15) == 0);
-
     let lhs = core.cp2().getv(vs);
-    let rhs = core.cp2().getv(vt);
-    let mut result = [0; 8];
+    let rhs = core.cp2().getv(vt).broadcast(broadcast);
+    let mut result = Vector::default();
 
     for lane in 0..8 {
         let tmp = ((lhs[lane] as i32 * rhs[lane] as i32) << 1) + 32768;

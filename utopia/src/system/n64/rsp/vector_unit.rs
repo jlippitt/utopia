@@ -3,121 +3,54 @@ use load::*;
 use multiply::*;
 use store::*;
 use tracing::debug;
+use vector::Vector;
 
 mod load;
 mod multiply;
 mod store;
+mod vector;
 
 pub struct VectorUnit {
-    regs: [[u16; 8]; 32],
+    regs: [Vector; 32],
 }
 
 impl VectorUnit {
     pub fn new() -> Self {
-        Self { regs: [[0; 8]; 32] }
+        Self {
+            regs: [Vector::default(); 32],
+        }
     }
 
-    fn getv(&self, reg: usize) -> [u16; 8] {
+    fn getv(&self, reg: usize) -> Vector {
         self.regs[reg]
     }
 
     fn geth(&self, reg: usize, elem: usize) -> u16 {
-        debug_assert!((elem & 1) == 0);
-        self.regs[reg][elem >> 1]
+        self.regs[reg].u16(elem)
     }
 
     fn getd(&self, reg: usize, elem: usize) -> u64 {
-        debug_assert!((elem & 1) == 0);
-        let mut value = 0;
-        value |= (self.regs[reg][elem >> 1] as u64) << 48;
-        value |= (self.regs[reg][(elem >> 1) + 1] as u64) << 32;
-        value |= (self.regs[reg][(elem >> 1) + 2] as u64) << 16;
-        value |= self.regs[reg][(elem >> 1) + 3] as u64;
-        value
+        self.regs[reg].u64(elem)
     }
 
-    fn setv(&mut self, reg: usize, value: [u16; 8]) {
+    fn setv(&mut self, reg: usize, value: Vector) {
         self.regs[reg] = value;
-
-        debug!(
-            "  $V{:02}: {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X}",
-            reg,
-            self.regs[reg][0],
-            self.regs[reg][1],
-            self.regs[reg][2],
-            self.regs[reg][3],
-            self.regs[reg][4],
-            self.regs[reg][5],
-            self.regs[reg][6],
-            self.regs[reg][7],
-        )
+        debug!("  $V{:02}: {}", reg, self.regs[reg]);
     }
 
     fn seth(&mut self, reg: usize, elem: usize, value: u16) {
-        debug_assert!((elem & 1) == 0);
-
-        self.regs[reg][elem >> 1] = value;
-
-        debug!(
-            "  $V{:02}: {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X}",
-            reg,
-            self.regs[reg][0],
-            self.regs[reg][1],
-            self.regs[reg][2],
-            self.regs[reg][3],
-            self.regs[reg][4],
-            self.regs[reg][5],
-            self.regs[reg][6],
-            self.regs[reg][7],
-        )
+        self.regs[reg].set_u16(elem, value);
+        debug!("  $V{:02}: {}", reg, self.regs[reg]);
     }
 
     fn setd(&mut self, reg: usize, elem: usize, value: u64) {
-        debug_assert!((elem & 1) == 0);
-
-        self.regs[reg][elem >> 1] = (value >> 48) as u16;
-        self.regs[reg][(elem >> 1) + 1] = (value >> 32) as u16;
-        self.regs[reg][(elem >> 1) + 2] = (value >> 16) as u16;
-        self.regs[reg][(elem >> 1) + 3] = value as u16;
-
-        debug!(
-            "  $V{:02}: {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X}",
-            reg,
-            self.regs[reg][0],
-            self.regs[reg][1],
-            self.regs[reg][2],
-            self.regs[reg][3],
-            self.regs[reg][4],
-            self.regs[reg][5],
-            self.regs[reg][6],
-            self.regs[reg][7],
-        )
+        self.regs[reg].set_u64(elem, value);
+        debug!("  $V{:02}: {}", reg, self.regs[reg]);
     }
 
     fn setq(&mut self, reg: usize, elem: usize, value: u128) {
-        debug_assert!((elem & 1) == 0);
-
-        self.regs[reg][elem >> 1] = (value >> 112) as u16;
-        self.regs[reg][(elem >> 1) + 1] = (value >> 96) as u16;
-        self.regs[reg][(elem >> 1) + 2] = (value >> 80) as u16;
-        self.regs[reg][(elem >> 1) + 3] = (value >> 64) as u16;
-        self.regs[reg][(elem >> 1) + 4] = (value >> 48) as u16;
-        self.regs[reg][(elem >> 1) + 5] = (value >> 32) as u16;
-        self.regs[reg][(elem >> 1) + 6] = (value >> 16) as u16;
-        self.regs[reg][(elem >> 1) + 7] = value as u16;
-
-        debug!(
-            "  $V{:02}: {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X}",
-            reg,
-            self.regs[reg][0],
-            self.regs[reg][1],
-            self.regs[reg][2],
-            self.regs[reg][3],
-            self.regs[reg][4],
-            self.regs[reg][5],
-            self.regs[reg][6],
-            self.regs[reg][7],
-        )
+        self.regs[reg].set_u128(elem, value);
+        debug!("  $V{:02}: {}", reg, self.regs[reg]);
     }
 }
 
