@@ -1,9 +1,11 @@
 use crate::core::mips::{Bus, Coprocessor2, Core, REGS};
 use load::*;
+use multiply::*;
 use store::*;
 use tracing::debug;
 
 mod load;
+mod multiply;
 mod store;
 
 pub struct VectorUnit {
@@ -13,6 +15,10 @@ pub struct VectorUnit {
 impl VectorUnit {
     pub fn new() -> Self {
         Self { regs: [[0; 8]; 32] }
+    }
+
+    fn getv(&self, reg: usize) -> [u16; 8] {
+        self.regs[reg]
     }
 
     fn geth(&self, reg: usize, elem: usize) -> u16 {
@@ -28,6 +34,23 @@ impl VectorUnit {
         value |= (self.regs[reg][(elem >> 1) + 2] as u64) << 16;
         value |= self.regs[reg][(elem >> 1) + 3] as u64;
         value
+    }
+
+    fn setv(&mut self, reg: usize, value: [u16; 8]) {
+        self.regs[reg] = value;
+
+        debug!(
+            "  $V{:02}: {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X}",
+            reg,
+            self.regs[reg][0],
+            self.regs[reg][1],
+            self.regs[reg][2],
+            self.regs[reg][3],
+            self.regs[reg][4],
+            self.regs[reg][5],
+            self.regs[reg][6],
+            self.regs[reg][7],
+        )
     }
 
     fn seth(&mut self, reg: usize, elem: usize, value: u16) {
@@ -170,7 +193,13 @@ impl Coprocessor2 for VectorUnit {
     }
 
     fn cop2(core: &mut Core<impl Bus<Cp2 = Self>>, word: u32) {
+        let elem = ((word >> 21) & 15) as usize;
+        let vt = ((word >> 16) & 31) as usize;
+        let vs = ((word >> 11) & 31) as usize;
+        let vd = ((word >> 6) & 31) as usize;
+
         match word & 63 {
+            0o00 => vmulf(core, elem, vt, vs, vd),
             func => unimplemented!("RSP COP2 FN={:06b} ({:08X}: {:08X})", func, core.pc(), word),
         }
     }
