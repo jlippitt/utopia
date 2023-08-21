@@ -36,7 +36,7 @@ impl VectorUnit {
         self.regs[reg][elem >> 1] = value;
 
         debug!(
-            "  $V{:02}: {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}",
+            "  $V{:02}: {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X}",
             reg,
             self.regs[reg][0],
             self.regs[reg][1],
