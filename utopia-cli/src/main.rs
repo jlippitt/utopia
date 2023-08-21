@@ -123,7 +123,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-        system.run_frame(joypad.state());
+        system.set_joypad_state(joypad.state());
+        system.run_frame();
 
         if system.screen_resolution() != prev_resolution {
             video.set_screen_size(system.screen_width(), system.screen_height())?;

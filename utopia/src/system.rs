@@ -1,18 +1,18 @@
 use crate::util::mirror::MirrorableMut;
-use gb::GameBoy;
-use gba::GameBoyAdvance;
-use n64::N64;
+// use gb::GameBoy;
+// use gba::GameBoyAdvance;
+// use n64::N64;
 use nes::Nes;
-use snes::Snes;
+// use snes::Snes;
 use std::collections::VecDeque;
 use std::error::Error;
 use std::path::Path;
 
-mod gb;
-mod gba;
-mod n64;
+// mod gb;
+// mod gba;
+// mod n64;
 mod nes;
-mod snes;
+// mod snes;
 
 #[derive(Clone, Default, Debug, Eq, PartialEq)]
 pub struct JoypadState {
@@ -25,7 +25,9 @@ pub type AudioQueue = VecDeque<(f32, f32)>;
 pub trait System {
     fn pixels(&self) -> &[u8];
     fn pitch(&self) -> usize;
-    fn run_frame(&mut self, joypad_state: &JoypadState);
+    fn set_joypad_state(&mut self, joypad_state: &JoypadState);
+    fn step(&mut self);
+    fn run_frame(&mut self);
 
     fn sample_rate(&self) -> u64 {
         44100
@@ -78,15 +80,15 @@ pub fn create<T: MemoryMapper + 'static, U: BiosLoader>(
         .unwrap_or("".to_owned());
 
     Ok(match extension.as_str() {
-        "gb" => Box::new(GameBoy::<T::Mapped>::new(rom_data, options)?),
-        "gba" => Box::new(GameBoyAdvance::new(
-            rom_data,
-            &options.bios_loader,
-            options.skip_boot,
-        )?),
-        "n64" | "z64" => Box::new(N64::new(rom_data)?),
+        // "gb" => Box::new(GameBoy::<T::Mapped>::new(rom_data, options)?),
+        // "gba" => Box::new(GameBoyAdvance::new(
+        //     rom_data,
+        //     &options.bios_loader,
+        //     options.skip_boot,
+        // )?),
+        // "n64" | "z64" => Box::new(N64::new(rom_data)?),
         "nes" => Box::new(Nes::new(rom_data, &options.memory_mapper)?),
-        "sfc" | "smc" => Box::new(Snes::new(rom_data, options)?),
+        //"sfc" | "smc" => Box::new(Snes::new(rom_data, options)?),
         _ => Err("ROM type not supported".to_owned())?,
     })
 }

@@ -57,7 +57,12 @@ export default () => {
     const [height, setHeight] = useState(DEFAULT_HEIGHT);
     const [pixels, setPixels] = useState(DEFAULT_PIXELS);
 
-    const runFrame = () => {
+    const prevTimeRef = useRef(window.performance.now());
+
+    const runFrame = (now: number) => {
+        let delta = now - prevTimeRef.current;
+        prevTimeRef.current = now;
+
         const utopia = utopiaRef.current;
 
         if (utopia) {
@@ -83,7 +88,8 @@ export default () => {
                 }
             }
 
-            utopia.runFrame(joypadState);
+            utopia.setJoypadState(joypadState);
+            utopia.runAudioSynced(delta);
 
             setWidth(utopia.getScreenWidth());
             setHeight(utopia.getScreenHeight());

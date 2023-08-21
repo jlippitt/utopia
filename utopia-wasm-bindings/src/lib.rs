@@ -167,8 +167,30 @@ impl Utopia {
         SampleBuffer { left, right }
     }
 
+    #[wasm_bindgen(js_name = setJoypadState)]
+    pub fn set_joypad_state(&mut self, joypad_state: JoypadState) {
+        self.system.set_joypad_state(&joypad_state.into())
+    }
+
     #[wasm_bindgen(js_name = runFrame)]
-    pub fn run_frame(&mut self, joypad_state: JoypadState) {
-        self.system.run_frame(&joypad_state.into())
+    pub fn run_frame(&mut self) {
+        if let Some(queue) = self.system.audio_queue() {
+            queue.clear();
+        }
+
+        self.system.run_frame();
+    }
+
+    #[wasm_bindgen(js_name = runAudioSynced)]
+    pub fn run_audio_synced(&mut self, delta: f64) {
+        if let Some(queue) = self.system.audio_queue() {
+            queue.clear();
+        }
+
+        let samples = ((self.sample_rate() as f64 * delta) / 1000.0) as usize;
+
+        while self.system.audio_queue().unwrap().len() < samples {
+            self.system.step();
+        }
     }
 }
