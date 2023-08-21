@@ -12,12 +12,14 @@ mod vector;
 
 pub struct VectorUnit {
     regs: [Vector; 32],
+    acc: [u64; 8],
 }
 
 impl VectorUnit {
     pub fn new() -> Self {
         Self {
             regs: [Vector::default(); 32],
+            acc: [0; 8],
         }
     }
 
@@ -51,6 +53,10 @@ impl VectorUnit {
     fn setq(&mut self, reg: usize, elem: usize, value: u128) {
         self.regs[reg].set_u128(elem, value);
         debug!("  $V{:02}: {}", reg, self.regs[reg]);
+    }
+
+    fn accumulate(&mut self, lane: usize, value: u64) {
+        self.acc[lane] = self.acc[lane].wrapping_add(value & 0xffff_ffff_ffff);
     }
 }
 
@@ -133,6 +139,7 @@ impl Coprocessor2 for VectorUnit {
 
         match word & 63 {
             0o00 => vmulf(core, elem, vt, vs, vd),
+            0o10 => vmacf(core, elem, vt, vs, vd),
             func => unimplemented!("RSP COP2 FN={:06b} ({:08X}: {:08X})", func, core.pc(), word),
         }
     }

@@ -27,8 +27,40 @@ pub fn vmulf(
 
     for lane in 0..8 {
         let tmp = ((lhs[lane] as i16 as i32 * rhs[lane] as i16 as i32) << 1) + 32768;
-        // TODO: Accumulator
         // TODO: Clamping
+        core.cp2_mut().acc[lane] = tmp as i64 as u64;
+        result[lane] = (tmp >> 16) as u16;
+    }
+
+    core.cp2_mut().setv(vd, result);
+}
+
+pub fn vmacf(
+    core: &mut Core<impl Bus<Cp2 = VectorUnit>>,
+    elem: usize,
+    vt: usize,
+    vs: usize,
+    vd: usize,
+) {
+    let broadcast = elem.into();
+
+    debug!(
+        "{:08X} VMACF $V{:02}, $V{:02}, $V{:02}{}",
+        core.pc(),
+        vd,
+        vs,
+        vt,
+        broadcast,
+    );
+
+    let lhs = core.cp2().getv(vs);
+    let rhs = core.cp2().getv(vt).broadcast(broadcast);
+    let mut result = Vector::default();
+
+    for lane in 0..8 {
+        let tmp = (lhs[lane] as i16 as i32 * rhs[lane] as i16 as i32) << 1;
+        // TODO: Clamping
+        core.cp2_mut().accumulate(lane, tmp as i64 as u64);
         result[lane] = (tmp >> 16) as u16;
     }
 
