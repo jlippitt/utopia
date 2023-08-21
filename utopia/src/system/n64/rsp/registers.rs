@@ -84,6 +84,14 @@ impl Registers {
                     reverse: true,
                 })
             }
+            3 => {
+                self.dma_requested = Some(Dma {
+                    src_addr: self.dma_spaddr,
+                    dst_addr: self.dma_ramaddr,
+                    len: value & 0xff8f_fff8,
+                    reverse: false,
+                })
+            }
             4 => {
                 // SP_STATUS
                 if (value & 0x01) != 0 {

@@ -41,7 +41,15 @@ impl super::Hardware {
                 rdlen, dst_addr, src_addr,
             );
         } else {
-            todo!("RSP DMA Writes");
+            for index in 0..rdlen {
+                let value: u8 = self.rsp.read_ram(src_addr.wrapping_add(index));
+                self.rdram.write_data(dst_addr.wrapping_add(index), value);
+            }
+
+            debug!(
+                "SP DMA: {} bytes written from {:08X} to {:08X}",
+                rdlen, src_addr, dst_addr,
+            );
         }
 
         self.rsp.finish_dma();
