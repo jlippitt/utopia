@@ -140,7 +140,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         video.update(&mut texture, system.pixels(), system.pitch())?;
 
         if let Some(audio_queue) = system.audio_queue() {
-            audio.sync(audio_queue);
+            if !args.disable_vsync {
+                audio.sync(audio_queue);
+            } else {
+                audio_queue.clear();
+            }
         }
     }
 
