@@ -128,7 +128,13 @@ impl Pif {
                         output.push(0x02); // TODO: Controller Pak
                     }
                     1 | 2 | 3 => return None,
-                    4 => todo!("EEPROM"),
+                    4 => {
+                        // Provide 4 Kbit EEPROM by default
+                        // TODO: Support other EEPROM sizes
+                        output.push(0x00);
+                        output.push(0x80);
+                        output.push(0x00); // TODO: 'Write in progress' flag
+                    }
                     _ => panic!("Invalid JoyBus channel: {}", channel),
                 }
             }
@@ -161,6 +167,17 @@ impl Pif {
 
                 warn!("Controller Pak writes not yet implemented");
                 output.push(crc(&input[3..35]));
+            }
+            0x04 => {
+                // TODO: EEPROM reads
+                for _ in 0..8 {
+                    output.push(0x00);
+                }
+            }
+            0x05 => {
+                // TODO: EEPROM writes
+                // TODO: 'Write in progress' flag
+                output.push(0x00);
             }
             _ => panic!("Unknown JoyBus command: {:02X}", input[0]),
         }
