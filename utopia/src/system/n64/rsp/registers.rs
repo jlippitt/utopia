@@ -106,6 +106,12 @@ impl Registers {
             }
             8 => self.dp_start,
             9 => self.dp_end,
+            10 => {
+                // DP_CURRENT
+                // As DMA currently happens instantly, this is always the last
+                // value written to DP_END
+                self.dp_end
+            }
             11 => self.dp_status.into(),
             _ => unimplemented!("RSP CP0 Register Read: {}", Self::NAMES[index]),
         }
