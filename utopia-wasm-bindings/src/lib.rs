@@ -51,6 +51,7 @@ impl utopia::MemoryMapper for MemoryMapper {
     }
 }
 
+#[derive(Default)]
 #[wasm_bindgen]
 pub struct JoypadState {
     inner: utopia::JoypadState,
@@ -60,9 +61,7 @@ pub struct JoypadState {
 impl JoypadState {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
-        Self {
-            inner: Default::default(),
-        }
+        Self::default()
     }
 
     #[wasm_bindgen(js_name = getAxis)]

@@ -90,7 +90,7 @@ impl Viewport {
             scaled_height,
         );
 
-        return Ok(rect);
+        Ok(rect)
     }
 
     fn apply_upscale(&self, max_scale: u32) -> (u32, u32) {

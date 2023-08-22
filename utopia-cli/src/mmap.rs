@@ -22,7 +22,7 @@ impl utopia::MemoryMapper for MemoryMapper {
                 .read(true)
                 .write(true)
                 .create(true)
-                .open(&self.rom_path.with_extension("sav"))?;
+                .open(self.rom_path.with_extension("sav"))?;
 
             file.set_len(len as u64)?;
 
