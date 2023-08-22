@@ -4,6 +4,7 @@ use pipeline::Pipeline;
 use std::array;
 use std::cell::RefCell;
 use std::rc::Rc;
+use tracing::{debug, debug_span};
 
 mod pipeline;
 
@@ -57,6 +58,12 @@ impl Rdp {
     }
 
     pub fn run(&mut self, rdram: &mut [u8]) {
+        debug!("[CPU => RDP]");
+
+        let _span = debug_span!("rdp").entered();
+
+        debug!("[CPU => RDP]");
+
         for &command in &self.commands {
             self.pipeline.step(rdram, command);
         }
