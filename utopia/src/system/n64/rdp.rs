@@ -64,9 +64,7 @@ impl Rdp {
 
         debug!("[CPU => RDP]");
 
-        for &command in &self.commands {
-            self.pipeline.step(rdram, command);
-        }
+        self.pipeline.run(rdram, &self.commands);
     }
 }
 
