@@ -10,7 +10,7 @@ impl Pipeline {
     }
 
     pub fn run(&mut self, _ram: &[u8], commands: &[u64]) {
-        let mut iter = commands.into_iter();
+        let mut iter = commands.iter();
 
         while let Some(command) = iter.next() {
             match (command >> 56) as u8 {
