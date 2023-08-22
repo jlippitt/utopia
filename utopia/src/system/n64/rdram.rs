@@ -40,6 +40,10 @@ impl Rdram {
         &self.data
     }
 
+    pub fn data_mut(&mut self) -> &mut [u8] {
+        &mut self.data
+    }
+
     pub fn read_data<T: Value>(&self, address: u32) -> T {
         self.data.read_be(address as usize)
     }

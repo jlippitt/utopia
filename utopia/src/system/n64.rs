@@ -141,7 +141,7 @@ impl Hardware {
                     self.rsp.read_be(index)
                 }
             }
-            0x041 => self.rdp.command().read_be(address & 0x000f_ffff),
+            0x041 => self.rdp.read_be(address & 0x000f_ffff),
             0x042 => self.rdp.span().read_be(address & 0x000f_ffff),
             0x043 => self.mips.read_be(address & 0x000f_ffff),
             0x044 => self.video.read_be(address & 0x000f_ffff),
@@ -183,9 +183,7 @@ impl Hardware {
                 }
             }
             0x041 => {
-                self.rdp
-                    .command_mut()
-                    .write_be(address & 0x000f_ffff, value);
+                self.rdp.write_be(address & 0x000f_ffff, value);
 
                 if let Some(request) = self.rdp.dma_requested() {
                     self.rdp_dma(request);

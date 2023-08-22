@@ -58,9 +58,9 @@ impl super::Hardware {
 
     pub(super) fn rdp_dma(&mut self, request: RdpDma) {
         let RdpDma { start, end } = request;
-
-        self.rdp
-            .upload(&self.rdram.data()[start as usize..end as usize]);
+        let rdram = self.rdram.data_mut();
+        self.rdp.upload(&rdram[start as usize..end as usize]);
+        self.rdp.run(rdram);
     }
 
     pub(super) fn peripheral_dma(&mut self, request: Dma) {

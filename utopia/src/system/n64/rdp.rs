@@ -1,7 +1,11 @@
 use super::rsp::{DmaType, Registers};
 use crate::util::facade::{DataReader, DataWriter};
+use pipeline::Pipeline;
+use std::array;
 use std::cell::RefCell;
 use std::rc::Rc;
+
+mod pipeline;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct RdpDma {
@@ -10,24 +14,20 @@ pub struct RdpDma {
 }
 
 pub struct Rdp {
-    cmd: CommandInterface,
+    regs: Rc<RefCell<Registers>>,
+    commands: Vec<u64>,
+    pipeline: Pipeline,
     span: SpanInterface,
 }
 
 impl Rdp {
     pub fn new(regs: Rc<RefCell<Registers>>) -> Self {
         Self {
-            cmd: CommandInterface { regs },
+            regs,
+            commands: Vec::new(),
+            pipeline: Pipeline::new(),
             span: SpanInterface {},
         }
-    }
-
-    pub fn command(&self) -> &CommandInterface {
-        &self.cmd
-    }
-
-    pub fn command_mut(&mut self) -> &mut CommandInterface {
-        &mut self.cmd
     }
 
     pub fn span(&self) -> &SpanInterface {
@@ -39,24 +39,31 @@ impl Rdp {
     }
 
     pub fn dma_requested(&self) -> Option<RdpDma> {
-        match self.cmd.regs.borrow().dma_requested() {
+        match self.regs.borrow().dma_requested() {
             DmaType::Rdp(dma) => Some(dma),
             _ => None,
         }
     }
 
     pub fn upload(&mut self, commands: &[u8]) {
-        panic!("RDP Command Upload: {:X?}", commands);
+        self.commands.clear();
 
-        self.cmd.regs.borrow_mut().finish_dma()
+        for chunk in commands.chunks_exact(8) {
+            let bytes: [u8; 8] = array::from_fn(|index| chunk[index]);
+            self.commands.push(u64::from_be_bytes(bytes));
+        }
+
+        self.regs.borrow_mut().finish_dma()
+    }
+
+    pub fn run(&mut self, rdram: &mut [u8]) {
+        for &command in &self.commands {
+            self.pipeline.step(rdram, command);
+        }
     }
 }
 
-pub struct CommandInterface {
-    regs: Rc<RefCell<Registers>>,
-}
-
-impl DataReader for CommandInterface {
+impl DataReader for Rdp {
     type Address = u32;
     type Value = u32;
 
@@ -65,7 +72,7 @@ impl DataReader for CommandInterface {
     }
 }
 
-impl DataWriter for CommandInterface {
+impl DataWriter for Rdp {
     fn write(&mut self, address: u32, value: u32) {
         self.regs
             .borrow_mut()
