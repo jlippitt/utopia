@@ -1,7 +1,7 @@
 use crate::core::mips::Interrupt;
 use std::cell::Cell;
 use std::rc::Rc;
-use tracing::debug;
+use tracing::{debug, debug_span};
 
 #[repr(u8)]
 #[allow(dead_code)]
@@ -89,6 +89,8 @@ impl RcpInterrupt {
     }
 
     pub fn raise(&mut self, int_type: RcpIntType) {
+        let _span = debug_span!("main").entered();
+
         let prev_status = self.status.get();
         self.status.set(prev_status | int_type as u8);
 
@@ -100,6 +102,8 @@ impl RcpInterrupt {
     }
 
     pub fn clear(&mut self, int_type: RcpIntType) {
+        let _span = debug_span!("main").entered();
+
         let prev_status = self.status.get();
         self.status.set(prev_status & !(int_type as u8));
 

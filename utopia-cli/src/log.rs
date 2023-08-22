@@ -97,7 +97,7 @@ mod debug {
 
     struct LogRouter {
         writers: Vec<BufWriter<File>>,
-        span_map: HashMap<&'static str, Id>,
+        writer_map: HashMap<&'static str, usize>,
         stack: Vec<usize>,
     }
 
@@ -107,9 +107,12 @@ mod debug {
 
             let default_writer = create_writer(DEFAULT_KEY)?;
 
+            let mut writer_map = HashMap::new();
+            writer_map.insert(DEFAULT_KEY, 0);
+
             Ok(Self {
                 writers: vec![default_writer],
-                span_map: HashMap::new(),
+                writer_map,
                 stack: vec![0],
             })
         }
@@ -117,30 +120,30 @@ mod debug {
         pub fn new_span(&mut self, span: &Attributes<'_>) -> Id {
             let name = span.metadata().name();
 
-            if let Some(id) = self.span_map.get(span.metadata().name()) {
-                return id.clone();
-            }
+            let writer_id = self.writer_map.get(name).copied().unwrap_or_else(|| {
+                let writer_id = self.writers.len();
+                let writer = create_writer(name).unwrap();
+                self.writers.push(writer);
+                self.writer_map.insert(name, writer_id);
+                writer_id
+            });
 
-            let id = Id::from_u64(self.writers.len() as u64);
-            self.span_map.insert(name, id.clone());
-
-            let writer = create_writer(name).unwrap();
-            self.writers.push(writer);
-
-            id
+            // All span IDs are offset by 1, as 0 is reserved for the top-level writer
+            Id::from_u64(writer_id as u64 + 1)
         }
 
         pub fn event(&mut self, event: &Event<'_>) {
-            let writer = &mut self.writers[self.stack[self.stack.len() - 1]];
+            let writer_id = self.stack[self.stack.len() - 1];
+            let writer = &mut self.writers[writer_id];
             event.record(&mut FieldVisitor::new(writer));
         }
 
         pub fn enter(&mut self, span: &Id) {
-            self.stack.push(span.into_u64() as usize);
+            self.stack.push(span.into_u64() as usize - 1);
         }
 
         pub fn exit(&mut self, span: &Id) {
-            assert!(self.stack[self.stack.len() - 1] == span.into_u64() as usize);
+            assert!(self.stack[self.stack.len() - 1] == span.into_u64() as usize - 1);
             self.stack.pop();
         }
     }
