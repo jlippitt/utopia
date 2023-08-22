@@ -1,3 +1,4 @@
+use super::rdp::RdpDma;
 use crate::util::facade::{DataReader, DataWriter};
 use tracing::debug;
 
@@ -53,6 +54,13 @@ impl super::Hardware {
         }
 
         self.rsp.finish_dma();
+    }
+
+    pub(super) fn rdp_dma(&mut self, request: RdpDma) {
+        let RdpDma { start, end } = request;
+
+        self.rdp
+            .upload(&self.rdram.data()[start as usize..end as usize]);
     }
 
     pub(super) fn peripheral_dma(&mut self, request: Dma) {

@@ -1,30 +1,33 @@
-pub use registers::Registers;
-
+use super::rsp::{DmaType, Registers};
 use crate::util::facade::{DataReader, DataWriter};
 use std::cell::RefCell;
 use std::rc::Rc;
 
-mod registers;
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct RdpDma {
+    pub start: u32,
+    pub end: u32,
+}
 
 pub struct Rdp {
-    command: CommandInterface,
+    cmd: CommandInterface,
     span: SpanInterface,
 }
 
 impl Rdp {
     pub fn new(regs: Rc<RefCell<Registers>>) -> Self {
         Self {
-            command: CommandInterface { regs },
+            cmd: CommandInterface { regs },
             span: SpanInterface {},
         }
     }
 
     pub fn command(&self) -> &CommandInterface {
-        &self.command
+        &self.cmd
     }
 
     pub fn command_mut(&mut self) -> &mut CommandInterface {
-        &mut self.command
+        &mut self.cmd
     }
 
     pub fn span(&self) -> &SpanInterface {
@@ -33,6 +36,19 @@ impl Rdp {
 
     pub fn span_mut(&mut self) -> &mut SpanInterface {
         &mut self.span
+    }
+
+    pub fn dma_requested(&self) -> Option<RdpDma> {
+        match self.cmd.regs.borrow().dma_requested() {
+            DmaType::Rdp(dma) => Some(dma),
+            _ => None,
+        }
+    }
+
+    pub fn upload(&mut self, commands: &[u8]) {
+        panic!("RDP Command Upload: {:X?}", commands);
+
+        self.cmd.regs.borrow_mut().finish_dma()
     }
 }
 
@@ -45,7 +61,7 @@ impl DataReader for CommandInterface {
     type Value = u32;
 
     fn read(&self, address: u32) -> u32 {
-        self.regs.borrow().get((address as usize >> 2) & 7)
+        self.regs.borrow().get(8 + ((address as usize >> 2) & 7))
     }
 }
 
@@ -53,7 +69,7 @@ impl DataWriter for CommandInterface {
     fn write(&mut self, address: u32, value: u32) {
         self.regs
             .borrow_mut()
-            .set((address as usize >> 2) & 7, value);
+            .set(8 + ((address as usize >> 2) & 7), value);
     }
 }
 

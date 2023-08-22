@@ -1,11 +1,10 @@
+pub use registers::{DmaType, Registers};
+
 use super::dma::Dma;
-use super::interrupt::RcpInterrupt;
-use super::rdp::Registers as RdpRegisters;
 use crate::core::mips::{Bus, Core, Interrupt};
 use crate::util::facade::{DataReader, DataWriter, ReadFacade, Value, WriteFacade};
 use crate::util::MirrorVec;
 use cp0::Cp0;
-use registers::Registers;
 use std::cell::RefCell;
 use std::rc::Rc;
 use tracing::{debug, debug_span};
@@ -25,22 +24,16 @@ pub struct Rsp {
 }
 
 impl Rsp {
-    pub fn new<T: Into<Vec<u8>>>(
-        dmem: T,
-        interrupt: RcpInterrupt,
-        rdp_regs: Rc<RefCell<RdpRegisters>>,
-    ) -> Self {
+    pub fn new<T: Into<Vec<u8>>>(dmem: T, regs: Rc<RefCell<Registers>>) -> Self {
         let dmem = dmem.into();
 
         assert!(dmem.len() == DMEM_SIZE);
-
-        let regs = Rc::new(RefCell::new(Registers::new(interrupt)));
 
         Self {
             regs: regs.clone(),
             core: Core::new(
                 Hardware::new(dmem),
-                Cp0::new(regs, rdp_regs),
+                Cp0::new(regs),
                 VectorUnit::new(),
                 Default::default(),
             ),
@@ -70,19 +63,22 @@ impl Rsp {
     }
 
     pub fn dma_requested(&self) -> Option<Dma> {
-        self.regs.borrow().dma_requested()
+        match self.regs.borrow().dma_requested() {
+            DmaType::Rsp(dma) => Some(dma),
+            _ => None,
+        }
     }
 
     pub fn finish_dma(&mut self) {
         self.regs.borrow_mut().finish_dma()
     }
 
-    pub fn step(&mut self) -> Option<Dma> {
+    pub fn step(&mut self) -> DmaType {
         {
             let regs = self.regs.borrow();
 
             if regs.halted() {
-                return None;
+                return DmaType::None;
             }
 
             if regs.single_step() {

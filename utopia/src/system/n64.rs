@@ -5,9 +5,9 @@ use audio::AudioInterface;
 use interrupt::{CpuInterrupt, RcpInterrupt};
 use mips::MipsInterface;
 use peripheral::PeripheralInterface;
-use rdp::{Rdp, Registers as RdpRegisters};
+use rdp::Rdp;
 use rdram::Rdram;
-use rsp::{Rsp, DMEM_SIZE};
+use rsp::{DmaType, Registers, Rsp, DMEM_SIZE};
 use serial::SerialInterface;
 use std::cell::RefCell;
 use std::error::Error;
@@ -111,14 +111,14 @@ impl Hardware {
     pub fn new(rom: Vec<u8>) -> Self {
         let interrupt = CpuInterrupt::new();
         let rcp_interrupt = RcpInterrupt::new(interrupt.clone());
-        let rdp_regs = Rc::new(RefCell::new(RdpRegisters::new()));
+        let shared_regs = Rc::new(RefCell::new(Registers::new(rcp_interrupt.clone())));
 
         Self {
             cycles: 0,
             interrupt,
             rdram: Rdram::new(),
-            rsp: Rsp::new(&rom[0..DMEM_SIZE], rcp_interrupt.clone(), rdp_regs.clone()),
-            rdp: Rdp::new(rdp_regs),
+            rsp: Rsp::new(&rom[0..DMEM_SIZE], shared_regs.clone()),
+            rdp: Rdp::new(shared_regs),
             mips: MipsInterface::new(rcp_interrupt.clone()),
             video: VideoInterface::new(rcp_interrupt.clone()),
             audio: AudioInterface::new(rcp_interrupt.clone()),
@@ -182,10 +182,15 @@ impl Hardware {
                     }
                 }
             }
-            0x041 => self
-                .rdp
-                .command_mut()
-                .write_be(address & 0x000f_ffff, value),
+            0x041 => {
+                self.rdp
+                    .command_mut()
+                    .write_be(address & 0x000f_ffff, value);
+
+                if let Some(request) = self.rdp.dma_requested() {
+                    self.rdp_dma(request);
+                }
+            }
             0x042 => self.rdp.span_mut().write_be(address & 0x000f_ffff, value),
             0x043 => self.mips.write_be(address & 0x000f_ffff, value),
             0x044 => self.video.write_be(address & 0x000f_ffff, value),
@@ -240,8 +245,10 @@ impl Bus for Hardware {
     fn step(&mut self) {
         self.cycles += CYCLES_PER_STEP;
 
-        if let Some(request) = self.rsp.step() {
-            self.rsp_dma(request);
+        match self.rsp.step() {
+            DmaType::None => (),
+            DmaType::Rsp(dma) => self.rsp_dma(dma),
+            DmaType::Rdp(dma) => self.rdp_dma(dma),
         }
 
         self.video.step(CYCLES_PER_STEP);
