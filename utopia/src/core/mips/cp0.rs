@@ -289,7 +289,7 @@ fn tlbp(core: &mut Core<impl Bus<Cp0 = Cp0>>) {
     debug!("{:08X} TLBP", core.pc);
 
     let index = core.cp0.tlb_entries.iter().position(|entry| {
-        let mask = if ((entry.lo0 & entry.lo0) & 1) != 0 {
+        let mask = if ((entry.lo0 & entry.lo1) & 1) != 0 {
             // Global flag is set
             0xffff_e000
         } else {
