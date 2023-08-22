@@ -61,7 +61,7 @@ impl Pif {
         let mut channel = 0;
         let mut index = 0;
 
-        while index < self.input.len() {
+        while index < (self.input.len() - 1) {
             let send_bytes = self.input[index] as usize;
             index += 1;
 
