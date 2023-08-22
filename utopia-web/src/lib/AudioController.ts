@@ -39,7 +39,7 @@ export default class AudioController {
 
         this.bufferStartTime += this.buffer.duration;
 
-        let delta = this.bufferStartTime - this.ctx.currentTime;
+        const delta = this.bufferStartTime - this.ctx.currentTime;
 
         if (delta < 0 || delta >= DESYNC_TOLERANCE) {
             this.bufferStartTime = this.ctx.currentTime;
