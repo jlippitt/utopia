@@ -7,11 +7,11 @@ const ADDRESS: [&str; 4] = ["DA", "IA", "DB", "IB"];
 fn reg_list(word: u32) -> String {
     let mut reg_list: ArrayVec<&str, 9> = ArrayVec::new();
 
-    for reg in 0..=15 {
-        let mask = 1 << reg;
+    for (index, value) in REGS.iter().enumerate() {
+        let mask = 1 << index;
 
         if (word & mask) != 0 {
-            reg_list.push(REGS[reg]);
+            reg_list.push(value);
         }
     }
 

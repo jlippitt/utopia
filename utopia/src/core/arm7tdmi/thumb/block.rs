@@ -5,11 +5,11 @@ use tracing::debug;
 fn reg_list(word: u16, extra: Option<usize>) -> String {
     let mut reg_list: ArrayVec<&str, 9> = ArrayVec::new();
 
-    for reg in 0..=7 {
-        let mask = 1 << reg;
+    for (index, value) in REGS[0..=7].iter().enumerate() {
+        let mask = 1 << index;
 
         if (word & mask) != 0 {
-            reg_list.push(REGS[reg]);
+            reg_list.push(value);
         }
     }
 
