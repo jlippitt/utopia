@@ -1,5 +1,4 @@
 use super::super::oam::Sprite;
-use std::cmp;
 
 #[derive(Default)]
 pub struct BackgroundFifo {
@@ -65,7 +64,7 @@ impl SpriteFifo {
             ((chr.0 >> 0) & 1) | ((chr.1 << 1) & 2),
         ];
 
-        let total_pixels = cmp::min(8, sprite.x as usize);
+        let total_pixels = (sprite.x as usize).min(8);
 
         for write_index in 0..total_pixels {
             let pixel = &mut self.pixels[(self.read_index + write_index) & 7];

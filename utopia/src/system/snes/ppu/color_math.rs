@@ -1,6 +1,5 @@
 use super::buffer::LAYER_BACKDROP;
 use super::window::{BoolMask, MASK_NONE};
-use std::cmp;
 use tracing::debug;
 
 const WINDOW_INDEX: usize = 5;
@@ -104,10 +103,7 @@ impl WindowOperator {
                 mask: &MASK_NONE,
                 invert: false,
             },
-            WindowOperator::Outside => ClipMask {
-                mask,
-                invert: true,
-            },
+            WindowOperator::Outside => ClipMask { mask, invert: true },
             WindowOperator::Inside => ClipMask {
                 mask,
                 invert: false,
@@ -172,8 +168,7 @@ impl super::Ppu {
                 blue >>= 1;
             }
 
-            lhs_pixel.color =
-                cmp::min(red, 31) | (cmp::min(green, 31) << 5) | (cmp::min(blue, 31) << 10);
+            lhs_pixel.color = (red.min(31)) | (green.min(31) << 5) | (blue.min(31) << 10);
         }
     }
 }
