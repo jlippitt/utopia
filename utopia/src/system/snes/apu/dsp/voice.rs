@@ -36,7 +36,7 @@ impl Voice {
             echo_enabled: false,
             counter: 0,
             decoder: BrrDecoder::new(id),
-            id: id,
+            id,
         }
     }
 

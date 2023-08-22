@@ -25,7 +25,7 @@ impl Pulse {
             timer: Timer::new(Timer::MAX_PERIOD),
             sequencer: Sequencer::new(&DUTY_CYCLE[0]),
             length_counter: LengthCounter::new(64),
-            sweep: sweep_enabled.then(|| Sweep::new()),
+            sweep: sweep_enabled.then(Sweep::new),
             envelope: Envelope::new(),
             read_value: [0xff; 5],
         }

@@ -1,6 +1,6 @@
 use tracing::debug;
 
-const BIT_NAME: [&'static str; 2] = ["Main Screen", "Sub-Screen"];
+const BIT_NAME: [&str; 2] = ["Main Screen", "Sub-Screen"];
 
 #[derive(Copy, Clone)]
 pub struct Toggle {

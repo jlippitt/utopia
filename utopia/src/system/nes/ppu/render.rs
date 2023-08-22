@@ -291,7 +291,7 @@ impl super::Ppu {
     }
 
     fn sprite_chr_address(&self, index: usize) -> u16 {
-        let mut row = (self.line as u16).wrapping_sub(self.render.sprite_y as u16) & 15;
+        let mut row = (self.line as u16).wrapping_sub(self.render.sprite_y) & 15;
         let flip = (self.render.sprites[index].attr & 0x80) != 0;
 
         if self.control.sprite_size {

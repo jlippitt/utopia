@@ -62,6 +62,6 @@ impl Latch {
 
         self.high_byte = [false; 2];
 
-        return latched;
+        latched
     }
 }

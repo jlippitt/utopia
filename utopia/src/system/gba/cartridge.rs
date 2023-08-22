@@ -11,7 +11,7 @@ enum BackupType {
     Flash(usize),
 }
 
-const BACKUP_TYPES: [(&'static str, BackupType); 5] = [
+const BACKUP_TYPES: [(&str, BackupType); 5] = [
     ("EEPROM_V", BackupType::Eeprom),
     ("SRAM_V", BackupType::Sram),
     ("FLASH_V", BackupType::Flash(65536)),

@@ -24,11 +24,11 @@ fn mirror(size: usize, index: usize) -> usize {
 
     let floor: usize = if index > 0 { 1 << index.ilog2() } else { 0 };
 
-    if size <= (index & floor) as usize {
+    if size <= (index & floor) {
         return mirror(size, index - floor);
     }
 
-    return floor + mirror(size - floor, index - floor);
+    floor + mirror(size - floor, index - floor)
 }
 
 pub fn map(header: &Header) -> [Page; TOTAL_PAGES] {
@@ -77,7 +77,7 @@ fn map_lo_rom(pages: &mut [Page], header: &Header) {
 
     for bank in 0x00..=0x7f {
         let index = bank << 3;
-        let offset = (bank as usize) << 15;
+        let offset = bank << 15;
         pages[index | 4] = Page::Rom(mirror(rom_size, offset | 0x0000) as u32);
         pages[index | 5] = Page::Rom(mirror(rom_size, offset | 0x2000) as u32);
         pages[index | 6] = Page::Rom(mirror(rom_size, offset | 0x4000) as u32);
@@ -104,7 +104,7 @@ fn map_hi_rom(pages: &mut [Page], header: &Header) {
 
     for bank in 0x00..=0x3f {
         let index = bank << 3;
-        let offset = (bank as usize) << 16;
+        let offset = bank << 16;
         pages[index | 4] = Page::Rom(mirror(rom_size, offset | 0x8000) as u32);
         pages[index | 5] = Page::Rom(mirror(rom_size, offset | 0xa000) as u32);
         pages[index | 6] = Page::Rom(mirror(rom_size, offset | 0xc000) as u32);
@@ -113,7 +113,7 @@ fn map_hi_rom(pages: &mut [Page], header: &Header) {
 
     for bank in 0x40..=0x7f {
         let index = bank << 3;
-        let offset = (bank - 0x40 as usize) << 16;
+        let offset = (bank - 0x40_usize) << 16;
         pages[index | 0] = Page::Rom(mirror(rom_size, offset | 0x0000) as u32);
         pages[index | 1] = Page::Rom(mirror(rom_size, offset | 0x2000) as u32);
         pages[index | 2] = Page::Rom(mirror(rom_size, offset | 0x4000) as u32);
@@ -127,7 +127,7 @@ fn map_hi_rom(pages: &mut [Page], header: &Header) {
     if sram_size > 0 {
         for bank in 0x20..=0x3f {
             let index = (bank as usize) << 3;
-            let offset = (bank - 0x20 as u32) << 13;
+            let offset = (bank - 0x20_u32) << 13;
             pages[index | 3] = Page::Sram(offset);
         }
     }

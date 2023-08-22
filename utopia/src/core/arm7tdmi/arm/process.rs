@@ -53,7 +53,7 @@ pub fn alu_register<Op: AluOperator, const SET_FLAGS: bool, const VAR_SHIFT: boo
 
     let (shift_amount, debug_string) = if VAR_SHIFT {
         let rs = ((word >> 8) & 15) as usize;
-        (core.get(rs), format!("{}", REGS[rs]))
+        (core.get(rs), REGS[rs].to_string())
     } else {
         let shift_amount = (word >> 7) & 31;
         (shift_amount, format!("#0x{:X}", shift_amount))

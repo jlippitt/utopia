@@ -98,18 +98,18 @@ impl ColorMath {
 }
 
 impl WindowOperator {
-    fn apply<'a>(self, mask: &'a BoolMask) -> ClipMask<'a> {
+    fn apply(self, mask: &BoolMask) -> ClipMask<'_> {
         match self {
             WindowOperator::Never => ClipMask {
                 mask: &MASK_NONE,
                 invert: false,
             },
             WindowOperator::Outside => ClipMask {
-                mask: mask,
+                mask,
                 invert: true,
             },
             WindowOperator::Inside => ClipMask {
-                mask: mask,
+                mask,
                 invert: false,
             },
             WindowOperator::Always => ClipMask {

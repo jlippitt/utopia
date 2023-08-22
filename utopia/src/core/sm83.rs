@@ -100,16 +100,14 @@ impl<T: Bus> Core<T> {
             self.halted = false;
         }
 
-        if self.ime {
-            if interrupt != 0 {
-                let shift = interrupt.trailing_zeros();
-                self.bus.acknowledge(1 << shift);
-                let target = 0x40 + 0x08 * shift as u8;
-                instr::rst(self, target);
-                self.ime = false;
-                self.ime_delayed = false;
-                return;
-            }
+        if self.ime && interrupt != 0 {
+            let shift = interrupt.trailing_zeros();
+            self.bus.acknowledge(1 << shift);
+            let target = 0x40 + 0x08 * shift as u8;
+            instr::rst(self, target);
+            self.ime = false;
+            self.ime_delayed = false;
+            return;
         }
 
         self.ime = self.ime_delayed;

@@ -254,7 +254,7 @@ impl Clock {
             return FAST_CYCLES;
         }
 
-        return EXTRA_SLOW_CYCLES;
+        EXTRA_SLOW_CYCLES
     }
 
     fn next_event(&mut self) -> Option<LineEvent> {
@@ -283,7 +283,7 @@ impl Clock {
             IrqMode::None => None,
             IrqMode::V => (self.line == self.irq_y).then_some(0),
             IrqMode::H => Some((self.irq_x as u64) << 2),
-            IrqMode::HV => (self.line == self.irq_y).then(|| (self.irq_x as u64) << 2),
+            IrqMode::HV => (self.line == self.irq_y).then_some((self.irq_x as u64) << 2),
         };
 
         // During mid-line updates, don't schedule an IRQ if we've already

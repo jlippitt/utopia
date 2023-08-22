@@ -75,9 +75,9 @@ impl BackgroundLayer {
         self.tile_map = ((value & 0xfc) as u16) << 8;
 
         debug!("{} Tile Map: {:04X}", self.name, self.tile_map);
-        debug!("{} Mirror Mask X: {}", self.name, self.tile_mirror_x as u16);
-        debug!("{} Mirror Mask Y: {}", self.name, self.tile_mirror_y as u16);
-        debug!("{} Name Shift Y: {}", self.name, self.tile_shift_y as u16);
+        debug!("{} Mirror Mask X: {}", self.name, { self.tile_mirror_x });
+        debug!("{} Mirror Mask Y: {}", self.name, { self.tile_mirror_y });
+        debug!("{} Name Shift Y: {}", self.name, { self.tile_shift_y });
     }
 
     pub fn set_chr_map(&mut self, value: u8) {

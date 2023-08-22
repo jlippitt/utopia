@@ -185,16 +185,16 @@ impl From<u32> for Flags {
     }
 }
 
-impl Into<u32> for Flags {
-    fn into(self) -> u32 {
-        let mut value = 0;
-        value |= if self.e { 0x20 } else { 0 };
-        value |= if self.v { 0x10 } else { 0 };
-        value |= if self.z { 0x08 } else { 0 };
-        value |= if self.o { 0x04 } else { 0 };
-        value |= if self.u { 0x02 } else { 0 };
-        value |= if self.i { 0x01 } else { 0 };
-        value
+impl From<Flags> for u32 {
+    fn from(value: Flags) -> Self {
+        let mut result = 0;
+        result |= if value.e { 0x20 } else { 0 };
+        result |= if value.v { 0x10 } else { 0 };
+        result |= if value.z { 0x08 } else { 0 };
+        result |= if value.o { 0x04 } else { 0 };
+        result |= if value.u { 0x02 } else { 0 };
+        result |= if value.i { 0x01 } else { 0 };
+        result
     }
 }
 

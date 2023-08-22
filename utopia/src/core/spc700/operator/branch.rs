@@ -151,17 +151,8 @@ pub struct Bbs<const BIT: u8>;
 
 impl<const BIT: u8> BranchOperator for Bbs<BIT> {
     // There must be a better way of doing this... :(
-    const NAME: &'static str = unsafe {
-        std::str::from_utf8_unchecked(&[
-            'B' as u8,
-            'B' as u8,
-            'S' as u8,
-            ('0' as u8) + BIT,
-            ' ' as u8,
-            'd' as u8,
-            ',' as u8,
-        ])
-    };
+    const NAME: &'static str =
+        unsafe { std::str::from_utf8_unchecked(&[b'B', b'B', b'S', b'0' + BIT, b' ', b'd', b',']) };
 
     fn apply(core: &mut Core<impl Bus>) -> bool {
         let value = Direct::read(core);
@@ -174,17 +165,8 @@ pub struct Bbc<const BIT: u8>;
 
 impl<const BIT: u8> BranchOperator for Bbc<BIT> {
     // There must be a better way of doing this... :(
-    const NAME: &'static str = unsafe {
-        std::str::from_utf8_unchecked(&[
-            'B' as u8,
-            'B' as u8,
-            'C' as u8,
-            ('0' as u8) + BIT,
-            ' ' as u8,
-            'd' as u8,
-            ',' as u8,
-        ])
-    };
+    const NAME: &'static str =
+        unsafe { std::str::from_utf8_unchecked(&[b'B', b'B', b'C', b'0' + BIT, b' ', b'd', b',']) };
 
     fn apply(core: &mut Core<impl Bus>) -> bool {
         let value = Direct::read(core);

@@ -88,7 +88,7 @@ pub struct Set1<const BIT: u8>;
 impl<const BIT: u8> UnaryOperator for Set1<BIT> {
     // There must be a better way of doing this... :(
     const NAME: &'static str = unsafe {
-        std::str::from_utf8_unchecked(&['S' as u8, 'E' as u8, 'T' as u8, ('0' as u8) + BIT])
+        std::str::from_utf8_unchecked(&[b'S', b'E', b'T', b'0' + BIT])
     };
 
     fn apply(_core: &mut Core<impl Bus>, value: u8) -> u8 {
@@ -101,7 +101,7 @@ pub struct Clr1<const BIT: u8>;
 impl<const BIT: u8> UnaryOperator for Clr1<BIT> {
     // There must be a better way of doing this... :(
     const NAME: &'static str = unsafe {
-        std::str::from_utf8_unchecked(&['C' as u8, 'L' as u8, 'R' as u8, ('0' as u8) + BIT])
+        std::str::from_utf8_unchecked(&[b'C', b'L', b'R', b'0' + BIT])
     };
 
     fn apply(_core: &mut Core<impl Bus>, value: u8) -> u8 {

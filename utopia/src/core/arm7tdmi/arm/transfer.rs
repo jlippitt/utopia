@@ -112,7 +112,7 @@ pub fn mem_register<Op: TransferOperator, const SIZE: usize, const PUW: u8>(
 
     let (shift_amount, debug_string) = if var_shift {
         let rs = ((word >> 8) & 15) as usize;
-        (core.get(rs), format!("{}", REGS[rs]))
+        (core.get(rs), REGS[rs].to_string())
     } else {
         let shift_amount = (word >> 7) & 31;
         (shift_amount, format!("#0x{:X}", shift_amount))
