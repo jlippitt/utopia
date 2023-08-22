@@ -9,7 +9,14 @@ use tracing::{debug, debug_span};
 mod pipeline;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum RdpDmaSource {
+    Rdram,
+    Dmem,
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct RdpDma {
+    pub source: RdpDmaSource,
     pub start: u32,
     pub end: u32,
 }

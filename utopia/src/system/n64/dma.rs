@@ -1,4 +1,4 @@
-use super::rdp::RdpDma;
+use super::rdp::{RdpDma, RdpDmaSource};
 use crate::util::facade::{DataReader, DataWriter};
 use tracing::debug;
 
@@ -57,10 +57,15 @@ impl super::Hardware {
     }
 
     pub(super) fn rdp_dma(&mut self, request: RdpDma) {
-        let RdpDma { start, end } = request;
-        let rdram = self.rdram.data_mut();
-        self.rdp.upload(&rdram[start as usize..end as usize]);
-        self.rdp.run(rdram);
+        let RdpDma { source, start, end } = request;
+
+        let cmd_source = match source {
+            RdpDmaSource::Rdram => self.rdram.data(),
+            RdpDmaSource::Dmem => self.rsp.dmem(),
+        };
+
+        self.rdp.upload(&cmd_source[start as usize..end as usize]);
+        self.rdp.run(self.rdram.data_mut());
     }
 
     pub(super) fn peripheral_dma(&mut self, request: Dma) {

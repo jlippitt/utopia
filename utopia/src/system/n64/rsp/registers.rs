@@ -1,6 +1,6 @@
 use super::super::dma::Dma;
 use super::super::interrupt::{RcpIntType, RcpInterrupt};
-use super::super::rdp::RdpDma;
+use super::super::rdp::{RdpDma, RdpDmaSource};
 use bitfield_struct::bitfield;
 use tracing::debug;
 
@@ -211,9 +211,27 @@ impl Registers {
                 self.dp_status.set_start_pending(false);
 
                 self.dma_requested = DmaType::Rdp(RdpDma {
+                    source: if self.dp_status.xbus() {
+                        RdpDmaSource::Dmem
+                    } else {
+                        RdpDmaSource::Rdram
+                    },
                     start: self.dp_start,
                     end: self.dp_end,
                 })
+            }
+            11 => {
+                // CMD_STATUS
+                // TODO: All the rest
+                if (value & 0x01) != 0 {
+                    self.dp_status.set_xbus(false);
+                }
+
+                if (value & 0x02) != 0 {
+                    self.dp_status.set_xbus(true);
+                }
+
+                debug!("DP_STATUS: {:?}", self.dp_status);
             }
             _ => unimplemented!(
                 "RSP CP0 Register Write: {} <= {:08X}",

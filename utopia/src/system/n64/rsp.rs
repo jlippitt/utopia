@@ -40,6 +40,10 @@ impl Rsp {
         }
     }
 
+    pub fn dmem(&self) -> &[u8] {
+        self.core.bus().dmem.inner()
+    }
+
     pub fn read_ram<T: Value>(&self, address: u32) -> T {
         // TODO: Mirroring
         let address = address as usize;
