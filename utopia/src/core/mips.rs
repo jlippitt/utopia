@@ -29,6 +29,7 @@ pub trait Bus {
     const MUL_DIV: bool;
     const INSTR_64: bool;
     const PC_MASK: u32 = 0xffff_ffff;
+    const ALLOW_MISALIGNED: bool = false;
 
     fn read<T: Value>(&mut self, address: u32) -> T;
     fn write<T: Value>(&mut self, address: u32, value: T);
@@ -167,21 +168,21 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn read_halfword(&mut self, address: u32) -> u16 {
-        debug_assert!((address & 1) == 0);
+        debug_assert!(T::ALLOW_MISALIGNED || (address & 1) == 0);
         let value = self.bus.read(address);
         debug!("  [{:08X}] => {:04X}", address, value);
         value
     }
 
     pub fn read_word(&mut self, address: u32) -> u32 {
-        debug_assert!((address & 3) == 0);
+        debug_assert!(T::ALLOW_MISALIGNED || (address & 3) == 0);
         let value = self.bus.read(address);
         debug!("  [{:08X}] => {:08X}", address, value);
         value
     }
 
     pub fn read_doubleword(&mut self, address: u32) -> u64 {
-        debug_assert!((address & 3) == 0);
+        debug_assert!(T::ALLOW_MISALIGNED || (address & 3) == 0);
         let high = self.read_word(address);
         let low = self.read_word(address.wrapping_add(4));
         ((high as u64) << 32) | (low as u64)
@@ -193,19 +194,19 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn write_halfword(&mut self, address: u32, value: u16) {
-        debug_assert!((address & 1) == 0);
+        debug_assert!(T::ALLOW_MISALIGNED || (address & 1) == 0);
         debug!("  [{:08X}] <= {:04X}", address, value);
         self.bus.write(address, value);
     }
 
     pub fn write_word(&mut self, address: u32, value: u32) {
-        debug_assert!((address & 3) == 0);
+        debug_assert!(T::ALLOW_MISALIGNED || (address & 3) == 0);
         debug!("  [{:08X}] <= {:08X}", address, value);
         self.bus.write(address, value);
     }
 
     pub fn write_doubleword(&mut self, address: u32, value: u64) {
-        debug_assert!((address & 3) == 0);
+        debug_assert!(T::ALLOW_MISALIGNED || (address & 3) == 0);
         self.write_word(address, (value >> 32) as u32);
         self.write_word(address.wrapping_add(4), value as u32);
     }

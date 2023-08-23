@@ -158,6 +158,7 @@ impl Bus for Hardware {
     const MUL_DIV: bool = false;
     const INSTR_64: bool = false;
     const PC_MASK: u32 = 0xfff;
+    const ALLOW_MISALIGNED: bool = true;
 
     fn read_opcode<T: Value>(&mut self, address: u32) -> T {
         self.imem.read_be(address as usize)
