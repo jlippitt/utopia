@@ -73,7 +73,8 @@ pub fn create<T: MemoryMapper + 'static, U: BiosLoader>(
     options: &Options<T, U>,
 ) -> Result<Box<dyn System>, Box<dyn Error>> {
     let extension = Path::new(rom_path)
-        .extension().map(|ext| ext.to_string_lossy().to_lowercase())
+        .extension()
+        .map(|ext| ext.to_string_lossy().to_lowercase())
         .unwrap_or("".to_owned());
 
     Ok(match extension.as_str() {

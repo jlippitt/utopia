@@ -1,10 +1,14 @@
 use clap::Parser;
 use std::error::Error;
 use std::fs;
+use std::time::{Duration, Instant};
+use video::VideoController;
 use winit::dpi::{PhysicalPosition, Size};
 use winit::event::{Event, WindowEvent};
-use winit::event_loop::{ControlFlow, EventLoop};
+use winit::event_loop::EventLoop;
 use winit::window::WindowBuilder;
+
+mod video;
 
 struct BiosLoader;
 
@@ -33,12 +37,12 @@ struct Args {
     skip_boot: bool,
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
-    let rom_data = fs::read(&args.rom_path).unwrap();
+    let rom_data = fs::read(&args.rom_path)?;
 
-    let system = utopia::create(
+    let mut system = utopia::create(
         rom_data,
         &args.rom_path,
         &utopia::Options {
@@ -46,8 +50,7 @@ fn main() {
             memory_mapper: MemoryMapper,
             skip_boot: args.skip_boot,
         },
-    )
-    .unwrap();
+    )?;
 
     let event_loop = EventLoop::new();
 
@@ -56,9 +59,9 @@ fn main() {
     let window = WindowBuilder::new()
         .with_title("Utopia")
         .with_inner_size(Size::Physical(inner_size))
+        .with_fullscreen(fullscreen)
         .with_resizable(false)
-        .build(&event_loop)
-        .unwrap();
+        .build(&event_loop)?;
 
     if let Some(monitor) = window.current_monitor() {
         let monitor_size = monitor.size();
@@ -67,14 +70,31 @@ fn main() {
         window.set_outer_position(PhysicalPosition::new(pos_x, pos_y));
     }
 
+    let mut video = VideoController::new(window, inner_size)?;
+
+    let mut next_frame_time = Instant::now();
+
     event_loop.run(move |event, _, control_flow| {
-        *control_flow = ControlFlow::Wait;
+        control_flow.set_wait();
 
         match event {
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
                 window_id,
-            } if window_id == window.id() => *control_flow = ControlFlow::Exit,
+            } if window_id == video.window().id() => control_flow.set_exit(),
+            Event::RedrawRequested(window_id) if window_id == video.window().id() => {
+                video.render(system.pixels(), system.pitch()).unwrap();
+            }
+            Event::MainEventsCleared => {
+                if Instant::now() >= next_frame_time {
+                    // Always run at approx 60 FPS for the moment
+                    next_frame_time += Duration::from_millis(17);
+
+                    system.run_frame(&Default::default());
+
+                    video.window().request_redraw();
+                }
+            }
             _ => (),
         }
     });
