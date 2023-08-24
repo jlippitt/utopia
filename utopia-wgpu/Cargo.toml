@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 bytemuck = { version = "1.13.1", features = ["derive"] }
 clap = { version = "4.3.24", features = ["derive"] }
+num-derive = "0.4.0"
+num-traits = "0.2.16"
 pollster = "0.3.0"
 utopia = { path = "../utopia" }
 wgpu = "0.17.0"

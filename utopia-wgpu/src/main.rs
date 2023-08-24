@@ -1,13 +1,13 @@
 use clap::Parser;
 use std::error::Error;
 use std::fs;
-use std::time::{Duration, Instant};
 use video::VideoController;
 use winit::dpi::{PhysicalPosition, Size};
-use winit::event::{Event, WindowEvent};
+use winit::event::{ElementState, Event, WindowEvent};
 use winit::event_loop::EventLoop;
 use winit::window::WindowBuilder;
 
+mod keyboard;
 mod video;
 
 struct BiosLoader;
@@ -71,6 +71,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut video = VideoController::new(window, inner_size)?;
 
+    let mut joypad_state = utopia::JoypadState::default();
+
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_poll();
 
@@ -79,11 +81,17 @@ fn main() -> Result<(), Box<dyn Error>> {
                 event: WindowEvent::CloseRequested,
                 window_id,
             } if window_id == video.window().id() => control_flow.set_exit(),
+            Event::WindowEvent {
+                event: WindowEvent::KeyboardInput { input, .. },
+                window_id,
+            } if window_id == video.window().id() => {
+                keyboard::handle_input(&mut joypad_state, input);
+            }
             Event::RedrawRequested(window_id) if window_id == video.window().id() => {
                 video.render(system.pixels(), system.pitch()).unwrap();
             }
             Event::MainEventsCleared => {
-                system.run_frame(&Default::default());
+                system.run_frame(&joypad_state);
                 video.window().request_redraw();
             }
             _ => (),
