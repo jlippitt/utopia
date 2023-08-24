@@ -59,7 +59,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let window = WindowBuilder::new()
         .with_title("Utopia")
         .with_inner_size(Size::Physical(inner_size))
-        .with_fullscreen(fullscreen)
         .with_resizable(false)
         .build(&event_loop)?;
 
@@ -72,10 +71,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut video = VideoController::new(window, inner_size)?;
 
-    let mut next_frame_time = Instant::now();
-
     event_loop.run(move |event, _, control_flow| {
-        control_flow.set_wait();
+        control_flow.set_poll();
 
         match event {
             Event::WindowEvent {
@@ -86,14 +83,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 video.render(system.pixels(), system.pitch()).unwrap();
             }
             Event::MainEventsCleared => {
-                if Instant::now() >= next_frame_time {
-                    // Always run at approx 60 FPS for the moment
-                    next_frame_time += Duration::from_millis(17);
-
-                    system.run_frame(&Default::default());
-
-                    video.window().request_redraw();
-                }
+                system.run_frame(&Default::default());
+                video.window().request_redraw();
             }
             _ => (),
         }
