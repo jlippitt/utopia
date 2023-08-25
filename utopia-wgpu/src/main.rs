@@ -72,7 +72,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     audio.resume()?;
 
-    event_loop.run(move |event, _, control_flow| {
+    event_loop.run(move |event, window_target, control_flow| {
         control_flow.set_poll();
 
         match event {
@@ -81,7 +81,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                     WindowEvent::CloseRequested => control_flow.set_exit(),
                     WindowEvent::KeyboardInput { input, .. } => match input.virtual_keycode {
                         Some(VirtualKeyCode::Escape) => control_flow.set_exit(),
-                        Some(VirtualKeyCode::F11) => video.toggle_full_screen().unwrap(),
+                        Some(VirtualKeyCode::F11) => {
+                            video.toggle_full_screen(window_target).unwrap()
+                        }
                         _ => keyboard::handle_input(&mut joypad_state, input),
                     },
                     WindowEvent::Resized(..) => {
