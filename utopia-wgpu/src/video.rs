@@ -81,8 +81,10 @@ impl VideoController {
     pub fn on_target_changed(&mut self, window_target: &EventLoopWindowTarget<()>) {
         let viewport = Viewport::new(window_target, self.source_size, self.full_screen);
 
-        self.window.set_outer_position(viewport.offset());
-        self.window.set_inner_size(Size::Physical(viewport.size()));
+        if !self.full_screen {
+            self.window.set_outer_position(viewport.offset());
+            self.window.set_inner_size(Size::Physical(viewport.size()));
+        }
     }
 
     pub fn render(&mut self, pixels: &[u8], pitch: usize) -> Result<(), Box<dyn Error>> {
