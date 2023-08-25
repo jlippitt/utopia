@@ -105,6 +105,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                     audio.drain(queue).unwrap();
                 }
 
+                let source_size: PhysicalSize<u32> = system.screen_resolution().into();
+
+                if source_size != video.source_size() {
+                    video.set_source_size(window_target, source_size);
+                }
+
                 video.window().request_redraw();
             }
             _ => (),

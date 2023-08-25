@@ -1,7 +1,11 @@
+use super::viewport::ClipRect;
 use std::error::Error;
+use texture::Texture;
 use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
+
+mod texture;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -23,7 +27,7 @@ impl Vertex {
     }
 }
 
-const DEFAULT_CLIP_RECT: [[f32; 2]; 4] = [[-1.0, 1.0], [-1.0, -1.0], [1.0, 1.0], [1.0, -1.0]];
+const DEFAULT_CLIP_RECT: ClipRect = [[-1.0, 1.0], [-1.0, -1.0], [1.0, 1.0], [1.0, -1.0]];
 
 #[rustfmt::skip]
 const INDICES: &[u16] = &[
@@ -36,10 +40,8 @@ pub struct Renderer {
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
-    texture: wgpu::Texture,
-    texture_size: wgpu::Extent3d,
-    _texture_view: wgpu::TextureView,
-    texture_bind_group: wgpu::BindGroup,
+    texture: Texture,
+    texture_bind_group_layout: wgpu::BindGroupLayout,
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
@@ -50,7 +52,7 @@ impl Renderer {
         window: &Window,
         source_size: PhysicalSize<u32>,
         target_size: PhysicalSize<u32>,
-        clip_rect: Option<[[f32; 2]; 4]>,
+        clip_rect: Option<ClipRect>,
     ) -> Result<Self, Box<dyn Error>> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
@@ -96,35 +98,6 @@ impl Renderer {
 
         surface.configure(&device, &config);
 
-        let texture_size = wgpu::Extent3d {
-            width: source_size.width,
-            height: source_size.height,
-            depth_or_array_layers: 1,
-        };
-
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Source Texture"),
-            size: texture_size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-
-        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-
-        let texture_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Nearest,
-            min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::FilterMode::Nearest,
-            ..Default::default()
-        });
-
         let texture_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: Some("Texture Bind Group Layout"),
@@ -148,22 +121,7 @@ impl Renderer {
                 ],
             });
 
-        let texture_bind_group = device.create_bind_group({
-            &wgpu::BindGroupDescriptor {
-                label: Some("Texture Bind Group"),
-                layout: &texture_bind_group_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&texture_view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&texture_sampler),
-                    },
-                ],
-            }
-        });
+        let texture = Texture::new(&device, &texture_bind_group_layout, source_size);
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
@@ -217,7 +175,7 @@ impl Renderer {
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
             contents: bytemuck::cast_slice(&vertices),
-            usage: wgpu::BufferUsages::VERTEX,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -232,19 +190,14 @@ impl Renderer {
             queue,
             config,
             texture,
-            texture_size,
-            _texture_view: texture_view,
-            texture_bind_group,
+            texture_bind_group_layout,
             render_pipeline,
             vertex_buffer,
             index_buffer,
         })
     }
 
-    pub fn on_window_size_changed(
-        &mut self,
-        new_size: PhysicalSize<u32>,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn resize(&mut self, new_size: PhysicalSize<u32>) -> Result<(), Box<dyn Error>> {
         if new_size.width > 0 && new_size.height > 0 {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
@@ -254,10 +207,19 @@ impl Renderer {
         Ok(())
     }
 
+    pub fn update(&mut self, source_size: PhysicalSize<u32>, clip_rect: Option<ClipRect>) {
+        self.texture = Texture::new(&self.device, &self.texture_bind_group_layout, source_size);
+
+        let vertices = vertices_from_clip_rect(clip_rect);
+
+        self.queue
+            .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
+    }
+
     pub fn render(&mut self, pixels: &[u8], pitch: usize) -> Result<(), Box<dyn Error>> {
         self.queue.write_texture(
             wgpu::ImageCopyTexture {
-                texture: &self.texture,
+                texture: self.texture.texture(),
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
@@ -268,7 +230,7 @@ impl Renderer {
                 bytes_per_row: Some(pitch.try_into()?),
                 rows_per_image: Some((pixels.len() / pitch).try_into()?),
             },
-            self.texture_size,
+            self.texture.size(),
         );
 
         let output = self.surface.get_current_texture()?;
@@ -303,7 +265,7 @@ impl Renderer {
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &self.texture_bind_group, &[]);
+            render_pass.set_bind_group(0, self.texture.bind_group(), &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             render_pass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
@@ -316,7 +278,7 @@ impl Renderer {
     }
 }
 
-fn vertices_from_clip_rect(clip_rect: Option<[[f32; 2]; 4]>) -> [Vertex; 4] {
+fn vertices_from_clip_rect(clip_rect: Option<ClipRect>) -> [Vertex; 4] {
     let clip = clip_rect.unwrap_or(DEFAULT_CLIP_RECT);
 
     [

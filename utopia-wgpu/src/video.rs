@@ -37,18 +37,25 @@ impl VideoController {
         &self.window
     }
 
-    pub fn set_source_size(&mut self, size: PhysicalSize<u32>) -> Result<(), Box<dyn Error>> {
-        // self.viewport
-        //     .set_base_resolution(screen_width, screen_height);
+    pub fn source_size(&self) -> PhysicalSize<u32> {
+        self.source_size
+    }
 
-        //let window_size = self.viewport.window_size(&self.video, self.full_screen)?;
+    pub fn set_source_size(
+        &mut self,
+        window_target: &EventLoopWindowTarget<()>,
+        source_size: PhysicalSize<u32>,
+    ) {
+        self.source_size = source_size;
 
-        //self.window.set_size(window_size.0, window_size.1)?;
+        let viewport = Viewport::new(window_target, source_size, self.full_screen);
 
-        self.window
-            .set_inner_size(PhysicalSize::new(size.width, size.height));
+        if !self.full_screen {
+            self.window.set_outer_position(viewport.offset());
+            self.window.set_inner_size(Size::Physical(viewport.size()));
+        }
 
-        Ok(())
+        self.renderer.update(source_size, viewport.clip_rect());
     }
 
     pub fn toggle_full_screen(
@@ -74,7 +81,7 @@ impl VideoController {
 
     pub fn on_window_size_changed(&mut self) -> Result<(), Box<dyn Error>> {
         let new_size = self.window.inner_size();
-        self.renderer.on_window_size_changed(new_size)?;
+        self.renderer.resize(new_size)?;
         Ok(())
     }
 
