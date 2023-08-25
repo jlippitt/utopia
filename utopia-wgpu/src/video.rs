@@ -23,28 +23,7 @@ impl Vertex {
     }
 }
 
-const VERTICES: &[Vertex] = &[
-    // Top Left
-    Vertex {
-        position: [-1.0, 1.0],
-        tex_coords: [0.0, 0.0],
-    },
-    // Bottom Left
-    Vertex {
-        position: [-1.0, -1.0],
-        tex_coords: [0.0, 1.0],
-    },
-    // Top Right
-    Vertex {
-        position: [1.0, 1.0],
-        tex_coords: [1.0, 0.0],
-    },
-    // Bottom Right
-    Vertex {
-        position: [1.0, -1.0],
-        tex_coords: [1.0, 1.0],
-    },
-];
+const DEFAULT_CLIP: [[f32; 2]; 4] = [[-1.0, 1.0], [-1.0, -1.0], [1.0, 1.0], [1.0, -1.0]];
 
 #[rustfmt::skip]
 const INDICES: &[u16] = &[
@@ -72,6 +51,7 @@ impl VideoController {
         window: Window,
         source_size: PhysicalSize<u32>,
         target_size: PhysicalSize<u32>,
+        clip_rect: Option<[[f32; 2]; 4]>,
     ) -> Result<Self, Box<dyn Error>> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
@@ -233,9 +213,34 @@ impl VideoController {
             multiview: None,
         });
 
+        let clip = clip_rect.unwrap_or(DEFAULT_CLIP);
+
+        let vertices: &[Vertex] = &[
+            // Top Left
+            Vertex {
+                position: clip[0],
+                tex_coords: [0.0, 0.0],
+            },
+            // Bottom Left
+            Vertex {
+                position: clip[1],
+                tex_coords: [0.0, 1.0],
+            },
+            // Top Right
+            Vertex {
+                position: clip[2],
+                tex_coords: [1.0, 0.0],
+            },
+            // Bottom Right
+            Vertex {
+                position: clip[3],
+                tex_coords: [1.0, 1.0],
+            },
+        ];
+
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(VERTICES),
+            contents: bytemuck::cast_slice(vertices),
             usage: wgpu::BufferUsages::VERTEX,
         });
 

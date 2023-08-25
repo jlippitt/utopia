@@ -66,14 +66,15 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let window_builder = WindowBuilder::new().with_title("Utopia");
 
-    let (target_size, window_builder) = if args.full_screen {
+    let (target_size, clip_rect, window_builder) = if args.full_screen {
         let default_video_mode = monitor.video_modes().next().unwrap();
         let video_mode = geometry::best_fit(source_size, monitor).unwrap_or(default_video_mode);
+        let clip_rect = geometry::clip(source_size, video_mode.size());
 
         let window_builder =
             window_builder.with_fullscreen(Some(Fullscreen::Exclusive(video_mode)));
 
-        (source_size, window_builder)
+        (source_size, Some(clip_rect), window_builder)
     } else {
         let monitor_size = monitor.size();
         let target_size = geometry::upscale(source_size, monitor_size);
@@ -83,12 +84,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             .with_inner_size(Size::Physical(target_size))
             .with_position(position);
 
-        (target_size, window_builder)
+        (target_size, None, window_builder)
     };
 
     let window = window_builder.build(&event_loop)?;
 
-    let mut video = VideoController::new(window, source_size, target_size)?;
+    let mut video = VideoController::new(window, source_size, target_size, clip_rect)?;
 
     let mut gamepad = Gamepad::new()?;
 

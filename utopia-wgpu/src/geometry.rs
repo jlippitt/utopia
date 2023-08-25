@@ -49,7 +49,21 @@ pub fn best_fit(source: PhysicalSize<u32>, monitor: MonitorHandle) -> Option<Vid
     best_mode
 }
 
-pub fn scale_factor(source: PhysicalSize<u32>, target: PhysicalSize<u32>) -> u32 {
+pub fn clip(source: PhysicalSize<u32>, target: PhysicalSize<u32>) -> [[f32; 2]; 4] {
+    let PhysicalSize { width, height } = upscale(source, target);
+
+    let offset_x = (target.width - width) / 2;
+    let offset_y = (target.height - height) / 2;
+
+    let left = (offset_x as f32 / target.width as f32) * 2.0 - 1.0;
+    let right = ((offset_x + width) as f32 / target.width as f32) * 2.0 - 1.0;
+    let top = 1.0 - (offset_y as f32 / target.height as f32) * 2.0;
+    let bottom = 1.0 - ((offset_y + height) as f32 / target.height as f32) * 2.0;
+
+    [[left, top], [left, bottom], [right, top], [right, bottom]]
+}
+
+fn scale_factor(source: PhysicalSize<u32>, target: PhysicalSize<u32>) -> u32 {
     let width_ratio = target.width / source.width;
     let height_ratio = target.height / source.height;
     width_ratio.min(height_ratio)
