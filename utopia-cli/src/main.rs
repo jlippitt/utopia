@@ -1,21 +1,30 @@
-use audio::Audio;
+use audio::AudioController;
 use bios::BiosLoader;
-use clap::Parser;
-use joypad::Joypad;
+use clap::{Parser, ValueEnum};
+use gamepad::Gamepad;
 use mmap::MemoryMapper;
-use sdl2::event::{Event, WindowEvent};
-use sdl2::keyboard::Scancode;
 use std::error::Error;
-use std::fs;
-use utopia::Options;
-use video::{Video, VideoOptions};
+use std::time::Instant;
+use utopia::JoypadState;
+use video::VideoController;
+use winit::dpi::PhysicalSize;
+use winit::event::{ElementState, Event, VirtualKeyCode, WindowEvent};
+use winit::event_loop::EventLoop;
 
 mod audio;
 mod bios;
-mod joypad;
+mod gamepad;
+mod keyboard;
 mod log;
 mod mmap;
 mod video;
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, ValueEnum)]
+enum Sync {
+    None,
+    Video,
+    Audio,
+}
 
 #[derive(Parser, Debug)]
 #[command(author, version)]
@@ -26,127 +35,137 @@ struct Args {
     full_screen: bool,
 
     #[arg(short, long)]
-    disable_vsync: bool,
+    bios_path: Option<String>,
 
     #[arg(short, long)]
     skip_boot: bool,
 
-    #[arg(short, long)]
-    upscale: Option<u32>,
+    #[arg(value_enum, long)]
+    sync: Option<Sync>,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
-    let rom_data = fs::read(&args.rom_path)?;
+    let _log = log::init()?;
 
-    let _guard = log::init()?;
+    let rom_data = std::fs::read(&args.rom_path)?;
 
-    let options = Options {
-        bios_loader: BiosLoader::new(args.rom_path.clone().into()),
-        memory_mapper: MemoryMapper::new(args.rom_path.clone().into()),
-        skip_boot: args.skip_boot,
-    };
-
-    let mut system = utopia::create(rom_data, &args.rom_path, &options)?;
-
-    let sdl_context = sdl2::init()?;
-
-    let audio_enabled = system.audio_queue().is_some();
-
-    let mut video = Video::new(
-        &sdl_context,
-        system.as_ref(),
-        VideoOptions {
-            upscale: args.upscale,
-            full_screen: args.full_screen,
-            disable_vsync: audio_enabled || args.disable_vsync,
+    let mut system = utopia::create(
+        rom_data,
+        &args.rom_path,
+        &utopia::Options {
+            bios_loader: BiosLoader::new(args.bios_path.unwrap_or(args.rom_path.clone()).into()),
+            memory_mapper: MemoryMapper::new(args.rom_path.clone().into()),
+            skip_boot: args.skip_boot,
         },
     )?;
 
-    let texture_creator = video.texture_creator();
+    let event_loop = EventLoop::new();
 
-    let mut texture = video.create_texture(
-        &texture_creator,
-        system.screen_width(),
-        system.screen_height(),
+    let source_size: PhysicalSize<u32> = system.screen_resolution().into();
+
+    let sync = args.sync.unwrap_or_else(|| {
+        if system.audio_queue().is_some() {
+            Sync::Audio
+        } else {
+            Sync::Video
+        }
+    });
+
+    let mut video = VideoController::new(
+        &event_loop,
+        source_size,
+        args.full_screen,
+        sync == Sync::Video,
     )?;
 
-    let mut prev_resolution = system.screen_resolution();
+    let mut audio = AudioController::new(system.sample_rate())?;
 
-    let sample_rate = system.sample_rate();
+    let mut gamepad = Gamepad::new()?;
 
-    let mut joypad = Joypad::new(&sdl_context)?;
+    let mut joypad_state = JoypadState::default();
 
-    let mut event_pump = sdl_context.event_pump()?;
+    audio.resume()?;
 
-    let mut audio = Audio::new(&sdl_context, sample_rate)?;
+    event_loop.run(move |event, window_target, control_flow| {
+        control_flow.set_poll();
 
-    'outer: loop {
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::ControllerButtonDown { which, button, .. } => {
-                    joypad.button_event(which, button, true)
-                }
-                Event::ControllerButtonUp { which, button, .. } => {
-                    joypad.button_event(which, button, false)
-                }
-                Event::ControllerAxisMotion {
-                    which, axis, value, ..
-                } => {
-                    joypad.axis_event(which, axis, value);
-                }
-                Event::KeyDown {
-                    scancode: Some(scancode),
-                    ..
-                } => match scancode {
-                    Scancode::F11 => {
-                        audio.pause();
-                        video.toggle_full_screen()?;
-                        audio.resume();
+        match event {
+            Event::WindowEvent { event, .. } => match event {
+                WindowEvent::CloseRequested => control_flow.set_exit(),
+                WindowEvent::KeyboardInput { input, .. } => {
+                    if input.state == ElementState::Pressed {
+                        match input.virtual_keycode {
+                            Some(VirtualKeyCode::Escape) => control_flow.set_exit(),
+                            Some(VirtualKeyCode::F11) => {
+                                video.toggle_full_screen(window_target).unwrap()
+                            }
+                            _ => (),
+                        }
                     }
-                    Scancode::Escape => break 'outer,
-                    _ => joypad.key_event(scancode, true),
-                },
-                Event::KeyUp {
-                    scancode: Some(scancode),
-                    ..
-                } => joypad.key_event(scancode, false),
-                Event::ControllerDeviceAdded { which, .. } => joypad.add_controller(which),
-                Event::ControllerDeviceRemoved { which, .. } => joypad.remove_controller(which),
-                Event::Window {
-                    win_event: WindowEvent::SizeChanged(_, _),
-                    ..
-                } => video.on_window_size_changed()?,
-                Event::Quit { .. } => break 'outer,
+
+                    keyboard::handle_input(&mut joypad_state, input);
+                }
+                WindowEvent::Moved(..) => {
+                    audio.resync();
+                }
+                WindowEvent::Resized(..) => {
+                    video.on_window_size_changed().unwrap();
+                    audio.resync();
+                }
+                WindowEvent::ScaleFactorChanged { .. } => {
+                    video.on_window_size_changed().unwrap();
+                    audio.resync();
+                }
+                WindowEvent::Destroyed => {
+                    video.on_target_changed(window_target);
+                    audio.resync();
+                }
                 _ => (),
+            },
+            Event::RedrawRequested(window_id) if window_id == video.window().id() => {
+                video.render().unwrap();
             }
-        }
-
-        system.run_frame(joypad.state());
-
-        if system.screen_resolution() != prev_resolution {
-            video.set_screen_size(system.screen_width(), system.screen_height())?;
-
-            texture = video.create_texture(
-                &texture_creator,
-                system.screen_width(),
-                system.screen_height(),
-            )?;
-
-            prev_resolution = system.screen_resolution();
-        }
-
-        video.update(&mut texture, system.pixels(), system.pitch())?;
-
-        if let Some(audio_queue) = system.audio_queue() {
-            if !args.disable_vsync {
-                audio.sync(audio_queue);
-            } else {
-                audio_queue.clear();
+            Event::RedrawEventsCleared => {
+                if sync == Sync::Audio {
+                    control_flow.set_wait_until(audio.sync_time())
+                }
             }
-        }
-    }
+            Event::MainEventsCleared => {
+                gamepad.handle_events(&mut joypad_state);
 
-    Ok(())
+                let run_frame = if sync == Sync::Audio {
+                    Instant::now() >= audio.sync_time()
+                } else {
+                    true
+                };
+
+                if run_frame {
+                    system.run_frame(&joypad_state);
+
+                    if let Some(queue) = system.audio_queue() {
+                        audio.drain(queue);
+                    }
+
+                    let source_size: PhysicalSize<u32> = system.screen_resolution().into();
+
+                    if source_size != video.source_size() {
+                        video.set_source_size(window_target, source_size);
+                    }
+
+                    video
+                        .update_texture(system.pixels(), system.pitch())
+                        .unwrap();
+
+                    video.window().request_redraw();
+                }
+
+                if sync == Sync::Audio {
+                    control_flow.set_wait_until(audio.sync_time())
+                }
+            }
+            _ => (),
+        }
+    });
 }

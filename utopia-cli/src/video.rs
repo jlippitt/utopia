@@ -1,149 +1,119 @@
-use sdl2::mouse::MouseUtil;
-use sdl2::pixels::PixelFormatEnum;
-use sdl2::rect::Rect;
-use sdl2::render::{Canvas, Texture, TextureCreator, TextureValueError};
-use sdl2::video::{FullscreenType, Window, WindowContext};
-use sdl2::Sdl;
-use sdl2::VideoSubsystem;
+use renderer::{RenderError, Renderer, UpdateTextureError};
 use std::error::Error;
-use utopia::System;
 use viewport::Viewport;
+use winit::dpi::{PhysicalSize, Size};
+use winit::event_loop::EventLoopWindowTarget;
+use winit::window::Window;
 
+mod renderer;
 mod viewport;
 
-pub struct VideoOptions {
-    pub disable_vsync: bool,
-    pub full_screen: bool,
-    pub upscale: Option<u32>,
-}
-
-pub struct Video {
-    video: VideoSubsystem,
-    mouse: MouseUtil,
-    canvas: Canvas<Window>,
-    viewport: Viewport,
-    target_rect: Rect,
+pub struct VideoController {
+    window: Window,
+    renderer: Renderer,
+    source_size: PhysicalSize<u32>,
     full_screen: bool,
+    vsync: bool,
 }
 
-impl Video {
+impl VideoController {
     pub fn new(
-        sdl_context: &Sdl,
-        system: &dyn System,
-        options: VideoOptions,
+        window_target: &EventLoopWindowTarget<()>,
+        source_size: PhysicalSize<u32>,
+        full_screen: bool,
+        vsync: bool,
     ) -> Result<Self, Box<dyn Error>> {
-        let video = sdl_context.video()?;
-        let mouse = sdl_context.mouse();
+        let (window, viewport) = Viewport::create_window(window_target, source_size, full_screen)?;
 
-        let display_mode = Viewport::new(
-            system.screen_width(),
-            system.screen_height(),
-            options.upscale,
-        );
-
-        let (window_width, window_height) =
-            display_mode.window_size(&video, options.full_screen)?;
-
-        let mut window_builder = video.window("Utopia", window_width, window_height);
-
-        if options.full_screen {
-            window_builder.fullscreen();
-        } else {
-            window_builder.position_centered();
-        }
-
-        let window = window_builder.allow_highdpi().build()?;
-
-        mouse.show_cursor(!options.full_screen);
-
-        let mut canvas_builder = window.into_canvas();
-
-        if !options.disable_vsync {
-            canvas_builder = canvas_builder.present_vsync();
-        }
-
-        let canvas = canvas_builder.build()?;
-
-        let target_rect = display_mode.target_rect(&video, options.full_screen)?;
+        let renderer = Renderer::new(
+            &window,
+            source_size,
+            viewport.size(),
+            viewport.clip_rect(),
+            vsync,
+        )?;
 
         Ok(Self {
-            video,
-            mouse,
-            canvas,
-            viewport: display_mode,
-            target_rect,
-            full_screen: options.full_screen,
+            window,
+            renderer,
+            source_size,
+            full_screen,
+            vsync,
         })
     }
 
-    pub fn texture_creator(&self) -> TextureCreator<WindowContext> {
-        self.canvas.texture_creator()
+    pub fn window(&self) -> &Window {
+        &self.window
     }
 
-    pub fn create_texture<'a>(
-        &mut self,
-        texture_creator: &'a TextureCreator<WindowContext>,
-        screen_width: u32,
-        screen_height: u32,
-    ) -> Result<Texture<'a>, TextureValueError> {
-        texture_creator.create_texture_streaming(
-            PixelFormatEnum::BGR888,
-            screen_width,
-            screen_height,
-        )
+    pub fn source_size(&self) -> PhysicalSize<u32> {
+        self.source_size
     }
 
-    pub fn set_screen_size(
+    pub fn set_source_size(
         &mut self,
-        screen_width: u32,
-        screen_height: u32,
+        window_target: &EventLoopWindowTarget<()>,
+        source_size: PhysicalSize<u32>,
+    ) {
+        self.source_size = source_size;
+
+        let viewport = Viewport::new(window_target, source_size, self.full_screen);
+
+        if !self.full_screen {
+            self.window.set_outer_position(viewport.offset());
+            self.window.set_inner_size(Size::Physical(viewport.size()));
+        }
+
+        self.renderer
+            .update_viewport(source_size, viewport.clip_rect());
+    }
+
+    pub fn toggle_full_screen(
+        &mut self,
+        window_target: &EventLoopWindowTarget<()>,
     ) -> Result<(), Box<dyn Error>> {
-        self.viewport
-            .set_base_resolution(screen_width, screen_height);
-
-        let window_size = self.viewport.window_size(&self.video, self.full_screen)?;
-
-        self.canvas
-            .window_mut()
-            .set_size(window_size.0, window_size.1)?;
-
-        Ok(())
-    }
-
-    pub fn toggle_full_screen(&mut self) -> Result<(), String> {
         self.full_screen = !self.full_screen;
 
-        self.mouse.show_cursor(!self.full_screen);
+        let (window, viewport) =
+            Viewport::create_window(window_target, self.source_size, self.full_screen)?;
 
-        let full_screen_type = if self.full_screen {
-            FullscreenType::True
-        } else {
-            FullscreenType::Off
-        };
+        self.window = window;
 
-        self.canvas.window_mut().set_fullscreen(full_screen_type)?;
+        self.renderer = Renderer::new(
+            &self.window,
+            self.source_size,
+            viewport.size(),
+            viewport.clip_rect(),
+            self.vsync,
+        )?;
 
         Ok(())
     }
 
     pub fn on_window_size_changed(&mut self) -> Result<(), Box<dyn Error>> {
-        self.target_rect = self.viewport.target_rect(&self.video, self.full_screen)?;
-
+        let new_size = self.window.inner_size();
+        self.renderer.resize(new_size)?;
         Ok(())
     }
 
-    pub fn update(
+    pub fn on_target_changed(&mut self, window_target: &EventLoopWindowTarget<()>) {
+        let viewport = Viewport::new(window_target, self.source_size, self.full_screen);
+
+        if !self.full_screen {
+            self.window.set_outer_position(viewport.offset());
+            self.window.set_inner_size(Size::Physical(viewport.size()));
+        }
+    }
+
+    pub fn update_texture(
         &mut self,
-        texture: &mut Texture<'_>,
         pixels: &[u8],
         pitch: usize,
-    ) -> Result<(), Box<dyn Error>> {
-        texture.update(None, pixels, pitch)?;
+    ) -> Result<(), UpdateTextureError> {
+        self.renderer.update_texture(pixels, pitch)
+    }
 
-        self.canvas.clear();
-        self.canvas.copy(texture, None, self.target_rect)?;
-        self.canvas.present();
-
-        Ok(())
+    pub fn render(&mut self) -> Result<(), RenderError> {
+        self.renderer.render()
     }
 }
