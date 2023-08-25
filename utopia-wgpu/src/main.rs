@@ -19,10 +19,9 @@ mod log;
 mod mmap;
 mod video;
 
-#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, ValueEnum)]
-enum SyncType {
+#[derive(Copy, Clone, Debug, Eq, PartialEq, ValueEnum)]
+enum Sync {
     None,
-    #[default]
     Video,
     Audio,
 }
@@ -42,7 +41,7 @@ struct Args {
     skip_boot: bool,
 
     #[arg(value_enum, long)]
-    sync: Option<SyncType>,
+    sync: Option<Sync>,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -66,13 +65,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let source_size: PhysicalSize<u32> = system.screen_resolution().into();
 
-    let sync = args.sync.unwrap_or_default();
+    let sync = args.sync.unwrap_or_else(|| {
+        if system.audio_queue().is_some() {
+            Sync::Audio
+        } else {
+            Sync::Video
+        }
+    });
 
     let mut video = VideoController::new(
         &event_loop,
         source_size,
         args.full_screen,
-        sync == SyncType::Video,
+        sync == Sync::Video,
     )?;
 
     let mut audio = AudioController::new(system.sample_rate())?;
@@ -122,14 +127,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             Event::RedrawRequested(window_id) if window_id == video.window().id() => {
                 video.render(system.pixels(), system.pitch()).unwrap();
 
-                if sync == SyncType::Audio {
+                if sync == Sync::Audio {
                     control_flow.set_wait_until(audio.sync_time())
                 }
             }
             Event::MainEventsCleared => {
                 gamepad.handle_events(&mut joypad_state);
 
-                let run_frame = if sync == SyncType::Audio {
+                let run_frame = if sync == Sync::Audio {
                     Instant::now() >= audio.sync_time()
                 } else {
                     true
