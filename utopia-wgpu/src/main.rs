@@ -128,6 +128,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             Event::MainEventsCleared => {
                 gamepad.handle_events(&mut joypad_state);
                 system.run_frame(&joypad_state);
+
+                if let Some(queue) = system.audio_queue() {
+                    audio.drain(queue).unwrap();
+                }
+
                 video.window().request_redraw();
             }
             _ => (),
