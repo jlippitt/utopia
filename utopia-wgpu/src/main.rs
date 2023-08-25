@@ -2,7 +2,7 @@ use clap::Parser;
 use std::error::Error;
 use video::VideoController;
 use winit::dpi::{PhysicalPosition, PhysicalSize, Size};
-use winit::event::{Event, WindowEvent};
+use winit::event::{Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::EventLoop;
 use winit::window::{Fullscreen, WindowBuilder};
 
@@ -87,9 +87,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             Event::WindowEvent { event, window_id } if window_id == video.window().id() => {
                 match event {
                     WindowEvent::CloseRequested => control_flow.set_exit(),
-                    WindowEvent::KeyboardInput { input, .. } => {
-                        keyboard::handle_input(&mut joypad_state, input)
-                    }
+                    WindowEvent::KeyboardInput { input, .. } => match input.virtual_keycode {
+                        Some(VirtualKeyCode::Escape) => control_flow.set_exit(),
+                        _ => keyboard::handle_input(&mut joypad_state, input),
+                    },
                     WindowEvent::Resized(..) => {
                         video.on_window_size_changed().unwrap();
                     }
