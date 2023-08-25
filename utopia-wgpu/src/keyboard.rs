@@ -34,8 +34,6 @@ pub fn handle_input(joypad_state: &mut utopia::JoypadState, input: KeyboardInput
         PhysicalKey::DOWN => buttons[13] = pressed,
         PhysicalKey::LEFT => buttons[14] = pressed,
         PhysicalKey::RIGHT => buttons[15] = pressed,
-        _ => {
-            println!("{:X}", input.scancode)
-        }
+        _ => (),
     }
 }
