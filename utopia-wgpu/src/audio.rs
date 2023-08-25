@@ -4,6 +4,7 @@ use cpal::{
 };
 use std::error::Error;
 use std::sync::mpsc;
+use tracing::warn;
 use utopia::AudioQueue;
 
 pub struct AudioController {
@@ -41,9 +42,7 @@ impl AudioController {
                     }
                 }
             },
-            move |err| {
-                eprintln!("{}", err);
-            },
+            move |err| warn!("{}", err),
             None,
         )?;
 

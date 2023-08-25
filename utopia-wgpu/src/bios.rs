@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
-//use tracing::warn;
+use tracing::warn;
 
 pub struct BiosLoader {
     base_path: PathBuf,
@@ -19,7 +19,7 @@ impl utopia::BiosLoader for BiosLoader {
         let path = self.base_path.with_file_name(file_name);
 
         let bios_data = fs::read(&path).map_err(|err| {
-            //warn!("Failed to load BIOS file '{}': {}", path.display(), err);
+            warn!("Failed to load BIOS file '{}': {}", path.display(), err);
             err
         });
 

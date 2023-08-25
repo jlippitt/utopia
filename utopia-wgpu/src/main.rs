@@ -13,6 +13,7 @@ mod audio;
 mod bios;
 mod gamepad;
 mod keyboard;
+mod log;
 mod video;
 
 struct MemoryMapper;
@@ -42,6 +43,8 @@ struct Args {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
+
+    let _log = log::init()?;
 
     let rom_data = std::fs::read(&args.rom_path)?;
 
