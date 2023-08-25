@@ -1,11 +1,14 @@
 use clap::Parser;
+use gamepad::Gamepad;
 use std::error::Error;
+use utopia::JoypadState;
 use video::VideoController;
 use winit::dpi::{PhysicalPosition, PhysicalSize, Size};
 use winit::event::{Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::EventLoop;
 use winit::window::{Fullscreen, WindowBuilder};
 
+mod gamepad;
 mod keyboard;
 mod video;
 
@@ -78,7 +81,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut video = VideoController::new(window, inner_size)?;
 
-    let mut joypad_state = utopia::JoypadState::default();
+    let mut gamepad = Gamepad::new()?;
+
+    let mut joypad_state = JoypadState::default();
 
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_poll();
@@ -104,6 +109,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 video.render(system.pixels(), system.pitch()).unwrap();
             }
             Event::MainEventsCleared => {
+                gamepad.handle_events(&mut joypad_state);
                 system.run_frame(&joypad_state);
                 video.window().request_redraw();
             }

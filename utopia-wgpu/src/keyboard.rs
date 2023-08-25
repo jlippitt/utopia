@@ -1,3 +1,4 @@
+use utopia::JoypadState;
 use winit::event::{ElementState, KeyboardInput, ScanCode};
 
 struct PhysicalKey;
@@ -17,8 +18,8 @@ impl PhysicalKey {
     const RIGHT: ScanCode = 0x6a;
 }
 
-pub fn handle_input(joypad_state: &mut utopia::JoypadState, input: KeyboardInput) {
-    let utopia::JoypadState { buttons, .. } = joypad_state;
+pub fn handle_input(joypad_state: &mut JoypadState, input: KeyboardInput) {
+    let JoypadState { buttons, .. } = joypad_state;
     let pressed = input.state == ElementState::Pressed;
 
     match input.scancode {
