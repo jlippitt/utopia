@@ -299,7 +299,10 @@ impl VideoController {
         Ok(())
     }
 
-    pub fn on_window_size_changed(&mut self) -> Result<(), Box<dyn Error>> {
+    pub fn on_window_size_changed(
+        &mut self,
+        size: PhysicalSize<u32>,
+    ) -> Result<(), Box<dyn Error>> {
         let new_size = self.window.inner_size();
 
         if new_size.width > 0 && new_size.height > 0 {

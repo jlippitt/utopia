@@ -1,11 +1,10 @@
 use clap::Parser;
 use std::error::Error;
-use std::fs;
 use video::VideoController;
-use winit::dpi::{PhysicalPosition, Size};
-use winit::event::{ElementState, Event, WindowEvent};
+use winit::dpi::{PhysicalPosition, PhysicalSize, Size};
+use winit::event::{Event, WindowEvent};
 use winit::event_loop::EventLoop;
-use winit::window::WindowBuilder;
+use winit::window::{Fullscreen, WindowBuilder};
 
 mod keyboard;
 mod video;
@@ -34,13 +33,16 @@ struct Args {
     rom_path: String,
 
     #[arg(short, long)]
+    full_screen: bool,
+
+    #[arg(short, long)]
     skip_boot: bool,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
-    let rom_data = fs::read(&args.rom_path)?;
+    let rom_data = std::fs::read(&args.rom_path)?;
 
     let mut system = utopia::create(
         rom_data,
@@ -54,20 +56,25 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let event_loop = EventLoop::new();
 
-    let inner_size = system.screen_resolution().into();
+    let monitor = event_loop.available_monitors().next().unwrap();
 
-    let window = WindowBuilder::new()
+    let inner_size: PhysicalSize<u32> = system.screen_resolution().into();
+
+    let window_builder = WindowBuilder::new()
         .with_title("Utopia")
-        .with_inner_size(Size::Physical(inner_size))
-        .with_resizable(false)
-        .build(&event_loop)?;
+        .with_inner_size(Size::Physical(inner_size));
 
-    if let Some(monitor) = window.current_monitor() {
+    let window_builder = if args.full_screen {
+        let video_mode = monitor.video_modes().next().unwrap();
+        window_builder.with_fullscreen(Some(Fullscreen::Exclusive(video_mode)))
+    } else {
         let monitor_size = monitor.size();
         let pos_x = (monitor_size.width - inner_size.width) / 2;
         let pos_y = (monitor_size.height - inner_size.height) / 2;
-        window.set_outer_position(PhysicalPosition::new(pos_x, pos_y));
-    }
+        window_builder.with_position(PhysicalPosition::new(pos_x, pos_y))
+    };
+
+    let window = window_builder.build(&event_loop)?;
 
     let mut video = VideoController::new(window, inner_size)?;
 
@@ -77,15 +84,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         control_flow.set_poll();
 
         match event {
-            Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                window_id,
-            } if window_id == video.window().id() => control_flow.set_exit(),
-            Event::WindowEvent {
-                event: WindowEvent::KeyboardInput { input, .. },
-                window_id,
-            } if window_id == video.window().id() => {
-                keyboard::handle_input(&mut joypad_state, input);
+            Event::WindowEvent { event, window_id } if window_id == video.window().id() => {
+                match event {
+                    WindowEvent::CloseRequested => control_flow.set_exit(),
+                    WindowEvent::KeyboardInput { input, .. } => {
+                        keyboard::handle_input(&mut joypad_state, input)
+                    }
+                    WindowEvent::Resized(physical_size) => {
+                        video.on_window_size_changed(physical_size).unwrap();
+                    }
+                    WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                        video.on_window_size_changed(*new_inner_size).unwrap();
+                    }
+                    _ => (),
+                }
             }
             Event::RedrawRequested(window_id) if window_id == video.window().id() => {
                 video.render(system.pixels(), system.pitch()).unwrap();
