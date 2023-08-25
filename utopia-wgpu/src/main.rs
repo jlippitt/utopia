@@ -1,4 +1,5 @@
 use audio::AudioController;
+use bios::BiosLoader;
 use clap::Parser;
 use gamepad::Gamepad;
 use std::error::Error;
@@ -9,17 +10,10 @@ use winit::event::{ElementState, Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::EventLoop;
 
 mod audio;
+mod bios;
 mod gamepad;
 mod keyboard;
 mod video;
-
-struct BiosLoader;
-
-impl utopia::BiosLoader for BiosLoader {
-    fn load(&self, _name: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        todo!("BIOS Loader");
-    }
-}
 
 struct MemoryMapper;
 
@@ -40,6 +34,9 @@ struct Args {
     full_screen: bool,
 
     #[arg(short, long)]
+    bios_path: Option<String>,
+
+    #[arg(short, long)]
     skip_boot: bool,
 }
 
@@ -52,7 +49,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         rom_data,
         &args.rom_path,
         &utopia::Options {
-            bios_loader: BiosLoader,
+            bios_loader: BiosLoader::new(args.bios_path.unwrap_or(args.rom_path.clone()).into()),
             memory_mapper: MemoryMapper,
             skip_boot: args.skip_boot,
         },
