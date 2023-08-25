@@ -76,25 +76,28 @@ fn main() -> Result<(), Box<dyn Error>> {
         control_flow.set_poll();
 
         match event {
-            Event::WindowEvent { event, window_id } if window_id == video.window().id() => {
-                match event {
-                    WindowEvent::CloseRequested => control_flow.set_exit(),
-                    WindowEvent::KeyboardInput { input, .. } => match input.virtual_keycode {
+            Event::WindowEvent { event, window_id } => match event {
+                WindowEvent::CloseRequested => control_flow.set_exit(),
+                WindowEvent::KeyboardInput { input, .. } if window_id == video.window().id() => {
+                    match input.virtual_keycode {
                         Some(VirtualKeyCode::Escape) => control_flow.set_exit(),
                         Some(VirtualKeyCode::F11) => {
                             video.toggle_full_screen(window_target).unwrap()
                         }
                         _ => keyboard::handle_input(&mut joypad_state, input),
-                    },
-                    WindowEvent::Resized(..) => {
-                        video.on_window_size_changed().unwrap();
                     }
-                    WindowEvent::ScaleFactorChanged { .. } => {
-                        video.on_window_size_changed().unwrap();
-                    }
-                    _ => (),
                 }
-            }
+                WindowEvent::Resized(..) => {
+                    video.on_window_size_changed().unwrap();
+                }
+                WindowEvent::ScaleFactorChanged { .. } => {
+                    video.on_window_size_changed().unwrap();
+                }
+                WindowEvent::Destroyed => {
+                    video.on_target_changed(window_target);
+                }
+                _ => (),
+            },
             Event::RedrawRequested(window_id) if window_id == video.window().id() => {
                 video.render(system.pixels(), system.pitch()).unwrap();
             }
