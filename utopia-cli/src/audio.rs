@@ -81,7 +81,7 @@ impl AudioController {
         Ok(())
     }
 
-    pub fn drain(&mut self, source_queue: &mut AudioQueue) {
+    pub fn queue_samples(&mut self, source_queue: &mut AudioQueue) {
         self.total_samples += source_queue.len() as u64;
 
         self.send_queue.lock().unwrap().append(source_queue);

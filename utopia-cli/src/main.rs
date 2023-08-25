@@ -145,7 +145,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     system.run_frame(&joypad_state);
 
                     if let Some(queue) = system.audio_queue() {
-                        audio.drain(queue);
+                        audio.queue_samples(queue);
                     }
 
                     let source_size: PhysicalSize<u32> = system.screen_resolution().into();
