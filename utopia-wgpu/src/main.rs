@@ -2,6 +2,7 @@ use audio::AudioController;
 use bios::BiosLoader;
 use clap::Parser;
 use gamepad::Gamepad;
+use mmap::MemoryMapper;
 use std::error::Error;
 use utopia::JoypadState;
 use video::VideoController;
@@ -14,17 +15,8 @@ mod bios;
 mod gamepad;
 mod keyboard;
 mod log;
+mod mmap;
 mod video;
-
-struct MemoryMapper;
-
-impl utopia::MemoryMapper for MemoryMapper {
-    type Mapped = Vec<u8>;
-
-    fn open(&self, len: usize, _battery_backed: bool) -> Result<Vec<u8>, Box<dyn Error>> {
-        Ok(vec![0; len])
-    }
-}
 
 #[derive(Parser, Debug)]
 #[command(author, version)]
@@ -53,7 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         &args.rom_path,
         &utopia::Options {
             bios_loader: BiosLoader::new(args.bios_path.unwrap_or(args.rom_path.clone()).into()),
-            memory_mapper: MemoryMapper,
+            memory_mapper: MemoryMapper::new(args.rom_path.clone().into()),
             skip_boot: args.skip_boot,
         },
     )?;

@@ -10,11 +10,12 @@ bytemuck = { version = "1.13.1", features = ["derive"] }
 clap = { version = "4.3.24", features = ["derive"] }
 cpal = "0.15.2"
 gilrs = "0.10.2"
+memmap2 = "0.7.1"
 num-derive = "0.4.0"
 num-traits = "0.2.16"
 pollster = "0.3.0"
 tracing = "0.1.37"
-tracing-subscriber = "0.3.17"
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 utopia = { path = "../utopia" }
 wgpu = "0.17.0"
 winit = "0.28.6"
