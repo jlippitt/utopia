@@ -1,3 +1,4 @@
+use audio::AudioController;
 use clap::Parser;
 use gamepad::Gamepad;
 use std::error::Error;
@@ -6,8 +7,9 @@ use video::VideoController;
 use winit::dpi::{PhysicalSize, Size};
 use winit::event::{Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::EventLoop;
-use winit::window::{Fullscreen, WindowBuilder, WindowButtons};
+use winit::window::{Fullscreen, WindowBuilder};
 
+mod audio;
 mod gamepad;
 mod geometry;
 mod keyboard;
@@ -92,9 +94,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut video = VideoController::new(window, source_size, target_size, clip_rect)?;
 
+    let mut audio = AudioController::new(system.sample_rate())?;
+
     let mut gamepad = Gamepad::new()?;
 
     let mut joypad_state = JoypadState::default();
+
+    audio.resume()?;
 
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_poll();
