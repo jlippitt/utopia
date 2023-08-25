@@ -9,6 +9,7 @@ use winit::event_loop::EventLoop;
 use winit::window::{Fullscreen, WindowBuilder};
 
 mod gamepad;
+mod geometry;
 mod keyboard;
 mod video;
 
@@ -61,25 +62,26 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let monitor = event_loop.available_monitors().next().unwrap();
 
-    let inner_size: PhysicalSize<u32> = system.screen_resolution().into();
+    let monitor_size = monitor.size();
+    let source_size: PhysicalSize<u32> = system.screen_resolution().into();
+    let target_size = geometry::upscale(source_size, monitor_size);
 
-    let window_builder = WindowBuilder::new()
-        .with_title("Utopia")
-        .with_inner_size(Size::Physical(inner_size));
+    let window_builder = WindowBuilder::new().with_title("Utopia");
 
     let window_builder = if args.full_screen {
         let video_mode = monitor.video_modes().next().unwrap();
         window_builder.with_fullscreen(Some(Fullscreen::Exclusive(video_mode)))
     } else {
-        let monitor_size = monitor.size();
-        let pos_x = (monitor_size.width - inner_size.width) / 2;
-        let pos_y = (monitor_size.height - inner_size.height) / 2;
-        window_builder.with_position(PhysicalPosition::new(pos_x, pos_y))
+        let position = geometry::center(target_size, monitor_size);
+
+        window_builder
+            .with_inner_size(Size::Physical(target_size))
+            .with_position(position)
     };
 
     let window = window_builder.build(&event_loop)?;
 
-    let mut video = VideoController::new(window, inner_size)?;
+    let mut video = VideoController::new(window, source_size, target_size)?;
 
     let mut gamepad = Gamepad::new()?;
 

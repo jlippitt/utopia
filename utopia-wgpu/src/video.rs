@@ -68,15 +68,11 @@ pub struct VideoController {
 }
 
 impl VideoController {
-    pub fn new(window: Window, source_size: PhysicalSize<u32>) -> Result<Self, Box<dyn Error>> {
-        // let viewport = Viewport::new(
-        //     system.screen_width(),
-        //     system.screen_height(),
-        //     options.upscale,
-        // );
-
-        //let (window_width, window_height) = viewport.window_size(&video, options.full_screen)?;
-
+    pub fn new(
+        window: Window,
+        source_size: PhysicalSize<u32>,
+        target_size: PhysicalSize<u32>,
+    ) -> Result<Self, Box<dyn Error>> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
             dx12_shader_compiler: Default::default(),
@@ -112,8 +108,8 @@ impl VideoController {
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format,
-            width: source_size.width,
-            height: source_size.height,
+            width: target_size.width,
+            height: target_size.height,
             present_mode: capabilities.present_modes[0],
             alpha_mode: capabilities.alpha_modes[0],
             view_formats: Vec::new(),
