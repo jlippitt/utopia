@@ -1,4 +1,4 @@
-use renderer::Renderer;
+use renderer::{RenderError, Renderer, UpdateTextureError};
 use std::error::Error;
 use viewport::Viewport;
 use winit::dpi::{PhysicalSize, Size};
@@ -64,7 +64,8 @@ impl VideoController {
             self.window.set_inner_size(Size::Physical(viewport.size()));
         }
 
-        self.renderer.update(source_size, viewport.clip_rect());
+        self.renderer
+            .update_viewport(source_size, viewport.clip_rect());
     }
 
     pub fn toggle_full_screen(
@@ -104,7 +105,15 @@ impl VideoController {
         }
     }
 
-    pub fn render(&mut self, pixels: &[u8], pitch: usize) -> Result<(), Box<dyn Error>> {
-        self.renderer.render(pixels, pitch)
+    pub fn update_texture(
+        &mut self,
+        pixels: &[u8],
+        pitch: usize,
+    ) -> Result<(), UpdateTextureError> {
+        self.renderer.update_texture(pixels, pitch)
+    }
+
+    pub fn render(&mut self) -> Result<(), RenderError> {
+        self.renderer.render()
     }
 }

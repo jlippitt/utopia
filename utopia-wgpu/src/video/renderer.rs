@@ -7,6 +7,9 @@ use winit::window::Window;
 
 mod texture;
 
+pub type UpdateTextureError = <usize as TryInto<u32>>::Error;
+pub type RenderError = wgpu::SurfaceError;
+
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
@@ -214,7 +217,7 @@ impl Renderer {
         Ok(())
     }
 
-    pub fn update(&mut self, source_size: PhysicalSize<u32>, clip_rect: Option<ClipRect>) {
+    pub fn update_viewport(&mut self, source_size: PhysicalSize<u32>, clip_rect: Option<ClipRect>) {
         self.texture = Texture::new(&self.device, &self.texture_bind_group_layout, source_size);
 
         let vertices = vertices_from_clip_rect(clip_rect);
@@ -223,7 +226,11 @@ impl Renderer {
             .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
     }
 
-    pub fn render(&mut self, pixels: &[u8], pitch: usize) -> Result<(), Box<dyn Error>> {
+    pub fn update_texture(
+        &mut self,
+        pixels: &[u8],
+        pitch: usize,
+    ) -> Result<(), UpdateTextureError> {
         self.queue.write_texture(
             wgpu::ImageCopyTexture {
                 texture: self.texture.texture(),
@@ -240,6 +247,10 @@ impl Renderer {
             self.texture.size(),
         );
 
+        Ok(())
+    }
+
+    pub fn render(&mut self) -> Result<(), RenderError> {
         let output = self.surface.get_current_texture()?;
 
         let view = output

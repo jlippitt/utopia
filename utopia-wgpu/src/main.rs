@@ -125,7 +125,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 _ => (),
             },
             Event::RedrawRequested(window_id) if window_id == video.window().id() => {
-                video.render(system.pixels(), system.pitch()).unwrap();
+                video.render().unwrap();
             }
             Event::RedrawEventsCleared => {
                 if sync == Sync::Audio {
@@ -153,6 +153,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                     if source_size != video.source_size() {
                         video.set_source_size(window_target, source_size);
                     }
+
+                    video
+                        .update_texture(system.pixels(), system.pitch())
+                        .unwrap();
 
                     video.window().request_redraw();
                 }
