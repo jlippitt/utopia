@@ -126,7 +126,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             },
             Event::RedrawRequested(window_id) if window_id == video.window().id() => {
                 video.render(system.pixels(), system.pitch()).unwrap();
-
+            }
+            Event::RedrawEventsCleared => {
                 if sync == Sync::Audio {
                     control_flow.set_wait_until(audio.sync_time())
                 }
@@ -154,6 +155,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                     }
 
                     video.window().request_redraw();
+                }
+
+                if sync == Sync::Audio {
+                    control_flow.set_wait_until(audio.sync_time())
                 }
             }
             _ => (),
