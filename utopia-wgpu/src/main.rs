@@ -6,7 +6,7 @@ use video::VideoController;
 use winit::dpi::{PhysicalSize, Size};
 use winit::event::{Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::EventLoop;
-use winit::window::{Fullscreen, WindowBuilder};
+use winit::window::{Fullscreen, WindowBuilder, WindowButtons};
 
 mod gamepad;
 mod geometry;
@@ -82,7 +82,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         let window_builder = window_builder
             .with_inner_size(Size::Physical(target_size))
-            .with_position(position);
+            .with_position(position)
+            .with_resizable(false);
 
         (target_size, None, window_builder)
     };
