@@ -4,7 +4,6 @@ members = [
     "utopia",
     "utopia-cli",
     "utopia-wasm-bindings",
-    "utopia-wgpu",
     "cpu-tests",
     "disasm",
 ]
