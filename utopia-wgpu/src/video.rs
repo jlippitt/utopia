@@ -13,6 +13,7 @@ pub struct VideoController {
     renderer: Renderer,
     source_size: PhysicalSize<u32>,
     full_screen: bool,
+    vsync: bool,
 }
 
 impl VideoController {
@@ -20,16 +21,24 @@ impl VideoController {
         window_target: &EventLoopWindowTarget<()>,
         source_size: PhysicalSize<u32>,
         full_screen: bool,
+        vsync: bool,
     ) -> Result<Self, Box<dyn Error>> {
         let (window, viewport) = Viewport::create_window(window_target, source_size, full_screen)?;
 
-        let renderer = Renderer::new(&window, source_size, viewport.size(), viewport.clip_rect())?;
+        let renderer = Renderer::new(
+            &window,
+            source_size,
+            viewport.size(),
+            viewport.clip_rect(),
+            vsync,
+        )?;
 
         Ok(Self {
             window,
             renderer,
             source_size,
             full_screen,
+            vsync,
         })
     }
 
@@ -74,6 +83,7 @@ impl VideoController {
             self.source_size,
             viewport.size(),
             viewport.clip_rect(),
+            self.vsync,
         )?;
 
         Ok(())

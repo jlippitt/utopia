@@ -53,6 +53,7 @@ impl Renderer {
         source_size: PhysicalSize<u32>,
         target_size: PhysicalSize<u32>,
         clip_rect: Option<ClipRect>,
+        vsync: bool,
     ) -> Result<Self, Box<dyn Error>> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
@@ -86,12 +87,18 @@ impl Renderer {
             .find(|f| f.is_srgb())
             .unwrap_or(capabilities.formats[0]);
 
+        let present_mode = if vsync {
+            wgpu::PresentMode::AutoVsync
+        } else {
+            wgpu::PresentMode::AutoNoVsync
+        };
+
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format,
             width: target_size.width,
             height: target_size.height,
-            present_mode: capabilities.present_modes[0],
+            present_mode,
             alpha_mode: capabilities.alpha_modes[0],
             view_formats: Vec::new(),
         };

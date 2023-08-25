@@ -1,6 +1,6 @@
 use audio::AudioController;
 use bios::BiosLoader;
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use gamepad::Gamepad;
 use mmap::MemoryMapper;
 use std::error::Error;
@@ -18,6 +18,14 @@ mod log;
 mod mmap;
 mod video;
 
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, ValueEnum)]
+enum SyncType {
+    None,
+    #[default]
+    Video,
+    Audio,
+}
+
 #[derive(Parser, Debug)]
 #[command(author, version)]
 struct Args {
@@ -31,6 +39,9 @@ struct Args {
 
     #[arg(short, long)]
     skip_boot: bool,
+
+    #[arg(value_enum, long)]
+    sync: Option<SyncType>,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -54,7 +65,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let source_size: PhysicalSize<u32> = system.screen_resolution().into();
 
-    let mut video = VideoController::new(&event_loop, source_size, args.full_screen)?;
+    let sync = args.sync.unwrap_or_default();
+
+    let mut video = VideoController::new(
+        &event_loop,
+        source_size,
+        args.full_screen,
+        sync == SyncType::Video,
+    )?;
 
     let mut audio = AudioController::new(system.sample_rate())?;
 
