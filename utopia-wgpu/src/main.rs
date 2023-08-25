@@ -90,11 +90,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                     WindowEvent::KeyboardInput { input, .. } => {
                         keyboard::handle_input(&mut joypad_state, input)
                     }
-                    WindowEvent::Resized(physical_size) => {
-                        video.on_window_size_changed(physical_size).unwrap();
+                    WindowEvent::Resized(..) => {
+                        video.on_window_size_changed().unwrap();
                     }
-                    WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                        video.on_window_size_changed(*new_inner_size).unwrap();
+                    WindowEvent::ScaleFactorChanged { .. } => {
+                        video.on_window_size_changed().unwrap();
                     }
                     _ => (),
                 }
