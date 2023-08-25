@@ -4,12 +4,17 @@ use cpal::{
 };
 use std::error::Error;
 use std::sync::mpsc;
+use std::time::{Duration, Instant};
 use tracing::warn;
 use utopia::AudioQueue;
 
 pub struct AudioController {
     stream: Stream,
     sender: mpsc::Sender<(f32, f32)>,
+    total_samples: u64,
+    sample_rate: u64,
+    start_time: Instant,
+    sync_time: Instant,
 }
 
 impl AudioController {
@@ -46,18 +51,42 @@ impl AudioController {
             None,
         )?;
 
-        Ok(Self { stream, sender })
+        let start_time = Instant::now();
+
+        Ok(Self {
+            stream,
+            sender,
+            total_samples: 0,
+            sample_rate,
+            start_time: Instant::now(),
+            sync_time: calculate_sync_time(start_time, 0, sample_rate),
+        })
+    }
+
+    pub fn sync_time(&self) -> Instant {
+        self.sync_time
     }
 
     pub fn resume(&mut self) -> Result<(), PlayStreamError> {
-        self.stream.play()
+        self.stream.play()?;
+        self.start_time = Instant::now();
+        self.sync_time = calculate_sync_time(self.start_time, self.total_samples, self.sample_rate);
+        Ok(())
     }
 
     pub fn drain(&mut self, queue: &mut AudioQueue) -> Result<(), mpsc::SendError<(f32, f32)>> {
+        self.total_samples += queue.len() as u64;
+        self.sync_time = calculate_sync_time(self.start_time, self.total_samples, self.sample_rate);
+
         for sample in queue.drain(..) {
             self.sender.send(sample)?;
         }
 
         Ok(())
     }
+}
+
+fn calculate_sync_time(start_time: Instant, total_samples: u64, sample_rate: u64) -> Instant {
+    let expected_duration = (total_samples * 1000) / sample_rate;
+    start_time + Duration::from_millis(expected_duration)
 }

@@ -4,6 +4,7 @@ use clap::{Parser, ValueEnum};
 use gamepad::Gamepad;
 use mmap::MemoryMapper;
 use std::error::Error;
+use std::time::Instant;
 use utopia::JoypadState;
 use video::VideoController;
 use winit::dpi::PhysicalSize;
@@ -117,19 +118,28 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
             Event::MainEventsCleared => {
                 gamepad.handle_events(&mut joypad_state);
-                system.run_frame(&joypad_state);
 
-                if let Some(queue) = system.audio_queue() {
-                    audio.drain(queue).unwrap();
+                let run_frame = if sync == SyncType::Audio {
+                    Instant::now() >= audio.sync_time()
+                } else {
+                    true
+                };
+
+                if run_frame {
+                    system.run_frame(&joypad_state);
+
+                    if let Some(queue) = system.audio_queue() {
+                        audio.drain(queue).unwrap();
+                    }
+
+                    let source_size: PhysicalSize<u32> = system.screen_resolution().into();
+
+                    if source_size != video.source_size() {
+                        video.set_source_size(window_target, source_size);
+                    }
+
+                    video.window().request_redraw();
                 }
-
-                let source_size: PhysicalSize<u32> = system.screen_resolution().into();
-
-                if source_size != video.source_size() {
-                    video.set_source_size(window_target, source_size);
-                }
-
-                video.window().request_redraw();
             }
             _ => (),
         }
