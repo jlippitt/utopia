@@ -4,14 +4,12 @@ use gamepad::Gamepad;
 use std::error::Error;
 use utopia::JoypadState;
 use video::VideoController;
-use winit::dpi::{PhysicalSize, Size};
+use winit::dpi::PhysicalSize;
 use winit::event::{Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::EventLoop;
-use winit::window::{Fullscreen, WindowBuilder};
 
 mod audio;
 mod gamepad;
-mod geometry;
 mod keyboard;
 mod video;
 
@@ -62,37 +60,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let event_loop = EventLoop::new();
 
-    let monitor = event_loop.available_monitors().next().unwrap();
-
     let source_size: PhysicalSize<u32> = system.screen_resolution().into();
 
-    let window_builder = WindowBuilder::new().with_title("Utopia");
-
-    let (target_size, clip_rect, window_builder) = if args.full_screen {
-        let default_video_mode = monitor.video_modes().next().unwrap();
-        let video_mode = geometry::best_fit(source_size, monitor).unwrap_or(default_video_mode);
-        let clip_rect = geometry::clip(source_size, video_mode.size());
-
-        let window_builder =
-            window_builder.with_fullscreen(Some(Fullscreen::Exclusive(video_mode)));
-
-        (source_size, Some(clip_rect), window_builder)
-    } else {
-        let monitor_size = monitor.size();
-        let target_size = geometry::upscale(source_size, monitor_size);
-        let position = geometry::center(target_size, monitor_size);
-
-        let window_builder = window_builder
-            .with_inner_size(Size::Physical(target_size))
-            .with_position(position)
-            .with_resizable(false);
-
-        (target_size, None, window_builder)
-    };
-
-    let window = window_builder.build(&event_loop)?;
-
-    let mut video = VideoController::new(window, source_size, target_size, clip_rect)?;
+    let mut video = VideoController::new(&event_loop, source_size, args.full_screen)?;
 
     let mut audio = AudioController::new(system.sample_rate())?;
 
@@ -111,6 +81,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     WindowEvent::CloseRequested => control_flow.set_exit(),
                     WindowEvent::KeyboardInput { input, .. } => match input.virtual_keycode {
                         Some(VirtualKeyCode::Escape) => control_flow.set_exit(),
+                        Some(VirtualKeyCode::F11) => video.toggle_full_screen().unwrap(),
                         _ => keyboard::handle_input(&mut joypad_state, input),
                     },
                     WindowEvent::Resized(..) => {

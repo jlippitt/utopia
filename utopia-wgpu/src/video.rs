@@ -1,7 +1,10 @@
 use std::error::Error;
 use wgpu::util::DeviceExt;
-use winit::dpi::PhysicalSize;
-use winit::window::Window;
+use winit::dpi::{PhysicalSize, Size};
+use winit::event_loop::EventLoop;
+use winit::window::{Fullscreen, Window, WindowBuilder};
+
+mod geometry;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -23,7 +26,7 @@ impl Vertex {
     }
 }
 
-const DEFAULT_CLIP: [[f32; 2]; 4] = [[-1.0, 1.0], [-1.0, -1.0], [1.0, 1.0], [1.0, -1.0]];
+const DEFAULT_CLIP_RECT: [[f32; 2]; 4] = [[-1.0, 1.0], [-1.0, -1.0], [1.0, 1.0], [1.0, -1.0]];
 
 #[rustfmt::skip]
 const INDICES: &[u16] = &[
@@ -31,7 +34,7 @@ const INDICES: &[u16] = &[
     2, 1, 3,
 ];
 
-pub struct VideoController {
+struct WgpuState {
     surface: wgpu::Surface,
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -43,16 +46,48 @@ pub struct VideoController {
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
+}
+
+pub struct VideoController {
+    wgpu: WgpuState,
     window: Window,
+    source_size: PhysicalSize<u32>,
+    full_screen: bool,
 }
 
 impl VideoController {
     pub fn new(
-        window: Window,
+        event_loop: &EventLoop<()>,
         source_size: PhysicalSize<u32>,
-        target_size: PhysicalSize<u32>,
-        clip_rect: Option<[[f32; 2]; 4]>,
+        full_screen: bool,
     ) -> Result<Self, Box<dyn Error>> {
+        let monitor = event_loop.available_monitors().next().unwrap();
+
+        let window_builder = WindowBuilder::new().with_title("Utopia");
+
+        let (target_size, clip_rect, window_builder) = if full_screen {
+            let default_video_mode = monitor.video_modes().next().unwrap();
+            let video_mode = geometry::best_fit(source_size, monitor).unwrap_or(default_video_mode);
+            let clip_rect = geometry::clip(source_size, video_mode.size());
+
+            let window_builder =
+                window_builder.with_fullscreen(Some(Fullscreen::Exclusive(video_mode)));
+
+            (source_size, Some(clip_rect), window_builder)
+        } else {
+            let monitor_size = monitor.size();
+            let target_size = geometry::upscale(source_size, monitor_size);
+            let position = geometry::center(target_size, monitor_size);
+
+            let window_builder = window_builder
+                .with_inner_size(Size::Physical(target_size))
+                .with_position(position)
+                .with_resizable(false);
+
+            (target_size, None, window_builder)
+        };
+
+        let window = window_builder.build(&event_loop)?;
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
             dx12_shader_compiler: Default::default(),
@@ -213,35 +248,12 @@ impl VideoController {
             multiview: None,
         });
 
-        let clip = clip_rect.unwrap_or(DEFAULT_CLIP);
-
-        let vertices: &[Vertex] = &[
-            // Top Left
-            Vertex {
-                position: clip[0],
-                tex_coords: [0.0, 0.0],
-            },
-            // Bottom Left
-            Vertex {
-                position: clip[1],
-                tex_coords: [0.0, 1.0],
-            },
-            // Top Right
-            Vertex {
-                position: clip[2],
-                tex_coords: [1.0, 0.0],
-            },
-            // Bottom Right
-            Vertex {
-                position: clip[3],
-                tex_coords: [1.0, 1.0],
-            },
-        ];
+        let vertices = vertices_from_clip_rect(clip_rect);
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(vertices),
-            usage: wgpu::BufferUsages::VERTEX,
+            contents: bytemuck::cast_slice(&vertices),
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -251,18 +263,22 @@ impl VideoController {
         });
 
         Ok(Self {
-            surface,
-            device,
-            queue,
-            config,
-            texture,
-            texture_size,
-            _texture_view: texture_view,
-            texture_bind_group,
-            render_pipeline,
-            vertex_buffer,
-            index_buffer,
+            wgpu: WgpuState {
+                surface,
+                device,
+                queue,
+                config,
+                texture,
+                texture_size,
+                _texture_view: texture_view,
+                texture_bind_group,
+                render_pipeline,
+                vertex_buffer,
+                index_buffer,
+            },
             window,
+            source_size,
+            full_screen,
         })
     }
 
@@ -285,17 +301,39 @@ impl VideoController {
     }
 
     pub fn toggle_full_screen(&mut self) -> Result<(), String> {
-        //self.full_screen = !self.full_screen;
+        self.full_screen = !self.full_screen;
 
-        //self.mouse.show_cursor(!self.full_screen);
+        let monitor = self.window.current_monitor().unwrap();
 
-        // let full_screen_type = if self.full_screen {
-        //     FullscreenType::True
-        // } else {
-        //     FullscreenType::Off
-        // };
+        let (target_size, clip_rect) = if self.full_screen {
+            let default_video_mode = monitor.video_modes().next().unwrap();
+            let video_mode =
+                geometry::best_fit(self.source_size, monitor).unwrap_or(default_video_mode);
+            let clip_rect = geometry::clip(self.source_size, video_mode.size());
 
-        //self.window.set_fullscreen(full_screen_type)?;
+            self.window
+                .set_fullscreen(Some(Fullscreen::Exclusive(video_mode)));
+
+            (self.source_size, Some(clip_rect))
+        } else {
+            let monitor_size = monitor.size();
+            let target_size = geometry::upscale(self.source_size, monitor_size);
+            let position = geometry::center(target_size, monitor_size);
+
+            self.window.set_fullscreen(None);
+            self.window.set_outer_position(position);
+            self.window.set_resizable(false);
+
+            (target_size, None)
+        };
+
+        self.window.set_inner_size(target_size);
+
+        let vertices = vertices_from_clip_rect(clip_rect);
+
+        self.wgpu
+            .queue
+            .write_buffer(&self.wgpu.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
 
         Ok(())
     }
@@ -304,18 +342,20 @@ impl VideoController {
         let new_size = self.window.inner_size();
 
         if new_size.width > 0 && new_size.height > 0 {
-            self.config.width = new_size.width;
-            self.config.height = new_size.height;
-            self.surface.configure(&self.device, &self.config);
+            self.wgpu.config.width = new_size.width;
+            self.wgpu.config.height = new_size.height;
+            self.wgpu
+                .surface
+                .configure(&self.wgpu.device, &self.wgpu.config);
         }
 
         Ok(())
     }
 
     pub fn render(&mut self, pixels: &[u8], pitch: usize) -> Result<(), Box<dyn Error>> {
-        self.queue.write_texture(
+        self.wgpu.queue.write_texture(
             wgpu::ImageCopyTexture {
-                texture: &self.texture,
+                texture: &self.wgpu.texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
@@ -326,20 +366,21 @@ impl VideoController {
                 bytes_per_row: Some(pitch.try_into()?),
                 rows_per_image: Some((pixels.len() / pitch).try_into()?),
             },
-            self.texture_size,
+            self.wgpu.texture_size,
         );
 
-        let output = self.surface.get_current_texture()?;
+        let output = self.wgpu.surface.get_current_texture()?;
 
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Render Encoder"),
-            });
+        let mut encoder =
+            self.wgpu
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Render Encoder"),
+                });
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -360,16 +401,44 @@ impl VideoController {
                 depth_stencil_attachment: None,
             });
 
-            render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &self.texture_bind_group, &[]);
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.set_pipeline(&self.wgpu.render_pipeline);
+            render_pass.set_bind_group(0, &self.wgpu.texture_bind_group, &[]);
+            render_pass.set_vertex_buffer(0, self.wgpu.vertex_buffer.slice(..));
+            render_pass
+                .set_index_buffer(self.wgpu.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             render_pass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
         }
 
-        self.queue.submit(std::iter::once(encoder.finish()));
+        self.wgpu.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
         Ok(())
     }
+}
+
+fn vertices_from_clip_rect(clip_rect: Option<[[f32; 2]; 4]>) -> [Vertex; 4] {
+    let clip = clip_rect.unwrap_or(DEFAULT_CLIP_RECT);
+
+    [
+        // Top Left
+        Vertex {
+            position: clip[0],
+            tex_coords: [0.0, 0.0],
+        },
+        // Bottom Left
+        Vertex {
+            position: clip[1],
+            tex_coords: [0.0, 1.0],
+        },
+        // Top Right
+        Vertex {
+            position: clip[2],
+            tex_coords: [1.0, 0.0],
+        },
+        // Bottom Right
+        Vertex {
+            position: clip[3],
+            tex_coords: [1.0, 1.0],
+        },
+    ]
 }
