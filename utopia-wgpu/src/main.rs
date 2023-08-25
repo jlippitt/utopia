@@ -5,7 +5,7 @@ use std::error::Error;
 use utopia::JoypadState;
 use video::VideoController;
 use winit::dpi::PhysicalSize;
-use winit::event::{Event, VirtualKeyCode, WindowEvent};
+use winit::event::{ElementState, Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::EventLoop;
 
 mod audio;
@@ -76,16 +76,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         control_flow.set_poll();
 
         match event {
-            Event::WindowEvent { event, window_id } => match event {
+            Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => control_flow.set_exit(),
-                WindowEvent::KeyboardInput { input, .. } if window_id == video.window().id() => {
-                    match input.virtual_keycode {
-                        Some(VirtualKeyCode::Escape) => control_flow.set_exit(),
-                        Some(VirtualKeyCode::F11) => {
-                            video.toggle_full_screen(window_target).unwrap()
+                WindowEvent::KeyboardInput { input, .. } => {
+                    if input.state == ElementState::Pressed {
+                        match input.virtual_keycode {
+                            Some(VirtualKeyCode::Escape) => control_flow.set_exit(),
+                            Some(VirtualKeyCode::F11) => {
+                                video.toggle_full_screen(window_target).unwrap()
+                            }
+                            _ => (),
                         }
-                        _ => keyboard::handle_input(&mut joypad_state, input),
                     }
+
+                    keyboard::handle_input(&mut joypad_state, input);
                 }
                 WindowEvent::Resized(..) => {
                     video.on_window_size_changed().unwrap();
