@@ -3,14 +3,14 @@ use cpal::{
     BufferSize, OutputCallbackInfo, PlayStreamError, Sample, SampleRate, Stream, StreamConfig,
 };
 use std::error::Error;
-use std::sync::mpsc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tracing::warn;
 use utopia::AudioQueue;
 
 pub struct AudioController {
     stream: Stream,
-    sender: mpsc::Sender<(f32, f32)>,
+    send_queue: Arc<Mutex<AudioQueue>>,
     total_samples: u64,
     sample_rate: u64,
     start_time: Instant,
@@ -28,16 +28,17 @@ impl AudioController {
             buffer_size: BufferSize::Default,
         };
 
-        let (sender, receiver) = mpsc::channel();
+        let send_queue = Arc::new(Mutex::new(AudioQueue::new()));
+        let receive_queue = send_queue.clone();
 
         let stream = device.build_output_stream(
             &config,
             move |output: &mut [f32], _: &OutputCallbackInfo| {
-                let mut input: mpsc::TryIter<'_, (f32, f32)> = receiver.try_iter();
+                let mut input = receive_queue.lock().unwrap();
                 let mut prev_sample = (Sample::EQUILIBRIUM, Sample::EQUILIBRIUM);
 
                 for sample_out in output.chunks_exact_mut(2) {
-                    if let Some(sample_in) = input.next() {
+                    if let Some(sample_in) = input.pop_front() {
                         sample_out[0] = sample_in.0;
                         sample_out[1] = sample_in.1;
                         prev_sample = sample_in;
@@ -55,7 +56,7 @@ impl AudioController {
 
         Ok(Self {
             stream,
-            sender,
+            send_queue,
             total_samples: 0,
             sample_rate,
             start_time: Instant::now(),
@@ -67,22 +68,26 @@ impl AudioController {
         self.sync_time
     }
 
-    pub fn resume(&mut self) -> Result<(), PlayStreamError> {
-        self.stream.play()?;
+    pub fn resync(&mut self) {
+        self.send_queue.lock().unwrap().clear();
+        self.total_samples = 0;
         self.start_time = Instant::now();
         self.sync_time = calculate_sync_time(self.start_time, self.total_samples, self.sample_rate);
+    }
+
+    pub fn resume(&mut self) -> Result<(), PlayStreamError> {
+        self.stream.play()?;
+        self.resync();
         Ok(())
     }
 
-    pub fn drain(&mut self, queue: &mut AudioQueue) -> Result<(), mpsc::SendError<(f32, f32)>> {
-        self.total_samples += queue.len() as u64;
+    pub fn drain(&mut self, source_queue: &mut AudioQueue) {
+        self.total_samples += source_queue.len() as u64;
+
+        self.send_queue.lock().unwrap().append(source_queue);
+        source_queue.clear();
+
         self.sync_time = calculate_sync_time(self.start_time, self.total_samples, self.sample_rate);
-
-        for sample in queue.drain(..) {
-            self.sender.send(sample)?;
-        }
-
-        Ok(())
     }
 }
 

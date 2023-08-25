@@ -102,19 +102,29 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                     keyboard::handle_input(&mut joypad_state, input);
                 }
+                WindowEvent::Moved(..) => {
+                    audio.resync();
+                }
                 WindowEvent::Resized(..) => {
                     video.on_window_size_changed().unwrap();
+                    audio.resync();
                 }
                 WindowEvent::ScaleFactorChanged { .. } => {
                     video.on_window_size_changed().unwrap();
+                    audio.resync();
                 }
                 WindowEvent::Destroyed => {
                     video.on_target_changed(window_target);
+                    audio.resync();
                 }
                 _ => (),
             },
             Event::RedrawRequested(window_id) if window_id == video.window().id() => {
                 video.render(system.pixels(), system.pitch()).unwrap();
+
+                if sync == SyncType::Audio {
+                    control_flow.set_wait_until(audio.sync_time())
+                }
             }
             Event::MainEventsCleared => {
                 gamepad.handle_events(&mut joypad_state);
@@ -129,7 +139,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     system.run_frame(&joypad_state);
 
                     if let Some(queue) = system.audio_queue() {
-                        audio.drain(queue).unwrap();
+                        audio.drain(queue);
                     }
 
                     let source_size: PhysicalSize<u32> = system.screen_resolution().into();
