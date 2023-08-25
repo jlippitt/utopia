@@ -197,10 +197,10 @@ impl Renderer {
         })
     }
 
-    pub fn resize(&mut self, new_size: PhysicalSize<u32>) -> Result<(), Box<dyn Error>> {
-        if new_size.width > 0 && new_size.height > 0 {
-            self.config.width = new_size.width;
-            self.config.height = new_size.height;
+    pub fn resize(&mut self, target_size: PhysicalSize<u32>) -> Result<(), Box<dyn Error>> {
+        if target_size.width > 0 && target_size.height > 0 {
+            self.config.width = target_size.width;
+            self.config.height = target_size.height;
             self.surface.configure(&self.device, &self.config);
         }
 
