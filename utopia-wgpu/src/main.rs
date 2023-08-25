@@ -3,7 +3,7 @@ use gamepad::Gamepad;
 use std::error::Error;
 use utopia::JoypadState;
 use video::VideoController;
-use winit::dpi::{PhysicalPosition, PhysicalSize, Size};
+use winit::dpi::{PhysicalSize, Size};
 use winit::event::{Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::EventLoop;
 use winit::window::{Fullscreen, WindowBuilder};
@@ -62,21 +62,28 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let monitor = event_loop.available_monitors().next().unwrap();
 
-    let monitor_size = monitor.size();
     let source_size: PhysicalSize<u32> = system.screen_resolution().into();
-    let target_size = geometry::upscale(source_size, monitor_size);
 
     let window_builder = WindowBuilder::new().with_title("Utopia");
 
-    let window_builder = if args.full_screen {
-        let video_mode = monitor.video_modes().next().unwrap();
-        window_builder.with_fullscreen(Some(Fullscreen::Exclusive(video_mode)))
+    let (target_size, window_builder) = if args.full_screen {
+        let default_video_mode = monitor.video_modes().next().unwrap();
+        let video_mode = geometry::best_fit(source_size, monitor).unwrap_or(default_video_mode);
+
+        let window_builder =
+            window_builder.with_fullscreen(Some(Fullscreen::Exclusive(video_mode)));
+
+        (source_size, window_builder)
     } else {
+        let monitor_size = monitor.size();
+        let target_size = geometry::upscale(source_size, monitor_size);
         let position = geometry::center(target_size, monitor_size);
 
-        window_builder
+        let window_builder = window_builder
             .with_inner_size(Size::Physical(target_size))
-            .with_position(position)
+            .with_position(position);
+
+        (target_size, window_builder)
     };
 
     let window = window_builder.build(&event_loop)?;
