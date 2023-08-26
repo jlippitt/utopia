@@ -1,6 +1,6 @@
 use crate::core::sm83::{Bus, Core, State};
 use crate::util::mirror::MirrorVec;
-use crate::{AudioQueue, BiosLoader, CreateOptions, JoypadState, Mapped, MemoryMapper, System};
+use crate::{AudioQueue, BiosLoader, CreateOptions, Instance, JoypadState, Mapped, MemoryMapper};
 use apu::Apu;
 use cartridge::Cartridge;
 use interrupt::Interrupt;
@@ -63,7 +63,7 @@ impl<T: Mapped> GameBoy<T> {
     }
 }
 
-impl<T: Mapped> System for GameBoy<T> {
+impl<T: Mapped> Instance for GameBoy<T> {
     fn pixels(&self) -> &[u8] {
         self.core.bus().ppu.pixels()
     }

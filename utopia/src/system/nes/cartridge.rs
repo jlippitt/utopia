@@ -2,7 +2,6 @@ use super::Interrupt;
 use crate::util::mirror::{Mirror, MirrorVec};
 use crate::{Mapped, MemoryMapper};
 use mapper::{Mapper, MapperType, Mappings, MirrorMode, NameTable, PrgRead, PrgWrite};
-use std::error::Error;
 use tracing::info;
 
 mod mapper;
@@ -25,11 +24,11 @@ pub struct Cartridge<T: Mapped> {
 }
 
 impl<T: Mapped> Cartridge<T> {
-    pub fn new(
+    pub fn new<U: MemoryMapper<Mapped = T>>(
         data: Vec<u8>,
-        memory_mapper: &impl MemoryMapper<Mapped = T>,
+        memory_mapper: &U,
         interrupt: Interrupt,
-    ) -> Result<Self, Box<dyn Error>> {
+    ) -> Result<Self, crate::Error> {
         let mapper_number = ((data[6] & 0xf0) >> 4) | (data[7] & 0xf0);
         let prg_rom_size = PRG_ROM_MULTIPLIER * (data[4] as usize);
         let chr_rom_size = CHR_ROM_MULTIPLIER * (data[5] as usize);

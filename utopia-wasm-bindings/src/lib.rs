@@ -1,6 +1,7 @@
 use std::error;
 use std::fmt;
-use utopia::{CreateOptions, DefaultMemoryMapper, System};
+use std::path::Path;
+use utopia::{DefaultMemoryMapper, Instance, InstanceOptions, SystemOptions};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::Clamped;
 
@@ -10,18 +11,17 @@ pub struct Error {
     message: String,
 }
 
-#[wasm_bindgen]
-impl Error {
-    fn new(message: impl Into<String>) -> Self {
-        Self {
-            message: message.into(),
-        }
-    }
-}
-
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.message)
+    }
+}
+
+impl From<utopia::Error> for Error {
+    fn from(value: utopia::Error) -> Self {
+        Self {
+            message: value.to_string(),
+        }
     }
 }
 
@@ -30,8 +30,6 @@ impl error::Error for Error {}
 pub struct BiosLoader(Option<Vec<u8>>);
 
 impl utopia::BiosLoader for BiosLoader {
-    type Error = utopia::Error;
-
     fn load(&self, _name: &str) -> Result<Vec<u8>, utopia::Error> {
         let bios = self
             .0
@@ -103,7 +101,7 @@ impl SampleBuffer {
 
 #[wasm_bindgen]
 pub struct Utopia {
-    system: Box<dyn System>,
+    instance: Box<dyn Instance>,
 }
 
 #[wasm_bindgen]
@@ -114,41 +112,47 @@ impl Utopia {
         rom_data: Vec<u8>,
         bios_data: Option<Vec<u8>>,
     ) -> Result<Utopia, Error> {
-        let options = CreateOptions {
+        let system_type = Path::new(rom_path).try_into().map_err(Error::from)?;
+
+        let options = SystemOptions {
+            system_type,
             bios_loader: BiosLoader(bios_data),
             memory_mapper: DefaultMemoryMapper,
             skip_boot: true,
         };
 
-        let system = utopia::create(rom_path, rom_data, &options)
-            .map_err(|err| Error::new(err.to_string()))?;
+        let system = utopia::create(options).map_err(Error::from)?;
 
-        Ok(Self { system })
+        let instance = system
+            .create_instance(InstanceOptions { rom_data })
+            .map_err(Error::from)?;
+
+        Ok(Self { instance })
     }
 
     #[wasm_bindgen(js_name = getScreenWidth)]
     pub fn screen_width(&self) -> u32 {
-        self.system.screen_width()
+        self.instance.resolution().0
     }
 
     #[wasm_bindgen(js_name = getScreenHeight)]
     pub fn screen_height(&self) -> u32 {
-        self.system.screen_height()
+        self.instance.resolution().1
     }
 
     #[wasm_bindgen(js_name = getPixels)]
     pub fn pixels(&self) -> Clamped<Vec<u8>> {
-        Clamped(Vec::from(self.system.pixels()))
+        Clamped(Vec::from(self.instance.pixels()))
     }
 
     #[wasm_bindgen(js_name = getSampleRate)]
     pub fn sample_rate(&self) -> u32 {
-        self.system.sample_rate().try_into().unwrap()
+        self.instance.sample_rate().try_into().unwrap()
     }
 
     #[wasm_bindgen(js_name = getSampleBuffer)]
     pub fn sample_buffer(&mut self) -> SampleBuffer {
-        let (left, right) = if let Some(queue) = self.system.audio_queue() {
+        let (left, right) = if let Some(queue) = self.instance.audio_queue() {
             queue.drain(..).unzip()
         } else {
             (Vec::new(), Vec::new())
@@ -159,6 +163,6 @@ impl Utopia {
 
     #[wasm_bindgen(js_name = runFrame)]
     pub fn run_frame(&mut self, joypad_state: JoypadState) {
-        self.system.run_frame(&joypad_state.into())
+        self.instance.run_frame(&joypad_state.into())
     }
 }

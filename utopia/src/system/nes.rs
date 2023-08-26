@@ -1,14 +1,15 @@
-use super::System;
 use crate::core::mos6502::{self, Bus, Core};
 use crate::util::MirrorVec;
-use crate::{AudioQueue, JoypadState, Mapped, MemoryMapper};
+use crate::{
+    AudioQueue, BiosLoader, Error, InstanceOptions, JoypadState, Mapped, MemoryMapper,
+    SystemOptions,
+};
 use apu::Apu;
 use bitflags::bitflags;
 use cartridge::Cartridge;
 use interrupt::Interrupt;
 use joypad::Joypad;
 use ppu::Ppu;
-use std::error::Error;
 use std::fmt;
 use tracing::debug;
 
@@ -21,31 +22,60 @@ mod interrupt;
 mod joypad;
 mod ppu;
 
-pub struct Nes<T: Mapped> {
+pub struct System<T: MemoryMapper + 'static> {
+    memory_mapper: T,
+}
+
+impl<T: MemoryMapper> System<T> {
+    pub fn new(options: SystemOptions<impl BiosLoader, T>) -> Self {
+        Self {
+            memory_mapper: options.memory_mapper,
+        }
+    }
+}
+
+impl<T: BiosLoader, U: MemoryMapper> crate::System<T, U> for System<U> {
+    fn default_resolution(&self) -> (u32, u32) {
+        (ppu::WIDTH as u32, ppu::HEIGHT as u32)
+    }
+
+    fn default_sample_rate(&self) -> Option<u64> {
+        Some(Apu::SAMPLE_RATE)
+    }
+
+    fn create_instance(&self, options: InstanceOptions) -> Result<Box<dyn crate::Instance>, Error> {
+        Ok(Box::new(Instance::new(
+            &self.memory_mapper,
+            options.rom_data,
+        )?))
+    }
+}
+
+pub struct Instance<T: Mapped> {
     core: Core<Hardware<T>>,
 }
 
-impl<T: Mapped> Nes<T> {
+impl<T: Mapped> Instance<T> {
     pub fn new(
-        rom_data: Vec<u8>,
         memory_mapper: &impl MemoryMapper<Mapped = T>,
-    ) -> Result<Self, Box<dyn Error>> {
+        rom_data: Vec<u8>,
+    ) -> Result<Self, Error> {
         let hw = Hardware::new(rom_data, memory_mapper)?;
         let core = Core::new(hw);
-        Ok(Nes { core })
+        Ok(Instance { core })
     }
 }
 
-impl<T: Mapped> System for Nes<T> {
-    fn pixels(&self) -> &[u8] {
-        let pixels = self.core.bus().ppu.pixels();
-        let start = CLIP_LINES * self.pitch();
-        let end = pixels.len() - CLIP_LINES * self.pitch();
-        &pixels[start..end]
+impl<T: Mapped> crate::Instance for Instance<T> {
+    fn resolution(&self) -> (u32, u32) {
+        (ppu::WIDTH as u32, ppu::HEIGHT as u32)
     }
 
-    fn pitch(&self) -> usize {
-        ppu::WIDTH * 4
+    fn pixels(&self) -> &[u8] {
+        let pixels = self.core.bus().ppu.pixels();
+        let start = CLIP_LINES * ppu::WIDTH * 4;
+        let end = pixels.len() - start;
+        &pixels[start..end]
     }
 
     fn sample_rate(&self) -> u64 {
@@ -94,7 +124,7 @@ impl<T: Mapped> Hardware<T> {
     pub fn new(
         rom_data: Vec<u8>,
         memory_mapper: &impl MemoryMapper<Mapped = T>,
-    ) -> Result<Self, Box<dyn Error>> {
+    ) -> Result<Self, Error> {
         let interrupt = Interrupt::new();
 
         Ok(Self {

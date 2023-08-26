@@ -1,7 +1,7 @@
 use crate::core::arm7tdmi::{Bus, Core, Mode, State};
 use crate::util::facade::{ReadFacade, Value, WriteFacade};
 use crate::util::MirrorVec;
-use crate::{BiosLoader, JoypadState, System};
+use crate::{BiosLoader, Instance, JoypadState};
 use audio::Audio;
 use cartridge::Cartridge;
 use dma::Dma;
@@ -51,7 +51,7 @@ impl GameBoyAdvance {
     }
 }
 
-impl System for GameBoyAdvance {
+impl Instance for GameBoyAdvance {
     fn pixels(&self) -> &[u8] {
         &PIXELS
     }

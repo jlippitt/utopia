@@ -1,6 +1,6 @@
 use crate::core::wdc65c816::{Bus, Core, Interrupt, INT_NMI};
 use crate::util::mirror::{Mirror, MirrorVec};
-use crate::{BiosLoader, CreateOptions, JoypadState, Mapped, MemoryMapper, System};
+use crate::{BiosLoader, CreateOptions, Instance, JoypadState, Mapped, MemoryMapper};
 use apu::Apu;
 use clock::{Clock, Event, FAST_CYCLES, TIMER_IRQ};
 use dma::Dma;
@@ -38,7 +38,7 @@ impl<T: Mapped> Snes<T> {
     }
 }
 
-impl<T: Mapped> System for Snes<T> {
+impl<T: Mapped> Instance for Snes<T> {
     fn pixels(&self) -> &[u8] {
         self.core.bus().ppu.pixels()
     }

@@ -4,8 +4,9 @@ use clap::{Parser, ValueEnum};
 use gamepad::Gamepad;
 use mmap::MemoryMapper;
 use std::error::Error;
+use std::path::Path;
 use std::time::Instant;
-use utopia::JoypadState;
+use utopia::{InstanceOptions, JoypadState, SystemOptions};
 use video::VideoController;
 use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, Event, VirtualKeyCode, WindowEvent};
@@ -51,22 +52,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let rom_data = std::fs::read(&args.rom_path)?;
 
-    let mut system = utopia::create(
-        &args.rom_path,
-        rom_data,
-        &utopia::CreateOptions {
-            bios_loader: BiosLoader::new(args.bios_path.unwrap_or(args.rom_path.clone()).into()),
-            memory_mapper: MemoryMapper::new(args.rom_path.clone().into()),
-            skip_boot: args.skip_boot,
-        },
-    )?;
+    let system = utopia::create(SystemOptions {
+        system_type: Path::new(&args.rom_path).try_into()?,
+        bios_loader: BiosLoader::new(args.bios_path.unwrap_or(args.rom_path.clone()).into()),
+        memory_mapper: MemoryMapper::new(args.rom_path.clone().into()),
+        skip_boot: args.skip_boot,
+    })?;
 
     let event_loop = EventLoop::new();
 
-    let source_size: PhysicalSize<u32> = system.screen_resolution().into();
+    let source_size: PhysicalSize<u32> = system.default_resolution().into();
 
     let sync = args.sync.unwrap_or_else(|| {
-        if system.audio_queue().is_some() {
+        if system.default_sample_rate().is_some() {
             Sync::Audio
         } else {
             Sync::Video
@@ -80,7 +78,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         sync == Sync::Video,
     )?;
 
-    let mut audio = AudioController::new(system.sample_rate())?;
+    let mut instance = system.create_instance(InstanceOptions { rom_data })?;
+
+    let mut audio = AudioController::new(instance.sample_rate())?;
 
     let mut gamepad = Gamepad::new()?;
 
@@ -142,20 +142,20 @@ fn main() -> Result<(), Box<dyn Error>> {
                 };
 
                 if run_frame {
-                    system.run_frame(&joypad_state);
+                    instance.run_frame(&joypad_state);
 
-                    if let Some(queue) = system.audio_queue() {
+                    if let Some(queue) = instance.audio_queue() {
                         audio.queue_samples(queue);
                     }
 
-                    let source_size: PhysicalSize<u32> = system.screen_resolution().into();
+                    let source_size: PhysicalSize<u32> = instance.resolution().into();
 
                     if source_size != video.source_size() {
                         video.set_source_size(window_target, source_size);
                     }
 
                     video
-                        .update_texture(system.pixels(), system.pitch())
+                        .update_texture(instance.pixels(), instance.pitch())
                         .unwrap();
 
                     video.window().request_redraw();

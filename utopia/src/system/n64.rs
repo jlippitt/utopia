@@ -1,4 +1,4 @@
-use super::{JoypadState, System};
+use super::{Instance, JoypadState};
 use crate::core::mips::{Bus, Core, Cp0, Interrupt, State};
 use crate::util::facade::{ReadFacade, Value, WriteFacade};
 use audio::AudioInterface;
@@ -69,7 +69,7 @@ impl N64 {
     }
 }
 
-impl System for N64 {
+impl Instance for N64 {
     fn pixels(&self) -> &[u8] {
         self.core.bus().video.pixels()
     }

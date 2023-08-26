@@ -1,5 +1,4 @@
 use std::fs;
-use std::io;
 use std::path::PathBuf;
 use tracing::warn;
 
@@ -14,15 +13,15 @@ impl BiosLoader {
 }
 
 impl utopia::BiosLoader for BiosLoader {
-    type Error = io::Error;
-
-    fn load(&self, name: &str) -> Result<Vec<u8>, io::Error> {
+    fn load(&self, name: &str) -> Result<Vec<u8>, utopia::Error> {
         let file_name = format!("{}.bin", name);
         let path = self.base_path.with_file_name(file_name);
 
-        fs::read(&path).map_err(|err| {
+        let result = fs::read(&path).map_err(|err| {
             warn!("Failed to load BIOS file '{}': {}", path.display(), err);
             err
-        })
+        });
+
+        result.map_err(|err| err.to_string().into())
     }
 }

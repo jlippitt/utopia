@@ -8,11 +8,12 @@
     clippy::single_match
 )]
 
-pub use system::{AudioQueue, JoypadState, System};
+pub use system::{
+    create, AudioQueue, Instance, InstanceOptions, JoypadState, System, SystemOptions, SystemType,
+};
 
 use std::error;
 use std::fmt;
-use std::path::Path;
 
 use util::mirror::MirrorableMut;
 
@@ -34,20 +35,30 @@ impl fmt::Display for Error {
     }
 }
 
+impl From<String> for Error {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
+impl From<&str> for Error {
+    fn from(value: &str) -> Self {
+        Self(value.to_string())
+    }
+}
+
 impl error::Error for Error {}
 
 pub trait BiosLoader {
-    type Error: error::Error + 'static;
-    fn load(&self, name: &str) -> Result<Vec<u8>, Self::Error>;
+    fn load(&self, name: &str) -> Result<Vec<u8>, Error>;
 }
 
 #[derive(Clone, Debug)]
 pub struct DefaultBiosLoader;
 
 impl BiosLoader for DefaultBiosLoader {
-    type Error = Error;
-    fn load(&self, _name: &str) -> Result<Vec<u8>, Self::Error> {
-        Err(Error("BIOS loader not available".into()))
+    fn load(&self, _name: &str) -> Result<Vec<u8>, Error> {
+        Err("BIOS loader not available".into())
     }
 }
 
@@ -57,8 +68,7 @@ impl<T: MirrorableMut<Output = u8>> Mapped for T {}
 
 pub trait MemoryMapper {
     type Mapped: Mapped;
-    type Error: error::Error + 'static;
-    fn open(&self, len: usize, battery_backed: bool) -> Result<Self::Mapped, Self::Error>;
+    fn open(&self, len: usize, battery_backed: bool) -> Result<Self::Mapped, Error>;
 }
 
 #[derive(Clone, Debug)]
@@ -66,29 +76,8 @@ pub struct DefaultMemoryMapper;
 
 impl MemoryMapper for DefaultMemoryMapper {
     type Mapped = Vec<u8>;
-    type Error = Error;
 
-    fn open(&self, len: usize, _battery_backed: bool) -> Result<Self::Mapped, Self::Error> {
+    fn open(&self, len: usize, _battery_backed: bool) -> Result<Self::Mapped, Error> {
         Ok(vec![0; len])
     }
-}
-
-#[derive(Clone, Debug)]
-pub struct CreateOptions<T: MemoryMapper, U: BiosLoader> {
-    pub memory_mapper: T,
-    pub bios_loader: U,
-    pub skip_boot: bool,
-}
-
-pub fn create<T: MemoryMapper + 'static, U: BiosLoader>(
-    rom_path: &str,
-    rom_data: Vec<u8>,
-    options: &CreateOptions<T, U>,
-) -> Result<Box<dyn System>, Error> {
-    let extension = Path::new(rom_path)
-        .extension()
-        .map(|ext| ext.to_string_lossy().to_lowercase())
-        .unwrap_or("".to_owned());
-
-    system::create(&extension, rom_data, options).map_err(|err| Error(format!("{}", err)))
 }
