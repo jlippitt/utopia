@@ -54,7 +54,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let system = utopia::create(SystemOptions {
         system_type: Path::new(&args.rom_path).try_into()?,
-        bios_loader: BiosLoader::new(args.bios_path.unwrap_or(args.rom_path.clone()).into()),
+        bios_loader: Box::new(BiosLoader::new(
+            args.bios_path.unwrap_or(args.rom_path.clone()).into(),
+        )),
         memory_mapper: MemoryMapper::new(args.rom_path.clone().into()),
         skip_boot: args.skip_boot,
     })?;

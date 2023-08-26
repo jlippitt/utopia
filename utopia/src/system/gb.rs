@@ -27,14 +27,14 @@ const HRAM_SIZE: usize = 128;
 
 const M_CYCLE_LENGTH: u64 = 4;
 
-pub struct System<T: BiosLoader, U: MemoryMapper + 'static> {
-    bios_loader: T,
+pub struct System<U: MemoryMapper + 'static> {
+    bios_loader: Box<dyn BiosLoader>,
     memory_mapper: U,
     skip_boot: bool,
 }
 
-impl<T: BiosLoader, U: MemoryMapper> System<T, U> {
-    pub fn new(options: SystemOptions<T, U>) -> Self {
+impl<T: MemoryMapper> System<T> {
+    pub fn new(options: SystemOptions<T>) -> Self {
         Self {
             bios_loader: options.bios_loader,
             memory_mapper: options.memory_mapper,
@@ -43,7 +43,7 @@ impl<T: BiosLoader, U: MemoryMapper> System<T, U> {
     }
 }
 
-impl<T: BiosLoader, U: MemoryMapper> crate::System<T, U> for System<T, U> {
+impl<T: MemoryMapper> crate::System<T> for System<T> {
     fn default_resolution(&self) -> (u32, u32) {
         (ppu::WIDTH as u32, ppu::HEIGHT as u32)
     }
@@ -57,7 +57,7 @@ impl<T: BiosLoader, U: MemoryMapper> crate::System<T, U> for System<T, U> {
         options: InstanceOptions,
     ) -> Result<Box<dyn crate::Instance>, crate::Error> {
         let result = Instance::new(
-            &self.bios_loader,
+            self.bios_loader.as_ref(),
             &self.memory_mapper,
             self.skip_boot,
             options,
@@ -75,9 +75,9 @@ pub struct Instance<T: Mapped> {
 }
 
 impl<T: Mapped> Instance<T> {
-    pub fn new<U: BiosLoader, V: MemoryMapper<Mapped = T>>(
-        bios_loader: &U,
-        memory_mapper: &V,
+    pub fn new<U: MemoryMapper<Mapped = T>>(
+        bios_loader: &dyn BiosLoader,
+        memory_mapper: &U,
         skip_boot: bool,
         options: InstanceOptions,
     ) -> Result<Self, Box<dyn Error>> {

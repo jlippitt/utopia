@@ -116,7 +116,7 @@ impl Utopia {
 
         let system = utopia::create(SystemOptions {
             system_type,
-            bios_loader: BiosLoader(bios_data),
+            bios_loader: Box::new(BiosLoader(bios_data)),
             memory_mapper: DefaultMemoryMapper,
             skip_boot: true,
         })

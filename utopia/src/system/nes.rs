@@ -2,8 +2,8 @@ use crate::core::mos6502::{self, Bus, Core};
 use crate::util::gfx;
 use crate::util::MirrorVec;
 use crate::{
-    AudioQueue, BiosLoader, Error, InstanceOptions, JoypadState, Mapped, MemoryMapper,
-    SystemOptions, WgpuContext,
+    AudioQueue, Error, InstanceOptions, JoypadState, Mapped, MemoryMapper, SystemOptions,
+    WgpuContext,
 };
 use apu::Apu;
 use bitflags::bitflags;
@@ -30,14 +30,14 @@ pub struct System<T: MemoryMapper + 'static> {
 }
 
 impl<T: MemoryMapper> System<T> {
-    pub fn new(options: SystemOptions<impl BiosLoader, T>) -> Self {
+    pub fn new(options: SystemOptions<T>) -> Self {
         Self {
             memory_mapper: options.memory_mapper,
         }
     }
 }
 
-impl<T: BiosLoader, U: MemoryMapper> crate::System<T, U> for System<U> {
+impl<T: MemoryMapper> crate::System<T> for System<T> {
     fn default_resolution(&self) -> (u32, u32) {
         (WIDTH, HEIGHT)
     }
