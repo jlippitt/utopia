@@ -45,7 +45,7 @@ impl TryFrom<&Path> for SystemType {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct SystemOptions<T: BiosLoader, U: MemoryMapper> {
     pub system_type: SystemType,
     pub bios_loader: T,
@@ -62,9 +62,17 @@ pub trait System<T: BiosLoader, U: MemoryMapper> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
+pub struct WgpuContext {
+    pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
+    pub texture: wgpu::Texture,
+}
+
+#[derive(Debug)]
 pub struct InstanceOptions {
     pub rom_data: Vec<u8>,
+    pub wgpu_context: Option<WgpuContext>,
 }
 
 pub trait Instance {

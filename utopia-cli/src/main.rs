@@ -78,7 +78,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         sync == Sync::Video,
     )?;
 
-    let mut instance = system.create_instance(InstanceOptions { rom_data })?;
+    let mut instance = system.create_instance(InstanceOptions {
+        rom_data,
+        wgpu_context: None,
+    })?;
 
     let mut audio = AudioController::new(instance.sample_rate())?;
 

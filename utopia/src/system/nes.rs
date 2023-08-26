@@ -1,8 +1,9 @@
 use crate::core::mos6502::{self, Bus, Core};
+use crate::util::gfx;
 use crate::util::MirrorVec;
 use crate::{
     AudioQueue, BiosLoader, Error, InstanceOptions, JoypadState, Mapped, MemoryMapper,
-    SystemOptions,
+    SystemOptions, WgpuContext,
 };
 use apu::Apu;
 use bitflags::bitflags;
@@ -44,25 +45,27 @@ impl<T: BiosLoader, U: MemoryMapper> crate::System<T, U> for System<U> {
     }
 
     fn create_instance(&self, options: InstanceOptions) -> Result<Box<dyn crate::Instance>, Error> {
-        Ok(Box::new(Instance::new(
-            &self.memory_mapper,
-            options.rom_data,
-        )?))
+        Ok(Box::new(Instance::new(&self.memory_mapper, options)?))
     }
 }
 
 pub struct Instance<T: Mapped> {
     core: Core<Hardware<T>>,
+    wgpu_context: Option<WgpuContext>,
 }
 
 impl<T: Mapped> Instance<T> {
     pub fn new(
         memory_mapper: &impl MemoryMapper<Mapped = T>,
-        rom_data: Vec<u8>,
+        options: InstanceOptions,
     ) -> Result<Self, Error> {
-        let hw = Hardware::new(rom_data, memory_mapper)?;
+        let hw = Hardware::new(options.rom_data, memory_mapper)?;
         let core = Core::new(hw);
-        Ok(Instance { core })
+
+        Ok(Instance {
+            core,
+            wgpu_context: options.wgpu_context,
+        })
     }
 }
 
@@ -95,6 +98,10 @@ impl<T: Mapped> crate::Instance for Instance<T> {
         while !core.bus().ppu.ready() {
             core.step();
             debug!("{}", core);
+        }
+
+        if let Some(wgpu_context) = &self.wgpu_context {
+            gfx::write_pixels_to_texture(wgpu_context, self.pixels(), self.pitch())
         }
     }
 }

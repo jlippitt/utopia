@@ -10,6 +10,7 @@
 
 pub use system::{
     create, AudioQueue, Instance, InstanceOptions, JoypadState, System, SystemOptions, SystemType,
+    WgpuContext,
 };
 
 use std::error;

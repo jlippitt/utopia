@@ -114,17 +114,19 @@ impl Utopia {
     ) -> Result<Utopia, Error> {
         let system_type = Path::new(rom_path).try_into().map_err(Error::from)?;
 
-        let options = SystemOptions {
+        let system = utopia::create(SystemOptions {
             system_type,
             bios_loader: BiosLoader(bios_data),
             memory_mapper: DefaultMemoryMapper,
             skip_boot: true,
-        };
-
-        let system = utopia::create(options).map_err(Error::from)?;
+        })
+        .map_err(Error::from)?;
 
         let instance = system
-            .create_instance(InstanceOptions { rom_data })
+            .create_instance(InstanceOptions {
+                rom_data,
+                wgpu_context: None,
+            })
             .map_err(Error::from)?;
 
         Ok(Self { instance })
