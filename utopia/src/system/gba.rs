@@ -1,13 +1,14 @@
 use crate::core::arm7tdmi::{Bus, Core, Mode, State};
 use crate::util::facade::{ReadFacade, Value, WriteFacade};
 use crate::util::MirrorVec;
-use crate::{BiosLoader, Instance, JoypadState};
+use crate::{BiosLoader, InstanceOptions, JoypadState, MemoryMapper, SystemOptions, WgpuContext};
 use audio::Audio;
 use cartridge::Cartridge;
 use dma::Dma;
 use ppu::Ppu;
 use registers::Registers;
 use std::error::Error;
+use std::marker::PhantomData;
 use tracing::warn;
 
 mod audio;
@@ -23,18 +24,56 @@ const PIXELS: [u8; WIDTH * HEIGHT * 4] = [0; WIDTH * HEIGHT * 4];
 const IWRAM_SIZE: usize = 32768;
 const EWRAM_SIZE: usize = 262144;
 
-pub struct GameBoyAdvance {
-    core: Core<Hardware>,
+pub struct System<U: MemoryMapper + 'static> {
+    bios_loader: Box<dyn BiosLoader>,
+    skip_boot: bool,
+    _phantom: PhantomData<U>,
 }
 
-impl GameBoyAdvance {
+impl<T: MemoryMapper> System<T> {
+    pub fn new(options: SystemOptions<T>) -> Self {
+        Self {
+            bios_loader: options.bios_loader,
+            skip_boot: options.skip_boot,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<T: MemoryMapper> crate::System<T> for System<T> {
+    fn default_resolution(&self) -> (u32, u32) {
+        (WIDTH as u32, HEIGHT as u32)
+    }
+
+    fn default_sample_rate(&self) -> Option<u64> {
+        None
+    }
+
+    fn create_instance(
+        &self,
+        options: InstanceOptions,
+    ) -> Result<Box<dyn crate::Instance>, crate::Error> {
+        let result = Instance::new(self.bios_loader.as_ref(), self.skip_boot, options);
+
+        Ok(Box::new(
+            result.map_err(|err| crate::Error(err.to_string()))?,
+        ))
+    }
+}
+
+pub struct Instance {
+    core: Core<Hardware>,
+    wgpu_context: Option<WgpuContext>,
+}
+
+impl Instance {
     pub fn new(
-        rom: Vec<u8>,
-        bios_loader: &impl BiosLoader,
+        bios_loader: &dyn BiosLoader,
         skip_boot: bool,
+        options: InstanceOptions,
     ) -> Result<Self, Box<dyn Error>> {
         let bios = bios_loader.load("gba_bios")?;
-        let hw = Hardware::new(rom, bios);
+        let hw = Hardware::new(options.rom_data, bios);
 
         let mut initial_state: State = Default::default();
 
@@ -47,17 +86,29 @@ impl GameBoyAdvance {
         };
 
         let core = Core::new(hw, initial_state);
-        Ok(GameBoyAdvance { core })
+
+        Ok(Self {
+            core,
+            wgpu_context: options.wgpu_context,
+        })
     }
 }
 
-impl Instance for GameBoyAdvance {
+impl crate::Instance for Instance {
+    fn resolution(&self) -> (u32, u32) {
+        (WIDTH as u32, HEIGHT as u32)
+    }
+
     fn pixels(&self) -> &[u8] {
         &PIXELS
     }
 
-    fn pitch(&self) -> usize {
-        WIDTH * 4
+    fn wgpu_context(&self) -> &WgpuContext {
+        self.wgpu_context.as_ref().unwrap()
+    }
+
+    fn wgpu_context_mut(&mut self) -> &mut WgpuContext {
+        self.wgpu_context.as_mut().unwrap()
     }
 
     fn run_frame(&mut self, _joypad_state: &JoypadState) {
@@ -66,6 +117,8 @@ impl Instance for GameBoyAdvance {
         loop {
             core.step();
         }
+
+        // TODO: Render pixels to WGPU texture
     }
 }
 
