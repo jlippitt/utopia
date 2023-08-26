@@ -3,8 +3,7 @@ use crate::{
     util::facade::{DataReader, DataWriter},
     WgpuContext,
 };
-use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
+use bitfield_struct::bitfield;
 use resampler::Resampler;
 use tracing::debug;
 
@@ -13,7 +12,8 @@ mod resampler;
 pub const DEFAULT_WIDTH: u32 = 320;
 pub const DEFAULT_HEIGHT: u32 = 474;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, FromPrimitive)]
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 enum ColorMode {
     Blank = 0,
     Reserved = 1,
@@ -21,9 +21,67 @@ enum ColorMode {
     Color32 = 3,
 }
 
+impl ColorMode {
+    const fn into_bits(self) -> u32 {
+        self as u32
+    }
+
+    const fn from_bits(value: u32) -> Self {
+        match value {
+            0 => Self::Blank,
+            1 => Self::Reserved,
+            2 => Self::Color16,
+            3 => Self::Color32,
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+enum AntiAliasMode {
+    FrameBased = 0,
+    LineBased = 1,
+    ResampleOnly = 2,
+    Disabled = 3,
+}
+
+impl AntiAliasMode {
+    const fn into_bits(self) -> u32 {
+        self as u32
+    }
+
+    const fn from_bits(value: u32) -> Self {
+        match value {
+            0 => Self::FrameBased,
+            1 => Self::LineBased,
+            2 => Self::ResampleOnly,
+            3 => Self::Disabled,
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[bitfield(u32)]
 struct Control {
+    #[bits(2)]
     color_mode: ColorMode,
-    interlace: bool,
+    gamma_dither_enable: bool,
+    gamma_enable: bool,
+    divot_enable: bool,
+    vbus_clock_enable: bool,
+    serrate: bool,
+    test_mode: bool,
+    #[bits(2)]
+    aa_mode: AntiAliasMode,
+    #[bits(1)]
+    __: u8,
+    kill_we: bool,
+    #[bits(4)]
+    pixel_advance: u8,
+    dedither_filter_enable: bool,
+    #[bits(15)]
+    __: u16,
 }
 
 struct Registers {
@@ -64,10 +122,7 @@ impl VideoInterface {
             field: false,
             interrupt,
             regs: Registers {
-                ctrl: Control {
-                    color_mode: ColorMode::Blank,
-                    interlace: false,
-                },
+                ctrl: Control::new(),
                 origin: 0,
                 width: 0,
                 v_intr: 0x3ff,
@@ -117,7 +172,7 @@ impl VideoInterface {
 
             if self.v_counter >= self.regs.v_sync {
                 self.v_counter = 0;
-                self.field ^= self.regs.ctrl.interlace;
+                self.field ^= self.regs.ctrl.serrate();
                 self.regs.v_current = self.field as u32;
                 self.ready = true;
             }
@@ -142,7 +197,7 @@ impl VideoInterface {
             self.resampler.update_source_size(ctx, width, height);
         }
 
-        match self.regs.ctrl.color_mode {
+        match self.regs.ctrl.color_mode() {
             ColorMode::Color32 => {
                 let mut read_pos = self.regs.origin as usize;
                 let mut write_pos = 0;
@@ -181,8 +236,12 @@ impl VideoInterface {
             ColorMode::Blank => self.pixels.fill(0),
         }
 
-        // TODO: 'Resample' flag
-        self.resampler.render(ctx, &self.pixels, pitch, false);
+        self.resampler.render(
+            ctx,
+            &self.pixels,
+            pitch,
+            self.regs.ctrl.aa_mode() != AntiAliasMode::Disabled,
+        );
     }
 
     fn width(&self) -> u32 {
@@ -202,6 +261,7 @@ impl DataReader for VideoInterface {
 
     fn read(&self, address: u32) -> u32 {
         match address {
+            0x00 => self.regs.ctrl.into(),
             0x04 => self.regs.origin,
             0x08 => self.regs.width,
             0x0c => self.regs.v_intr,
@@ -217,11 +277,8 @@ impl DataWriter for VideoInterface {
     fn write(&mut self, address: u32, value: u32) {
         match address {
             0x00 => {
-                // VI_CTRL: TODO
-                self.regs.ctrl.interlace = (value & 0x40) != 0;
-                self.regs.ctrl.color_mode = ColorMode::from_u32(value & 3).unwrap();
-                debug!("VI_CTRL Interlace: {}", self.regs.ctrl.interlace);
-                debug!("VI_CTRL Color Mode: {:?}", self.regs.ctrl.color_mode);
+                self.regs.ctrl = value.into();
+                debug!("VI_CTRL {:?}", self.regs.ctrl);
             }
             0x04 => {
                 self.regs.origin = value & 0x00ff_ffff;
