@@ -1,6 +1,9 @@
 use crate::core::wdc65c816::{Bus, Core, Interrupt, INT_NMI};
+use crate::util::gfx;
 use crate::util::mirror::{Mirror, MirrorVec};
-use crate::{BiosLoader, CreateOptions, Instance, JoypadState, Mapped, MemoryMapper};
+use crate::{
+    BiosLoader, InstanceOptions, JoypadState, Mapped, MemoryMapper, SystemOptions, WgpuContext,
+};
 use apu::Apu;
 use clock::{Clock, Event, FAST_CYCLES, TIMER_IRQ};
 use dma::Dma;
@@ -23,32 +26,83 @@ mod ppu;
 mod registers;
 mod wram;
 
-pub struct Snes<T: Mapped> {
-    core: Core<Hardware<T>>,
+const SAMPLE_RATE: u64 = 32000;
+
+pub struct System<U: MemoryMapper + 'static> {
+    bios_loader: Box<dyn BiosLoader>,
+    memory_mapper: U,
 }
 
-impl<T: Mapped> Snes<T> {
-    pub fn new<U: MemoryMapper<Mapped = T>, V: BiosLoader>(
-        rom_data: Vec<u8>,
-        options: &CreateOptions<U, V>,
-    ) -> Result<Self, Box<dyn Error>> {
-        let hw = Hardware::new(rom_data, options)?;
-        let core = Core::new(hw);
-        Ok(Snes { core })
+impl<T: MemoryMapper> System<T> {
+    pub fn new(options: SystemOptions<T>) -> Self {
+        Self {
+            bios_loader: options.bios_loader,
+            memory_mapper: options.memory_mapper,
+        }
     }
 }
 
-impl<T: Mapped> Instance for Snes<T> {
+impl<T: MemoryMapper> crate::System<T> for System<T> {
+    fn default_resolution(&self) -> (u32, u32) {
+        (ppu::WIDTH as u32, ppu::HEIGHT as u32)
+    }
+
+    fn default_sample_rate(&self) -> Option<u64> {
+        Some(SAMPLE_RATE)
+    }
+
+    fn create_instance(
+        &self,
+        options: InstanceOptions,
+    ) -> Result<Box<dyn crate::Instance>, crate::Error> {
+        let result = Instance::new(self.bios_loader.as_ref(), &self.memory_mapper, options);
+
+        Ok(Box::new(
+            result.map_err(|err| crate::Error(err.to_string()))?,
+        ))
+    }
+}
+
+pub struct Instance<T: Mapped> {
+    core: Core<Hardware<T>>,
+    wgpu_context: Option<WgpuContext>,
+}
+
+impl<T: Mapped> Instance<T> {
+    pub fn new<U: MemoryMapper<Mapped = T>>(
+        bios_loader: &dyn BiosLoader,
+        memory_mapper: &U,
+        options: InstanceOptions,
+    ) -> Result<Self, Box<dyn Error>> {
+        let hw = Hardware::new(bios_loader, memory_mapper, options.rom_data)?;
+        let core = Core::new(hw);
+
+        Ok(Instance {
+            core,
+            wgpu_context: options.wgpu_context,
+        })
+    }
+}
+
+impl<T: Mapped> crate::Instance for Instance<T> {
+    fn resolution(&self) -> (u32, u32) {
+        (ppu::WIDTH as u32, ppu::HEIGHT as u32)
+    }
+
     fn pixels(&self) -> &[u8] {
         self.core.bus().ppu.pixels()
     }
 
-    fn pitch(&self) -> usize {
-        ppu::WIDTH * 4
+    fn sample_rate(&self) -> u64 {
+        SAMPLE_RATE
     }
 
-    fn sample_rate(&self) -> u64 {
-        32000
+    fn wgpu_context(&self) -> &WgpuContext {
+        self.wgpu_context.as_ref().unwrap()
+    }
+
+    fn wgpu_context_mut(&mut self) -> &mut WgpuContext {
+        self.wgpu_context.as_mut().unwrap()
     }
 
     fn audio_queue(&mut self) -> Option<&mut crate::AudioQueue> {
@@ -67,6 +121,10 @@ impl<T: Mapped> Instance for Snes<T> {
 
         let cpu_cycles = core.bus().clock.cycles();
         core.bus_mut().apu.run_until(cpu_cycles);
+
+        if let Some(wgpu_context) = &self.wgpu_context {
+            gfx::write_pixels_to_texture(wgpu_context, self.pixels(), self.pitch())
+        }
     }
 }
 
@@ -87,11 +145,12 @@ pub struct Hardware<T: Mapped> {
 }
 
 impl<T: Mapped> Hardware<T> {
-    pub fn new<U: MemoryMapper<Mapped = T>, V: BiosLoader>(
+    pub fn new<U: MemoryMapper<Mapped = T>>(
+        bios_loader: &dyn BiosLoader,
+        memory_mapper: &U,
         rom_data: Vec<u8>,
-        options: &CreateOptions<U, V>,
     ) -> Result<Self, Box<dyn Error>> {
-        let ipl_rom = options.bios_loader.load("ipl_rom")?;
+        let ipl_rom = bios_loader.load("ipl_rom")?;
 
         let header = header::parse(&rom_data);
         info!("Title: {}", header.title);
@@ -112,10 +171,7 @@ impl<T: Mapped> Hardware<T> {
             ready: false,
             pages,
             rom: MirrorVec::resize(rom_data),
-            sram: options
-                .memory_mapper
-                .open(header.sram_size, battery_backed)?
-                .into(),
+            sram: memory_mapper.open(header.sram_size, battery_backed)?.into(),
             wram: Wram::new(),
             regs: Registers::new(),
             dma: Dma::new(),
