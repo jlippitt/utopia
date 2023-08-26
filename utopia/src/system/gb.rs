@@ -1,6 +1,10 @@
 use crate::core::sm83::{Bus, Core, State};
+use crate::util::gfx;
 use crate::util::mirror::MirrorVec;
-use crate::{AudioQueue, BiosLoader, CreateOptions, Instance, JoypadState, Mapped, MemoryMapper};
+use crate::{
+    AudioQueue, BiosLoader, InstanceOptions, JoypadState, Mapped, MemoryMapper, SystemOptions,
+    WgpuContext,
+};
 use apu::Apu;
 use cartridge::Cartridge;
 use interrupt::Interrupt;
@@ -23,17 +27,62 @@ const HRAM_SIZE: usize = 128;
 
 const M_CYCLE_LENGTH: u64 = 4;
 
-pub struct GameBoy<T: Mapped> {
-    core: Core<Hardware<T>>,
+pub struct System<T: BiosLoader, U: MemoryMapper + 'static> {
+    bios_loader: T,
+    memory_mapper: U,
+    skip_boot: bool,
 }
 
-impl<T: Mapped> GameBoy<T> {
-    pub fn new<U: MemoryMapper<Mapped = T>, V: BiosLoader>(
-        rom_data: Vec<u8>,
-        options: &CreateOptions<U, V>,
+impl<T: BiosLoader, U: MemoryMapper> System<T, U> {
+    pub fn new(options: SystemOptions<T, U>) -> Self {
+        Self {
+            bios_loader: options.bios_loader,
+            memory_mapper: options.memory_mapper,
+            skip_boot: options.skip_boot,
+        }
+    }
+}
+
+impl<T: BiosLoader, U: MemoryMapper> crate::System<T, U> for System<T, U> {
+    fn default_resolution(&self) -> (u32, u32) {
+        (ppu::WIDTH as u32, ppu::HEIGHT as u32)
+    }
+
+    fn default_sample_rate(&self) -> Option<u64> {
+        Some(Apu::SAMPLE_RATE)
+    }
+
+    fn create_instance(
+        &self,
+        options: InstanceOptions,
+    ) -> Result<Box<dyn crate::Instance>, crate::Error> {
+        let result = Instance::new(
+            &self.bios_loader,
+            &self.memory_mapper,
+            self.skip_boot,
+            options,
+        );
+
+        Ok(Box::new(
+            result.map_err(|err| crate::Error(err.to_string()))?,
+        ))
+    }
+}
+
+pub struct Instance<T: Mapped> {
+    core: Core<Hardware<T>>,
+    wgpu_context: Option<WgpuContext>,
+}
+
+impl<T: Mapped> Instance<T> {
+    pub fn new<U: BiosLoader, V: MemoryMapper<Mapped = T>>(
+        bios_loader: &U,
+        memory_mapper: &V,
+        skip_boot: bool,
+        options: InstanceOptions,
     ) -> Result<Self, Box<dyn Error>> {
-        let bios_data = if !options.skip_boot {
-            options.bios_loader.load("dmg_boot").ok()
+        let bios_data = if !skip_boot {
+            bios_loader.load("dmg_boot").ok()
         } else {
             None
         };
@@ -55,21 +104,24 @@ impl<T: Mapped> GameBoy<T> {
         );
 
         // TODO: Should skip boot sequence for other hardware components as well
-        let hw = Hardware::new(rom_data, bios_data, options)?;
+        let hw = Hardware::new(memory_mapper, skip_boot, options.rom_data, bios_data)?;
 
         let core = Core::new(hw, initial_state);
 
-        Ok(GameBoy { core })
+        Ok(Instance {
+            core,
+            wgpu_context: options.wgpu_context,
+        })
     }
 }
 
-impl<T: Mapped> Instance for GameBoy<T> {
-    fn pixels(&self) -> &[u8] {
-        self.core.bus().ppu.pixels()
+impl<T: Mapped> crate::Instance for Instance<T> {
+    fn resolution(&self) -> (u32, u32) {
+        (ppu::WIDTH as u32, ppu::HEIGHT as u32)
     }
 
-    fn pitch(&self) -> usize {
-        ppu::WIDTH * 4
+    fn pixels(&self) -> &[u8] {
+        self.core.bus().ppu.pixels()
     }
 
     fn sample_rate(&self) -> u64 {
@@ -78,6 +130,14 @@ impl<T: Mapped> Instance for GameBoy<T> {
 
     fn audio_queue(&mut self) -> Option<&mut AudioQueue> {
         Some(self.core.bus_mut().apu.audio_queue())
+    }
+
+    fn wgpu_context(&self) -> &WgpuContext {
+        self.wgpu_context.as_ref().unwrap()
+    }
+
+    fn wgpu_context_mut(&mut self) -> &mut WgpuContext {
+        self.wgpu_context.as_mut().unwrap()
     }
 
     fn run_frame(&mut self, joypad_state: &JoypadState) {
@@ -89,6 +149,10 @@ impl<T: Mapped> Instance for GameBoy<T> {
         while !core.bus().ppu.ready() {
             debug!("{}", core);
             core.step();
+        }
+
+        if let Some(wgpu_context) = &self.wgpu_context {
+            gfx::write_pixels_to_texture(wgpu_context, self.pixels(), self.pitch())
         }
     }
 }
@@ -108,10 +172,11 @@ struct Hardware<T: Mapped> {
 }
 
 impl<T: Mapped> Hardware<T> {
-    pub fn new<U: MemoryMapper<Mapped = T>, V: BiosLoader>(
+    pub fn new<U: MemoryMapper<Mapped = T>>(
+        memory_mapper: &U,
+        skip_boot: bool,
         rom_data: Vec<u8>,
         bios_data: Option<Vec<u8>>,
-        options: &CreateOptions<U, V>,
     ) -> Result<Self, Box<dyn Error>> {
         Ok(Self {
             cycles: 0,
@@ -120,8 +185,8 @@ impl<T: Mapped> Hardware<T> {
             timer: Timer::new(),
             hram: MirrorVec::new(HRAM_SIZE),
             wram: MirrorVec::new(WRAM_SIZE),
-            cartridge: Cartridge::new(rom_data, &options.memory_mapper)?,
-            ppu: Ppu::new(options.skip_boot),
+            cartridge: Cartridge::new(rom_data, memory_mapper)?,
+            ppu: Ppu::new(skip_boot),
             apu: Apu::new(),
             joypad: Joypad::new(),
             bios_data: bios_data.map(MirrorVec::from),

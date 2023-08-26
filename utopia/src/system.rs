@@ -2,7 +2,7 @@ use crate::{BiosLoader, Error, MemoryMapper};
 use std::collections::VecDeque;
 use std::path::Path;
 
-//pub mod gb;
+pub mod gb;
 //pub mod gba;
 //pub mod n64;
 pub mod nes;
@@ -18,7 +18,7 @@ pub type AudioQueue = VecDeque<(f32, f32)>;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum SystemType {
-    //GameBoy,
+    GameBoy,
     //GameBoyAdvance,
     Nes,
     //Nintendo64,
@@ -35,7 +35,7 @@ impl TryFrom<&Path> for SystemType {
             .unwrap_or("".to_owned());
 
         match extension.as_str() {
-            //"gb" => Ok(Self::GameBoy),
+            "gb" => Ok(Self::GameBoy),
             //"gba" => Ok(Self::GameBoyAdvance),
             //"n64" | "z64" => Ok(Self::Nintendo64),
             "nes" => Ok(Self::Nes),
@@ -97,11 +97,11 @@ pub trait Instance {
     }
 }
 
-pub fn create<T: BiosLoader, U: MemoryMapper + 'static>(
+pub fn create<T: BiosLoader + 'static, U: MemoryMapper + 'static>(
     options: SystemOptions<T, U>,
 ) -> Result<Box<dyn System<T, U>>, Error> {
     Ok(match options.system_type {
-        //SystemType::GameBoy => Box::new(gb::System::new(options)?),
+        SystemType::GameBoy => Box::new(gb::System::new(options)),
         //SystemType::GameBoyAdvance => Box::new(gba::System::new(options)?),
         //SystemType::Nintendo64 => Box::new(n64::System::new(options)?),
         SystemType::Nes => Box::new(nes::System::new(options)),
