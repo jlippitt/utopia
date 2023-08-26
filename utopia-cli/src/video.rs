@@ -4,7 +4,7 @@ use utopia::WgpuContext;
 use viewport::Viewport;
 use winit::dpi::{PhysicalSize, Size};
 use winit::event_loop::EventLoopWindowTarget;
-use winit::window::{Fullscreen, Window};
+use winit::window::{Fullscreen, Window, WindowBuilder};
 
 mod renderer;
 mod viewport;
@@ -24,7 +24,21 @@ impl VideoController {
         full_screen: bool,
         vsync: bool,
     ) -> Result<(Self, WgpuContext), Box<dyn Error>> {
-        let (window, viewport) = Viewport::create_window(window_target, source_size, full_screen)?;
+        let viewport = Viewport::new(window_target, source_size, full_screen);
+
+        let window_builder = WindowBuilder::new().with_title("Utopia");
+
+        let window_builder = if full_screen {
+            window_builder.with_fullscreen(Some(Fullscreen::Exclusive(
+                viewport.video_mode().unwrap().clone(),
+            )))
+        } else {
+            window_builder
+                .with_inner_size(Size::Physical(viewport.size()))
+                .with_position(viewport.offset())
+        };
+
+        let window = window_builder.build(window_target)?;
 
         let (renderer, wgpu_context) = Renderer::create_with_context(
             &window,
