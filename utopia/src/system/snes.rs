@@ -1,6 +1,6 @@
-use super::{BiosLoader, JoypadState, Mapped, MemoryMapper, Options, System};
 use crate::core::wdc65c816::{Bus, Core, Interrupt, INT_NMI};
 use crate::util::mirror::{Mirror, MirrorVec};
+use crate::{BiosLoader, CreateOptions, JoypadState, Mapped, MemoryMapper, System};
 use apu::Apu;
 use clock::{Clock, Event, FAST_CYCLES, TIMER_IRQ};
 use dma::Dma;
@@ -30,7 +30,7 @@ pub struct Snes<T: Mapped> {
 impl<T: Mapped> Snes<T> {
     pub fn new<U: MemoryMapper<Mapped = T>, V: BiosLoader>(
         rom_data: Vec<u8>,
-        options: &Options<U, V>,
+        options: &CreateOptions<U, V>,
     ) -> Result<Self, Box<dyn Error>> {
         let hw = Hardware::new(rom_data, options)?;
         let core = Core::new(hw);
@@ -89,7 +89,7 @@ pub struct Hardware<T: Mapped> {
 impl<T: Mapped> Hardware<T> {
     pub fn new<U: MemoryMapper<Mapped = T>, V: BiosLoader>(
         rom_data: Vec<u8>,
-        options: &Options<U, V>,
+        options: &CreateOptions<U, V>,
     ) -> Result<Self, Box<dyn Error>> {
         let ipl_rom = options.bios_loader.load("ipl_rom")?;
 

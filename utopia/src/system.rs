@@ -1,18 +1,17 @@
-use crate::util::mirror::MirrorableMut;
+use crate::{BiosLoader, CreateOptions, MemoryMapper};
 use gb::GameBoy;
 use gba::GameBoyAdvance;
 use n64::N64;
 use nes::Nes;
 use snes::Snes;
 use std::collections::VecDeque;
-use std::error::Error;
-use std::path::Path;
+use std::error;
 
-mod gb;
-mod gba;
-mod n64;
-mod nes;
-mod snes;
+pub mod gb;
+pub mod gba;
+pub mod n64;
+pub mod nes;
+pub mod snes;
 
 #[derive(Clone, Default, Debug, Eq, PartialEq)]
 pub struct JoypadState {
@@ -48,36 +47,12 @@ pub trait System {
     }
 }
 
-pub trait BiosLoader {
-    fn load(&self, name: &str) -> Result<Vec<u8>, Box<dyn Error>>;
-}
-
-pub trait Mapped: MirrorableMut<Output = u8> {}
-
-impl<T: MirrorableMut<Output = u8>> Mapped for T {}
-
-pub trait MemoryMapper {
-    type Mapped: Mapped;
-    fn open(&self, len: usize, battery_backed: bool) -> Result<Self::Mapped, Box<dyn Error>>;
-}
-
-pub struct Options<T: MemoryMapper, U: BiosLoader> {
-    pub memory_mapper: T,
-    pub bios_loader: U,
-    pub skip_boot: bool,
-}
-
 pub fn create<T: MemoryMapper + 'static, U: BiosLoader>(
+    extension: &str,
     rom_data: Vec<u8>,
-    rom_path: &str,
-    options: &Options<T, U>,
-) -> Result<Box<dyn System>, Box<dyn Error>> {
-    let extension = Path::new(rom_path)
-        .extension()
-        .map(|ext| ext.to_string_lossy().to_lowercase())
-        .unwrap_or("".to_owned());
-
-    Ok(match extension.as_str() {
+    options: &CreateOptions<T, U>,
+) -> Result<Box<dyn System>, Box<dyn error::Error>> {
+    Ok(match extension {
         "gb" => Box::new(GameBoy::<T::Mapped>::new(rom_data, options)?),
         "gba" => Box::new(GameBoyAdvance::new(
             rom_data,

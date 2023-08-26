@@ -1,6 +1,6 @@
 use memmap2::{MmapMut, MmapOptions};
-use std::error::Error;
 use std::fs::OpenOptions;
+use std::io;
 use std::path::PathBuf;
 
 pub struct MemoryMapper {
@@ -15,8 +15,9 @@ impl MemoryMapper {
 
 impl utopia::MemoryMapper for MemoryMapper {
     type Mapped = MmapMut;
+    type Error = io::Error;
 
-    fn open(&self, len: usize, battery_backed: bool) -> Result<Self::Mapped, Box<dyn Error>> {
+    fn open(&self, len: usize, battery_backed: bool) -> Result<Self::Mapped, io::Error> {
         let mapped = if battery_backed {
             let file = OpenOptions::new()
                 .read(true)

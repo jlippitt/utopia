@@ -1,6 +1,6 @@
-use super::{AudioQueue, BiosLoader, JoypadState, Mapped, MemoryMapper, Options, System};
 use crate::core::sm83::{Bus, Core, State};
 use crate::util::mirror::MirrorVec;
+use crate::{AudioQueue, BiosLoader, CreateOptions, JoypadState, Mapped, MemoryMapper, System};
 use apu::Apu;
 use cartridge::Cartridge;
 use interrupt::Interrupt;
@@ -30,7 +30,7 @@ pub struct GameBoy<T: Mapped> {
 impl<T: Mapped> GameBoy<T> {
     pub fn new<U: MemoryMapper<Mapped = T>, V: BiosLoader>(
         rom_data: Vec<u8>,
-        options: &Options<U, V>,
+        options: &CreateOptions<U, V>,
     ) -> Result<Self, Box<dyn Error>> {
         let bios_data = if !options.skip_boot {
             options.bios_loader.load("dmg_boot").ok()
@@ -111,7 +111,7 @@ impl<T: Mapped> Hardware<T> {
     pub fn new<U: MemoryMapper<Mapped = T>, V: BiosLoader>(
         rom_data: Vec<u8>,
         bios_data: Option<Vec<u8>>,
-        options: &Options<U, V>,
+        options: &CreateOptions<U, V>,
     ) -> Result<Self, Box<dyn Error>> {
         Ok(Self {
             cycles: 0,

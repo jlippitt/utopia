@@ -1,8 +1,7 @@
-use super::{BiosLoader, System};
 use crate::core::arm7tdmi::{Bus, Core, Mode, State};
 use crate::util::facade::{ReadFacade, Value, WriteFacade};
 use crate::util::MirrorVec;
-use crate::JoypadState;
+use crate::{BiosLoader, JoypadState, System};
 use audio::Audio;
 use cartridge::Cartridge;
 use dma::Dma;

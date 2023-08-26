@@ -52,9 +52,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let rom_data = std::fs::read(&args.rom_path)?;
 
     let mut system = utopia::create(
-        rom_data,
         &args.rom_path,
-        &utopia::Options {
+        rom_data,
+        &utopia::CreateOptions {
             bios_loader: BiosLoader::new(args.bios_path.unwrap_or(args.rom_path.clone()).into()),
             memory_mapper: MemoryMapper::new(args.rom_path.clone().into()),
             skip_boot: args.skip_boot,

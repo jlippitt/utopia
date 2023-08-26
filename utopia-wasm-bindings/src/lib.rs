@@ -1,17 +1,17 @@
-use std::error::Error;
+use std::error;
 use std::fmt;
-use utopia::{Options, System};
+use utopia::{CreateOptions, DefaultMemoryMapper, System};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::Clamped;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 #[wasm_bindgen]
-pub struct UtopiaError {
+pub struct Error {
     message: String,
 }
 
 #[wasm_bindgen]
-impl UtopiaError {
+impl Error {
     fn new(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
@@ -19,35 +19,26 @@ impl UtopiaError {
     }
 }
 
-impl fmt::Display for UtopiaError {
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.message)
     }
 }
 
-impl Error for UtopiaError {}
+impl error::Error for Error {}
 
 pub struct BiosLoader(Option<Vec<u8>>);
 
 impl utopia::BiosLoader for BiosLoader {
-    fn load(&self, _name: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    type Error = utopia::Error;
+
+    fn load(&self, _name: &str) -> Result<Vec<u8>, utopia::Error> {
         let bios = self
             .0
             .as_ref()
-            .ok_or_else(|| UtopiaError::new("No bios provided"))?;
+            .ok_or_else(|| utopia::Error("No bios provided".into()))?;
 
         Ok(bios.clone())
-    }
-}
-
-pub struct MemoryMapper;
-
-impl utopia::MemoryMapper for MemoryMapper {
-    type Mapped = Vec<u8>;
-
-    fn open(&self, len: usize, _battery_backed: bool) -> Result<Vec<u8>, Box<dyn Error>> {
-        // TODO: Some way to save games?
-        Ok(vec![0; len])
     }
 }
 
@@ -122,15 +113,15 @@ impl Utopia {
         rom_path: &str,
         rom_data: Vec<u8>,
         bios_data: Option<Vec<u8>>,
-    ) -> Result<Utopia, UtopiaError> {
-        let options = Options {
+    ) -> Result<Utopia, Error> {
+        let options = CreateOptions {
             bios_loader: BiosLoader(bios_data),
-            memory_mapper: MemoryMapper,
+            memory_mapper: DefaultMemoryMapper,
             skip_boot: true,
         };
 
-        let system = utopia::create(rom_data, rom_path, &options)
-            .map_err(|err| UtopiaError::new(err.to_string()))?;
+        let system = utopia::create(rom_path, rom_data, &options)
+            .map_err(|err| Error::new(err.to_string()))?;
 
         Ok(Self { system })
     }
