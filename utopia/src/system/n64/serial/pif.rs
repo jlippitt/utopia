@@ -24,27 +24,27 @@ impl Pif {
         let JoypadState { buttons, axes } = &state;
         let joypad = &mut self.joypads[0];
 
-        joypad[0] = (axes[1] >> 24) as u8;
-        joypad[1] = (axes[0] >> 24) as u8;
+        joypad[0] = 0;
+        joypad[0] |= if buttons[0] { 0x80 } else { 0 };
+        joypad[0] |= if buttons[2] { 0x40 } else { 0 };
+        joypad[0] |= if buttons[4] { 0x20 } else { 0 };
+        joypad[0] |= if buttons[9] { 0x10 } else { 0 };
+        joypad[0] |= if buttons[12] { 0x08 } else { 0 };
+        joypad[0] |= if buttons[13] { 0x04 } else { 0 };
+        joypad[0] |= if buttons[14] { 0x02 } else { 0 };
+        joypad[0] |= if buttons[15] { 0x01 } else { 0 };
 
-        joypad[2] = 0;
+        joypad[1] = 0;
         // RST 'button' possibly doesn't need to be implemented?
-        joypad[2] |= if buttons[6] { 0x20 } else { 0 };
-        joypad[2] |= if buttons[5] { 0x10 } else { 0 };
-        joypad[2] |= if axes[3] < (i32::MIN / 2) { 0x08 } else { 0 };
-        joypad[2] |= if axes[3] > (i32::MAX / 2) { 0x04 } else { 0 };
-        joypad[2] |= if axes[2] > (i32::MAX / 2) { 0x01 } else { 0 };
-        joypad[2] |= if axes[2] < (i32::MIN / 2) { 0x02 } else { 0 };
+        joypad[1] |= if buttons[6] { 0x20 } else { 0 };
+        joypad[1] |= if buttons[5] { 0x10 } else { 0 };
+        joypad[1] |= if axes[3] < (i32::MIN / 2) { 0x08 } else { 0 };
+        joypad[1] |= if axes[3] > (i32::MAX / 2) { 0x04 } else { 0 };
+        joypad[1] |= if axes[2] > (i32::MAX / 2) { 0x01 } else { 0 };
+        joypad[1] |= if axes[2] < (i32::MIN / 2) { 0x02 } else { 0 };
 
-        joypad[3] = 0;
-        joypad[3] |= if buttons[0] { 0x80 } else { 0 };
-        joypad[3] |= if buttons[2] { 0x40 } else { 0 };
-        joypad[3] |= if buttons[4] { 0x20 } else { 0 };
-        joypad[3] |= if buttons[9] { 0x10 } else { 0 };
-        joypad[3] |= if buttons[12] { 0x08 } else { 0 };
-        joypad[3] |= if buttons[13] { 0x04 } else { 0 };
-        joypad[3] |= if buttons[14] { 0x02 } else { 0 };
-        joypad[3] |= if buttons[15] { 0x01 } else { 0 };
+        joypad[2] = (axes[0] >> 24) as u8;
+        joypad[3] = (axes[1] >> 24) as u8;
     }
 
     pub fn upload(&mut self) {

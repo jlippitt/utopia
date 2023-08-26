@@ -30,8 +30,9 @@ fn update_button(joypad_state: &mut JoypadState, button: Button, pressed: bool) 
     match button {
         Button::South => buttons[0] = pressed,
         Button::East => buttons[1] = pressed,
-        Button::West => buttons[2] = pressed,
-        Button::North => buttons[3] = pressed,
+        // West + North appear swapped, at least for me?
+        Button::North => buttons[2] = pressed,
+        Button::West => buttons[3] = pressed,
         Button::LeftTrigger => buttons[4] = pressed,
         Button::RightTrigger => buttons[5] = pressed,
         Button::Select => buttons[8] = pressed,
