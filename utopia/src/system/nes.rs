@@ -16,6 +16,8 @@ use tracing::debug;
 
 const WRAM_SIZE: usize = 2048;
 const CLIP_LINES: usize = 8;
+const WIDTH: u32 = ppu::WIDTH as u32;
+const HEIGHT: u32 = (ppu::HEIGHT - CLIP_LINES * 2) as u32;
 
 mod apu;
 mod cartridge;
@@ -37,7 +39,7 @@ impl<T: MemoryMapper> System<T> {
 
 impl<T: BiosLoader, U: MemoryMapper> crate::System<T, U> for System<U> {
     fn default_resolution(&self) -> (u32, u32) {
-        (ppu::WIDTH as u32, ppu::HEIGHT as u32)
+        (WIDTH, HEIGHT)
     }
 
     fn default_sample_rate(&self) -> Option<u64> {
@@ -71,7 +73,7 @@ impl<T: Mapped> Instance<T> {
 
 impl<T: Mapped> crate::Instance for Instance<T> {
     fn resolution(&self) -> (u32, u32) {
-        (ppu::WIDTH as u32, ppu::HEIGHT as u32)
+        (WIDTH, HEIGHT)
     }
 
     fn pixels(&self) -> &[u8] {
@@ -87,6 +89,14 @@ impl<T: Mapped> crate::Instance for Instance<T> {
 
     fn audio_queue(&mut self) -> Option<&mut AudioQueue> {
         Some(self.core.bus_mut().apu.audio_queue())
+    }
+
+    fn wgpu_context(&self) -> &WgpuContext {
+        self.wgpu_context.as_ref().unwrap()
+    }
+
+    fn wgpu_context_mut(&mut self) -> &mut WgpuContext {
+        self.wgpu_context.as_mut().unwrap()
     }
 
     fn run_frame(&mut self, joypad_state: &JoypadState) {

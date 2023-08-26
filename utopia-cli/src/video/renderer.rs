@@ -1,13 +1,10 @@
 use super::viewport::ClipRect;
 use std::error::Error;
-use texture::Texture;
+use utopia::WgpuContext;
 use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
-mod texture;
-
-pub type UpdateTextureError = <usize as TryInto<u32>>::Error;
 pub type RenderError = wgpu::SurfaceError;
 
 #[repr(C)]
@@ -40,10 +37,8 @@ const INDICES: &[u16] = &[
 
 pub struct Renderer {
     surface: wgpu::Surface,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
-    texture: Texture,
+    texture_bind_group: wgpu::BindGroup,
     texture_bind_group_layout: wgpu::BindGroupLayout,
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
@@ -51,13 +46,13 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub fn new(
+    pub fn create_with_context(
         window: &Window,
         source_size: PhysicalSize<u32>,
         target_size: PhysicalSize<u32>,
         clip_rect: Option<ClipRect>,
         vsync: bool,
-    ) -> Result<Self, Box<dyn Error>> {
+    ) -> Result<(Self, WgpuContext), Box<dyn Error>> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
             dx12_shader_compiler: Default::default(),
@@ -131,7 +126,8 @@ impl Renderer {
                 ],
             });
 
-        let texture = Texture::new(&device, &texture_bind_group_layout, source_size);
+        let (texture, texture_bind_group) =
+            create_texture(&device, &texture_bind_group_layout, source_size);
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
@@ -194,70 +190,62 @@ impl Renderer {
             usage: wgpu::BufferUsages::INDEX,
         });
 
-        Ok(Self {
+        let renderer = Self {
             surface,
-            device,
-            queue,
             config,
-            texture,
+            texture_bind_group,
             texture_bind_group_layout,
             render_pipeline,
             vertex_buffer,
             index_buffer,
-        })
+        };
+
+        let wgpu_context = WgpuContext {
+            device,
+            queue,
+            texture,
+        };
+
+        Ok((renderer, wgpu_context))
     }
 
-    pub fn resize(&mut self, target_size: PhysicalSize<u32>) -> Result<(), Box<dyn Error>> {
+    pub fn resize(
+        &mut self,
+        ctx: &WgpuContext,
+        target_size: PhysicalSize<u32>,
+    ) -> Result<(), Box<dyn Error>> {
         if target_size.width > 0 && target_size.height > 0 {
             self.config.width = target_size.width;
             self.config.height = target_size.height;
-            self.surface.configure(&self.device, &self.config);
+            self.surface.configure(&ctx.device, &self.config);
         }
 
         Ok(())
     }
 
-    pub fn update_viewport(&mut self, source_size: PhysicalSize<u32>, clip_rect: Option<ClipRect>) {
-        self.texture = Texture::new(&self.device, &self.texture_bind_group_layout, source_size);
+    pub fn update_viewport(
+        &mut self,
+        ctx: &mut WgpuContext,
+        source_size: PhysicalSize<u32>,
+        clip_rect: Option<ClipRect>,
+    ) {
+        (ctx.texture, self.texture_bind_group) =
+            create_texture(&ctx.device, &self.texture_bind_group_layout, source_size);
 
         let vertices = vertices_from_clip_rect(clip_rect);
 
-        self.queue
+        ctx.queue
             .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
     }
 
-    pub fn update_texture(
-        &mut self,
-        pixels: &[u8],
-        pitch: usize,
-    ) -> Result<(), UpdateTextureError> {
-        self.queue.write_texture(
-            wgpu::ImageCopyTexture {
-                texture: self.texture.texture(),
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            pixels,
-            wgpu::ImageDataLayout {
-                offset: 0,
-                bytes_per_row: Some(pitch.try_into()?),
-                rows_per_image: Some((pixels.len() / pitch).try_into()?),
-            },
-            self.texture.size(),
-        );
-
-        Ok(())
-    }
-
-    pub fn render(&mut self) -> Result<(), RenderError> {
+    pub fn render(&mut self, ctx: &WgpuContext) -> Result<(), RenderError> {
         let output = self.surface.get_current_texture()?;
 
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        let mut encoder = self
+        let mut encoder = ctx
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
@@ -283,17 +271,71 @@ impl Renderer {
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, self.texture.bind_group(), &[]);
+            render_pass.set_bind_group(0, &self.texture_bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             render_pass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
         }
 
-        self.queue.submit(std::iter::once(encoder.finish()));
+        ctx.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
         Ok(())
     }
+}
+
+fn create_texture(
+    device: &wgpu::Device,
+    bind_group_layout: &wgpu::BindGroupLayout,
+    source_size: PhysicalSize<u32>,
+) -> (wgpu::Texture, wgpu::BindGroup) {
+    let size = wgpu::Extent3d {
+        width: source_size.width,
+        height: source_size.height,
+        depth_or_array_layers: 1,
+    };
+
+    let texture = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("Source Texture"),
+        size,
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        view_formats: &[],
+    });
+
+    let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        address_mode_u: wgpu::AddressMode::ClampToEdge,
+        address_mode_v: wgpu::AddressMode::ClampToEdge,
+        address_mode_w: wgpu::AddressMode::ClampToEdge,
+        mag_filter: wgpu::FilterMode::Nearest,
+        min_filter: wgpu::FilterMode::Nearest,
+        mipmap_filter: wgpu::FilterMode::Nearest,
+        ..Default::default()
+    });
+
+    let bind_group = device.create_bind_group({
+        &wgpu::BindGroupDescriptor {
+            label: Some("Texture Bind Group"),
+            layout: bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&sampler),
+                },
+            ],
+        }
+    });
+
+    (texture, bind_group)
 }
 
 fn vertices_from_clip_rect(clip_rect: Option<ClipRect>) -> [Vertex; 4] {

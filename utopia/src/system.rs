@@ -77,6 +77,10 @@ pub struct InstanceOptions {
 
 pub trait Instance {
     fn run_frame(&mut self, joypad_state: &JoypadState);
+
+    fn wgpu_context(&self) -> &WgpuContext;
+    fn wgpu_context_mut(&mut self) -> &mut WgpuContext;
+
     fn resolution(&self) -> (u32, u32);
     fn pixels(&self) -> &[u8];
 

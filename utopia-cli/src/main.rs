@@ -71,7 +71,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     });
 
-    let mut video = VideoController::new(
+    let (mut video, wgpu_context) = VideoController::create_with_context(
         &event_loop,
         source_size,
         args.full_screen,
@@ -80,7 +80,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut instance = system.create_instance(InstanceOptions {
         rom_data,
-        wgpu_context: None,
+        wgpu_context: Some(wgpu_context),
     })?;
 
     let mut audio = AudioController::new(instance.sample_rate())?;
@@ -102,7 +102,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                         match input.virtual_keycode {
                             Some(VirtualKeyCode::Escape) => control_flow.set_exit(),
                             Some(VirtualKeyCode::F11) => {
-                                video.toggle_full_screen(window_target).unwrap()
+                                video
+                                    .toggle_full_screen(instance.wgpu_context_mut(), window_target)
+                                    .unwrap();
                             }
                             _ => (),
                         }
@@ -114,11 +116,15 @@ fn main() -> Result<(), Box<dyn Error>> {
                     audio.resync();
                 }
                 WindowEvent::Resized(..) => {
-                    video.on_window_size_changed().unwrap();
+                    video
+                        .on_window_size_changed(instance.wgpu_context())
+                        .unwrap();
                     audio.resync();
                 }
                 WindowEvent::ScaleFactorChanged { .. } => {
-                    video.on_window_size_changed().unwrap();
+                    video
+                        .on_window_size_changed(instance.wgpu_context())
+                        .unwrap();
                     audio.resync();
                 }
                 WindowEvent::Destroyed => {
@@ -128,7 +134,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 _ => (),
             },
             Event::RedrawRequested(window_id) if window_id == video.window().id() => {
-                video.render().unwrap();
+                video.render(instance.wgpu_context()).unwrap();
             }
             Event::RedrawEventsCleared => {
                 if sync == Sync::Audio {
@@ -154,12 +160,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                     let source_size: PhysicalSize<u32> = instance.resolution().into();
 
                     if source_size != video.source_size() {
-                        video.set_source_size(window_target, source_size);
+                        video.set_source_size(
+                            instance.wgpu_context_mut(),
+                            window_target,
+                            source_size,
+                        );
                     }
-
-                    video
-                        .update_texture(instance.pixels(), instance.pitch())
-                        .unwrap();
 
                     video.window().request_redraw();
                 }
