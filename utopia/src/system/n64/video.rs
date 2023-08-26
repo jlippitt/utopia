@@ -1,8 +1,14 @@
 use super::interrupt::{RcpIntType, RcpInterrupt};
-use crate::util::facade::{DataReader, DataWriter};
+use crate::{
+    util::facade::{DataReader, DataWriter},
+    WgpuContext,
+};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
+use resampler::Resampler;
 use tracing::debug;
+
+mod resampler;
 
 pub const DEFAULT_WIDTH: u32 = 320;
 pub const DEFAULT_HEIGHT: u32 = 474;
@@ -46,10 +52,11 @@ pub struct VideoInterface {
     interrupt: RcpInterrupt,
     regs: Registers,
     pixels: Vec<u8>,
+    resampler: Resampler,
 }
 
 impl VideoInterface {
-    pub fn new(interrupt: RcpInterrupt) -> Self {
+    pub fn new(ctx: &WgpuContext, interrupt: RcpInterrupt) -> Self {
         Self {
             ready: false,
             h_counter: 0,
@@ -77,6 +84,7 @@ impl VideoInterface {
                 y_scale: 1024,
             },
             pixels: vec![0; DEFAULT_WIDTH as usize * (DEFAULT_HEIGHT / 2) as usize * 4],
+            resampler: Resampler::new(ctx, DEFAULT_WIDTH, DEFAULT_HEIGHT / 2),
         }
     }
 
@@ -88,15 +96,12 @@ impl VideoInterface {
         self.ready = false;
     }
 
-    pub fn pixels(&self) -> &[u8] {
-        &self.pixels
+    pub fn output_width(&self) -> u32 {
+        self.width() * 2
     }
 
-    pub fn pitch(&self) -> usize {
-        let width =
-            ((self.regs.h_end - self.regs.h_start) as usize * self.regs.x_scale as usize) / 1024;
-
-        width.max(DEFAULT_WIDTH as usize) * 4
+    pub fn output_height(&self) -> u32 {
+        self.height() * 2
     }
 
     pub fn step(&mut self, cycles: u64) {
@@ -125,17 +130,16 @@ impl VideoInterface {
         }
     }
 
-    pub fn update_pixel_buffer(&mut self, rdram: &[u8]) {
-        let pitch = self.pitch();
-
-        let height = ((((self.regs.v_end - self.regs.v_start) as usize) >> 1)
-            * self.regs.y_scale as usize)
-            / 1024;
-
-        let pixel_buffer_size = pitch * height.max(DEFAULT_HEIGHT as usize / 2);
+    pub fn update_pixel_buffer(&mut self, ctx: &WgpuContext, rdram: &[u8]) {
+        let width = self.width();
+        let height = self.height();
+        let pitch = width as usize * 4;
+        let pixel_buffer_size = pitch * height as usize;
 
         if pixel_buffer_size != self.pixels.len() {
             self.pixels.resize(pixel_buffer_size, 0);
+
+            self.resampler.update_source_size(ctx, width, height);
         }
 
         match self.regs.ctrl.color_mode {
@@ -176,6 +180,19 @@ impl VideoInterface {
             ColorMode::Reserved => panic!("Using 'reserved' color mode"),
             ColorMode::Blank => self.pixels.fill(0),
         }
+
+        // TODO: 'Resample' flag
+        self.resampler.render(ctx, &self.pixels, pitch, false);
+    }
+
+    fn width(&self) -> u32 {
+        let width = ((self.regs.h_end - self.regs.h_start) * self.regs.x_scale) / 1024;
+        width.max(DEFAULT_WIDTH)
+    }
+
+    fn height(&self) -> u32 {
+        let height = (((self.regs.v_end - self.regs.v_start) >> 1) * self.regs.y_scale) / 1024;
+        height.max(DEFAULT_HEIGHT / 2)
     }
 }
 

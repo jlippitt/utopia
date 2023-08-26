@@ -1,7 +1,6 @@
 use super::{InstanceOptions, JoypadState, MemoryMapper, SystemOptions};
 use crate::core::mips::{Bus, Core, Cp0, Interrupt, State};
 use crate::util::facade::{ReadFacade, Value, WriteFacade};
-use crate::util::gfx;
 use crate::WgpuContext;
 use audio::AudioInterface;
 use interrupt::{CpuInterrupt, RcpInterrupt};
@@ -47,7 +46,7 @@ impl<T: MemoryMapper> System<T> {
 
 impl<T: MemoryMapper> crate::System<T> for System<T> {
     fn default_resolution(&self) -> (u32, u32) {
-        (video::DEFAULT_WIDTH, video::DEFAULT_HEIGHT / 2)
+        (video::DEFAULT_WIDTH * 2, video::DEFAULT_HEIGHT)
     }
 
     fn default_sample_rate(&self) -> Option<u64> {
@@ -64,7 +63,6 @@ impl<T: MemoryMapper> crate::System<T> for System<T> {
 
 pub struct Instance {
     core: Core<Hardware>,
-    wgpu_context: WgpuContext,
 }
 
 impl Instance {
@@ -79,7 +77,7 @@ impl Instance {
         info!("ROM Size: {}", options.rom_data.len());
         info!("Boot Address: {:08X}", header.boot_address);
 
-        let hw = Hardware::new(options.rom_data);
+        let hw = Hardware::new(options.rom_data, wgpu_context);
 
         let mut regs: [u64; 32] = Default::default();
 
@@ -101,32 +99,26 @@ impl Instance {
             },
         );
 
-        Ok(Instance { core, wgpu_context })
+        Ok(Instance { core })
     }
 }
 
 impl crate::Instance for Instance {
     fn resolution(&self) -> (u32, u32) {
-        (
-            (self.pitch() / 4) as u32,
-            (self.pixels().len() / self.pitch()) as u32,
-        )
+        let video = &self.core.bus().video;
+        (video.output_width(), video.output_height())
     }
 
     fn pixels(&self) -> &[u8] {
-        self.core.bus().video.pixels()
-    }
-
-    fn pitch(&self) -> usize {
-        self.core.bus().video.pitch()
+        unimplemented!("Raw pixel output for N64");
     }
 
     fn wgpu_context(&self) -> &WgpuContext {
-        &self.wgpu_context
+        &self.core.bus().wgpu_context
     }
 
     fn wgpu_context_mut(&mut self) -> &mut WgpuContext {
-        &mut self.wgpu_context
+        &mut self.core.bus_mut().wgpu_context
     }
 
     fn run_frame(&mut self, joypad_state: &JoypadState) {
@@ -140,15 +132,16 @@ impl crate::Instance for Instance {
         }
 
         let bus = core.bus_mut();
-        bus.video.update_pixel_buffer(bus.rdram.data());
 
-        gfx::write_pixels_to_texture(&self.wgpu_context, self.pixels(), self.pitch());
+        bus.video
+            .update_pixel_buffer(&bus.wgpu_context, bus.rdram.data());
     }
 }
 
 struct Hardware {
     cycles: u64,
     interrupt: CpuInterrupt,
+    wgpu_context: WgpuContext,
     rdram: Rdram,
     rsp: Rsp,
     rdp: Rdp,
@@ -161,19 +154,22 @@ struct Hardware {
 }
 
 impl Hardware {
-    pub fn new(rom: Vec<u8>) -> Self {
+    pub fn new(rom: Vec<u8>, wgpu_context: WgpuContext) -> Self {
         let interrupt = CpuInterrupt::new();
         let rcp_interrupt = RcpInterrupt::new(interrupt.clone());
         let shared_regs = Rc::new(RefCell::new(Registers::new(rcp_interrupt.clone())));
 
+        let video = VideoInterface::new(&wgpu_context, rcp_interrupt.clone());
+
         Self {
             cycles: 0,
             interrupt,
+            wgpu_context,
             rdram: Rdram::new(),
             rsp: Rsp::new(&rom[0..DMEM_SIZE], shared_regs.clone()),
             rdp: Rdp::new(shared_regs),
             mips: MipsInterface::new(rcp_interrupt.clone()),
-            video: VideoInterface::new(rcp_interrupt.clone()),
+            video,
             audio: AudioInterface::new(rcp_interrupt.clone()),
             peripheral: PeripheralInterface::new(rcp_interrupt.clone()),
             serial: SerialInterface::new(rcp_interrupt),

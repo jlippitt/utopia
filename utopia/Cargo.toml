@@ -10,6 +10,7 @@ cpu-tests = []
 arrayvec = "0.7.4"
 bitfield-struct = "0.5.3"
 bitflags = "2.3.3"
+bytemuck = "1.13.1"
 enum_dispatch = "0.3.11"
 num-derive = "0.4.0"
 num-traits = "0.2.16"

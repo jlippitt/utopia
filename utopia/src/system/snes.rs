@@ -123,7 +123,12 @@ impl<T: Mapped> crate::Instance for Instance<T> {
         core.bus_mut().apu.run_until(cpu_cycles);
 
         if let Some(wgpu_context) = &self.wgpu_context {
-            gfx::write_pixels_to_texture(wgpu_context, self.pixels(), self.pitch())
+            gfx::write_pixels_to_texture(
+                wgpu_context,
+                &wgpu_context.texture,
+                self.pixels(),
+                self.pitch(),
+            )
         }
     }
 }
