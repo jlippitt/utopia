@@ -66,7 +66,7 @@ impl Viewport {
             window_builder
                 .with_inner_size(Size::Physical(viewport.size))
                 .with_position(viewport.offset)
-                .with_resizable(false)
+            //.with_resizable(false)
         };
 
         let window = window_builder.build(window_target)?;
@@ -84,6 +84,10 @@ impl Viewport {
 
     pub fn clip_rect(&self) -> Option<ClipRect> {
         self.clip_rect
+    }
+
+    pub fn video_mode(&self) -> Option<&VideoMode> {
+        self.video_mode.as_ref()
     }
 }
 

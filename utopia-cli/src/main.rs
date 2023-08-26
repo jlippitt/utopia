@@ -105,7 +105,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                             Some(VirtualKeyCode::Escape) => control_flow.set_exit(),
                             Some(VirtualKeyCode::F11) => {
                                 video
-                                    .toggle_full_screen(instance.wgpu_context_mut(), window_target)
+                                    .toggle_full_screen(instance.wgpu_context(), window_target)
                                     .unwrap();
                             }
                             _ => (),
@@ -129,14 +129,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                         .unwrap();
                     audio.resync();
                 }
-                WindowEvent::Destroyed => {
-                    video.on_target_changed(window_target);
-                    audio.resync();
-                }
                 _ => (),
             },
             Event::RedrawRequested(window_id) if window_id == video.window().id() => {
-                video.render(instance.wgpu_context()).unwrap();
+                video
+                    .render(instance.wgpu_context(), window_target)
+                    .unwrap();
             }
             Event::RedrawEventsCleared => {
                 if sync == Sync::Audio {

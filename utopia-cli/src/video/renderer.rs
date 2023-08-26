@@ -5,8 +5,6 @@ use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
-pub type RenderError = wgpu::SurfaceError;
-
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
@@ -223,22 +221,19 @@ impl Renderer {
         Ok(())
     }
 
-    pub fn update_viewport(
-        &mut self,
-        ctx: &mut WgpuContext,
-        source_size: PhysicalSize<u32>,
-        clip_rect: Option<ClipRect>,
-    ) {
+    pub fn update_source_size(&mut self, ctx: &mut WgpuContext, source_size: PhysicalSize<u32>) {
         (ctx.texture, self.texture_bind_group) =
             create_texture(&ctx.device, &self.texture_bind_group_layout, source_size);
+    }
 
+    pub fn update_clip_rect(&self, ctx: &WgpuContext, clip_rect: Option<ClipRect>) {
         let vertices = vertices_from_clip_rect(clip_rect);
 
         ctx.queue
             .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
     }
 
-    pub fn render(&mut self, ctx: &WgpuContext) -> Result<(), RenderError> {
+    pub fn render(&mut self, ctx: &WgpuContext) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
 
         let view = output
