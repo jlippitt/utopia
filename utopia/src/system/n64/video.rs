@@ -4,8 +4,8 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use tracing::debug;
 
-const DEFAULT_WIDTH: u32 = 320;
-const DEFAULT_HEIGHT: u32 = 474;
+pub const DEFAULT_WIDTH: u32 = 320;
+pub const DEFAULT_HEIGHT: u32 = 474;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, FromPrimitive)]
 enum ColorMode {

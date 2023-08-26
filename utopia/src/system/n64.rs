@@ -1,6 +1,8 @@
-use super::{Instance, JoypadState};
+use super::{InstanceOptions, JoypadState, MemoryMapper, SystemOptions};
 use crate::core::mips::{Bus, Core, Cp0, Interrupt, State};
 use crate::util::facade::{ReadFacade, Value, WriteFacade};
+use crate::util::gfx;
+use crate::WgpuContext;
 use audio::AudioInterface;
 use interrupt::{CpuInterrupt, RcpInterrupt};
 use mips::MipsInterface;
@@ -10,7 +12,7 @@ use rdram::Rdram;
 use rsp::{DmaType, Registers, Rsp, DMEM_SIZE};
 use serial::SerialInterface;
 use std::cell::RefCell;
-use std::error::Error;
+use std::marker::PhantomData;
 use std::rc::Rc;
 use tracing::info;
 use video::VideoInterface;
@@ -31,19 +33,53 @@ const CYCLES_PER_STEP: u64 = 2;
 
 const IPL3_START_ADDRESS: u32 = 0xA4000040;
 
-pub struct N64 {
-    core: Core<Hardware>,
+pub struct System<T: MemoryMapper + 'static> {
+    _phantom: PhantomData<T>,
 }
 
-impl N64 {
-    pub fn new(rom_data: Vec<u8>) -> Result<Self, Box<dyn Error>> {
-        let header = header::parse(&rom_data);
+impl<T: MemoryMapper> System<T> {
+    pub fn new(_options: SystemOptions<T>) -> Self {
+        Self {
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<T: MemoryMapper> crate::System<T> for System<T> {
+    fn default_resolution(&self) -> (u32, u32) {
+        (video::DEFAULT_WIDTH, video::DEFAULT_HEIGHT / 2)
+    }
+
+    fn default_sample_rate(&self) -> Option<u64> {
+        None
+    }
+
+    fn create_instance(
+        &self,
+        options: InstanceOptions,
+    ) -> Result<Box<dyn crate::Instance>, crate::Error> {
+        Ok(Box::new(Instance::new(options)?))
+    }
+}
+
+pub struct Instance {
+    core: Core<Hardware>,
+    wgpu_context: WgpuContext,
+}
+
+impl Instance {
+    pub fn new(options: InstanceOptions) -> Result<Self, crate::Error> {
+        let wgpu_context = options
+            .wgpu_context
+            .ok_or("This system requires a WGPU context".to_string())?;
+
+        let header = header::parse(&options.rom_data);
 
         info!("Title: {}", header.title);
-        info!("ROM Size: {}", rom_data.len());
+        info!("ROM Size: {}", options.rom_data.len());
         info!("Boot Address: {:08X}", header.boot_address);
 
-        let hw = Hardware::new(rom_data);
+        let hw = Hardware::new(options.rom_data);
 
         let mut regs: [u64; 32] = Default::default();
 
@@ -65,17 +101,32 @@ impl N64 {
             },
         );
 
-        Ok(N64 { core })
+        Ok(Instance { core, wgpu_context })
     }
 }
 
-impl Instance for N64 {
+impl crate::Instance for Instance {
+    fn resolution(&self) -> (u32, u32) {
+        (
+            (self.pitch() / 4) as u32,
+            (self.pixels().len() / self.pitch()) as u32,
+        )
+    }
+
     fn pixels(&self) -> &[u8] {
         self.core.bus().video.pixels()
     }
 
     fn pitch(&self) -> usize {
         self.core.bus().video.pitch()
+    }
+
+    fn wgpu_context(&self) -> &WgpuContext {
+        &self.wgpu_context
+    }
+
+    fn wgpu_context_mut(&mut self) -> &mut WgpuContext {
+        &mut self.wgpu_context
     }
 
     fn run_frame(&mut self, joypad_state: &JoypadState) {
@@ -90,6 +141,8 @@ impl Instance for N64 {
 
         let bus = core.bus_mut();
         bus.video.update_pixel_buffer(bus.rdram.data());
+
+        gfx::write_pixels_to_texture(&self.wgpu_context, self.pixels(), self.pitch());
     }
 }
 

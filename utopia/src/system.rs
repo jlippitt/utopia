@@ -4,7 +4,7 @@ use std::path::Path;
 
 pub mod gb;
 pub mod gba;
-//pub mod n64;
+pub mod n64;
 pub mod nes;
 pub mod snes;
 
@@ -21,7 +21,7 @@ pub enum SystemType {
     GameBoy,
     GameBoyAdvance,
     Nes,
-    //Nintendo64,
+    Nintendo64,
     Snes,
 }
 
@@ -37,7 +37,7 @@ impl TryFrom<&Path> for SystemType {
         match extension.as_str() {
             "gb" => Ok(Self::GameBoy),
             "gba" => Ok(Self::GameBoyAdvance),
-            //"n64" | "z64" => Ok(Self::Nintendo64),
+            "n64" | "z64" => Ok(Self::Nintendo64),
             "nes" => Ok(Self::Nes),
             "sfc" | "smc" => Ok(Self::Snes),
             _ => Err(format!("No system found for file extension '.{}'", extension).into()),
@@ -102,7 +102,7 @@ pub fn create<T: MemoryMapper + 'static>(
     Ok(match options.system_type {
         SystemType::GameBoy => Box::new(gb::System::new(options)),
         SystemType::GameBoyAdvance => Box::new(gba::System::new(options)),
-        //SystemType::Nintendo64 => Box::new(n64::System::new(options)),
+        SystemType::Nintendo64 => Box::new(n64::System::new(options)),
         SystemType::Nes => Box::new(nes::System::new(options)),
         SystemType::Snes => Box::new(snes::System::new(options)),
     })
