@@ -68,6 +68,9 @@ impl Renderer {
         let (device, queue) = pollster::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
                 features: wgpu::Features::empty(),
+                #[cfg(target_arch = "wasm32")]
+                limits: wgpu::Limits::downlevel_webgl2_defaults(),
+                #[cfg(not(target_arch = "wasm32"))]
                 limits: wgpu::Limits::default(),
                 label: None,
             },

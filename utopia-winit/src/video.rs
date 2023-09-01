@@ -6,6 +6,12 @@ use winit::dpi::{PhysicalSize, Size};
 use winit::event_loop::EventLoopWindowTarget;
 use winit::window::{Fullscreen, Window, WindowBuilder};
 
+#[cfg(target_arch = "wasm32")]
+use web_sys::HtmlCanvasElement;
+
+#[cfg(target_arch = "wasm32")]
+use winit::platform::web::WindowBuilderExtWebSys;
+
 mod renderer;
 mod viewport;
 
@@ -23,10 +29,14 @@ impl VideoController {
         source_size: PhysicalSize<u32>,
         full_screen: bool,
         vsync: bool,
+        #[cfg(target_arch = "wasm32")] canvas: HtmlCanvasElement,
     ) -> Result<(Self, WgpuContext), Box<dyn Error>> {
         let viewport = Viewport::new(window_target, source_size, full_screen);
 
         let window_builder = WindowBuilder::new().with_title("Utopia");
+
+        #[cfg(target_arch = "wasm32")]
+        let window_builder = window_builder.with_canvas(Some(canvas));
 
         let window_builder = if full_screen {
             window_builder.with_fullscreen(Some(Fullscreen::Exclusive(

@@ -1,15 +1,18 @@
-pub use utopia::{BiosLoader, Error, MemoryMapper};
+pub use utopia::{BiosLoader, DefaultBiosLoader, DefaultMemoryMapper, Error, MemoryMapper};
 
 use audio::AudioController;
 use gamepad::Gamepad;
+use instant::Instant;
 use std::error;
 use std::path::PathBuf;
-use std::time::Instant;
 use utopia::{InstanceOptions, JoypadState, SystemOptions};
 use video::VideoController;
 use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::EventLoop;
+
+#[cfg(target_arch = "wasm32")]
+use web_sys::HtmlCanvasElement;
 
 mod audio;
 mod gamepad;
@@ -31,6 +34,8 @@ pub struct UtopiaWinitOptions<T: MemoryMapper + 'static> {
     pub skip_boot: bool,
     pub full_screen: bool,
     pub sync: Option<Sync>,
+    #[cfg(target_arch = "wasm32")]
+    pub canvas: HtmlCanvasElement,
 }
 
 pub fn run<T: MemoryMapper>(options: UtopiaWinitOptions<T>) -> Result<(), Box<dyn error::Error>> {
@@ -58,6 +63,8 @@ pub fn run<T: MemoryMapper>(options: UtopiaWinitOptions<T>) -> Result<(), Box<dy
         source_size,
         options.full_screen,
         sync == Sync::Video,
+        #[cfg(target_arch = "wasm32")]
+        options.canvas,
     )?;
 
     let mut instance = system.create_instance(InstanceOptions {

@@ -20,27 +20,36 @@ impl Viewport {
         source_size: PhysicalSize<u32>,
         full_screen: bool,
     ) -> Self {
-        let monitor = window_target.available_monitors().next().unwrap();
+        let monitor = window_target.available_monitors().next();
 
-        if full_screen {
-            let default_video_mode = monitor.video_modes().next().unwrap();
-            let video_mode = best_fit(source_size, monitor).unwrap_or(default_video_mode);
-            let clip_rect = clip(source_size, video_mode.size());
+        if let Some(monitor) = monitor {
+            if full_screen {
+                let default_video_mode = monitor.video_modes().next().unwrap();
+                let video_mode = best_fit(source_size, monitor).unwrap_or(default_video_mode);
+                let clip_rect = clip(source_size, video_mode.size());
 
+                Self {
+                    offset: (0, 0).into(),
+                    size: source_size,
+                    clip_rect: Some(clip_rect),
+                    video_mode: Some(video_mode),
+                }
+            } else {
+                let monitor_size = monitor.size();
+                let target_size = upscale(source_size, monitor_size);
+                let offset = center(target_size, monitor_size);
+
+                Self {
+                    offset,
+                    size: target_size,
+                    clip_rect: None,
+                    video_mode: None,
+                }
+            }
+        } else {
             Self {
                 offset: (0, 0).into(),
                 size: source_size,
-                clip_rect: Some(clip_rect),
-                video_mode: Some(video_mode),
-            }
-        } else {
-            let monitor_size = monitor.size();
-            let target_size = upscale(source_size, monitor_size);
-            let offset = center(target_size, monitor_size);
-
-            Self {
-                offset,
-                size: target_size,
                 clip_rect: None,
                 video_mode: None,
             }
