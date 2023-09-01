@@ -12,8 +12,8 @@ impl BiosLoader {
     }
 }
 
-impl utopia::BiosLoader for BiosLoader {
-    fn load(&self, name: &str) -> Result<Vec<u8>, utopia::Error> {
+impl utopia_winit::BiosLoader for BiosLoader {
+    fn load(&self, name: &str) -> Result<Vec<u8>, utopia_winit::Error> {
         let file_name = format!("{}.bin", name);
         let path = self.base_path.with_file_name(file_name);
 

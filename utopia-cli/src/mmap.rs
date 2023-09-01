@@ -12,10 +12,10 @@ impl MemoryMapper {
     }
 }
 
-impl utopia::MemoryMapper for MemoryMapper {
+impl utopia_winit::MemoryMapper for MemoryMapper {
     type Mapped = MmapMut;
 
-    fn open(&self, len: usize, battery_backed: bool) -> Result<Self::Mapped, utopia::Error> {
+    fn open(&self, len: usize, battery_backed: bool) -> Result<Self::Mapped, utopia_winit::Error> {
         let result = if battery_backed {
             OpenOptions::new()
                 .read(true)
