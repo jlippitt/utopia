@@ -23,25 +23,20 @@ export default () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     const onRomUpload = (rom: Rom) => {
-        if (!canvasRef.current) {
+        const canvas = canvasRef.current;
+
+        if (!canvas) {
             return;
         }
 
-        utopia.run(
-            canvasRef.current,
-            rom.path,
-            rom.data,
-            rom.bios ?? undefined
-        );
+        utopia.run(canvas, rom.path, rom.data, rom.bios ?? undefined);
     };
 
     return (
         <Wrapper>
             <FileUpload onRomUpload={onRomUpload} />
             <CanvasWrapper>
-                <div>
-                    <canvas ref={canvasRef} />
-                </div>
+                <canvas ref={canvasRef} />
             </CanvasWrapper>
         </Wrapper>
     );

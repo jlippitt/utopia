@@ -8,9 +8,8 @@ use winit::window::{Fullscreen, Window, WindowBuilder};
 
 #[cfg(target_arch = "wasm32")]
 use web_sys::HtmlCanvasElement;
-
 #[cfg(target_arch = "wasm32")]
-use winit::platform::web::WindowBuilderExtWebSys;
+use winit::platform::web::{WindowBuilderExtWebSys, WindowExtWebSys};
 
 mod renderer;
 mod viewport;
@@ -31,7 +30,13 @@ impl VideoController {
         vsync: bool,
         #[cfg(target_arch = "wasm32")] canvas: HtmlCanvasElement,
     ) -> Result<(Self, WgpuContext), Box<dyn Error>> {
-        let viewport = Viewport::new(window_target, source_size, full_screen);
+        #[cfg(target_arch = "wasm32")]
+        let view_target = &canvas;
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let view_target = window_target;
+
+        let viewport = Viewport::new(view_target, source_size, full_screen);
 
         let window_builder = WindowBuilder::new().with_title("Utopia");
 
@@ -87,7 +92,13 @@ impl VideoController {
     ) {
         self.source_size = source_size;
 
-        let viewport = Viewport::new(window_target, source_size, self.full_screen);
+        #[cfg(target_arch = "wasm32")]
+        let view_target = &self.window.canvas();
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let view_target = window_target;
+
+        let viewport = Viewport::new(view_target, source_size, self.full_screen);
 
         if !self.full_screen {
             self.window.set_outer_position(viewport.offset());
@@ -105,7 +116,13 @@ impl VideoController {
     ) -> Result<(), Box<dyn Error>> {
         self.full_screen = !self.full_screen;
 
-        let viewport = Viewport::new(window_target, self.source_size, self.full_screen);
+        #[cfg(target_arch = "wasm32")]
+        let view_target = &self.window.canvas();
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let view_target = window_target;
+
+        let viewport = Viewport::new(view_target, self.source_size, self.full_screen);
 
         if self.full_screen {
             self.window.set_fullscreen(Some(Fullscreen::Exclusive(
@@ -132,7 +149,13 @@ impl VideoController {
         let monitor_size = self.window.current_monitor().unwrap().size();
 
         if monitor_size != self.prev_monitor_size {
-            let viewport = Viewport::new(window_target, self.source_size, self.full_screen);
+            #[cfg(target_arch = "wasm32")]
+            let view_target = &self.window.canvas();
+
+            #[cfg(not(target_arch = "wasm32"))]
+            let view_target = window_target;
+
+            let viewport = Viewport::new(view_target, self.source_size, self.full_screen);
 
             if !self.full_screen {
                 self.window.set_outer_position(viewport.offset());

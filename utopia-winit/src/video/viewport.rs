@@ -1,6 +1,11 @@
 use winit::dpi::{PhysicalPosition, PhysicalSize};
-use winit::event_loop::EventLoopWindowTarget;
 use winit::monitor::{MonitorHandle, VideoMode};
+
+#[cfg(not(target_arch = "wasm32"))]
+use winit::event_loop::EventLoopWindowTarget;
+
+#[cfg(target_arch = "wasm32")]
+use web_sys::HtmlCanvasElement;
 
 // We should be running at approx 60 FPS or more
 const MIN_REFRESH_RATE: u32 = 59900;
@@ -15,6 +20,7 @@ pub struct Viewport {
 }
 
 impl Viewport {
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn new(
         window_target: &EventLoopWindowTarget<()>,
         source_size: PhysicalSize<u32>,
@@ -53,6 +59,28 @@ impl Viewport {
                 clip_rect: None,
                 video_mode: None,
             }
+        }
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn new(
+        canvas: &HtmlCanvasElement,
+        source_size: PhysicalSize<u32>,
+        _full_screen: bool,
+    ) -> Self {
+        let bounding_rect = canvas.parent_element().unwrap().get_bounding_client_rect();
+
+        let bounding_element_size =
+            PhysicalSize::new(bounding_rect.width() as u32, bounding_rect.height() as u32);
+
+        let target_size = upscale(source_size, bounding_element_size);
+        let offset = center(target_size, bounding_element_size);
+
+        Self {
+            offset,
+            size: target_size,
+            clip_rect: None,
+            video_mode: None,
         }
     }
 
