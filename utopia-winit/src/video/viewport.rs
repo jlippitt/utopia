@@ -1,12 +1,15 @@
 use winit::dpi::{PhysicalPosition, PhysicalSize};
-use winit::monitor::{MonitorHandle, VideoMode};
+use winit::monitor::VideoMode;
 
 #[cfg(not(target_arch = "wasm32"))]
 use winit::event_loop::EventLoopWindowTarget;
+#[cfg(not(target_arch = "wasm32"))]
+use winit::monitor::MonitorHandle;
 
 #[cfg(target_arch = "wasm32")]
 use web_sys::HtmlCanvasElement;
 
+#[cfg(not(target_arch = "wasm32"))]
 // We should be running at approx 60 FPS or more
 const MIN_REFRESH_RATE: u32 = 59900;
 
@@ -112,6 +115,7 @@ fn center(source: PhysicalSize<u32>, target: PhysicalSize<u32>) -> PhysicalPosit
     (pos_x, pos_y).into()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn best_fit(source: PhysicalSize<u32>, monitor: MonitorHandle) -> Option<VideoMode> {
     let mut best_mode: Option<VideoMode> = None;
     let mut best_scale = 0;
@@ -146,6 +150,7 @@ fn best_fit(source: PhysicalSize<u32>, monitor: MonitorHandle) -> Option<VideoMo
     best_mode
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn clip(source: PhysicalSize<u32>, target: PhysicalSize<u32>) -> [[f32; 2]; 4] {
     let PhysicalSize { width, height } = upscale(source, target);
 

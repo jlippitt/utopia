@@ -93,7 +93,10 @@ impl VideoController {
         self.source_size = source_size;
 
         #[cfg(target_arch = "wasm32")]
-        let view_target = &self.window.canvas();
+        let view_target = {
+            _ = window_target;
+            &self.window.canvas()
+        };
 
         #[cfg(not(target_arch = "wasm32"))]
         let view_target = window_target;
@@ -117,7 +120,10 @@ impl VideoController {
         self.full_screen = !self.full_screen;
 
         #[cfg(target_arch = "wasm32")]
-        let view_target = &self.window.canvas();
+        let view_target = {
+            _ = window_target;
+            &self.window.canvas()
+        };
 
         #[cfg(not(target_arch = "wasm32"))]
         let view_target = window_target;
@@ -150,7 +156,10 @@ impl VideoController {
 
         if monitor_size != self.prev_monitor_size {
             #[cfg(target_arch = "wasm32")]
-            let view_target = &self.window.canvas();
+            let view_target = {
+                _ = window_target;
+                &self.window.canvas()
+            };
 
             #[cfg(not(target_arch = "wasm32"))]
             let view_target = window_target;
