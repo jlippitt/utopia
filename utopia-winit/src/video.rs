@@ -95,7 +95,7 @@ impl VideoController {
         #[cfg(target_arch = "wasm32")]
         let view_target = {
             _ = window_target;
-            &self.window.canvas()
+            &self.window.canvas().unwrap()
         };
 
         #[cfg(not(target_arch = "wasm32"))]
@@ -105,7 +105,9 @@ impl VideoController {
 
         if !self.full_screen {
             self.window.set_outer_position(viewport.offset());
-            self.window.set_inner_size(Size::Physical(viewport.size()));
+            _ = self
+                .window
+                .request_inner_size(Size::Physical(viewport.size()));
         }
 
         self.renderer.update_source_size(ctx, source_size);
@@ -122,7 +124,7 @@ impl VideoController {
         #[cfg(target_arch = "wasm32")]
         let view_target = {
             _ = window_target;
-            &self.window.canvas()
+            &self.window.canvas().unwrap()
         };
 
         #[cfg(not(target_arch = "wasm32"))]
@@ -158,7 +160,7 @@ impl VideoController {
             #[cfg(target_arch = "wasm32")]
             let view_target = {
                 _ = window_target;
-                &self.window.canvas()
+                &self.window.canvas().unwrap()
             };
 
             #[cfg(not(target_arch = "wasm32"))]
@@ -168,7 +170,9 @@ impl VideoController {
 
             if !self.full_screen {
                 self.window.set_outer_position(viewport.offset());
-                self.window.set_inner_size(Size::Physical(viewport.size()));
+                _ = self
+                    .window
+                    .request_inner_size(Size::Physical(viewport.size()));
             }
 
             self.on_window_size_changed(ctx)?;

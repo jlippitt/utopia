@@ -2,12 +2,16 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{
     BufferSize, OutputCallbackInfo, PlayStreamError, Sample, SampleRate, Stream, StreamConfig,
 };
-use instant::Instant;
 use std::error::Error;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 use tracing::warn;
 use utopia::AudioQueue;
+
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::{Duration, Instant};
+
+#[cfg(target_arch = "wasm32")]
+use web_time::{Duration, Instant};
 
 pub struct AudioController {
     stream: Stream,

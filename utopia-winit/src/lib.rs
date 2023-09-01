@@ -2,17 +2,22 @@ pub use utopia::{BiosLoader, DefaultBiosLoader, DefaultMemoryMapper, Error, Memo
 
 use audio::AudioController;
 use gamepad::Gamepad;
-use instant::Instant;
 use std::error;
 use std::path::PathBuf;
 use utopia::{InstanceOptions, JoypadState, SystemOptions};
 use video::VideoController;
 use winit::dpi::PhysicalSize;
-use winit::event::{ElementState, Event, VirtualKeyCode, WindowEvent};
+use winit::event::{ElementState, Event, WindowEvent};
 use winit::event_loop::EventLoop;
+use winit::keyboard::Key;
+
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
 
 #[cfg(target_arch = "wasm32")]
 use web_sys::HtmlCanvasElement;
+#[cfg(target_arch = "wasm32")]
+use web_time::Instant;
 
 mod audio;
 mod gamepad;
@@ -46,7 +51,7 @@ pub fn run<T: MemoryMapper>(options: UtopiaWinitOptions<T>) -> Result<(), Box<dy
         skip_boot: options.skip_boot,
     })?;
 
-    let event_loop = EventLoop::new();
+    let event_loop = EventLoop::new()?;
 
     let source_size: PhysicalSize<u32> = system.default_resolution().into();
 
@@ -86,11 +91,11 @@ pub fn run<T: MemoryMapper>(options: UtopiaWinitOptions<T>) -> Result<(), Box<dy
         match event {
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => control_flow.set_exit(),
-                WindowEvent::KeyboardInput { input, .. } => {
-                    if input.state == ElementState::Pressed {
-                        match input.virtual_keycode {
-                            Some(VirtualKeyCode::Escape) => control_flow.set_exit(),
-                            Some(VirtualKeyCode::F11) => {
+                WindowEvent::KeyboardInput { event, .. } => {
+                    if event.state == ElementState::Pressed {
+                        match event.logical_key {
+                            Key::Escape => control_flow.set_exit(),
+                            Key::F11 => {
                                 video
                                     .toggle_full_screen(instance.wgpu_context(), window_target)
                                     .unwrap();
@@ -99,7 +104,7 @@ pub fn run<T: MemoryMapper>(options: UtopiaWinitOptions<T>) -> Result<(), Box<dy
                         }
                     }
 
-                    keyboard::handle_input(&mut joypad_state, input);
+                    keyboard::handle_input(&mut joypad_state, event);
                 }
                 WindowEvent::Moved(..) => {
                     audio.resync();
@@ -123,12 +128,7 @@ pub fn run<T: MemoryMapper>(options: UtopiaWinitOptions<T>) -> Result<(), Box<dy
                     .render(instance.wgpu_context(), window_target)
                     .unwrap();
             }
-            Event::RedrawEventsCleared => {
-                if sync == Sync::Audio {
-                    control_flow.set_wait_until(audio.sync_time())
-                }
-            }
-            Event::MainEventsCleared => {
+            Event::AboutToWait => {
                 gamepad.handle_events(&mut joypad_state);
 
                 let run_frame = if sync == Sync::Audio {
@@ -163,5 +163,7 @@ pub fn run<T: MemoryMapper>(options: UtopiaWinitOptions<T>) -> Result<(), Box<dy
             }
             _ => (),
         }
-    });
+    })?;
+
+    Ok(())
 }

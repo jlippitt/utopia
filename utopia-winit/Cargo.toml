@@ -7,12 +7,12 @@ edition = "2021"
 bytemuck = { version = "1.13.1", features = ["derive"] }
 cpal = { version = "0.15.2", features = ["wasm-bindgen"] }
 gilrs = "0.10.2"
-instant = "0.1.12"
 pollster = "0.3.0"
 tracing = "0.1.37"
 utopia = { path = "../utopia" }
+web-time = "0.2.0"
 wgpu = { version = "0.17.0", features = ["webgl"] }
-winit = "0.28.6"
+winit = "0.29.1-beta"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 web-sys = { version = "0.3.64", features = [
