@@ -19,6 +19,11 @@ const CanvasWrapper = styled.div`
     height: 100%;
 `;
 
+const Canvas = styled.canvas`
+    outline: none;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+`;
+
 export default () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -36,7 +41,7 @@ export default () => {
         <Wrapper>
             <FileUpload onRomUpload={onRomUpload} />
             <CanvasWrapper>
-                <canvas ref={canvasRef} />
+                <Canvas ref={canvasRef} />
             </CanvasWrapper>
         </Wrapper>
     );
