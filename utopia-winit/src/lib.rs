@@ -153,9 +153,9 @@ pub fn run<T: MemoryMapper>(options: UtopiaWinitOptions<T>) -> Result<(), Box<dy
                             source_size,
                         );
                     }
-
-                    video.window().request_redraw();
                 }
+
+                video.window().request_redraw();
 
                 if sync == Sync::Audio {
                     control_flow.set_wait_until(audio.sync_time())
