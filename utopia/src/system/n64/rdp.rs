@@ -1,5 +1,6 @@
 use super::rsp::{DmaType, Registers};
 use crate::util::facade::{DataReader, DataWriter};
+use crate::WgpuContext;
 use pipeline::Pipeline;
 use std::array;
 use std::cell::RefCell;
@@ -64,14 +65,14 @@ impl Rdp {
         self.regs.borrow_mut().finish_dma()
     }
 
-    pub fn run(&mut self, rdram: &mut [u8]) {
+    pub fn run(&mut self, rdram: &mut [u8], ctx: &WgpuContext) {
         debug!("[CPU => RDP]");
 
         let _span = debug_span!("rdp").entered();
 
         debug!("[CPU => RDP]");
 
-        self.pipeline.run(rdram, &self.commands);
+        self.pipeline.run(rdram, ctx, &self.commands);
     }
 }
 

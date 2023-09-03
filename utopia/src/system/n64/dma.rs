@@ -65,7 +65,7 @@ impl super::Hardware {
         };
 
         self.rdp.upload(&cmd_source[start as usize..end as usize]);
-        self.rdp.run(self.rdram.data_mut());
+        self.rdp.run(self.rdram.data_mut(), &self.wgpu_context);
     }
 
     pub(super) fn peripheral_dma(&mut self, request: Dma) {
