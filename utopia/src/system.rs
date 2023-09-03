@@ -45,10 +45,10 @@ impl TryFrom<&Path> for SystemType {
     }
 }
 
-pub struct SystemOptions<T: MemoryMapper> {
+pub struct SystemOptions<'a, T: MemoryMapper> {
     pub system_type: SystemType,
-    pub bios_loader: Box<dyn BiosLoader>,
-    pub memory_mapper: T,
+    pub bios_loader: &'a dyn BiosLoader,
+    pub memory_mapper: &'a T,
     pub skip_boot: bool,
 }
 
@@ -96,9 +96,9 @@ pub trait Instance {
     }
 }
 
-pub fn create<T: MemoryMapper + 'static>(
-    options: SystemOptions<T>,
-) -> Result<Box<dyn System<T>>, Error> {
+pub fn create<'a, T: MemoryMapper + 'static>(
+    options: SystemOptions<'a, T>,
+) -> Result<Box<dyn System<T> + 'a>, Error> {
     Ok(match options.system_type {
         SystemType::GameBoy => Box::new(gb::System::new(options)),
         SystemType::GameBoyAdvance => Box::new(gba::System::new(options)),

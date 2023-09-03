@@ -25,19 +25,19 @@ mod interrupt;
 mod joypad;
 mod ppu;
 
-pub struct System<T: MemoryMapper + 'static> {
-    memory_mapper: T,
+pub struct System<'a, T: MemoryMapper + 'static> {
+    memory_mapper: &'a T,
 }
 
-impl<T: MemoryMapper> System<T> {
-    pub fn new(options: SystemOptions<T>) -> Self {
+impl<'a, T: MemoryMapper> System<'a, T> {
+    pub fn new(options: SystemOptions<'a, T>) -> Self {
         Self {
             memory_mapper: options.memory_mapper,
         }
     }
 }
 
-impl<T: MemoryMapper> crate::System<T> for System<T> {
+impl<'a, T: MemoryMapper> crate::System<T> for System<'a, T> {
     fn default_resolution(&self) -> (u32, u32) {
         (WIDTH, HEIGHT)
     }
@@ -47,7 +47,7 @@ impl<T: MemoryMapper> crate::System<T> for System<T> {
     }
 
     fn create_instance(&self, options: InstanceOptions) -> Result<Box<dyn crate::Instance>, Error> {
-        Ok(Box::new(Instance::new(&self.memory_mapper, options)?))
+        Ok(Box::new(Instance::new(self.memory_mapper, options)?))
     }
 }
 

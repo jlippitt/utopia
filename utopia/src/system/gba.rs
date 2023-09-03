@@ -24,14 +24,14 @@ const PIXELS: [u8; WIDTH * HEIGHT * 4] = [0; WIDTH * HEIGHT * 4];
 const IWRAM_SIZE: usize = 32768;
 const EWRAM_SIZE: usize = 262144;
 
-pub struct System<U: MemoryMapper + 'static> {
-    bios_loader: Box<dyn BiosLoader>,
+pub struct System<'a, U: MemoryMapper + 'static> {
+    bios_loader: &'a dyn BiosLoader,
     skip_boot: bool,
     _phantom: PhantomData<U>,
 }
 
-impl<T: MemoryMapper> System<T> {
-    pub fn new(options: SystemOptions<T>) -> Self {
+impl<'a, T: MemoryMapper> System<'a, T> {
+    pub fn new(options: SystemOptions<'a, T>) -> Self {
         Self {
             bios_loader: options.bios_loader,
             skip_boot: options.skip_boot,
@@ -40,7 +40,7 @@ impl<T: MemoryMapper> System<T> {
     }
 }
 
-impl<T: MemoryMapper> crate::System<T> for System<T> {
+impl<'a, T: MemoryMapper> crate::System<T> for System<'a, T> {
     fn default_resolution(&self) -> (u32, u32) {
         (WIDTH as u32, HEIGHT as u32)
     }
@@ -53,7 +53,7 @@ impl<T: MemoryMapper> crate::System<T> for System<T> {
         &self,
         options: InstanceOptions,
     ) -> Result<Box<dyn crate::Instance>, crate::Error> {
-        let result = Instance::new(self.bios_loader.as_ref(), self.skip_boot, options);
+        let result = Instance::new(self.bios_loader, self.skip_boot, options);
 
         Ok(Box::new(
             result.map_err(|err| crate::Error(err.to_string()))?,

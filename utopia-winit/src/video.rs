@@ -1,3 +1,4 @@
+use super::AppEvent;
 use renderer::Renderer;
 use std::error::Error;
 use utopia::WgpuContext;
@@ -24,7 +25,7 @@ pub struct VideoController {
 
 impl VideoController {
     pub fn create_with_context(
-        window_target: &EventLoopWindowTarget<()>,
+        window_target: &EventLoopWindowTarget<AppEvent>,
         source_size: PhysicalSize<u32>,
         full_screen: bool,
         vsync: bool,
@@ -87,7 +88,7 @@ impl VideoController {
     pub fn set_source_size(
         &mut self,
         ctx: &mut WgpuContext,
-        window_target: &EventLoopWindowTarget<()>,
+        window_target: &EventLoopWindowTarget<AppEvent>,
         source_size: PhysicalSize<u32>,
     ) {
         self.source_size = source_size;
@@ -117,7 +118,7 @@ impl VideoController {
     pub fn toggle_full_screen(
         &mut self,
         _ctx: &WgpuContext,
-        window_target: &EventLoopWindowTarget<()>,
+        window_target: &EventLoopWindowTarget<AppEvent>,
     ) -> Result<(), Box<dyn Error>> {
         self.full_screen = !self.full_screen;
 
@@ -152,7 +153,7 @@ impl VideoController {
     pub fn render(
         &mut self,
         ctx: &WgpuContext,
-        window_target: &EventLoopWindowTarget<()>,
+        window_target: &EventLoopWindowTarget<AppEvent>,
     ) -> Result<(), Box<dyn Error>> {
         let monitor_size = self.window.current_monitor().unwrap().size();
 

@@ -1,4 +1,4 @@
-use utopia_winit::{App, AppOptions, DefaultMemoryMapper};
+use utopia_winit::{App, AppOptions, DefaultMemoryMapper, ResetOptions};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsError;
 use web_sys::HtmlCanvasElement;
@@ -30,17 +30,21 @@ pub fn run(
         std::panic::set_hook(Box::new(console_error_panic_hook::hook));
     }
 
-    let app = App::new(AppOptions {
-        rom_path: rom_path.into(),
-        rom_data,
-        bios_loader: Box::new(BiosLoader(bios_data)),
-        memory_mapper: DefaultMemoryMapper,
-        skip_boot: true,
-        full_screen: false,
-        sync: None,
-        #[cfg(target_arch = "wasm32")]
-        canvas,
-    })
+    let app = App::new(
+        AppOptions {
+            bios_loader: Box::new(BiosLoader(bios_data)),
+            memory_mapper: DefaultMemoryMapper,
+        },
+        ResetOptions {
+            rom_path: rom_path.into(),
+            rom_data,
+            skip_boot: true,
+            full_screen: false,
+            sync: None,
+            #[cfg(target_arch = "wasm32")]
+            canvas,
+        },
+    )
     .map_err(|err| JsError::new(&err.to_string()))?;
 
     app.run().map_err(|err| JsError::new(&err.to_string()))?;
