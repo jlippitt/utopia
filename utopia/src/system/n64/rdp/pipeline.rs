@@ -3,6 +3,7 @@ use tracing::debug;
 
 mod operation;
 
+#[derive(Default)]
 pub struct Pipeline;
 
 impl Pipeline {
@@ -27,7 +28,7 @@ impl Pipeline {
                 0x36 => debug!("FillRectangle"),
                 0x37 => debug!("SetFillColor"),
                 0x3c => debug!("SetCombineMode"),
-                0x3d => debug!("SetTextureImage"),
+                0x3d => op::SetTextureImage::from(word).exec(self, rdram, ctx),
                 0x3f => debug!("SetColorImage"),
                 opcode => debug!("{:02X}", opcode),
             }
