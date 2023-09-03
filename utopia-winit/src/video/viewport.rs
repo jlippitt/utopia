@@ -20,8 +20,8 @@ const MIN_REFRESH_RATE: u32 = 59900;
 pub type ClipRect = [[f32; 2]; 4];
 
 pub struct Viewport {
-    offset: PhysicalPosition<u32>,
     size: PhysicalSize<u32>,
+    offset: Option<PhysicalPosition<u32>>,
     clip_rect: Option<ClipRect>,
     video_mode: Option<VideoMode>,
 }
@@ -42,7 +42,7 @@ impl Viewport {
                 let clip_rect = clip(source_size, video_mode.size());
 
                 Self {
-                    offset: (0, 0).into(),
+                    offset: Some((0, 0).into()),
                     size: source_size,
                     clip_rect: Some(clip_rect),
                     video_mode: Some(video_mode),
@@ -53,16 +53,16 @@ impl Viewport {
                 let offset = center(target_size, monitor_size);
 
                 Self {
-                    offset,
                     size: target_size,
+                    offset: Some(offset),
                     clip_rect: None,
                     video_mode: None,
                 }
             }
         } else {
             Self {
-                offset: (0, 0).into(),
                 size: source_size,
+                offset: Some((0, 0).into()),
                 clip_rect: None,
                 video_mode: None,
             }
@@ -81,22 +81,21 @@ impl Viewport {
             PhysicalSize::new(bounding_rect.width() as u32, bounding_rect.height() as u32);
 
         let target_size = upscale(source_size, bounding_element_size);
-        let offset = center(target_size, bounding_element_size);
 
         Self {
-            offset,
             size: target_size,
+            offset: None,
             clip_rect: None,
             video_mode: None,
         }
     }
 
-    pub fn offset(&self) -> PhysicalPosition<u32> {
-        self.offset
-    }
-
     pub fn size(&self) -> PhysicalSize<u32> {
         self.size
+    }
+
+    pub fn offset(&self) -> Option<PhysicalPosition<u32>> {
+        self.offset
     }
 
     pub fn clip_rect(&self) -> Option<ClipRect> {
@@ -113,6 +112,7 @@ fn upscale(source: PhysicalSize<u32>, target: PhysicalSize<u32>) -> PhysicalSize
     (source.width * scale, source.height * scale).into()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn center(source: PhysicalSize<u32>, target: PhysicalSize<u32>) -> PhysicalPosition<u32> {
     let pos_x = (target.width - source.width) / 2;
     let pos_y = (target.height - source.height) / 2;

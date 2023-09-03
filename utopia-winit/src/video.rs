@@ -49,9 +49,13 @@ impl VideoController {
                 viewport.video_mode().unwrap().clone(),
             )))
         } else {
-            window_builder
-                .with_inner_size(Size::Physical(viewport.size()))
-                .with_position(viewport.offset())
+            let window_builder = window_builder.with_inner_size(Size::Physical(viewport.size()));
+
+            if let Some(offset) = viewport.offset() {
+                window_builder.with_position(offset)
+            } else {
+                window_builder
+            }
         };
 
         let window = window_builder.build(window_target)?;
@@ -92,27 +96,8 @@ impl VideoController {
         source_size: PhysicalSize<u32>,
     ) {
         self.source_size = source_size;
-
-        #[cfg(target_arch = "wasm32")]
-        let view_target = {
-            _ = window_target;
-            &self.window.canvas().unwrap()
-        };
-
-        #[cfg(not(target_arch = "wasm32"))]
-        let view_target = window_target;
-
-        let viewport = Viewport::new(view_target, source_size, self.full_screen);
-
-        if !self.full_screen {
-            self.window.set_outer_position(viewport.offset());
-            _ = self
-                .window
-                .request_inner_size(Size::Physical(viewport.size()));
-        }
-
+        self.update_viewport(ctx, window_target);
         self.renderer.update_source_size(ctx, source_size);
-        self.renderer.update_clip_rect(ctx, viewport.clip_rect());
     }
 
     pub fn toggle_full_screen(
@@ -158,33 +143,42 @@ impl VideoController {
         let monitor_size = self.window.current_monitor().unwrap().size();
 
         if monitor_size != self.prev_monitor_size {
-            #[cfg(target_arch = "wasm32")]
-            let view_target = {
-                _ = window_target;
-                &self.window.canvas().unwrap()
-            };
-
-            #[cfg(not(target_arch = "wasm32"))]
-            let view_target = window_target;
-
-            let viewport = Viewport::new(view_target, self.source_size, self.full_screen);
-
-            if !self.full_screen {
-                self.window.set_outer_position(viewport.offset());
-                _ = self
-                    .window
-                    .request_inner_size(Size::Physical(viewport.size()));
-            }
-
-            self.on_window_size_changed(ctx)?;
-
-            self.renderer.update_clip_rect(ctx, viewport.clip_rect());
-
             self.prev_monitor_size = monitor_size;
+            self.update_viewport(ctx, window_target);
+            self.on_window_size_changed(ctx)?;
         }
 
         self.renderer.render(ctx)?;
 
         Ok(())
+    }
+
+    fn update_viewport(
+        &mut self,
+        ctx: &WgpuContext,
+        window_target: &EventLoopWindowTarget<AppEvent<impl MemoryMapper>>,
+    ) {
+        #[cfg(target_arch = "wasm32")]
+        let view_target = {
+            _ = window_target;
+            &self.window.canvas().unwrap()
+        };
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let view_target = window_target;
+
+        let viewport = Viewport::new(view_target, self.source_size, self.full_screen);
+
+        if !self.full_screen {
+            if let Some(offset) = viewport.offset() {
+                self.window.set_outer_position(offset);
+            }
+
+            _ = self
+                .window
+                .request_inner_size(Size::Physical(viewport.size()));
+        }
+
+        self.renderer.update_clip_rect(ctx, viewport.clip_rect());
     }
 }
