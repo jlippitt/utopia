@@ -2,6 +2,7 @@ use memmap2::{MmapMut, MmapOptions};
 use std::fs::OpenOptions;
 use std::path::PathBuf;
 
+#[derive(Debug)]
 pub struct MemoryMapper {
     rom_path: PathBuf,
 }

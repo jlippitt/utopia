@@ -1,8 +1,10 @@
-use utopia_winit::{App, AppOptions, DefaultMemoryMapper, ResetOptions};
+use std::rc::Rc;
+use utopia_winit::{App, DefaultMemoryMapper, ResetOptions};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsError;
 use web_sys::HtmlCanvasElement;
 
+#[derive(Debug)]
 pub struct BiosLoader(Option<Vec<u8>>);
 
 impl utopia_winit::BiosLoader for BiosLoader {
@@ -17,37 +19,45 @@ impl utopia_winit::BiosLoader for BiosLoader {
 }
 
 #[wasm_bindgen]
-pub fn run(
-    canvas: HtmlCanvasElement,
-    rom_path: &str,
-    rom_data: Vec<u8>,
-    bios_data: Option<Vec<u8>>,
-) -> Result<(), JsError> {
-    let _ = canvas;
+pub struct Utopia {
+    app: App<DefaultMemoryMapper>,
+}
 
-    #[cfg(target_arch = "wasm32")]
-    {
-        std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+#[wasm_bindgen]
+impl Utopia {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Result<Utopia, JsError> {
+        #[cfg(target_arch = "wasm32")]
+        {
+            std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+        }
+
+        Ok(Self { app: App::new() })
     }
 
-    let app = App::new(
-        AppOptions {
-            bios_loader: Box::new(BiosLoader(bios_data)),
-            memory_mapper: DefaultMemoryMapper,
-        },
-        ResetOptions {
-            rom_path: rom_path.into(),
-            rom_data,
-            skip_boot: true,
-            full_screen: false,
-            sync: None,
-            #[cfg(target_arch = "wasm32")]
-            canvas,
-        },
-    )
-    .map_err(|err| JsError::new(&err.to_string()))?;
+    pub fn run(
+        &mut self,
+        canvas: HtmlCanvasElement,
+        rom_path: &str,
+        rom_data: Vec<u8>,
+        bios_data: Option<Vec<u8>>,
+    ) -> Result<(), JsError> {
+        let _ = canvas;
 
-    app.run().map_err(|err| JsError::new(&err.to_string()))?;
+        self.app
+            .reset(ResetOptions {
+                bios_loader: Rc::new(BiosLoader(bios_data)),
+                memory_mapper: DefaultMemoryMapper,
+                rom_path: rom_path.into(),
+                rom_data,
+                skip_boot: true,
+                full_screen: false,
+                sync: None,
+                #[cfg(target_arch = "wasm32")]
+                canvas,
+            })
+            .map_err(|err| JsError::new(&err.to_string()))?;
 
-    Ok(())
+        Ok(())
+    }
 }

@@ -2,6 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 use tracing::warn;
 
+#[derive(Debug)]
 pub struct BiosLoader {
     base_path: PathBuf,
 }

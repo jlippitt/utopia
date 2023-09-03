@@ -4,6 +4,8 @@ use winit::monitor::VideoMode;
 #[cfg(not(target_arch = "wasm32"))]
 use super::super::AppEvent;
 #[cfg(not(target_arch = "wasm32"))]
+use utopia::MemoryMapper;
+#[cfg(not(target_arch = "wasm32"))]
 use winit::event_loop::EventLoopWindowTarget;
 #[cfg(not(target_arch = "wasm32"))]
 use winit::monitor::MonitorHandle;
@@ -27,7 +29,7 @@ pub struct Viewport {
 impl Viewport {
     #[cfg(not(target_arch = "wasm32"))]
     pub fn new(
-        window_target: &EventLoopWindowTarget<AppEvent>,
+        window_target: &EventLoopWindowTarget<AppEvent<impl MemoryMapper>>,
         source_size: PhysicalSize<u32>,
         full_screen: bool,
     ) -> Self {

@@ -50,7 +50,7 @@ impl From<&str> for Error {
 
 impl error::Error for Error {}
 
-pub trait BiosLoader {
+pub trait BiosLoader: fmt::Debug {
     fn load(&self, name: &str) -> Result<Vec<u8>, Error>;
 }
 
@@ -67,7 +67,7 @@ pub trait Mapped: MirrorableMut<Output = u8> {}
 
 impl<T: MirrorableMut<Output = u8>> Mapped for T {}
 
-pub trait MemoryMapper {
+pub trait MemoryMapper: fmt::Debug {
     type Mapped: Mapped;
     fn open(&self, len: usize, battery_backed: bool) -> Result<Self::Mapped, Error>;
 }
