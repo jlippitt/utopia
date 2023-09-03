@@ -135,25 +135,7 @@ impl VideoController {
         Ok(())
     }
 
-    pub fn render(
-        &mut self,
-        ctx: &WgpuContext,
-        window_target: &EventLoopWindowTarget<AppEvent<impl MemoryMapper>>,
-    ) -> Result<(), Box<dyn Error>> {
-        let monitor_size = self.window.current_monitor().unwrap().size();
-
-        if monitor_size != self.prev_monitor_size {
-            self.prev_monitor_size = monitor_size;
-            self.update_viewport(ctx, window_target);
-            self.on_window_size_changed(ctx)?;
-        }
-
-        self.renderer.render(ctx)?;
-
-        Ok(())
-    }
-
-    fn update_viewport(
+    pub fn update_viewport(
         &mut self,
         ctx: &WgpuContext,
         window_target: &EventLoopWindowTarget<AppEvent<impl MemoryMapper>>,
@@ -180,5 +162,23 @@ impl VideoController {
         }
 
         self.renderer.update_clip_rect(ctx, viewport.clip_rect());
+    }
+
+    pub fn render(
+        &mut self,
+        ctx: &WgpuContext,
+        window_target: &EventLoopWindowTarget<AppEvent<impl MemoryMapper>>,
+    ) -> Result<(), Box<dyn Error>> {
+        let monitor_size = self.window.current_monitor().unwrap().size();
+
+        if monitor_size != self.prev_monitor_size {
+            self.prev_monitor_size = monitor_size;
+            self.update_viewport(ctx, window_target);
+            self.on_window_size_changed(ctx)?;
+        }
+
+        self.renderer.render(ctx)?;
+
+        Ok(())
     }
 }

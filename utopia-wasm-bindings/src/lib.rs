@@ -27,15 +27,10 @@ pub struct Utopia {
 impl Utopia {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Result<Utopia, JsError> {
-        #[cfg(target_arch = "wasm32")]
-        {
-            std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-        }
-
         Ok(Self { app: App::new() })
     }
 
-    pub fn run(
+    pub fn reset(
         &mut self,
         canvas: HtmlCanvasElement,
         rom_path: &str,
@@ -59,5 +54,20 @@ impl Utopia {
             .map_err(|err| JsError::new(&err.to_string()))?;
 
         Ok(())
+    }
+
+    #[wasm_bindgen(js_name = updateViewport)]
+    pub fn update_viewport(&mut self) -> Result<(), JsError> {
+        self.app
+            .update_viewport()
+            .map_err(|err| JsError::new(&err.to_string()))
+    }
+}
+
+#[wasm_bindgen(start)]
+fn on_load() {
+    #[cfg(target_arch = "wasm32")]
+    {
+        std::panic::set_hook(Box::new(console_error_panic_hook::hook));
     }
 }

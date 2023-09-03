@@ -114,6 +114,7 @@ impl ResetState {
 #[derive(Clone, Debug)]
 pub enum AppEvent<T: MemoryMapper> {
     Reset(ResetOptions<T>),
+    UpdateViewport,
 }
 
 #[derive(Default)]
@@ -131,6 +132,14 @@ impl<T: MemoryMapper> App<T> {
             proxy.send_event(AppEvent::Reset(options))?;
         } else {
             start_event_loop(&mut self.proxy, options)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn update_viewport(&mut self) -> Result<(), Box<dyn error::Error>> {
+        if let Some(proxy) = &self.proxy {
+            proxy.send_event(AppEvent::UpdateViewport)?;
         }
 
         Ok(())
@@ -194,6 +203,9 @@ fn start_event_loop<T: MemoryMapper>(
             Event::UserEvent(AppEvent::Reset(options)) => {
                 state = ResetState::new(window_target, options).unwrap();
             }
+            Event::UserEvent(AppEvent::UpdateViewport) => state
+                .video
+                .update_viewport(state.instance.wgpu_context(), window_target),
             Event::RedrawRequested(..) => {
                 state
                     .video

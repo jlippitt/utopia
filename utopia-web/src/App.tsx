@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import FileUpload, { Rom } from './components/FileUpload';
 import styled from 'styled-components';
 import { Utopia } from 'utopia-wasm-bindings';
@@ -26,6 +26,7 @@ const Canvas = styled.canvas`
 
 export default () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const canvasWrapperRef = useRef<HTMLDivElement>(null);
     const utopiaRef = useRef<Utopia | null>(null);
 
     const onRomUpload = (rom: Rom) => {
@@ -37,13 +38,30 @@ export default () => {
 
         const utopia = (utopiaRef.current ||= new Utopia());
 
-        utopia.run(canvas, rom.path, rom.data, rom.bios ?? undefined);
+        utopia.reset(canvas, rom.path, rom.data, rom.bios ?? undefined);
     };
+
+    useEffect(() => {
+        const canvasWrapper = canvasWrapperRef.current;
+
+        if (!canvasWrapper) {
+            return;
+        }
+
+        const resizeObserver = new ResizeObserver(() => {
+            const utopia = utopiaRef.current;
+            utopia && utopia.updateViewport();
+        });
+
+        resizeObserver.observe(canvasWrapper);
+
+        return () => resizeObserver.disconnect();
+    });
 
     return (
         <Wrapper>
             <FileUpload onRomUpload={onRomUpload} />
-            <CanvasWrapper>
+            <CanvasWrapper ref={canvasWrapperRef}>
                 <Canvas ref={canvasRef} />
             </CanvasWrapper>
         </Wrapper>
