@@ -4,7 +4,7 @@ use clap::{Parser, ValueEnum};
 use mmap::MemoryMapper;
 use std::error::Error;
 use std::path::PathBuf;
-use utopia_winit::{Sync, UtopiaWinitOptions};
+use utopia_winit::{App, AppOptions, Sync};
 
 mod bios;
 mod log;
@@ -38,7 +38,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let rom_data = std::fs::read(&args.rom_path)?;
 
-    utopia_winit::run(UtopiaWinitOptions {
+    let app = App::new(AppOptions {
         rom_path: args.rom_path.clone(),
         rom_data,
         bios_loader: Box::new(BiosLoader::new(
@@ -49,6 +49,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         full_screen: args.full_screen,
         sync: args.sync.map(|sync| sync.0),
     })?;
+
+    app.run()?;
 
     Ok(())
 }
