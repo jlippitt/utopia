@@ -2,7 +2,6 @@ use super::rsp::{DmaType, Registers};
 use crate::util::facade::{DataReader, DataWriter};
 use crate::WgpuContext;
 use pipeline::Pipeline;
-use std::array;
 use std::cell::RefCell;
 use std::rc::Rc;
 use tracing::{debug, debug_span};
@@ -24,7 +23,6 @@ pub struct RdpDma {
 
 pub struct Rdp {
     regs: Rc<RefCell<Registers>>,
-    commands: Vec<u64>,
     pipeline: Pipeline,
     span: SpanInterface,
 }
@@ -33,7 +31,6 @@ impl Rdp {
     pub fn new(regs: Rc<RefCell<Registers>>) -> Self {
         Self {
             regs,
-            commands: Vec::new(),
             pipeline: Pipeline::new(),
             span: SpanInterface {},
         }
@@ -55,13 +52,7 @@ impl Rdp {
     }
 
     pub fn upload(&mut self, commands: &[u8]) {
-        self.commands.clear();
-
-        for chunk in commands.chunks_exact(8) {
-            let bytes: [u8; 8] = array::from_fn(|index| chunk[index]);
-            self.commands.push(u64::from_be_bytes(bytes));
-        }
-
+        self.pipeline.upload(commands);
         self.regs.borrow_mut().finish_dma()
     }
 
@@ -72,7 +63,7 @@ impl Rdp {
 
         debug!("[CPU => RDP]");
 
-        self.pipeline.run(rdram, ctx, &self.commands);
+        self.pipeline.run(rdram, ctx);
     }
 }
 
