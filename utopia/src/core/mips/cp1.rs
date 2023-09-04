@@ -65,7 +65,7 @@ impl Cp1 {
         Self {
             regs: [Register { l: 0 }; 32],
             ctrl: Control::default(),
-            reg_size: false,
+            reg_size: true,
         }
     }
 
@@ -295,7 +295,22 @@ fn format_s(core: &mut Core<impl Bus>, word: u32) {
         0o07 => type_f(core, neg_s, word),
         0o15 => type_f(core, trunc_w_s, word),
         0o44 => type_f(core, cvt_w_s, word),
+        //0o60 => type_f(core, c_f_s, word),
+        //0o61 => type_f(core, c_un_s, word),
+        0o62 => type_f(core, c_eq_s, word),
+        //0o63 => type_f(core, c_ueq_s, word),
+        //0o64 => type_f(core, c_olt_s, word),
+        //0o65 => type_f(core, c_ult_s, word),
+        //0o66 => type_f(core, c_ole_s, word),
+        //0o67 => type_f(core, c_ule_s, word),
+        //0o70 => type_f(core, c_sf_s, word),
+        //0o71 => type_f(core, c_ngle_s, word),
+        //0o72 => type_f(core, c_seq_s, word),
+        //0o73 => type_f(core, c_ngl_s, word),
+        0o74 => type_f(core, c_lt_s, word),
+        //0o75 => type_f(core, c_nge_s, word),
         0o76 => type_f(core, c_le_s, word),
+        //0o77 => type_f(core, c_ngt_s, word),
         func => unimplemented!("CP1.S FN={:02o} ({:08X}: {:08X})", func, core.pc, word),
     }
 }
