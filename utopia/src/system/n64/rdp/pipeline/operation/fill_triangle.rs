@@ -36,7 +36,7 @@ impl FillTriangle {
 }
 
 fn edge(word: u64) -> (f32, f32) {
-    let x = (word >> 32) as f32 / 65536.0;
-    let dxdy = (word & 0xffff_ffff) as f32 / 65536.0;
+    let x = ((word >> 32) as i32) as f32 / 65536.0;
+    let dxdy = ((word & 0xffff_ffff) as i32) as f32 / 65536.0;
     (x, dxdy)
 }
