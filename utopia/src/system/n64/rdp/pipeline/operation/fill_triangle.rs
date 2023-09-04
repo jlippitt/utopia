@@ -19,7 +19,7 @@ pub struct FillTriangle {
     #[bits(3)]
     level: u8,
     __: bool,
-    lft: bool,
+    dir: bool,
     __: u8,
 }
 
