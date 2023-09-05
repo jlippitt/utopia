@@ -1,4 +1,4 @@
-use super::{Interrupt, Mapper, Mappings};
+use super::{Interrupt, Mapper, Mappings, NameTable};
 use tracing::debug;
 
 const PRG_BANK_SIZE: usize = 8192;
@@ -58,8 +58,17 @@ impl Mapper for Mmc5 {
         self.update_mappings(mappings);
     }
 
-    fn write_register(&mut self, _mappings: &mut Mappings, address: u16, value: u8) {
+    fn write_register(&mut self, mappings: &mut Mappings, address: u16, value: u8) {
         match address {
+            0x5000..=0x5015 => (), // TODO: MMC5 Audio
+            0x5104 => (),          // TODO: ERAM
+            0x5105 => {
+                map_name(mappings, 0, value & 0x03);
+                map_name(mappings, 1, (value >> 2) & 0x03);
+                map_name(mappings, 2, (value >> 4) & 0x03);
+                map_name(mappings, 3, value >> 6);
+                debug!("MMC5 Name Mappings: {:?}", mappings.name);
+            }
             _ => unimplemented!("MMC5 Register Write {:04X} <= {:02X}", address, value),
         }
     }
@@ -71,5 +80,13 @@ fn map_prg(mappings: &mut Mappings, start: usize, len: usize, bank: u8) {
         mappings.unmap_prg_write(start, len);
     } else {
         mappings.map_prg_ram(start, len, PRG_BANK_SIZE * bank as usize);
+    }
+}
+
+fn map_name(mappings: &mut Mappings, index: usize, value: u8) {
+    mappings.name[index] = match value {
+        0 => NameTable::Low,
+        1 => NameTable::High,
+        _ => unimplemented!("Custom nametables"),
     }
 }
