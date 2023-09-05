@@ -53,6 +53,8 @@ pub struct Mmc5 {
     ctrl: Control,
     eram: MirrorVec<u8>,
     eram_flags: EramFlags,
+    fill_mode_name: u8,
+    fill_mode_attr: u8,
     scanline_irq_status: ScanlineIrqStatus,
     _prg_rom_size: usize,
     _interrupt: Interrupt,
@@ -76,6 +78,8 @@ impl Mmc5 {
             },
             eram: MirrorVec::new(ERAM_SIZE),
             eram_flags: EramFlags::empty(),
+            fill_mode_name: 0,
+            fill_mode_attr: 0,
             scanline_irq_status: ScanlineIrqStatus::empty(),
             _prg_rom_size: prg_rom_size,
             _interrupt: interrupt,
@@ -246,8 +250,15 @@ impl Mapper for Mmc5 {
                 self.name_bank[3] = NameTable::from_u8(value >> 6).unwrap();
                 debug!("MMC5 Name Banks: {:?}", self.name_bank);
             }
-            0x5106 => (), // TODO: Fill Mode
-            0x5107 => (), // TODO: Fill Mode
+            0x5106 => {
+                self.fill_mode_name = value;
+                debug!("MMC5 Fill Mode Name: {:02X}", self.fill_mode_name);
+            }
+            0x5107 => {
+                let attr = value & 0x03;
+                self.fill_mode_attr = attr | (attr << 2) | (attr << 4) | (attr << 6);
+                debug!("MMC5 Fill Mode Attr: {:02X}", self.fill_mode_attr);
+            }
             0x5113..=0x5117 => {
                 let index = (address - 0x5113) as usize;
                 self.prg_bank[index] = value;
@@ -311,8 +322,11 @@ impl Mapper for Mmc5 {
                 }
             }
             NameTable::Fill => {
-                warn!("Fill Mode name tables not yet implemented");
-                0
+                if (index & 0x03ff) < 0x03c0 {
+                    self.fill_mode_name
+                } else {
+                    self.fill_mode_attr
+                }
             }
         }
     }
@@ -335,9 +349,7 @@ impl Mapper for Mmc5 {
                     self.eram[index & 0x03ff] = value;
                 }
             }
-            NameTable::Fill => {
-                warn!("Fill Mode name tables not yet implemented");
-            }
+            NameTable::Fill => (),
         }
     }
 
