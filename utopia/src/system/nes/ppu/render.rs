@@ -82,7 +82,7 @@ impl super::Ppu {
                 self.load_bg_tiles(cartridge);
             }
             336..=339 => {
-                //
+                self.load_extra(cartridge);
             }
             _ => (),
         }
@@ -235,6 +235,17 @@ impl super::Ppu {
             7 => {
                 self.render.sprites[index].x = self.oam.read_secondary(address + 3) as i32 + 8;
                 self.render.sprites[index].chr_high = cartridge.read_vram(self.render.address);
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    fn load_extra(&mut self, cartridge: &mut Cartridge<impl Mapped>) {
+        match self.dot & 1 {
+            0 => self.render.set_address(cartridge, self.tile_address()),
+            1 => {
+                let value = cartridge.read_vram(self.render.address);
+                self.render.name = (value as u16) << 4;
             }
             _ => unreachable!(),
         }

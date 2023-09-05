@@ -14,14 +14,20 @@ enum NameTable {
     Fill,
 }
 
+struct Control {
+    sprite_mapping: bool,
+    render_enabled: bool,
+    prev_address: u16,
+    same_address_count: u32,
+}
+
 pub struct Mmc5 {
     prg_mode: u8,
     prg_bank: [u8; 5],
     chr_mode: u8,
     chr_bank: [u8; 12],
     name_bank: [NameTable; 4],
-    sprite_mapping: bool,
-    render_enabled: bool,
+    ctrl: Control,
     _prg_rom_size: usize,
     _interrupt: Interrupt,
 }
@@ -34,8 +40,12 @@ impl Mmc5 {
             chr_mode: 0,
             chr_bank: [0; 12],
             name_bank: [NameTable::Low; 4],
-            sprite_mapping: false,
-            render_enabled: false,
+            ctrl: Control {
+                sprite_mapping: false,
+                render_enabled: false,
+                prev_address: 0xffff,
+                same_address_count: 1,
+            },
             _prg_rom_size: prg_rom_size,
             _interrupt: interrupt,
         }
@@ -117,12 +127,12 @@ impl Mapper for Mmc5 {
         if address <= 0x3fff {
             match address & 7 {
                 0 => {
-                    self.sprite_mapping = (value & 0x20) != 0;
-                    debug!("MMC5 Sprite Bank Mapping: {}", self.sprite_mapping);
+                    self.ctrl.sprite_mapping = (value & 0x20) != 0;
+                    debug!("MMC5 Sprite Bank Mapping: {}", self.ctrl.sprite_mapping);
                 }
                 1 => {
-                    self.render_enabled = (value & 0x18) != 0;
-                    debug!("MMC5 Render Enabled: {}", self.render_enabled);
+                    self.ctrl.render_enabled = (value & 0x18) != 0;
+                    debug!("MMC5 Render Enabled: {}", self.ctrl.render_enabled);
                 }
                 _ => (),
             }
@@ -177,6 +187,17 @@ impl Mapper for Mmc5 {
         ci_ram: &crate::util::MirrorVec<u8>,
         address: u16,
     ) -> u8 {
+        if address == self.ctrl.prev_address {
+            self.ctrl.same_address_count += 1;
+
+            if self.ctrl.same_address_count == 3 {
+                debug!("MMC5 New Line Detected");
+            }
+        } else {
+            self.ctrl.prev_address = address;
+            self.ctrl.same_address_count = 1;
+        }
+
         let index = address as usize & 0x0fff;
 
         match self.name_bank[index >> 10] {
