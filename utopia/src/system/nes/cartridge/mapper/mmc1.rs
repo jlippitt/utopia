@@ -82,8 +82,8 @@ impl Mmc1 {
         }
 
         mappings.name = match self.mirror_mode {
-            0 => [NameTable::Low; 4],
-            1 => [NameTable::High; 4],
+            0 => [NameTable::LOW; 4],
+            1 => [NameTable::HIGH; 4],
             2 => MIRROR_VERTICAL,
             3 => MIRROR_HORIZONTAL,
             _ => unreachable!(),

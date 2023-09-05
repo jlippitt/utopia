@@ -21,9 +21,9 @@ impl Mapper for AxRom {
         debug!("AxROM PRG Read Mapping: {:?}", mappings.prg_read);
 
         mappings.name = if (value & 0x10) != 0 {
-            [NameTable::High; 4]
+            [NameTable::HIGH; 4]
         } else {
-            [NameTable::Low; 4]
+            [NameTable::LOW; 4]
         };
 
         debug!("AxROM Name Mapping: {:?}", mappings.name);

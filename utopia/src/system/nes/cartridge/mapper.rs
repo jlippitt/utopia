@@ -34,11 +34,8 @@ pub trait Mapper {
 
     fn read_name(&mut self, mappings: &mut Mappings, ci_ram: &MirrorVec<u8>, address: u16) -> u8 {
         let index = address as usize & 0x0fff;
-
-        match mappings.name[index >> 10] {
-            NameTable::Low => ci_ram[index & 0x03ff],
-            NameTable::High => ci_ram[0x0400 | (index & 0x03ff)],
-        }
+        let offset = mappings.name[index >> 10];
+        ci_ram[offset as usize | (index & 0x03ff)]
     }
 
     fn write_name(
@@ -49,11 +46,8 @@ pub trait Mapper {
         value: u8,
     ) {
         let index = address as usize & 0x0fff;
-
-        match mappings.name[index >> 10] {
-            NameTable::Low => ci_ram[index & 0x03ff] = value,
-            NameTable::High => ci_ram[0x0400 | (index & 0x03ff)] = value,
-        }
+        let offset = mappings.name[index >> 10];
+        ci_ram[offset as usize | (index & 0x03ff)] = value;
     }
 
     fn on_cpu_cycle(&mut self) {}
@@ -112,30 +106,31 @@ pub enum MirrorMode {
     Vertical,
 }
 
-#[derive(Clone, Copy, Debug)]
-pub enum NameTable {
-    Low,
-    High,
+struct NameTable;
+
+impl NameTable {
+    const LOW: u16 = 0x0000;
+    const HIGH: u16 = 0x0400;
 }
 
-const MIRROR_HORIZONTAL: [NameTable; 4] = [
-    NameTable::Low,
-    NameTable::Low,
-    NameTable::High,
-    NameTable::High,
+const MIRROR_HORIZONTAL: [u16; 4] = [
+    NameTable::LOW,
+    NameTable::LOW,
+    NameTable::HIGH,
+    NameTable::HIGH,
 ];
 
-const MIRROR_VERTICAL: [NameTable; 4] = [
-    NameTable::Low,
-    NameTable::High,
-    NameTable::Low,
-    NameTable::High,
+const MIRROR_VERTICAL: [u16; 4] = [
+    NameTable::LOW,
+    NameTable::HIGH,
+    NameTable::LOW,
+    NameTable::HIGH,
 ];
 
 pub struct Mappings {
     pub prg_read: [PrgRead; 16],
     pub prg_write: [PrgWrite; 16],
-    pub name: [NameTable; 4],
+    pub name: [u16; 4],
     pub chr: [u32; 8],
 }
 

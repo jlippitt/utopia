@@ -149,15 +149,15 @@ fn map_prg(mappings: &mut Mappings, start: usize, len: usize, bank: u8) {
 
 fn map_name(mappings: &mut Mappings, index: usize, value: u8) {
     mappings.name[index] = match value {
-        0 => NameTable::Low,
-        1 => NameTable::High,
+        0 => NameTable::LOW,
+        1 => NameTable::HIGH,
         2 => {
             warn!("ERAM NameTable not yet implemented");
-            NameTable::Low
+            NameTable::LOW
         }
         3 => {
             warn!("Fill Mode NameTable not yet implemented");
-            NameTable::Low
+            NameTable::LOW
         }
         _ => unimplemented!("Custom nametables"),
     }
