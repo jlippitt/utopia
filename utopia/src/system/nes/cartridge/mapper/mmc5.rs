@@ -1,5 +1,5 @@
 use super::{Interrupt, Mapper, Mappings, NameTable};
-use tracing::debug;
+use tracing::{debug, warn};
 
 const PRG_BANK_SIZE: usize = 8192;
 
@@ -20,7 +20,7 @@ impl Mmc5 {
         }
     }
 
-    fn update_mappings(&mut self, mappings: &mut Mappings) {
+    fn update_prg_mappings(&mut self, mappings: &mut Mappings) {
         match self.prg_mode {
             0 => {
                 map_prg(mappings, 6, 2, self.prg_bank[0] & !0x80);
@@ -55,13 +55,19 @@ impl Mmc5 {
 impl Mapper for Mmc5 {
     fn init_mappings(&mut self, mappings: &mut Mappings) {
         mappings.map_registers_with_read(5, 1);
-        self.update_mappings(mappings);
+        self.update_prg_mappings(mappings);
     }
 
     fn write_register(&mut self, mappings: &mut Mappings, address: u16, value: u8) {
         match address {
             0x5000..=0x5015 => (), // TODO: MMC5 Audio
-            0x5104 => (),          // TODO: ERAM
+            0x5100 => {
+                self.prg_mode = value & 0x03;
+                debug!("MMC5 PRG Mode: {}", self.prg_mode);
+                self.update_prg_mappings(mappings);
+            }
+            0x5101 => (), // TODO: CHR Mapping
+            0x5104 => (), // TODO: ERAM
             0x5105 => {
                 map_name(mappings, 0, value & 0x03);
                 map_name(mappings, 1, (value >> 2) & 0x03);
@@ -69,6 +75,18 @@ impl Mapper for Mmc5 {
                 map_name(mappings, 3, value >> 6);
                 debug!("MMC5 Name Mappings: {:?}", mappings.name);
             }
+            0x5106 => (), // TODO: Fill Mode
+            0x5107 => (), // TODO: Fill Mode
+            0x5113..=0x5117 => {
+                let index = (address - 0x5113) as usize;
+                self.prg_bank[index] = value;
+                debug!("MMC5 PRG Bank {}: {:02X}", index, value);
+                self.update_prg_mappings(mappings);
+            }
+            0x5120..=0x512b => (), // TODO: CHR Mapping
+            0x5200 => (),          // TODO: Vertical Split
+            0x5203 => (),          // TODO: Scanline IRQ
+            0x5204 => (),          // TODO: Scanline IRQ
             _ => unimplemented!("MMC5 Register Write {:04X} <= {:02X}", address, value),
         }
     }
@@ -87,6 +105,14 @@ fn map_name(mappings: &mut Mappings, index: usize, value: u8) {
     mappings.name[index] = match value {
         0 => NameTable::Low,
         1 => NameTable::High,
+        2 => {
+            warn!("ERAM NameTable not yet implemented");
+            NameTable::Low
+        }
+        3 => {
+            warn!("Fill Mode NameTable not yet implemented");
+            NameTable::Low
+        }
         _ => unimplemented!("Custom nametables"),
     }
 }
