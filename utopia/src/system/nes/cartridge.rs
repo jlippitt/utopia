@@ -76,22 +76,25 @@ impl<T: Mapped> Cartridge<T> {
         })
     }
 
-    pub fn read_prg(&self, address: u16, prev_value: u8) -> u8 {
+    pub fn read_prg(&mut self, address: u16, prev_value: u8) -> u8 {
         match self.mappings.prg_read[address as usize >> 12] {
             PrgRead::Rom(offset) => self.prg_rom[offset as usize | (address as usize & 0x0fff)],
             PrgRead::Ram(offset) => self.prg_ram[offset as usize | (address as usize & 0x0fff)],
+            PrgRead::Register => self
+                .mapper
+                .read_register(&mut self.mappings, address, prev_value),
             PrgRead::None => prev_value,
         }
     }
 
     pub fn write_prg(&mut self, address: u16, value: u8) {
         match self.mappings.prg_write[address as usize >> 12] {
-            PrgWrite::Register => self
-                .mapper
-                .write_register(&mut self.mappings, address, value),
             PrgWrite::Ram(offset) => {
                 self.prg_ram[offset as usize | (address as usize & 0x0fff)] = value
             }
+            PrgWrite::Register => self
+                .mapper
+                .write_register(&mut self.mappings, address, value),
             PrgWrite::None => (),
         }
     }

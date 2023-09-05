@@ -5,6 +5,7 @@ use enum_dispatch::enum_dispatch;
 use mmc1::Mmc1;
 use mmc2::Mmc2;
 use mmc3::Mmc3;
+use mmc5::Mmc5;
 use nrom::NRom;
 use uxrom::UxRom;
 
@@ -13,6 +14,7 @@ mod cnrom;
 mod mmc1;
 mod mmc2;
 mod mmc3;
+mod mmc5;
 mod nrom;
 mod uxrom;
 
@@ -22,9 +24,17 @@ const CHR_PAGE_SIZE: usize = 1024;
 #[enum_dispatch]
 pub trait Mapper {
     fn init_mappings(&mut self, _mappings: &mut Mappings) {}
+
+    fn read_register(&mut self, _mappings: &mut Mappings, _address: u16, prev_value: u8) -> u8 {
+        prev_value
+    }
+
     fn write_register(&mut self, _mappings: &mut Mappings, _address: u16, _value: u8) {}
+
     fn on_cpu_cycle(&mut self) {}
+
     fn on_ppu_address_changed(&mut self, _ppu_address: u16) {}
+
     fn on_ppu_chr_fetch(&mut self, _mappings: &mut Mappings, _ppu_address: u16) {}
 }
 
@@ -34,6 +44,7 @@ pub enum MapperType {
     Mmc1,
     Mmc2,
     Mmc3,
+    Mmc5,
     UxRom,
     CnRom,
     AxRom,
@@ -47,6 +58,7 @@ impl MapperType {
             2 => Self::UxRom(UxRom::new(prg_rom_size)),
             3 => Self::CnRom(CnRom::new()),
             4 => Self::Mmc3(Mmc3::new(prg_rom_size, interrupt)),
+            5 => Self::Mmc5(Mmc5::new(prg_rom_size, interrupt)),
             7 => Self::AxRom(AxRom::new()),
             9 => Self::Mmc2(Mmc2::new(prg_rom_size)),
             _ => panic!("Mapper {} not yet supported", mapper_number),
@@ -58,13 +70,14 @@ impl MapperType {
 pub enum PrgRead {
     Rom(u32),
     Ram(u32),
+    Register,
     None,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub enum PrgWrite {
-    Register,
     Ram(u32),
+    Register,
     None,
 }
 
@@ -167,6 +180,11 @@ impl Mappings {
         self.prg_write[start..(start + len)].fill(PrgWrite::Register);
     }
 
+    pub fn map_registers_with_read(&mut self, start: usize, len: usize) {
+        self.prg_read[start..(start + len)].fill(PrgRead::Register);
+        self.map_registers(start, len);
+    }
+
     pub fn map_chr(&mut self, start: usize, len: usize, base_offset: usize) {
         for index in 0..len {
             let offset = base_offset + index * CHR_PAGE_SIZE;
@@ -184,6 +202,12 @@ impl Mappings {
     pub fn unmap_prg(&mut self, start: usize, len: usize) {
         for index in 0..len {
             self.prg_read[start + index] = PrgRead::None;
+            self.prg_write[start + index] = PrgWrite::None;
+        }
+    }
+
+    pub fn unmap_prg_write(&mut self, start: usize, len: usize) {
+        for index in 0..len {
             self.prg_write[start + index] = PrgWrite::None;
         }
     }
