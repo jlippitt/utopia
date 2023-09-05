@@ -1,13 +1,27 @@
-use super::{Interrupt, Mapper, Mappings, NameTable, CHR_PAGE_SIZE};
-use tracing::{debug, warn};
+use super::{Interrupt, Mapper, Mappings, CHR_PAGE_SIZE};
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
+use tracing::debug;
 
 const PRG_BANK_SIZE: usize = 8192;
+
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, FromPrimitive)]
+enum NameTable {
+    Low,
+    High,
+    Eram,
+    Fill,
+}
 
 pub struct Mmc5 {
     prg_mode: u8,
     prg_bank: [u8; 5],
     chr_mode: u8,
     chr_bank: [u8; 12],
+    name_bank: [NameTable; 4],
+    sprite_mapping: bool,
+    render_enabled: bool,
     _prg_rom_size: usize,
     _interrupt: Interrupt,
 }
@@ -19,6 +33,9 @@ impl Mmc5 {
             prg_bank: [0, 0, 0, 0, 0xff],
             chr_mode: 0,
             chr_bank: [0; 12],
+            name_bank: [NameTable::Low; 4],
+            sprite_mapping: false,
+            render_enabled: false,
             _prg_rom_size: prg_rom_size,
             _interrupt: interrupt,
         }
@@ -91,11 +108,28 @@ impl Mmc5 {
 
 impl Mapper for Mmc5 {
     fn init_mappings(&mut self, mappings: &mut Mappings) {
+        mappings.map_registers(2, 2);
         mappings.map_registers_with_read(5, 1);
         self.update_prg_mappings(mappings);
     }
 
     fn write_register(&mut self, mappings: &mut Mappings, address: u16, value: u8) {
+        if address <= 0x3fff {
+            match address & 7 {
+                0 => {
+                    self.sprite_mapping = (value & 0x20) != 0;
+                    debug!("MMC5 Sprite Bank Mapping: {}", self.sprite_mapping);
+                }
+                1 => {
+                    self.render_enabled = (value & 0x18) != 0;
+                    debug!("MMC5 Render Enabled: {}", self.render_enabled);
+                }
+                _ => (),
+            }
+
+            return;
+        }
+
         match address {
             0x5000..=0x5015 => (), // TODO: MMC5 Audio
             0x5100 => {
@@ -110,11 +144,11 @@ impl Mapper for Mmc5 {
             }
             0x5104 => (), // TODO: ERAM
             0x5105 => {
-                map_name(mappings, 0, value & 0x03);
-                map_name(mappings, 1, (value >> 2) & 0x03);
-                map_name(mappings, 2, (value >> 4) & 0x03);
-                map_name(mappings, 3, value >> 6);
-                debug!("MMC5 Name Mappings: {:?}", mappings.name);
+                self.name_bank[0] = NameTable::from_u8(value & 0x03).unwrap();
+                self.name_bank[1] = NameTable::from_u8((value >> 2) & 0x03).unwrap();
+                self.name_bank[2] = NameTable::from_u8((value >> 4) & 0x03).unwrap();
+                self.name_bank[3] = NameTable::from_u8(value >> 6).unwrap();
+                debug!("MMC5 Name Banks: {:?}", self.name_bank);
             }
             0x5106 => (), // TODO: Fill Mode
             0x5107 => (), // TODO: Fill Mode
@@ -136,6 +170,22 @@ impl Mapper for Mmc5 {
             _ => unimplemented!("MMC5 Register Write {:04X} <= {:02X}", address, value),
         }
     }
+
+    fn read_name(
+        &mut self,
+        _mappings: &mut Mappings,
+        ci_ram: &crate::util::MirrorVec<u8>,
+        address: u16,
+    ) -> u8 {
+        let index = address as usize & 0x0fff;
+
+        match self.name_bank[index >> 10] {
+            NameTable::Low => ci_ram[index & 0x03ff],
+            NameTable::High => ci_ram[0x0400 | (index & 0x03ff)],
+            NameTable::Eram => unimplemented!("ERAM Name Tables"),
+            NameTable::Fill => unimplemented!("Fill Mode Name Tables"),
+        }
+    }
 }
 
 fn map_prg(mappings: &mut Mappings, start: usize, len: usize, bank: u8) {
@@ -144,21 +194,5 @@ fn map_prg(mappings: &mut Mappings, start: usize, len: usize, bank: u8) {
         mappings.unmap_prg_write(start, len);
     } else {
         mappings.map_prg_ram(start, len, PRG_BANK_SIZE * bank as usize);
-    }
-}
-
-fn map_name(mappings: &mut Mappings, index: usize, value: u8) {
-    mappings.name[index] = match value {
-        0 => NameTable::LOW,
-        1 => NameTable::HIGH,
-        2 => {
-            warn!("ERAM NameTable not yet implemented");
-            NameTable::LOW
-        }
-        3 => {
-            warn!("Fill Mode NameTable not yet implemented");
-            NameTable::LOW
-        }
-        _ => unimplemented!("Custom nametables"),
     }
 }
