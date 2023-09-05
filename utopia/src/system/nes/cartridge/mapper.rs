@@ -1,4 +1,5 @@
 use super::super::interrupt::{Interrupt, InterruptType};
+use crate::util::MirrorVec;
 use axrom::AxRom;
 use cnrom::CnRom;
 use enum_dispatch::enum_dispatch;
@@ -30,6 +31,30 @@ pub trait Mapper {
     }
 
     fn write_register(&mut self, _mappings: &mut Mappings, _address: u16, _value: u8) {}
+
+    fn read_name(&mut self, mappings: &mut Mappings, ci_ram: &MirrorVec<u8>, address: u16) -> u8 {
+        let index = address as usize & 0x0fff;
+
+        match mappings.name[index >> 10] {
+            NameTable::Low => ci_ram[index & 0x03ff],
+            NameTable::High => ci_ram[0x0400 | (index & 0x03ff)],
+        }
+    }
+
+    fn write_name(
+        &mut self,
+        mappings: &mut Mappings,
+        ci_ram: &mut MirrorVec<u8>,
+        address: u16,
+        value: u8,
+    ) {
+        let index = address as usize & 0x0fff;
+
+        match mappings.name[index >> 10] {
+            NameTable::Low => ci_ram[index & 0x03ff] = value,
+            NameTable::High => ci_ram[0x0400 | (index & 0x03ff)] = value,
+        }
+    }
 
     fn on_cpu_cycle(&mut self) {}
 

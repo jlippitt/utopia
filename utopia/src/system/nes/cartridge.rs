@@ -1,7 +1,7 @@
 use super::Interrupt;
 use crate::util::mirror::{Mirror, MirrorVec};
 use crate::{Mapped, MemoryMapper};
-use mapper::{Mapper, MapperType, Mappings, MirrorMode, NameTable, PrgRead, PrgWrite};
+use mapper::{Mapper, MapperType, Mappings, MirrorMode, PrgRead, PrgWrite};
 use tracing::info;
 
 mod mapper;
@@ -101,12 +101,8 @@ impl<T: Mapped> Cartridge<T> {
 
     pub fn read_vram(&mut self, address: u16) -> u8 {
         if address >= 0x2000 {
-            let index = address as usize & 0x0fff;
-
-            match self.mappings.name[index >> 10] {
-                NameTable::Low => self.ci_ram[index & 0x03ff],
-                NameTable::High => self.ci_ram[0x0400 | (index & 0x03ff)],
-            }
+            self.mapper
+                .read_name(&mut self.mappings, &self.ci_ram, address)
         } else {
             let offset = self.mappings.chr[(address >> 10) as usize];
             let value = self.chr_data[offset as usize | ((address as usize) & 0x03ff)];
@@ -117,12 +113,8 @@ impl<T: Mapped> Cartridge<T> {
 
     pub fn write_vram(&mut self, address: u16, value: u8) {
         if address >= 0x2000 {
-            let index = address as usize & 0x0fff;
-
-            match self.mappings.name[index >> 10] {
-                NameTable::Low => self.ci_ram[index & 0x03ff] = value,
-                NameTable::High => self.ci_ram[0x0400 | (index & 0x03ff)] = value,
-            }
+            self.mapper
+                .write_name(&mut self.mappings, &mut self.ci_ram, address, value);
         } else if self.chr_writable {
             let offset = self.mappings.chr[(address >> 10) as usize];
             self.chr_data[offset as usize | ((address as usize) & 0x03ff)] = value;
