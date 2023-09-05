@@ -77,7 +77,7 @@ impl MapperType {
             2 => Self::UxRom(UxRom::new(prg_rom_size)),
             3 => Self::CnRom(CnRom::new()),
             4 => Self::Mmc3(Mmc3::new(prg_rom_size, interrupt)),
-            5 => Self::Mmc5(Mmc5::new(prg_rom_size, interrupt)),
+            5 => Self::Mmc5(Mmc5::new(interrupt)),
             7 => Self::AxRom(AxRom::new()),
             9 => Self::Mmc2(Mmc2::new(prg_rom_size)),
             _ => panic!("Mapper {} not yet supported", mapper_number),

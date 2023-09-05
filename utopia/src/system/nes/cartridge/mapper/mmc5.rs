@@ -1,9 +1,9 @@
-use super::{Interrupt, Mapper, Mappings, CHR_PAGE_SIZE};
+use super::{Interrupt, InterruptType, Mapper, Mappings, CHR_PAGE_SIZE};
 use crate::util::MirrorVec;
 use bitflags::bitflags;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
-use tracing::{debug, warn};
+use tracing::debug;
 
 const PRG_BANK_SIZE: usize = 8192;
 const ERAM_SIZE: usize = 1024;
@@ -20,10 +20,11 @@ enum NameTable {
 struct Control {
     sprite_mode: bool,
     render_enabled: bool,
-    no_read_count: u32,
+    scanline_count: u8,
+    no_read_count: u64,
     prev_address: u16,
-    same_address_count: u32,
-    same_line_reads: u32,
+    same_address_count: u8,
+    same_line_reads: u8,
 }
 
 bitflags! {
@@ -55,13 +56,14 @@ pub struct Mmc5 {
     eram_flags: EramFlags,
     fill_mode_name: u8,
     fill_mode_attr: u8,
+    scanline_irq_compare: u8,
+    scanline_irq_enable: bool,
     scanline_irq_status: ScanlineIrqStatus,
-    _prg_rom_size: usize,
-    _interrupt: Interrupt,
+    interrupt: Interrupt,
 }
 
 impl Mmc5 {
-    pub fn new(prg_rom_size: usize, interrupt: Interrupt) -> Self {
+    pub fn new(interrupt: Interrupt) -> Self {
         Self {
             prg_mode: 3,
             prg_bank: [0, 0, 0, 0, 0xff],
@@ -71,6 +73,7 @@ impl Mmc5 {
             ctrl: Control {
                 sprite_mode: false,
                 render_enabled: false,
+                scanline_count: 0,
                 no_read_count: 0,
                 prev_address: 0xffff,
                 same_address_count: 1,
@@ -80,9 +83,10 @@ impl Mmc5 {
             eram_flags: EramFlags::empty(),
             fill_mode_name: 0,
             fill_mode_attr: 0,
+            scanline_irq_compare: 0,
+            scanline_irq_enable: false,
             scanline_irq_status: ScanlineIrqStatus::empty(),
-            _prg_rom_size: prg_rom_size,
-            _interrupt: interrupt,
+            interrupt,
         }
     }
 
@@ -190,7 +194,12 @@ impl Mapper for Mmc5 {
 
     fn read_register(&mut self, _mappings: &mut Mappings, address: u16, _prev_value: u8) -> u8 {
         match address {
-            0x5204 => self.scanline_irq_status.bits(),
+            0x5204 => {
+                let value = self.scanline_irq_status.bits();
+                self.scanline_irq_status.remove(ScanlineIrqStatus::PENDING);
+                self.interrupt.clear(InterruptType::MapperIrq);
+                value
+            }
             0x5c00..=0x5fff => {
                 if self.eram_flags.contains(EramFlags::READ) {
                     self.eram[address as usize & 0x03ff]
@@ -214,6 +223,10 @@ impl Mapper for Mmc5 {
                     self.ctrl.render_enabled = (value & 0x18) != 0;
                     debug!("MMC5 Render Enabled: {}", self.ctrl.render_enabled);
                     self.update_chr_mappings(mappings);
+
+                    if !self.ctrl.render_enabled {
+                        self.scanline_irq_status.remove(ScanlineIrqStatus::IN_FRAME);
+                    }
                 }
                 _ => (),
             }
@@ -272,8 +285,14 @@ impl Mapper for Mmc5 {
                 self.update_chr_mappings(mappings);
             }
             0x5200 => (), // TODO: Vertical Split
-            0x5203 => (), // TODO: Scanline IRQ
-            0x5204 => (), // TODO: Scanline IRQ
+            0x5203 => {
+                self.scanline_irq_compare = value;
+                debug!("MMC5 Scanline IRQ Compare: {}", self.scanline_irq_compare);
+            }
+            0x5204 => {
+                self.scanline_irq_enable = (value & 0x80) != 0;
+                debug!("MMC5 Scanline IRQ Enable: {}", self.scanline_irq_enable);
+            }
             0x5c00..=0x5fff => {
                 if self.eram_flags.contains(EramFlags::WRITE) {
                     self.eram[address as usize & 0x03ff] = value;
@@ -290,8 +309,26 @@ impl Mapper for Mmc5 {
             self.ctrl.same_address_count += 1;
 
             if self.ctrl.same_address_count == 3 {
+                if self
+                    .scanline_irq_status
+                    .contains(ScanlineIrqStatus::IN_FRAME)
+                {
+                    self.ctrl.scanline_count += 1;
+
+                    if self.ctrl.scanline_count == self.scanline_irq_compare {
+                        self.scanline_irq_status.insert(ScanlineIrqStatus::PENDING);
+
+                        if self.scanline_irq_enable {
+                            self.interrupt.raise(InterruptType::MapperIrq);
+                        }
+                    }
+                } else {
+                    debug!("MMC5 Frame Start Detected");
+                    self.scanline_irq_status.insert(ScanlineIrqStatus::IN_FRAME);
+                    self.ctrl.scanline_count = 0;
+                }
+
                 debug!("MMC5 New Line Detected");
-                self.scanline_irq_status.insert(ScanlineIrqStatus::IN_FRAME);
                 self.ctrl.same_line_reads = 1;
                 self.update_chr_mappings(mappings);
             }
