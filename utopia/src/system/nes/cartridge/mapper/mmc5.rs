@@ -323,6 +323,7 @@ impl Mapper for Mmc5 {
                     debug!("MMC5 Frame Start Detected");
                     self.scanline_irq_status.insert(ScanlineIrqStatus::IN_FRAME);
                     self.ctrl.scanline_count = 0;
+                    self.interrupt.clear(InterruptType::MapperIrq);
                 }
 
                 debug!("MMC5 New Line Detected");
