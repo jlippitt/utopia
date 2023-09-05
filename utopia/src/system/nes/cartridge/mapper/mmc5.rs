@@ -20,6 +20,7 @@ enum NameTable {
 struct Control {
     sprite_mode: bool,
     render_enabled: bool,
+    no_read_count: u32,
     prev_address: u16,
     same_address_count: u32,
     same_line_reads: u32,
@@ -35,6 +36,14 @@ bitflags! {
     }
 }
 
+bitflags! {
+    #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+    struct ScanlineIrqStatus: u8 {
+        const IN_FRAME = 0x40;
+        const PENDING = 0x80;
+    }
+}
+
 pub struct Mmc5 {
     prg_mode: u8,
     prg_bank: [u8; 5],
@@ -44,6 +53,7 @@ pub struct Mmc5 {
     ctrl: Control,
     eram: MirrorVec<u8>,
     eram_flags: EramFlags,
+    scanline_irq_status: ScanlineIrqStatus,
     _prg_rom_size: usize,
     _interrupt: Interrupt,
 }
@@ -59,12 +69,14 @@ impl Mmc5 {
             ctrl: Control {
                 sprite_mode: false,
                 render_enabled: false,
+                no_read_count: 0,
                 prev_address: 0xffff,
                 same_address_count: 1,
                 same_line_reads: 1,
             },
             eram: MirrorVec::new(ERAM_SIZE),
             eram_flags: EramFlags::empty(),
+            scanline_irq_status: ScanlineIrqStatus::empty(),
             _prg_rom_size: prg_rom_size,
             _interrupt: interrupt,
         }
@@ -174,7 +186,7 @@ impl Mapper for Mmc5 {
 
     fn read_register(&mut self, _mappings: &mut Mappings, address: u16, _prev_value: u8) -> u8 {
         match address {
-            0x5204 => 0, // TODO: Scanline IRQ
+            0x5204 => self.scanline_irq_status.bits(),
             0x5c00..=0x5fff => {
                 if self.eram_flags.contains(EramFlags::READ) {
                     self.eram[address as usize & 0x03ff]
@@ -261,11 +273,14 @@ impl Mapper for Mmc5 {
     }
 
     fn read_name(&mut self, mappings: &mut Mappings, ci_ram: &MirrorVec<u8>, address: u16) -> u8 {
+        self.ctrl.no_read_count = 0;
+
         if address == self.ctrl.prev_address {
             self.ctrl.same_address_count += 1;
 
             if self.ctrl.same_address_count == 3 {
                 debug!("MMC5 New Line Detected");
+                self.scanline_irq_status.insert(ScanlineIrqStatus::IN_FRAME);
                 self.ctrl.same_line_reads = 1;
                 self.update_chr_mappings(mappings);
             }
@@ -323,6 +338,19 @@ impl Mapper for Mmc5 {
             NameTable::Fill => {
                 warn!("Fill Mode name tables not yet implemented");
             }
+        }
+    }
+
+    fn on_ppu_chr_fetch(&mut self, _mappings: &mut Mappings, _ppu_address: u16) {
+        self.ctrl.no_read_count = 0;
+    }
+
+    fn on_cpu_cycle(&mut self) {
+        self.ctrl.no_read_count += 1;
+
+        if self.ctrl.no_read_count == 3 {
+            debug!("MMC5 Frame End Detected");
+            self.scanline_irq_status.remove(ScanlineIrqStatus::IN_FRAME);
         }
     }
 }
