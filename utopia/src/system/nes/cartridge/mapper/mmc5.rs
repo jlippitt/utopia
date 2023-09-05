@@ -1,9 +1,12 @@
 use super::{Interrupt, Mapper, Mappings, CHR_PAGE_SIZE};
+use crate::util::MirrorVec;
+use bitflags::bitflags;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
-use tracing::debug;
+use tracing::{debug, warn};
 
 const PRG_BANK_SIZE: usize = 8192;
+const ERAM_SIZE: usize = 1024;
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, FromPrimitive)]
@@ -22,6 +25,16 @@ struct Control {
     same_line_reads: u32,
 }
 
+bitflags! {
+    #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+    struct EramFlags: u8 {
+        const NAMETABLE = 0x01;
+        const EXTENDED_ATTR = 0x02;
+        const READ = 0x04;
+        const WRITE = 0x08;
+    }
+}
+
 pub struct Mmc5 {
     prg_mode: u8,
     prg_bank: [u8; 5],
@@ -29,6 +42,8 @@ pub struct Mmc5 {
     chr_bank: [u8; 12],
     name_bank: [NameTable; 4],
     ctrl: Control,
+    eram: MirrorVec<u8>,
+    eram_flags: EramFlags,
     _prg_rom_size: usize,
     _interrupt: Interrupt,
 }
@@ -48,6 +63,8 @@ impl Mmc5 {
                 same_address_count: 1,
                 same_line_reads: 1,
             },
+            eram: MirrorVec::new(ERAM_SIZE),
+            eram_flags: EramFlags::empty(),
             _prg_rom_size: prg_rom_size,
             _interrupt: interrupt,
         }
@@ -155,6 +172,20 @@ impl Mapper for Mmc5 {
         self.update_prg_mappings(mappings);
     }
 
+    fn read_register(&mut self, _mappings: &mut Mappings, address: u16, _prev_value: u8) -> u8 {
+        match address {
+            0x5204 => 0, // TODO: Scanline IRQ
+            0x5c00..=0x5fff => {
+                if self.eram_flags.contains(EramFlags::READ) {
+                    self.eram[address as usize & 0x03ff]
+                } else {
+                    0
+                }
+            }
+            _ => unimplemented!("MMC5 Register Read {:04X}", address),
+        }
+    }
+
     fn write_register(&mut self, mappings: &mut Mappings, address: u16, value: u8) {
         if address <= 0x3fff {
             match address & 7 {
@@ -186,7 +217,16 @@ impl Mapper for Mmc5 {
                 debug!("MMC5 CHR Mode: {}", self.chr_mode);
                 self.update_chr_mappings(mappings);
             }
-            0x5104 => (), // TODO: ERAM
+            0x5104 => {
+                self.eram_flags = match value & 0x03 {
+                    0 => EramFlags::NAMETABLE | EramFlags::WRITE,
+                    1 => EramFlags::NAMETABLE | EramFlags::EXTENDED_ATTR | EramFlags::WRITE,
+                    2 => EramFlags::READ | EramFlags::WRITE,
+                    3 => EramFlags::READ,
+                    _ => unreachable!(),
+                };
+                debug!("MMC5 ERAM: {:?}", self.eram_flags);
+            }
             0x5105 => {
                 self.name_bank[0] = NameTable::from_u8(value & 0x03).unwrap();
                 self.name_bank[1] = NameTable::from_u8((value >> 2) & 0x03).unwrap();
@@ -211,16 +251,16 @@ impl Mapper for Mmc5 {
             0x5200 => (), // TODO: Vertical Split
             0x5203 => (), // TODO: Scanline IRQ
             0x5204 => (), // TODO: Scanline IRQ
+            0x5c00..=0x5fff => {
+                if self.eram_flags.contains(EramFlags::WRITE) {
+                    self.eram[address as usize & 0x03ff] = value;
+                }
+            }
             _ => unimplemented!("MMC5 Register Write {:04X} <= {:02X}", address, value),
         }
     }
 
-    fn read_name(
-        &mut self,
-        mappings: &mut Mappings,
-        ci_ram: &crate::util::MirrorVec<u8>,
-        address: u16,
-    ) -> u8 {
+    fn read_name(&mut self, mappings: &mut Mappings, ci_ram: &MirrorVec<u8>, address: u16) -> u8 {
         if address == self.ctrl.prev_address {
             self.ctrl.same_address_count += 1;
 
@@ -244,11 +284,45 @@ impl Mapper for Mmc5 {
 
         let index = address as usize & 0x0fff;
 
+        // TODO: Extended attributes
         match self.name_bank[index >> 10] {
             NameTable::Low => ci_ram[index & 0x03ff],
             NameTable::High => ci_ram[0x0400 | (index & 0x03ff)],
-            NameTable::Eram => unimplemented!("ERAM Name Tables"),
-            NameTable::Fill => unimplemented!("Fill Mode Name Tables"),
+            NameTable::Eram => {
+                if self.eram_flags.contains(EramFlags::NAMETABLE) {
+                    self.eram[index & 0x03ff]
+                } else {
+                    0
+                }
+            }
+            NameTable::Fill => {
+                warn!("Fill Mode name tables not yet implemented");
+                0
+            }
+        }
+    }
+
+    fn write_name(
+        &mut self,
+        _mappings: &mut Mappings,
+        ci_ram: &mut MirrorVec<u8>,
+        address: u16,
+        value: u8,
+    ) {
+        let index = address as usize & 0x0fff;
+
+        // TODO: Extended attributes
+        match self.name_bank[index >> 10] {
+            NameTable::Low => ci_ram[index & 0x03ff] = value,
+            NameTable::High => ci_ram[0x0400 | (index & 0x03ff)] = value,
+            NameTable::Eram => {
+                if self.eram_flags.contains(EramFlags::NAMETABLE) {
+                    self.eram[index & 0x03ff] = value;
+                }
+            }
+            NameTable::Fill => {
+                warn!("Fill Mode name tables not yet implemented");
+            }
         }
     }
 }
