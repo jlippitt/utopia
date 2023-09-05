@@ -15,10 +15,11 @@ enum NameTable {
 }
 
 struct Control {
-    sprite_mapping: bool,
+    sprite_mode: bool,
     render_enabled: bool,
     prev_address: u16,
     same_address_count: u32,
+    same_line_reads: u32,
 }
 
 pub struct Mmc5 {
@@ -41,10 +42,11 @@ impl Mmc5 {
             chr_bank: [0; 12],
             name_bank: [NameTable::Low; 4],
             ctrl: Control {
-                sprite_mapping: false,
+                sprite_mode: false,
                 render_enabled: false,
                 prev_address: 0xffff,
                 same_address_count: 1,
+                same_line_reads: 1,
             },
             _prg_rom_size: prg_rom_size,
             _interrupt: interrupt,
@@ -83,34 +85,64 @@ impl Mmc5 {
     }
 
     fn update_chr_mappings(&mut self, mappings: &mut Mappings) {
-        match self.chr_mode {
-            0 => {
-                mappings.map_chr(0, 8, CHR_PAGE_SIZE * self.chr_bank[7] as usize);
-            }
-            1 => {
-                mappings.map_chr(0, 4, CHR_PAGE_SIZE * self.chr_bank[3] as usize);
-                mappings.map_chr(4, 4, CHR_PAGE_SIZE * self.chr_bank[7] as usize);
-            }
-            2 => {
-                mappings.map_chr(0, 2, CHR_PAGE_SIZE * self.chr_bank[1] as usize);
-                mappings.map_chr(2, 2, CHR_PAGE_SIZE * self.chr_bank[3] as usize);
-                mappings.map_chr(4, 2, CHR_PAGE_SIZE * self.chr_bank[5] as usize);
-                mappings.map_chr(6, 2, CHR_PAGE_SIZE * self.chr_bank[7] as usize);
-            }
-            3 => {
-                mappings.map_chr(0, 1, CHR_PAGE_SIZE * self.chr_bank[0] as usize);
-                mappings.map_chr(1, 1, CHR_PAGE_SIZE * self.chr_bank[1] as usize);
-                mappings.map_chr(2, 1, CHR_PAGE_SIZE * self.chr_bank[2] as usize);
-                mappings.map_chr(3, 1, CHR_PAGE_SIZE * self.chr_bank[3] as usize);
-                mappings.map_chr(4, 1, CHR_PAGE_SIZE * self.chr_bank[4] as usize);
-                mappings.map_chr(5, 1, CHR_PAGE_SIZE * self.chr_bank[5] as usize);
-                mappings.map_chr(6, 1, CHR_PAGE_SIZE * self.chr_bank[6] as usize);
-                mappings.map_chr(7, 1, CHR_PAGE_SIZE * self.chr_bank[7] as usize);
-            }
-            _ => unreachable!(),
-        }
+        if !self.ctrl.sprite_mode
+            || !self.ctrl.render_enabled
+            || (64..80).contains(&self.ctrl.same_line_reads)
+        {
+            debug!("MMC5 Lower CHR Banks Selected");
 
-        // TODO: 8x16 Sprite Banks
+            match self.chr_mode {
+                0 => {
+                    mappings.map_chr(0, 8, CHR_PAGE_SIZE * self.chr_bank[7] as usize);
+                }
+                1 => {
+                    mappings.map_chr(0, 4, CHR_PAGE_SIZE * self.chr_bank[3] as usize);
+                    mappings.map_chr(4, 4, CHR_PAGE_SIZE * self.chr_bank[7] as usize);
+                }
+                2 => {
+                    mappings.map_chr(0, 2, CHR_PAGE_SIZE * self.chr_bank[1] as usize);
+                    mappings.map_chr(2, 2, CHR_PAGE_SIZE * self.chr_bank[3] as usize);
+                    mappings.map_chr(4, 2, CHR_PAGE_SIZE * self.chr_bank[5] as usize);
+                    mappings.map_chr(6, 2, CHR_PAGE_SIZE * self.chr_bank[7] as usize);
+                }
+                3 => {
+                    mappings.map_chr(0, 1, CHR_PAGE_SIZE * self.chr_bank[0] as usize);
+                    mappings.map_chr(1, 1, CHR_PAGE_SIZE * self.chr_bank[1] as usize);
+                    mappings.map_chr(2, 1, CHR_PAGE_SIZE * self.chr_bank[2] as usize);
+                    mappings.map_chr(3, 1, CHR_PAGE_SIZE * self.chr_bank[3] as usize);
+                    mappings.map_chr(4, 1, CHR_PAGE_SIZE * self.chr_bank[4] as usize);
+                    mappings.map_chr(5, 1, CHR_PAGE_SIZE * self.chr_bank[5] as usize);
+                    mappings.map_chr(6, 1, CHR_PAGE_SIZE * self.chr_bank[6] as usize);
+                    mappings.map_chr(7, 1, CHR_PAGE_SIZE * self.chr_bank[7] as usize);
+                }
+                _ => unreachable!(),
+            }
+        } else {
+            debug!("MMC5 Upper CHR Banks Selected");
+
+            match self.chr_mode {
+                0 | 1 => {
+                    mappings.map_chr(0, 8, CHR_PAGE_SIZE * self.chr_bank[11] as usize);
+                }
+                2 => {
+                    mappings.map_chr(0, 2, CHR_PAGE_SIZE * self.chr_bank[9] as usize);
+                    mappings.map_chr(2, 2, CHR_PAGE_SIZE * self.chr_bank[11] as usize);
+                    mappings.map_chr(4, 2, CHR_PAGE_SIZE * self.chr_bank[9] as usize);
+                    mappings.map_chr(6, 2, CHR_PAGE_SIZE * self.chr_bank[11] as usize);
+                }
+                3 => {
+                    mappings.map_chr(0, 1, CHR_PAGE_SIZE * self.chr_bank[8] as usize);
+                    mappings.map_chr(1, 1, CHR_PAGE_SIZE * self.chr_bank[9] as usize);
+                    mappings.map_chr(2, 1, CHR_PAGE_SIZE * self.chr_bank[10] as usize);
+                    mappings.map_chr(3, 1, CHR_PAGE_SIZE * self.chr_bank[11] as usize);
+                    mappings.map_chr(4, 1, CHR_PAGE_SIZE * self.chr_bank[8] as usize);
+                    mappings.map_chr(5, 1, CHR_PAGE_SIZE * self.chr_bank[9] as usize);
+                    mappings.map_chr(6, 1, CHR_PAGE_SIZE * self.chr_bank[10] as usize);
+                    mappings.map_chr(7, 1, CHR_PAGE_SIZE * self.chr_bank[11] as usize);
+                }
+                _ => unreachable!(),
+            }
+        }
 
         debug!("MMC5 CHR Mappings: {:?}", mappings.chr);
     }
@@ -127,12 +159,14 @@ impl Mapper for Mmc5 {
         if address <= 0x3fff {
             match address & 7 {
                 0 => {
-                    self.ctrl.sprite_mapping = (value & 0x20) != 0;
-                    debug!("MMC5 Sprite Bank Mapping: {}", self.ctrl.sprite_mapping);
+                    self.ctrl.sprite_mode = (value & 0x20) != 0;
+                    debug!("MMC5 Sprite Mode: {}", self.ctrl.sprite_mode);
+                    self.update_chr_mappings(mappings);
                 }
                 1 => {
                     self.ctrl.render_enabled = (value & 0x18) != 0;
                     debug!("MMC5 Render Enabled: {}", self.ctrl.render_enabled);
+                    self.update_chr_mappings(mappings);
                 }
                 _ => (),
             }
@@ -183,7 +217,7 @@ impl Mapper for Mmc5 {
 
     fn read_name(
         &mut self,
-        _mappings: &mut Mappings,
+        mappings: &mut Mappings,
         ci_ram: &crate::util::MirrorVec<u8>,
         address: u16,
     ) -> u8 {
@@ -192,10 +226,20 @@ impl Mapper for Mmc5 {
 
             if self.ctrl.same_address_count == 3 {
                 debug!("MMC5 New Line Detected");
+                self.ctrl.same_line_reads = 1;
+                self.update_chr_mappings(mappings);
             }
         } else {
             self.ctrl.prev_address = address;
             self.ctrl.same_address_count = 1;
+        }
+
+        self.ctrl.same_line_reads += 1;
+
+        match self.ctrl.same_line_reads {
+            64 => self.update_chr_mappings(mappings),
+            80 => self.update_chr_mappings(mappings),
+            _ => (),
         }
 
         let index = address as usize & 0x0fff;
