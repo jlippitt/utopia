@@ -163,7 +163,7 @@ impl Mapper for Mmc3 {
         }
     }
 
-    fn on_cpu_cycle(&mut self) {
+    fn on_cpu_cycle(&mut self, _mappings: &mut Mappings) {
         self.cycle_counter += 1;
     }
 

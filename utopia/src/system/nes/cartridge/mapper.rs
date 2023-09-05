@@ -50,7 +50,7 @@ pub trait Mapper {
         ci_ram[offset as usize | (index & 0x03ff)] = value;
     }
 
-    fn on_cpu_cycle(&mut self) {}
+    fn on_cpu_cycle(&mut self, _mappings: &mut Mappings) {}
 
     fn on_ppu_address_changed(&mut self, _ppu_address: u16) {}
 

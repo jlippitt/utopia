@@ -122,7 +122,7 @@ impl<T: Mapped> Cartridge<T> {
     }
 
     pub fn on_cpu_cycle(&mut self) {
-        self.mapper.on_cpu_cycle();
+        self.mapper.on_cpu_cycle(&mut self.mappings);
     }
 
     pub fn on_ppu_address_changed(&mut self, ppu_address: u16) {

@@ -19,7 +19,6 @@ enum NameTable {
 
 struct Control {
     sprite_mode: bool,
-    render_enabled: bool,
     scanline_count: u8,
     no_read_count: u64,
     prev_address: u16,
@@ -72,7 +71,6 @@ impl Mmc5 {
             name_bank: [NameTable::Low; 4],
             ctrl: Control {
                 sprite_mode: false,
-                render_enabled: false,
                 scanline_count: 0,
                 no_read_count: 0,
                 prev_address: 0xffff,
@@ -123,7 +121,9 @@ impl Mmc5 {
 
     fn update_chr_mappings(&mut self, mappings: &mut Mappings) {
         if !self.ctrl.sprite_mode
-            || !self.ctrl.render_enabled
+            || !self
+                .scanline_irq_status
+                .contains(ScanlineIrqStatus::IN_FRAME)
             || (64..80).contains(&self.ctrl.same_line_reads)
         {
             debug!("MMC5 Lower CHR Banks Selected");
@@ -220,12 +220,9 @@ impl Mapper for Mmc5 {
                     self.update_chr_mappings(mappings);
                 }
                 1 => {
-                    self.ctrl.render_enabled = (value & 0x18) != 0;
-                    debug!("MMC5 Render Enabled: {}", self.ctrl.render_enabled);
-                    self.update_chr_mappings(mappings);
-
-                    if !self.ctrl.render_enabled {
+                    if (value & 0x18) == 0 {
                         self.scanline_irq_status.remove(ScanlineIrqStatus::IN_FRAME);
+                        self.update_chr_mappings(mappings);
                     }
                 }
                 _ => (),
@@ -394,12 +391,13 @@ impl Mapper for Mmc5 {
         self.ctrl.no_read_count = 0;
     }
 
-    fn on_cpu_cycle(&mut self) {
+    fn on_cpu_cycle(&mut self, mappings: &mut Mappings) {
         self.ctrl.no_read_count += 1;
 
         if self.ctrl.no_read_count == 3 {
             debug!("MMC5 Frame End Detected");
             self.scanline_irq_status.remove(ScanlineIrqStatus::IN_FRAME);
+            self.update_chr_mappings(mappings);
         }
     }
 }
