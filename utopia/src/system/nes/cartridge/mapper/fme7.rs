@@ -73,7 +73,8 @@ impl Mapper for Fme7 {
                     2 => [NameTable::LOW; 4],
                     3 => [NameTable::HIGH; 4],
                     _ => unreachable!(),
-                }
+                };
+                debug!("FME7 Name Mappings: {:?}", mappings.name);
             }
             13 => {
                 self.irq_enable = (value & 0x01) != 0;

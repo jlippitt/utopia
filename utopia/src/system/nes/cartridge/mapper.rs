@@ -10,6 +10,7 @@ use mmc3::Mmc3;
 use mmc5::Mmc5;
 use nrom::NRom;
 use uxrom::UxRom;
+use vrc6::Vrc6;
 
 mod axrom;
 mod cnrom;
@@ -20,6 +21,7 @@ mod mmc3;
 mod mmc5;
 mod nrom;
 mod uxrom;
+mod vrc6;
 
 const PRG_PAGE_SIZE: usize = 4096;
 const CHR_PAGE_SIZE: usize = 1024;
@@ -69,6 +71,7 @@ pub enum MapperType {
     UxRom,
     CnRom,
     AxRom,
+    Vrc6,
     Fme7,
 }
 
@@ -83,6 +86,7 @@ impl MapperType {
             5 => Self::Mmc5(Mmc5::new(interrupt)),
             7 => Self::AxRom(AxRom::new()),
             9 => Self::Mmc2(Mmc2::new(prg_rom_size)),
+            24 => Self::Vrc6(Vrc6::new(prg_rom_size, interrupt)),
             69 => Self::Fme7(Fme7::new(prg_rom_size, interrupt)),
             _ => panic!("Mapper {} not yet supported", mapper_number),
         }
