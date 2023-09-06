@@ -28,6 +28,11 @@ mod wram;
 
 const SAMPLE_RATE: u64 = 32000;
 
+pub enum CoprocessorType {
+    None,
+    Dsp,
+}
+
 pub struct System<'a, U: MemoryMapper + 'static> {
     bios_loader: &'a dyn BiosLoader,
     memory_mapper: &'a U,
@@ -167,7 +172,16 @@ impl<T: Mapped> Hardware<T> {
         let battery_backed = [0x02, 0x05].contains(&(header.cartridge_type & 0x0f));
         info!("Battery Backed: {}", battery_backed);
 
-        let pages = memory::map(&header);
+        let coprocessor_type = if (header.cartridge_type & 0x0f) > 0x03 {
+            match header.cartridge_type & 0xf0 {
+                0x00 => CoprocessorType::Dsp,
+                value => unimplemented!("Coprocessor Type: {:02X}", value),
+            }
+        } else {
+            CoprocessorType::None
+        };
+
+        let pages = memory::map(&header, coprocessor_type);
 
         Ok(Self {
             clock: Clock::new((header.map_mode & 0x10) != 0),
@@ -249,6 +263,7 @@ impl<T: Mapped> Hardware<T> {
                     self.mdr
                 }
             },
+            Page::Coprocessor(..) => todo!("Coprocessor Read"),
             Page::OpenBus => {
                 warn!("Unmapped Bus A read: {:06X}", address);
                 self.mdr
@@ -281,6 +296,7 @@ impl<T: Mapped> Hardware<T> {
                     address, value
                 ),
             },
+            Page::Coprocessor(..) => todo!("Coprocessor Write"),
             Page::OpenBus => warn!("Unmapped Bus A write: {:06X} <= {:02X}", address, value),
         }
     }

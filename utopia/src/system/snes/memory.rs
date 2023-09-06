@@ -1,4 +1,5 @@
 use super::header::Header;
+use super::CoprocessorType;
 use tracing::trace;
 
 pub const TOTAL_PAGES: usize = 2048;
@@ -10,6 +11,7 @@ pub enum Page {
     Wram(u32),
     ExternalRegisters,
     InternalRegisters,
+    Coprocessor(u32),
     OpenBus,
 }
 
@@ -31,12 +33,12 @@ fn mirror(size: usize, index: usize) -> usize {
     floor + mirror(size - floor, index - floor)
 }
 
-pub fn map(header: &Header) -> [Page; TOTAL_PAGES] {
+pub fn map(header: &Header, coprocessor_type: CoprocessorType) -> [Page; TOTAL_PAGES] {
     let mut pages = [Page::OpenBus; TOTAL_PAGES];
 
     match header.map_mode & 0x0f {
-        0x00 => map_lo_rom(&mut pages, header),
-        0x01 => map_hi_rom(&mut pages, header),
+        0x00 => map_lo_rom(&mut pages, header, coprocessor_type),
+        0x01 => map_hi_rom(&mut pages, header, coprocessor_type),
         _ => unimplemented!("Map Mode {:02X}", header.map_mode),
     }
 
@@ -71,7 +73,7 @@ fn map_system_pages(pages: &mut [Page], banks: impl Iterator<Item = u8>) {
     }
 }
 
-fn map_lo_rom(pages: &mut [Page], header: &Header) {
+fn map_lo_rom(pages: &mut [Page], header: &Header, coprocessor_type: CoprocessorType) {
     let rom_size = header.rom_size;
     let sram_size = header.sram_size;
 
@@ -95,10 +97,23 @@ fn map_lo_rom(pages: &mut [Page], header: &Header) {
         }
     }
 
+    match coprocessor_type {
+        CoprocessorType::None => (),
+        CoprocessorType::Dsp => {
+            for bank in 0x30..0x3f {
+                let index = bank << 3;
+                pages[index | 4] = Page::Coprocessor(14);
+                pages[index | 5] = Page::Coprocessor(14);
+                pages[index | 6] = Page::Coprocessor(14);
+                pages[index | 7] = Page::Coprocessor(14);
+            }
+        }
+    }
+
     pages.copy_within(0..(TOTAL_PAGES / 2), TOTAL_PAGES / 2);
 }
 
-fn map_hi_rom(pages: &mut [Page], header: &Header) {
+fn map_hi_rom(pages: &mut [Page], header: &Header, coprocessor_type: CoprocessorType) {
     let rom_size = header.rom_size;
     let sram_size = header.sram_size;
 
@@ -129,6 +144,16 @@ fn map_hi_rom(pages: &mut [Page], header: &Header) {
             let index = (bank as usize) << 3;
             let offset = (bank - 0x20_u32) << 13;
             pages[index | 3] = Page::Sram(offset);
+        }
+    }
+
+    match coprocessor_type {
+        CoprocessorType::None => (),
+        CoprocessorType::Dsp => {
+            for bank in 0x00..0x1f {
+                let index = bank << 3;
+                pages[index | 3] = Page::Coprocessor(12);
+            }
         }
     }
 
