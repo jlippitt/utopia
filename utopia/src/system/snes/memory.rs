@@ -1,5 +1,5 @@
+use super::coprocessor::CoprocessorType;
 use super::header::Header;
-use super::CoprocessorType;
 use tracing::trace;
 
 pub const TOTAL_PAGES: usize = 2048;
@@ -33,7 +33,7 @@ fn mirror(size: usize, index: usize) -> usize {
     floor + mirror(size - floor, index - floor)
 }
 
-pub fn map(header: &Header, coprocessor_type: CoprocessorType) -> [Page; TOTAL_PAGES] {
+pub fn map(header: &Header, coprocessor_type: Option<&CoprocessorType>) -> [Page; TOTAL_PAGES] {
     let mut pages = [Page::OpenBus; TOTAL_PAGES];
 
     match header.map_mode & 0x0f {
@@ -73,7 +73,7 @@ fn map_system_pages(pages: &mut [Page], banks: impl Iterator<Item = u8>) {
     }
 }
 
-fn map_lo_rom(pages: &mut [Page], header: &Header, coprocessor_type: CoprocessorType) {
+fn map_lo_rom(pages: &mut [Page], header: &Header, coprocessor: Option<&CoprocessorType>) {
     let rom_size = header.rom_size;
     let sram_size = header.sram_size;
 
@@ -97,15 +97,16 @@ fn map_lo_rom(pages: &mut [Page], header: &Header, coprocessor_type: Coprocessor
         }
     }
 
-    match coprocessor_type {
-        CoprocessorType::None => (),
-        CoprocessorType::Dsp => {
-            for bank in 0x30..0x3f {
-                let index = bank << 3;
-                pages[index | 4] = Page::Coprocessor(14);
-                pages[index | 5] = Page::Coprocessor(14);
-                pages[index | 6] = Page::Coprocessor(14);
-                pages[index | 7] = Page::Coprocessor(14);
+    if let Some(coprocessor_type) = coprocessor {
+        match coprocessor_type {
+            CoprocessorType::Dsp1(..) => {
+                for bank in 0x30..0x3f {
+                    let index = bank << 3;
+                    pages[index | 4] = Page::Coprocessor(14);
+                    pages[index | 5] = Page::Coprocessor(14);
+                    pages[index | 6] = Page::Coprocessor(14);
+                    pages[index | 7] = Page::Coprocessor(14);
+                }
             }
         }
     }
@@ -113,7 +114,7 @@ fn map_lo_rom(pages: &mut [Page], header: &Header, coprocessor_type: Coprocessor
     pages.copy_within(0..(TOTAL_PAGES / 2), TOTAL_PAGES / 2);
 }
 
-fn map_hi_rom(pages: &mut [Page], header: &Header, coprocessor_type: CoprocessorType) {
+fn map_hi_rom(pages: &mut [Page], header: &Header, coprocessor: Option<&CoprocessorType>) {
     let rom_size = header.rom_size;
     let sram_size = header.sram_size;
 
@@ -147,12 +148,13 @@ fn map_hi_rom(pages: &mut [Page], header: &Header, coprocessor_type: Coprocessor
         }
     }
 
-    match coprocessor_type {
-        CoprocessorType::None => (),
-        CoprocessorType::Dsp => {
-            for bank in 0x00..0x1f {
-                let index = bank << 3;
-                pages[index | 3] = Page::Coprocessor(12);
+    if let Some(coprocessor_type) = coprocessor {
+        match coprocessor_type {
+            CoprocessorType::Dsp1(..) => {
+                for bank in 0x00..0x1f {
+                    let index = bank << 3;
+                    pages[index | 3] = Page::Coprocessor(12);
+                }
             }
         }
     }

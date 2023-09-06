@@ -6,6 +6,7 @@ use crate::{
 };
 use apu::Apu;
 use clock::{Clock, Event, FAST_CYCLES, TIMER_IRQ};
+use coprocessor::{Coprocessor, CoprocessorType};
 use dma::Dma;
 use joypad::Joypad;
 use memory::{Page, TOTAL_PAGES};
@@ -18,6 +19,7 @@ use wram::Wram;
 
 mod apu;
 mod clock;
+mod coprocessor;
 mod dma;
 mod header;
 mod joypad;
@@ -27,11 +29,6 @@ mod registers;
 mod wram;
 
 const SAMPLE_RATE: u64 = 32000;
-
-pub enum CoprocessorType {
-    None,
-    Dsp,
-}
 
 pub struct System<'a, U: MemoryMapper + 'static> {
     bios_loader: &'a dyn BiosLoader,
@@ -152,6 +149,7 @@ pub struct Hardware<T: Mapped> {
     ppu: Ppu,
     apu: Apu,
     joypad: Joypad,
+    coprocessor: Option<CoprocessorType>,
 }
 
 impl<T: Mapped> Hardware<T> {
@@ -172,16 +170,9 @@ impl<T: Mapped> Hardware<T> {
         let battery_backed = [0x02, 0x05].contains(&(header.cartridge_type & 0x0f));
         info!("Battery Backed: {}", battery_backed);
 
-        let coprocessor_type = if (header.cartridge_type & 0x0f) > 0x03 {
-            match header.cartridge_type & 0xf0 {
-                0x00 => CoprocessorType::Dsp,
-                value => unimplemented!("Coprocessor Type: {:02X}", value),
-            }
-        } else {
-            CoprocessorType::None
-        };
+        let coprocessor = coprocessor::create_coprocessor(header.cartridge_type);
 
-        let pages = memory::map(&header, coprocessor_type);
+        let pages = memory::map(&header, coprocessor.as_ref());
 
         Ok(Self {
             clock: Clock::new((header.map_mode & 0x10) != 0),
@@ -197,6 +188,7 @@ impl<T: Mapped> Hardware<T> {
             ppu: Ppu::new(),
             apu: Apu::new(ipl_rom),
             joypad: Joypad::new(),
+            coprocessor,
         })
     }
 
@@ -263,7 +255,11 @@ impl<T: Mapped> Hardware<T> {
                     self.mdr
                 }
             },
-            Page::Coprocessor(..) => todo!("Coprocessor Read"),
+            Page::Coprocessor(page_type) => self
+                .coprocessor
+                .as_mut()
+                .unwrap()
+                .read(page_type, address, self.mdr),
             Page::OpenBus => {
                 warn!("Unmapped Bus A read: {:06X}", address);
                 self.mdr
@@ -296,7 +292,11 @@ impl<T: Mapped> Hardware<T> {
                     address, value
                 ),
             },
-            Page::Coprocessor(..) => todo!("Coprocessor Write"),
+            Page::Coprocessor(page_type) => self
+                .coprocessor
+                .as_mut()
+                .unwrap()
+                .write(page_type, address, value),
             Page::OpenBus => warn!("Unmapped Bus A write: {:06X} <= {:02X}", address, value),
         }
     }
