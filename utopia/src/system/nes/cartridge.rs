@@ -128,4 +128,8 @@ impl<T: Mapped> Cartridge<T> {
     pub fn on_ppu_address_changed(&mut self, ppu_address: u16) {
         self.mapper.on_ppu_address_changed(ppu_address);
     }
+
+    pub fn audio_output(&self) -> f32 {
+        self.mapper.audio_output()
+    }
 }

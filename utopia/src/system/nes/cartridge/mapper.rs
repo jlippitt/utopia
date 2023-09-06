@@ -59,6 +59,10 @@ pub trait Mapper {
     fn on_ppu_address_changed(&mut self, _ppu_address: u16) {}
 
     fn on_ppu_chr_fetch(&mut self, _mappings: &mut Mappings, _ppu_address: u16) {}
+
+    fn audio_output(&self) -> f32 {
+        0.0
+    }
 }
 
 #[enum_dispatch(Mapper)]

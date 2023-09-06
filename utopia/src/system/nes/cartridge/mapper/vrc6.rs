@@ -2,10 +2,18 @@ use super::{
     Interrupt, InterruptType, Mapper, Mappings, NameTable, CHR_PAGE_SIZE, MIRROR_HORIZONTAL,
     MIRROR_VERTICAL,
 };
+use pulse::Pulse;
+use saw::Saw;
 use tracing::debug;
+
+mod pulse;
+mod saw;
 
 const PRG_BANK_SIZE: usize = 8192;
 const IRQ_DIVIDER: i32 = 341;
+
+// Pulse volume is approximately equal to internal NES pulse channels
+const VOLUME_MULTIPLIER: f32 = 95.88 / (8128.0 / 30.0 + 100.0) / 30.0;
 
 pub struct Vrc6 {
     irq_mode: bool,
@@ -14,6 +22,10 @@ pub struct Vrc6 {
     irq_latch: u8,
     irq_enable: bool,
     irq_enable_after_ack: bool,
+    audio_halted: bool,
+    pulse1: Pulse,
+    pulse2: Pulse,
+    saw: Saw,
     prg_rom_size: usize,
     interrupt: Interrupt,
 }
@@ -27,6 +39,10 @@ impl Vrc6 {
             irq_latch: 0,
             irq_enable: false,
             irq_enable_after_ack: false,
+            audio_halted: false,
+            pulse1: Pulse::new(),
+            pulse2: Pulse::new(),
+            saw: Saw::new(),
             prg_rom_size,
             interrupt,
         }
@@ -47,6 +63,33 @@ impl Mapper for Vrc6 {
                 mappings.map_prg_rom(8, 4, PRG_BANK_SIZE * 2 * (value as usize & 0x0f));
                 debug!("VRC6 PRG Read Mappings: {:?}", mappings.prg_read);
             }
+            0x9000 => self.pulse1.set_control(value),
+            0x9001 => self.pulse1.set_freq_period_low(value),
+            0x9002 => self.pulse1.set_freq_period_high(value),
+            0x9003 => {
+                self.audio_halted = (value & 0x01) != 0;
+
+                let freq_shift = if (value & 0x04) != 0 {
+                    8
+                } else if (value & 0x02) != 0 {
+                    4
+                } else {
+                    0
+                };
+
+                self.pulse1.set_freq_shift(freq_shift);
+                self.pulse2.set_freq_shift(freq_shift);
+                self.saw.set_freq_shift(freq_shift);
+
+                debug!("VRC6 Audio Halted: {}", self.audio_halted);
+                debug!("VRC6 Frequency Shift: {}", freq_shift);
+            }
+            0xa000 => self.pulse2.set_control(value),
+            0xa001 => self.pulse2.set_freq_period_low(value),
+            0xa002 => self.pulse2.set_freq_period_high(value),
+            0xb000 => self.saw.set_control(value),
+            0xb001 => self.saw.set_freq_period_low(value),
+            0xb002 => self.saw.set_freq_period_high(value),
             0xb003 => {
                 if (value & 0x33) != 0x20 {
                     unimplemented!("Mode: {:02X}", value);
@@ -117,6 +160,12 @@ impl Mapper for Vrc6 {
     }
 
     fn on_cpu_cycle(&mut self, _mappings: &mut Mappings) {
+        if !self.audio_halted {
+            self.pulse1.step();
+            self.pulse2.step();
+            self.saw.step();
+        }
+
         if !self.irq_enable {
             return;
         }
@@ -141,5 +190,11 @@ impl Mapper for Vrc6 {
         debug!("VRC6 IRQ Counter: {}", self.irq_counter);
 
         self.interrupt.raise(InterruptType::MapperIrq);
+    }
+
+    fn audio_output(&self) -> f32 {
+        let output = self.pulse1.output() + self.pulse2.output() + self.saw.output();
+
+        output as f32 * VOLUME_MULTIPLIER
     }
 }

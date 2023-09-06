@@ -177,7 +177,7 @@ impl<T: Mapped> Hardware<T> {
     }
 
     fn step_others(&mut self) {
-        self.apu.step(&mut self.dma_request);
+        self.apu.step(&mut self.dma_request, &self.cartridge);
         self.cartridge.on_cpu_cycle();
     }
 

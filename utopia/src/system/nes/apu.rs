@@ -1,6 +1,7 @@
+use super::cartridge::Cartridge;
 use super::interrupt::{Interrupt, InterruptType};
 use super::DmaRequest;
-use crate::AudioQueue;
+use crate::{AudioQueue, Mapped};
 use dmc::Dmc;
 use frame::FrameCounter;
 use noise::Noise;
@@ -124,7 +125,7 @@ impl Apu {
         self.dmc.write_sample(value);
     }
 
-    pub fn step(&mut self, dma_request: &mut DmaRequest) {
+    pub fn step(&mut self, dma_request: &mut DmaRequest, cartridge: &Cartridge<impl Mapped>) {
         self.pulse1.step();
         self.pulse2.step();
         self.triangle.step();
@@ -145,7 +146,11 @@ impl Apu {
 
             let pulse = self.pulse1.output() + self.pulse2.output();
             let tnd = self.triangle.output() * 3 + self.noise.output() * 2 + self.dmc.output();
-            let output = (self.pulse_table[pulse as usize] + self.tnd_table[tnd as usize]) - 0.5;
+
+            let output = (self.pulse_table[pulse as usize]
+                + self.tnd_table[tnd as usize]
+                + cartridge.audio_output())
+                - 0.5;
 
             self.audio_queue.push_back((output, output));
         }
