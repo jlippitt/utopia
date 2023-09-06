@@ -190,6 +190,7 @@ impl Mapper for Mmc5 {
         mappings.map_registers(2, 2);
         mappings.map_registers_with_read(5, 1);
         self.update_prg_mappings(mappings);
+        self.update_chr_mappings(mappings);
     }
 
     fn read_register(&mut self, _mappings: &mut Mappings, address: u16, _prev_value: u8) -> u8 {

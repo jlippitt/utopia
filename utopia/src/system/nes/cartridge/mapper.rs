@@ -3,6 +3,7 @@ use crate::util::MirrorVec;
 use axrom::AxRom;
 use cnrom::CnRom;
 use enum_dispatch::enum_dispatch;
+use fme7::Fme7;
 use mmc1::Mmc1;
 use mmc2::Mmc2;
 use mmc3::Mmc3;
@@ -12,6 +13,7 @@ use uxrom::UxRom;
 
 mod axrom;
 mod cnrom;
+mod fme7;
 mod mmc1;
 mod mmc2;
 mod mmc3;
@@ -67,6 +69,7 @@ pub enum MapperType {
     UxRom,
     CnRom,
     AxRom,
+    Fme7,
 }
 
 impl MapperType {
@@ -80,6 +83,7 @@ impl MapperType {
             5 => Self::Mmc5(Mmc5::new(interrupt)),
             7 => Self::AxRom(AxRom::new()),
             9 => Self::Mmc2(Mmc2::new(prg_rom_size)),
+            69 => Self::Fme7(Fme7::new(prg_rom_size, interrupt)),
             _ => panic!("Mapper {} not yet supported", mapper_number),
         }
     }
