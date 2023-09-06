@@ -19,9 +19,11 @@ impl Coprocessor for Dsp1 {
         }
     }
 
-    fn write(&mut self, page_type: u32, address: u32, _value: u8) {
+    fn write(&mut self, page_type: u32, address: u32, value: u8) {
         if ((address >> page_type) & 1) == 0 {
-            todo!("Data Register Write");
+            if value != 0x80 {
+                todo!("Data Register Write: {:02X}", value);
+            }
         } else {
             todo!("Status Register Write");
         }
