@@ -133,3 +133,24 @@ pub fn sxy(core: &mut Core<impl Bus>) {
     core.read(core.pc);
     mem::swap(&mut core.x, &mut core.y);
 }
+
+pub fn cla(core: &mut Core<impl Bus>) {
+    debug!("CLA");
+    core.poll();
+    core.read(core.pc);
+    core.a = 0;
+}
+
+pub fn clx(core: &mut Core<impl Bus>) {
+    debug!("CLX");
+    core.poll();
+    core.read(core.pc);
+    core.x = 0;
+}
+
+pub fn cly(core: &mut Core<impl Bus>) {
+    debug!("CLY");
+    core.poll();
+    core.read(core.pc);
+    core.y = 0;
+}

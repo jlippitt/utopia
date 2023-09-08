@@ -271,7 +271,10 @@ impl<T: Bus> Core<T> {
             0x02 => instr::sxy(self),
             0x22 => instr::sax(self),
             0x42 => instr::say(self),
+            0x62 => instr::cla(self),
+            0x82 => instr::clx(self),
             0xa2 => instr::read::<addr::Immediate, op::Ldx>(self),
+            0xc2 => instr::cly(self),
 
             // +0x06
             0x06 => instr::modify::<addr::ZeroPage, op::Asl>(self),
