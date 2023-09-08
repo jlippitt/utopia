@@ -136,11 +136,11 @@ impl<T: Bus> Core<T> {
             // +0x14
             //0x14 => instr::read::<addr::ZeroPageX, op::Nop>(self),
             //0x34 => instr::read::<addr::ZeroPageX, op::Nop>(self),
-            //0x54 => instr::read::<addr::ZeroPageX, op::Nop>(self),
+            0x54 => instr::csl(self),
             //0x74 => instr::read::<addr::ZeroPageX, op::Nop>(self),
             0x94 => instr::write::<addr::ZeroPageX, op::Sty>(self),
             0xb4 => instr::read::<addr::ZeroPageX, op::Ldy>(self),
-            //0xd4 => instr::read::<addr::ZeroPageX, op::Nop>(self),
+            0xd4 => instr::csh(self),
             //0xf4 => instr::read::<addr::ZeroPageX, op::Nop>(self),
 
             // +0x08
