@@ -93,7 +93,7 @@ impl Bus for Hardware {
                     port => todo!("I/O Port Read: {:04X}", port),
                 }
             }
-            _ => panic!("Read from unmapped address {:04X}", address),
+            _ => panic!("Read from unmapped address {:06X}", address),
         }
     }
 
@@ -102,7 +102,7 @@ impl Bus for Hardware {
             0xf7 => todo!("SRAM Writes"),
             0xf8 => self.wram[address as usize & 0x1fff] = value,
             0xff => warn!("I/O Port Writes"),
-            _ => panic!("Read from unmapped address {:04X}", address),
+            _ => panic!("Read from unmapped address {:06X}", address),
         }
     }
 

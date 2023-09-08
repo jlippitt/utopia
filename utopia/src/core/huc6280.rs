@@ -5,8 +5,8 @@ mod address_mode;
 mod instruction;
 mod operator;
 
-const ZERO_PAGE: u32 = 0x2000;
-const STACK_PAGE: u32 = 0x2100;
+const ZERO_PAGE: u32 = 0x1f0000;
+const STACK_PAGE: u32 = 0x1f0100;
 
 pub type Interrupt = u32;
 
@@ -349,12 +349,12 @@ impl<T: Bus> Core<T> {
 
     fn read_physical(&mut self, address: u32) -> u8 {
         let value = self.bus.read(address);
-        debug!("  {:05X} => {:02X}", address, value);
+        debug!("  {:06X} => {:02X}", address, value);
         value
     }
 
     fn write_physical(&mut self, address: u32, value: u8) {
-        debug!("  {:05X} <= {:02X}", address, value);
+        debug!("  {:06X} <= {:02X}", address, value);
         self.bus.write(address, value);
     }
 

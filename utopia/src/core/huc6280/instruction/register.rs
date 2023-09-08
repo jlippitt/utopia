@@ -90,7 +90,7 @@ pub fn tam(core: &mut Core<impl Bus>) {
     for (bit, mpr) in core.mpr.iter_mut().enumerate() {
         if (mask & (1 << bit)) != 0 {
             *mpr = (core.a as u32) << 13;
-            debug!("MPR{}: {:02X} ({:05X})", bit, core.a, mpr);
+            debug!("MPR{}: {:02X} ({:06X})", bit, core.a, mpr);
         }
     }
 }
