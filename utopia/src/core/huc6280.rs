@@ -276,6 +276,16 @@ impl<T: Bus> Core<T> {
             0xa2 => instr::read::<addr::Immediate, op::Ldx>(self),
             0xc2 => instr::cly(self),
 
+            // +0x12
+            0x12 => instr::read::<addr::ZeroPageIndirect, op::Ora>(self),
+            0x32 => instr::read::<addr::ZeroPageIndirect, op::And>(self),
+            0x52 => instr::read::<addr::ZeroPageIndirect, op::Eor>(self),
+            0x72 => instr::read::<addr::ZeroPageIndirect, op::Adc>(self),
+            0x92 => instr::write::<addr::ZeroPageIndirect, op::Sta>(self),
+            0xb2 => instr::read::<addr::ZeroPageIndirect, op::Lda>(self),
+            0xd2 => instr::read::<addr::ZeroPageIndirect, op::Cmp>(self),
+            0xf2 => instr::read::<addr::ZeroPageIndirect, op::Sbc>(self),
+
             // +0x06
             0x06 => instr::modify::<addr::ZeroPage, op::Asl>(self),
             0x26 => instr::modify::<addr::ZeroPage, op::Rol>(self),

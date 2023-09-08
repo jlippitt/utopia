@@ -102,6 +102,18 @@ impl AddressMode for ZeroPageY {
     }
 }
 
+pub struct ZeroPageIndirect;
+
+impl AddressMode for ZeroPageIndirect {
+    const NAME: &'static str = "(zp)";
+
+    fn resolve(core: &mut Core<impl Bus>, _write: bool) -> u32 {
+        let direct = core.next_byte();
+        let indirect = get_indirect(core, direct);
+        core.map(indirect)
+    }
+}
+
 pub struct ZeroPageXIndirect;
 
 impl AddressMode for ZeroPageXIndirect {
