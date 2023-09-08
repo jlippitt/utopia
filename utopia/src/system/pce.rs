@@ -2,7 +2,7 @@ use crate::core::huc6280::{Bus, Core, Interrupt};
 use crate::util::MirrorVec;
 use crate::{Error, InstanceOptions, JoypadState, MemoryMapper, SystemOptions, WgpuContext};
 use std::fmt;
-use tracing::debug;
+use tracing::{debug, warn};
 
 const DEFAULT_WIDTH: u32 = 256;
 const DEFAULT_HEIGHT: u32 = 224;
@@ -87,7 +87,12 @@ impl Bus for Hardware {
             0x00..=0x7f => self.rom_data[address as usize],
             0xf7 => todo!("SRAM Reads"),
             0xf8 => self.wram[address as usize & 0x1fff],
-            0xff => todo!("I/O Port Reads"),
+            0xff => {
+                match address & 0x1fff {
+                    0x1000 => 0, // TODO: Joypad
+                    port => todo!("I/O Port Read: {:04X}", port),
+                }
+            }
             _ => panic!("Read from unmapped address {:04X}", address),
         }
     }
@@ -96,7 +101,7 @@ impl Bus for Hardware {
         match (address >> 13) & 0xff {
             0xf7 => todo!("SRAM Writes"),
             0xf8 => self.wram[address as usize & 0x1fff] = value,
-            0xff => todo!("I/O Port Writes"),
+            0xff => warn!("I/O Port Writes"),
             _ => panic!("Read from unmapped address {:04X}", address),
         }
     }
