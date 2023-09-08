@@ -108,7 +108,7 @@ impl<T: Bus> Core<T> {
             0x20 => instr::jsr(self),
             0x40 => instr::rti(self),
             0x60 => instr::rts(self),
-            //0x80 => instr::read::<addr::Immediate, op::Nop>(self),
+            0x80 => instr::branch::<op::Bra>(self),
             0xa0 => instr::read::<addr::Immediate, op::Ldy>(self),
             0xc0 => instr::read::<addr::Immediate, op::Cpy>(self),
             0xe0 => instr::read::<addr::Immediate, op::Cpx>(self),
@@ -268,6 +268,9 @@ impl<T: Bus> Core<T> {
             // Page 2: Read-Modify-Write Ops
 
             // +0x02
+            0x02 => instr::sxy(self),
+            0x22 => instr::sax(self),
+            0x42 => instr::say(self),
             0xa2 => instr::read::<addr::Immediate, op::Ldx>(self),
 
             // +0x06

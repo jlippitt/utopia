@@ -84,3 +84,13 @@ impl BranchOperator for Beq {
         flags.z == 0
     }
 }
+
+pub struct Bra;
+
+impl BranchOperator for Bra {
+    const NAME: &'static str = "BRA";
+
+    fn apply(_flags: &Flags) -> bool {
+        true
+    }
+}

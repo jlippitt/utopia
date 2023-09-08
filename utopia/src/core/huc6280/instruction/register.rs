@@ -1,4 +1,5 @@
 use super::super::{Bus, Core};
+use std::mem;
 use tracing::debug;
 
 pub fn dex(core: &mut Core<impl Bus>) {
@@ -107,4 +108,28 @@ pub fn tma(core: &mut Core<impl Bus>) {
             core.a |= (mpr >> 13) as u8;
         }
     }
+}
+
+pub fn sax(core: &mut Core<impl Bus>) {
+    debug!("SAX");
+    core.poll();
+    core.read(core.pc);
+    core.read(core.pc);
+    mem::swap(&mut core.a, &mut core.x);
+}
+
+pub fn say(core: &mut Core<impl Bus>) {
+    debug!("SAY");
+    core.poll();
+    core.read(core.pc);
+    core.read(core.pc);
+    mem::swap(&mut core.a, &mut core.y);
+}
+
+pub fn sxy(core: &mut Core<impl Bus>) {
+    debug!("SXY");
+    core.poll();
+    core.read(core.pc);
+    core.read(core.pc);
+    mem::swap(&mut core.x, &mut core.y);
 }
