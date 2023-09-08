@@ -104,54 +104,54 @@ impl<T: Bus> Core<T> {
             // Page 0: Control Ops
 
             // +0x00
-            // 0x00 => instr::brk(self),
-            // 0x20 => instr::jsr(self),
-            // 0x40 => instr::rti(self),
-            // 0x60 => instr::rts(self),
-            // //0x80 => instr::read::<addr::Immediate, op::Nop>(self),
-            // 0xa0 => instr::read::<addr::Immediate, op::Ldy>(self),
-            // 0xc0 => instr::read::<addr::Immediate, op::Cpy>(self),
-            // 0xe0 => instr::read::<addr::Immediate, op::Cpx>(self),
+            0x00 => instr::brk(self),
+            0x20 => instr::jsr(self),
+            0x40 => instr::rti(self),
+            0x60 => instr::rts(self),
+            //0x80 => instr::read::<addr::Immediate, op::Nop>(self),
+            0xa0 => instr::read::<addr::Immediate, op::Ldy>(self),
+            0xc0 => instr::read::<addr::Immediate, op::Cpy>(self),
+            0xe0 => instr::read::<addr::Immediate, op::Cpx>(self),
 
-            // // +0x10
-            // 0x10 => instr::branch::<op::Bpl>(self),
-            // 0x30 => instr::branch::<op::Bmi>(self),
-            // 0x50 => instr::branch::<op::Bvc>(self),
-            // 0x70 => instr::branch::<op::Bvs>(self),
-            // 0x90 => instr::branch::<op::Bcc>(self),
-            // 0xb0 => instr::branch::<op::Bcs>(self),
-            // 0xd0 => instr::branch::<op::Bne>(self),
-            // 0xf0 => instr::branch::<op::Beq>(self),
+            // +0x10
+            0x10 => instr::branch::<op::Bpl>(self),
+            0x30 => instr::branch::<op::Bmi>(self),
+            0x50 => instr::branch::<op::Bvc>(self),
+            0x70 => instr::branch::<op::Bvs>(self),
+            0x90 => instr::branch::<op::Bcc>(self),
+            0xb0 => instr::branch::<op::Bcs>(self),
+            0xd0 => instr::branch::<op::Bne>(self),
+            0xf0 => instr::branch::<op::Beq>(self),
 
-            // // +0x04
-            // //0x04 => instr::read::<addr::ZeroPage, op::Nop>(self),
-            // 0x24 => instr::read::<addr::ZeroPage, op::Bit>(self),
-            // //0x44 => instr::read::<addr::ZeroPage, op::Nop>(self),
-            // //0x64 => instr::read::<addr::ZeroPage, op::Nop>(self),
-            // 0x84 => instr::write::<addr::ZeroPage, op::Sty>(self),
-            // 0xa4 => instr::read::<addr::ZeroPage, op::Ldy>(self),
-            // 0xc4 => instr::read::<addr::ZeroPage, op::Cpy>(self),
-            // 0xe4 => instr::read::<addr::ZeroPage, op::Cpx>(self),
+            // +0x04
+            //0x04 => instr::read::<addr::ZeroPage, op::Nop>(self),
+            0x24 => instr::read::<addr::ZeroPage, op::Bit>(self),
+            //0x44 => instr::read::<addr::ZeroPage, op::Nop>(self),
+            //0x64 => instr::read::<addr::ZeroPage, op::Nop>(self),
+            0x84 => instr::write::<addr::ZeroPage, op::Sty>(self),
+            0xa4 => instr::read::<addr::ZeroPage, op::Ldy>(self),
+            0xc4 => instr::read::<addr::ZeroPage, op::Cpy>(self),
+            0xe4 => instr::read::<addr::ZeroPage, op::Cpx>(self),
 
-            // // +0x14
-            // //0x14 => instr::read::<addr::ZeroPageX, op::Nop>(self),
-            // //0x34 => instr::read::<addr::ZeroPageX, op::Nop>(self),
-            // //0x54 => instr::read::<addr::ZeroPageX, op::Nop>(self),
-            // //0x74 => instr::read::<addr::ZeroPageX, op::Nop>(self),
-            // 0x94 => instr::write::<addr::ZeroPageX, op::Sty>(self),
-            // 0xb4 => instr::read::<addr::ZeroPageX, op::Ldy>(self),
-            // //0xd4 => instr::read::<addr::ZeroPageX, op::Nop>(self),
-            // //0xf4 => instr::read::<addr::ZeroPageX, op::Nop>(self),
+            // +0x14
+            //0x14 => instr::read::<addr::ZeroPageX, op::Nop>(self),
+            //0x34 => instr::read::<addr::ZeroPageX, op::Nop>(self),
+            //0x54 => instr::read::<addr::ZeroPageX, op::Nop>(self),
+            //0x74 => instr::read::<addr::ZeroPageX, op::Nop>(self),
+            0x94 => instr::write::<addr::ZeroPageX, op::Sty>(self),
+            0xb4 => instr::read::<addr::ZeroPageX, op::Ldy>(self),
+            //0xd4 => instr::read::<addr::ZeroPageX, op::Nop>(self),
+            //0xf4 => instr::read::<addr::ZeroPageX, op::Nop>(self),
 
-            // // +0x08
-            // 0x08 => instr::php(self),
-            // 0x28 => instr::plp(self),
-            // 0x48 => instr::pha(self),
-            // 0x68 => instr::pla(self),
-            // 0x88 => instr::dey(self),
-            // 0xa8 => instr::tay(self),
-            // 0xc8 => instr::iny(self),
-            // 0xe8 => instr::inx(self),
+            // +0x08
+            0x08 => instr::php(self),
+            0x28 => instr::plp(self),
+            0x48 => instr::pha(self),
+            0x68 => instr::pla(self),
+            0x88 => instr::dey(self),
+            0xa8 => instr::tay(self),
+            0xc8 => instr::iny(self),
+            0xe8 => instr::inx(self),
 
             // // +0x18
             0x18 => instr::clc(self),
@@ -164,165 +164,166 @@ impl<T: Bus> Core<T> {
             0xf8 => instr::sed(self),
 
             // // +0x0c
-            // //0x0c => instr::read::<addr::Absolute, op::Nop>(self),
-            // 0x2c => instr::read::<addr::Absolute, op::Bit>(self),
-            // 0x4c => instr::jmp(self),
-            // 0x6c => instr::jmp_indirect(self),
-            // 0x8c => instr::write::<addr::Absolute, op::Sty>(self),
-            // 0xac => instr::read::<addr::Absolute, op::Ldy>(self),
-            // 0xcc => instr::read::<addr::Absolute, op::Cpy>(self),
-            // 0xec => instr::read::<addr::Absolute, op::Cpx>(self),
+            //0x0c => instr::read::<addr::Absolute, op::Nop>(self),
+            0x2c => instr::read::<addr::Absolute, op::Bit>(self),
+            0x4c => instr::jmp(self),
+            //0x6c => instr::jmp_indirect(self), // TODO: Indirect jump bug is fixed as of 65c02
+            0x8c => instr::write::<addr::Absolute, op::Sty>(self),
+            0xac => instr::read::<addr::Absolute, op::Ldy>(self),
+            0xcc => instr::read::<addr::Absolute, op::Cpy>(self),
+            0xec => instr::read::<addr::Absolute, op::Cpx>(self),
 
-            // // +0x1c
-            // //0x1c => instr::read::<addr::AbsoluteX, op::Nop>(self),
-            // //0x3c => instr::read::<addr::AbsoluteX, op::Nop>(self),
-            // //0x5c => instr::read::<addr::AbsoluteX, op::Nop>(self),
-            // //0x7c => instr::read::<addr::AbsoluteX, op::Nop>(self),
-            // //0x9c => instr::write::<addr::AbsoluteX, op::Shy>(self),
-            // 0xbc => instr::read::<addr::AbsoluteX, op::Ldy>(self),
-            // //0xdc => instr::read::<addr::AbsoluteX, op::Nop>(self),
-            // //0xfc => instr::read::<addr::AbsoluteX, op::Nop>(self),
+            // +0x1c
+            //0x1c => instr::read::<addr::AbsoluteX, op::Nop>(self),
+            //0x3c => instr::read::<addr::AbsoluteX, op::Nop>(self),
+            //0x5c => instr::read::<addr::AbsoluteX, op::Nop>(self),
+            //0x7c => instr::read::<addr::AbsoluteX, op::Nop>(self),
+            //0x9c => instr::write::<addr::AbsoluteX, op::Shy>(self),
+            0xbc => instr::read::<addr::AbsoluteX, op::Ldy>(self),
+            //0xdc => instr::read::<addr::AbsoluteX, op::Nop>(self),
+            //0xfc => instr::read::<addr::AbsoluteX, op::Nop>(self),
 
-            // // Page 1: Accumulator Ops
+            // Page 1: Accumulator Ops
 
-            // // +0x01
-            // 0x01 => instr::read::<addr::ZeroPageXIndirect, op::Ora>(self),
-            // 0x21 => instr::read::<addr::ZeroPageXIndirect, op::And>(self),
-            // 0x41 => instr::read::<addr::ZeroPageXIndirect, op::Eor>(self),
-            // 0x61 => instr::read::<addr::ZeroPageXIndirect, op::Adc>(self),
-            // 0x81 => instr::write::<addr::ZeroPageXIndirect, op::Sta>(self),
-            // 0xa1 => instr::read::<addr::ZeroPageXIndirect, op::Lda>(self),
-            // 0xc1 => instr::read::<addr::ZeroPageXIndirect, op::Cmp>(self),
-            // 0xe1 => instr::read::<addr::ZeroPageXIndirect, op::Sbc>(self),
+            // +0x01
+            0x01 => instr::read::<addr::ZeroPageXIndirect, op::Ora>(self),
+            0x21 => instr::read::<addr::ZeroPageXIndirect, op::And>(self),
+            0x41 => instr::read::<addr::ZeroPageXIndirect, op::Eor>(self),
+            0x61 => instr::read::<addr::ZeroPageXIndirect, op::Adc>(self),
+            0x81 => instr::write::<addr::ZeroPageXIndirect, op::Sta>(self),
+            0xa1 => instr::read::<addr::ZeroPageXIndirect, op::Lda>(self),
+            0xc1 => instr::read::<addr::ZeroPageXIndirect, op::Cmp>(self),
+            0xe1 => instr::read::<addr::ZeroPageXIndirect, op::Sbc>(self),
 
-            // // +0x11
-            // 0x11 => instr::read::<addr::ZeroPageIndirectY, op::Ora>(self),
-            // 0x31 => instr::read::<addr::ZeroPageIndirectY, op::And>(self),
-            // 0x51 => instr::read::<addr::ZeroPageIndirectY, op::Eor>(self),
-            // 0x71 => instr::read::<addr::ZeroPageIndirectY, op::Adc>(self),
-            // 0x91 => instr::write::<addr::ZeroPageIndirectY, op::Sta>(self),
-            // 0xb1 => instr::read::<addr::ZeroPageIndirectY, op::Lda>(self),
-            // 0xd1 => instr::read::<addr::ZeroPageIndirectY, op::Cmp>(self),
-            // 0xf1 => instr::read::<addr::ZeroPageIndirectY, op::Sbc>(self),
+            // +0x11
+            0x11 => instr::read::<addr::ZeroPageIndirectY, op::Ora>(self),
+            0x31 => instr::read::<addr::ZeroPageIndirectY, op::And>(self),
+            0x51 => instr::read::<addr::ZeroPageIndirectY, op::Eor>(self),
+            0x71 => instr::read::<addr::ZeroPageIndirectY, op::Adc>(self),
+            0x91 => instr::write::<addr::ZeroPageIndirectY, op::Sta>(self),
+            0xb1 => instr::read::<addr::ZeroPageIndirectY, op::Lda>(self),
+            0xd1 => instr::read::<addr::ZeroPageIndirectY, op::Cmp>(self),
+            0xf1 => instr::read::<addr::ZeroPageIndirectY, op::Sbc>(self),
 
-            // // +0x05
-            // 0x05 => instr::read::<addr::ZeroPage, op::Ora>(self),
-            // 0x25 => instr::read::<addr::ZeroPage, op::And>(self),
-            // 0x45 => instr::read::<addr::ZeroPage, op::Eor>(self),
-            // 0x65 => instr::read::<addr::ZeroPage, op::Adc>(self),
-            // 0x85 => instr::write::<addr::ZeroPage, op::Sta>(self),
-            // 0xa5 => instr::read::<addr::ZeroPage, op::Lda>(self),
-            // 0xc5 => instr::read::<addr::ZeroPage, op::Cmp>(self),
-            // 0xe5 => instr::read::<addr::ZeroPage, op::Sbc>(self),
+            // +0x05
+            0x05 => instr::read::<addr::ZeroPage, op::Ora>(self),
+            0x25 => instr::read::<addr::ZeroPage, op::And>(self),
+            0x45 => instr::read::<addr::ZeroPage, op::Eor>(self),
+            0x65 => instr::read::<addr::ZeroPage, op::Adc>(self),
+            0x85 => instr::write::<addr::ZeroPage, op::Sta>(self),
+            0xa5 => instr::read::<addr::ZeroPage, op::Lda>(self),
+            0xc5 => instr::read::<addr::ZeroPage, op::Cmp>(self),
+            0xe5 => instr::read::<addr::ZeroPage, op::Sbc>(self),
 
-            // // +0x15
-            // 0x15 => instr::read::<addr::ZeroPageX, op::Ora>(self),
-            // 0x35 => instr::read::<addr::ZeroPageX, op::And>(self),
-            // 0x55 => instr::read::<addr::ZeroPageX, op::Eor>(self),
-            // 0x75 => instr::read::<addr::ZeroPageX, op::Adc>(self),
-            // 0x95 => instr::write::<addr::ZeroPageX, op::Sta>(self),
-            // 0xb5 => instr::read::<addr::ZeroPageX, op::Lda>(self),
-            // 0xd5 => instr::read::<addr::ZeroPageX, op::Cmp>(self),
-            // 0xf5 => instr::read::<addr::ZeroPageX, op::Sbc>(self),
+            // +0x15
+            0x15 => instr::read::<addr::ZeroPageX, op::Ora>(self),
+            0x35 => instr::read::<addr::ZeroPageX, op::And>(self),
+            0x55 => instr::read::<addr::ZeroPageX, op::Eor>(self),
+            0x75 => instr::read::<addr::ZeroPageX, op::Adc>(self),
+            0x95 => instr::write::<addr::ZeroPageX, op::Sta>(self),
+            0xb5 => instr::read::<addr::ZeroPageX, op::Lda>(self),
+            0xd5 => instr::read::<addr::ZeroPageX, op::Cmp>(self),
+            0xf5 => instr::read::<addr::ZeroPageX, op::Sbc>(self),
 
-            // // +0x09
-            // 0x09 => instr::read::<addr::Immediate, op::Ora>(self),
-            // 0x29 => instr::read::<addr::Immediate, op::And>(self),
-            // 0x49 => instr::read::<addr::Immediate, op::Eor>(self),
-            // 0x69 => instr::read::<addr::Immediate, op::Adc>(self),
-            // //0x89 => instr::read::<addr::Immediate, op::Nop>(self),
-            // 0xa9 => instr::read::<addr::Immediate, op::Lda>(self),
-            // 0xc9 => instr::read::<addr::Immediate, op::Cmp>(self),
-            // 0xe9 => instr::read::<addr::Immediate, op::Sbc>(self),
+            // +0x09
+            0x09 => instr::read::<addr::Immediate, op::Ora>(self),
+            0x29 => instr::read::<addr::Immediate, op::And>(self),
+            0x49 => instr::read::<addr::Immediate, op::Eor>(self),
+            0x69 => instr::read::<addr::Immediate, op::Adc>(self),
+            //0x89 => instr::read::<addr::Immediate, op::Nop>(self),
+            0xa9 => instr::read::<addr::Immediate, op::Lda>(self),
+            0xc9 => instr::read::<addr::Immediate, op::Cmp>(self),
+            0xe9 => instr::read::<addr::Immediate, op::Sbc>(self),
 
-            // // +0x19
-            // 0x19 => instr::read::<addr::AbsoluteY, op::Ora>(self),
-            // 0x39 => instr::read::<addr::AbsoluteY, op::And>(self),
-            // 0x59 => instr::read::<addr::AbsoluteY, op::Eor>(self),
-            // 0x79 => instr::read::<addr::AbsoluteY, op::Adc>(self),
-            // 0x99 => instr::write::<addr::AbsoluteY, op::Sta>(self),
-            // 0xb9 => instr::read::<addr::AbsoluteY, op::Lda>(self),
-            // 0xd9 => instr::read::<addr::AbsoluteY, op::Cmp>(self),
-            // 0xf9 => instr::read::<addr::AbsoluteY, op::Sbc>(self),
+            // +0x19
+            0x19 => instr::read::<addr::AbsoluteY, op::Ora>(self),
+            0x39 => instr::read::<addr::AbsoluteY, op::And>(self),
+            0x59 => instr::read::<addr::AbsoluteY, op::Eor>(self),
+            0x79 => instr::read::<addr::AbsoluteY, op::Adc>(self),
+            0x99 => instr::write::<addr::AbsoluteY, op::Sta>(self),
+            0xb9 => instr::read::<addr::AbsoluteY, op::Lda>(self),
+            0xd9 => instr::read::<addr::AbsoluteY, op::Cmp>(self),
+            0xf9 => instr::read::<addr::AbsoluteY, op::Sbc>(self),
 
-            // // +0x0d
-            // 0x0d => instr::read::<addr::Absolute, op::Ora>(self),
-            // 0x2d => instr::read::<addr::Absolute, op::And>(self),
-            // 0x4d => instr::read::<addr::Absolute, op::Eor>(self),
-            // 0x6d => instr::read::<addr::Absolute, op::Adc>(self),
-            // 0x8d => instr::write::<addr::Absolute, op::Sta>(self),
-            // 0xad => instr::read::<addr::Absolute, op::Lda>(self),
-            // 0xcd => instr::read::<addr::Absolute, op::Cmp>(self),
-            // 0xed => instr::read::<addr::Absolute, op::Sbc>(self),
+            // +0x0d
+            0x0d => instr::read::<addr::Absolute, op::Ora>(self),
+            0x2d => instr::read::<addr::Absolute, op::And>(self),
+            0x4d => instr::read::<addr::Absolute, op::Eor>(self),
+            0x6d => instr::read::<addr::Absolute, op::Adc>(self),
+            0x8d => instr::write::<addr::Absolute, op::Sta>(self),
+            0xad => instr::read::<addr::Absolute, op::Lda>(self),
+            0xcd => instr::read::<addr::Absolute, op::Cmp>(self),
+            0xed => instr::read::<addr::Absolute, op::Sbc>(self),
 
-            // // +0x1d
-            // 0x1d => instr::read::<addr::AbsoluteX, op::Ora>(self),
-            // 0x3d => instr::read::<addr::AbsoluteX, op::And>(self),
-            // 0x5d => instr::read::<addr::AbsoluteX, op::Eor>(self),
-            // 0x7d => instr::read::<addr::AbsoluteX, op::Adc>(self),
-            // 0x9d => instr::write::<addr::AbsoluteX, op::Sta>(self),
-            // 0xbd => instr::read::<addr::AbsoluteX, op::Lda>(self),
-            // 0xdd => instr::read::<addr::AbsoluteX, op::Cmp>(self),
-            // 0xfd => instr::read::<addr::AbsoluteX, op::Sbc>(self),
+            // +0x1d
+            0x1d => instr::read::<addr::AbsoluteX, op::Ora>(self),
+            0x3d => instr::read::<addr::AbsoluteX, op::And>(self),
+            0x5d => instr::read::<addr::AbsoluteX, op::Eor>(self),
+            0x7d => instr::read::<addr::AbsoluteX, op::Adc>(self),
+            0x9d => instr::write::<addr::AbsoluteX, op::Sta>(self),
+            0xbd => instr::read::<addr::AbsoluteX, op::Lda>(self),
+            0xdd => instr::read::<addr::AbsoluteX, op::Cmp>(self),
+            0xfd => instr::read::<addr::AbsoluteX, op::Sbc>(self),
 
-            // // Page 2: Read-Modify-Write Ops
+            // Page 2: Read-Modify-Write Ops
 
-            // // +0x02
-            // 0xa2 => instr::read::<addr::Immediate, op::Ldx>(self),
+            // +0x02
+            0xa2 => instr::read::<addr::Immediate, op::Ldx>(self),
 
-            // // +0x06
-            // 0x06 => instr::modify::<addr::ZeroPage, op::Asl>(self),
-            // 0x26 => instr::modify::<addr::ZeroPage, op::Rol>(self),
-            // 0x46 => instr::modify::<addr::ZeroPage, op::Lsr>(self),
-            // 0x66 => instr::modify::<addr::ZeroPage, op::Ror>(self),
-            // 0x86 => instr::write::<addr::ZeroPage, op::Stx>(self),
-            // 0xa6 => instr::read::<addr::ZeroPage, op::Ldx>(self),
-            // 0xc6 => instr::modify::<addr::ZeroPage, op::Dec>(self),
-            // 0xe6 => instr::modify::<addr::ZeroPage, op::Inc>(self),
+            // +0x06
+            0x06 => instr::modify::<addr::ZeroPage, op::Asl>(self),
+            0x26 => instr::modify::<addr::ZeroPage, op::Rol>(self),
+            0x46 => instr::modify::<addr::ZeroPage, op::Lsr>(self),
+            0x66 => instr::modify::<addr::ZeroPage, op::Ror>(self),
+            0x86 => instr::write::<addr::ZeroPage, op::Stx>(self),
+            0xa6 => instr::read::<addr::ZeroPage, op::Ldx>(self),
+            0xc6 => instr::modify::<addr::ZeroPage, op::Dec>(self),
+            0xe6 => instr::modify::<addr::ZeroPage, op::Inc>(self),
 
-            // // +0x16
-            // 0x16 => instr::modify::<addr::ZeroPageX, op::Asl>(self),
-            // 0x36 => instr::modify::<addr::ZeroPageX, op::Rol>(self),
-            // 0x56 => instr::modify::<addr::ZeroPageX, op::Lsr>(self),
-            // 0x76 => instr::modify::<addr::ZeroPageX, op::Ror>(self),
-            // 0x96 => instr::write::<addr::ZeroPageY, op::Stx>(self),
-            // 0xb6 => instr::read::<addr::ZeroPageY, op::Ldx>(self),
-            // 0xd6 => instr::modify::<addr::ZeroPageX, op::Dec>(self),
-            // 0xf6 => instr::modify::<addr::ZeroPageX, op::Inc>(self),
+            // +0x16
+            0x16 => instr::modify::<addr::ZeroPageX, op::Asl>(self),
+            0x36 => instr::modify::<addr::ZeroPageX, op::Rol>(self),
+            0x56 => instr::modify::<addr::ZeroPageX, op::Lsr>(self),
+            0x76 => instr::modify::<addr::ZeroPageX, op::Ror>(self),
+            0x96 => instr::write::<addr::ZeroPageY, op::Stx>(self),
+            0xb6 => instr::read::<addr::ZeroPageY, op::Ldx>(self),
+            0xd6 => instr::modify::<addr::ZeroPageX, op::Dec>(self),
+            0xf6 => instr::modify::<addr::ZeroPageX, op::Inc>(self),
 
-            // // +0x0a
-            // 0x0a => instr::accumulator::<op::Asl>(self),
-            // 0x2a => instr::accumulator::<op::Rol>(self),
-            // 0x4a => instr::accumulator::<op::Lsr>(self),
-            // 0x6a => instr::accumulator::<op::Ror>(self),
-            // 0x8a => instr::txa(self),
-            // 0xaa => instr::tax(self),
-            // 0xca => instr::dex(self),
-            // 0xea => instr::nop(self),
+            // +0x0a
+            0x0a => instr::accumulator::<op::Asl>(self),
+            0x2a => instr::accumulator::<op::Rol>(self),
+            0x4a => instr::accumulator::<op::Lsr>(self),
+            0x6a => instr::accumulator::<op::Ror>(self),
+            0x8a => instr::txa(self),
+            0xaa => instr::tax(self),
+            0xca => instr::dex(self),
+            0xea => instr::nop(self),
 
-            // // +0x1a
-            // 0x9a => instr::txs(self),
-            // 0xba => instr::tsx(self),
+            // +0x1a
+            0x9a => instr::txs(self),
+            0xba => instr::tsx(self),
 
-            // // +0x0e
-            // 0x0e => instr::modify::<addr::Absolute, op::Asl>(self),
-            // 0x2e => instr::modify::<addr::Absolute, op::Rol>(self),
-            // 0x4e => instr::modify::<addr::Absolute, op::Lsr>(self),
-            // 0x6e => instr::modify::<addr::Absolute, op::Ror>(self),
-            // 0x8e => instr::write::<addr::Absolute, op::Stx>(self),
-            // 0xae => instr::read::<addr::Absolute, op::Ldx>(self),
-            // 0xce => instr::modify::<addr::Absolute, op::Dec>(self),
-            // 0xee => instr::modify::<addr::Absolute, op::Inc>(self),
+            // +0x0e
+            0x0e => instr::modify::<addr::Absolute, op::Asl>(self),
+            0x2e => instr::modify::<addr::Absolute, op::Rol>(self),
+            0x4e => instr::modify::<addr::Absolute, op::Lsr>(self),
+            0x6e => instr::modify::<addr::Absolute, op::Ror>(self),
+            0x8e => instr::write::<addr::Absolute, op::Stx>(self),
+            0xae => instr::read::<addr::Absolute, op::Ldx>(self),
+            0xce => instr::modify::<addr::Absolute, op::Dec>(self),
+            0xee => instr::modify::<addr::Absolute, op::Inc>(self),
 
-            // // +0x1e
-            // 0x1e => instr::modify::<addr::AbsoluteX, op::Asl>(self),
-            // 0x3e => instr::modify::<addr::AbsoluteX, op::Rol>(self),
-            // 0x5e => instr::modify::<addr::AbsoluteX, op::Lsr>(self),
-            // 0x7e => instr::modify::<addr::AbsoluteX, op::Ror>(self),
-            // //0x9e => instr::write::<addr::AbsoluteY, op::Shx>(self),
-            // 0xbe => instr::read::<addr::AbsoluteY, op::Ldx>(self),
-            // 0xde => instr::modify::<addr::AbsoluteX, op::Dec>(self),
-            // 0xfe => instr::modify::<addr::AbsoluteX, op::Inc>(self),
+            // +0x1e
+            0x1e => instr::modify::<addr::AbsoluteX, op::Asl>(self),
+            0x3e => instr::modify::<addr::AbsoluteX, op::Rol>(self),
+            0x5e => instr::modify::<addr::AbsoluteX, op::Lsr>(self),
+            0x7e => instr::modify::<addr::AbsoluteX, op::Ror>(self),
+            //0x9e => instr::write::<addr::AbsoluteY, op::Shx>(self),
+            0xbe => instr::read::<addr::AbsoluteY, op::Ldx>(self),
+            0xde => instr::modify::<addr::AbsoluteX, op::Dec>(self),
+            0xfe => instr::modify::<addr::AbsoluteX, op::Inc>(self),
+
             opcode => panic!("Opcode {:02X} not yet implemented", opcode),
         }
     }
@@ -348,10 +349,6 @@ impl<T: Bus> Core<T> {
 
     fn read(&mut self, address: u16) -> u8 {
         self.read_physical(self.map(address))
-    }
-
-    fn write(&mut self, address: u16, value: u8) {
-        self.write_physical(self.map(address), value);
     }
 
     fn pull(&mut self) -> u8 {

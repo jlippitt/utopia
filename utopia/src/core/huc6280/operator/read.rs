@@ -125,6 +125,10 @@ impl ReadOperator for Adc {
     const NAME: &'static str = "ADC";
 
     fn apply(core: &mut Core<impl Bus>, value: u8) {
+        if core.flags.d {
+            todo!("Decimal mode")
+        }
+
         let result = core.a.wrapping_add(value).wrapping_add(core.flags.c as u8);
         let carries = core.a ^ value ^ result;
         let overflow = (core.a ^ result) & (value ^ result);
