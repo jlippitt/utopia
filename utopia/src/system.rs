@@ -6,6 +6,7 @@ pub mod gb;
 pub mod gba;
 pub mod n64;
 pub mod nes;
+pub mod pce;
 pub mod snes;
 
 #[derive(Clone, Default, Debug, Eq, PartialEq)]
