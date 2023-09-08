@@ -324,6 +324,14 @@ impl<T: Bus> Core<T> {
             0xde => instr::modify::<addr::AbsoluteX, op::Dec>(self),
             0xfe => instr::modify::<addr::AbsoluteX, op::Inc>(self),
 
+            // Page 3: 'New' Ops
+
+            // +0x03
+            0x43 => instr::tma(self),
+
+            // +0x13
+            0x53 => instr::tam(self),
+
             opcode => panic!("Opcode {:02X} not yet implemented", opcode),
         }
     }

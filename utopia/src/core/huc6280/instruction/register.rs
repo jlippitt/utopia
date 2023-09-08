@@ -79,3 +79,32 @@ pub fn txs(core: &mut Core<impl Bus>) {
     core.read(core.pc);
     core.s = core.x;
 }
+
+pub fn tam(core: &mut Core<impl Bus>) {
+    debug!("TAM #const");
+    let mask = core.next_byte();
+    core.read(core.pc);
+    core.read(core.pc);
+
+    for (bit, mpr) in core.mpr.iter_mut().enumerate() {
+        if (mask & (1 << bit)) != 0 {
+            *mpr = (core.a as u32) << 13;
+            debug!("MPR{}: {:02X} ({:05X})", bit, core.a, mpr);
+        }
+    }
+}
+
+pub fn tma(core: &mut Core<impl Bus>) {
+    debug!("TMA #const");
+    let mask = core.next_byte();
+    core.read(core.pc);
+    core.read(core.pc);
+
+    core.a = 0;
+
+    for (bit, mpr) in core.mpr.iter().enumerate() {
+        if (mask & (1 << bit)) != 0 {
+            core.a |= (mpr >> 13) as u8;
+        }
+    }
+}
