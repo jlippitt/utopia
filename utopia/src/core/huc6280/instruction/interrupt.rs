@@ -37,7 +37,7 @@ pub fn reset(core: &mut Core<impl Bus>) {
     core.read(core.pc);
 
     for _ in 0..=2 {
-        core.read(STACK_PAGE | (core.s as u16));
+        core.read_physical(STACK_PAGE | (core.s as u32));
         core.s = core.s.wrapping_sub(1);
     }
 

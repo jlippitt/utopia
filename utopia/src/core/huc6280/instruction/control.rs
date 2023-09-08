@@ -22,7 +22,7 @@ pub fn jmp_indirect(core: &mut Core<impl Bus>) {
 pub fn jsr(core: &mut Core<impl Bus>) {
     debug!("JSR addr");
     let low = core.next_byte();
-    core.read(STACK_PAGE | (core.s as u16));
+    core.read_physical(STACK_PAGE | (core.s as u32));
     core.push((core.pc >> 8) as u8);
     core.push(core.pc as u8);
     core.poll();
@@ -33,7 +33,7 @@ pub fn jsr(core: &mut Core<impl Bus>) {
 pub fn rts(core: &mut Core<impl Bus>) {
     debug!("RTS");
     core.read(core.pc);
-    core.read(STACK_PAGE | (core.s as u16));
+    core.read_physical(STACK_PAGE | (core.s as u32));
     let low = core.pull();
     let high = core.pull();
     core.pc = u16::from_le_bytes([low, high]);
@@ -45,7 +45,7 @@ pub fn rts(core: &mut Core<impl Bus>) {
 pub fn rti(core: &mut Core<impl Bus>) {
     debug!("RTI");
     core.read(core.pc);
-    core.read(STACK_PAGE | (core.s as u16));
+    core.read_physical(STACK_PAGE | (core.s as u32));
     let flags = core.pull();
     core.flags_from_u8(flags);
     let low = core.pull();

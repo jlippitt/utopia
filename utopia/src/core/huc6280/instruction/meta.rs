@@ -7,7 +7,7 @@ pub fn read<Addr: AddressMode, Op: ReadOperator>(core: &mut Core<impl Bus>) {
     debug!("{} {}", Op::NAME, Addr::NAME);
     let address = Addr::resolve(core, false);
     core.poll();
-    let value = core.read(address);
+    let value = core.read_physical(address);
     Op::apply(core, value);
 }
 
@@ -16,7 +16,7 @@ pub fn write<Addr: AddressMode, Op: WriteOperator>(core: &mut Core<impl Bus>) {
     let address = Addr::resolve(core, true);
     core.poll();
     let value = Op::apply(core);
-    core.write(address, value);
+    core.write_physical(address, value);
 }
 
 pub fn accumulator<Op: ModifyOperator>(core: &mut Core<impl Bus>) {
@@ -29,11 +29,11 @@ pub fn accumulator<Op: ModifyOperator>(core: &mut Core<impl Bus>) {
 pub fn modify<Addr: AddressMode, Op: ModifyOperator>(core: &mut Core<impl Bus>) {
     debug!("{} {}", Op::NAME, Addr::NAME);
     let address = Addr::resolve(core, true);
-    let input = core.read(address);
-    core.write(address, input);
+    let input = core.read_physical(address);
+    core.write_physical(address, input);
     core.poll();
     let result = Op::apply(core, input);
-    core.write(address, result);
+    core.write_physical(address, result);
 }
 
 pub fn branch<Op: BranchOperator>(core: &mut Core<impl Bus>) {

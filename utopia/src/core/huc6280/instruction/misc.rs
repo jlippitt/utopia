@@ -11,7 +11,7 @@ pub fn php(core: &mut Core<impl Bus>) {
 pub fn plp(core: &mut Core<impl Bus>) {
     debug!("PLP");
     core.read(core.pc);
-    core.read(STACK_PAGE | (core.s as u16));
+    core.read_physical(STACK_PAGE | (core.s as u32));
     core.poll();
     let flags = core.pull();
     core.flags_from_u8(flags);
@@ -27,7 +27,7 @@ pub fn pha(core: &mut Core<impl Bus>) {
 pub fn pla(core: &mut Core<impl Bus>) {
     debug!("PLA");
     core.read(core.pc);
-    core.read(STACK_PAGE | (core.s as u16));
+    core.read_physical(STACK_PAGE | (core.s as u32));
     core.poll();
     core.a = core.pull();
     core.set_nz(core.a);

@@ -82,18 +82,21 @@ impl Hardware {
 }
 
 impl Bus for Hardware {
-    fn read(&mut self, address: u16) -> u8 {
-        match address {
-            0x0000..=0x1fff => 0, // TODO
-            0x2000..=0x3fff => self.wram[address as usize & 0x1fff],
-            0xe000..=0xffff => self.rom_data[address as usize & 0x1fff],
+    fn read(&mut self, address: u32) -> u8 {
+        match (address >> 13) & 0xff {
+            0x00..=0x7f => self.rom_data[address as usize],
+            0xf7 => todo!("SRAM Reads"),
+            0xf8 => self.wram[address as usize & 0x1fff],
+            0xff => todo!("I/O Port Reads"),
             _ => panic!("Read from unmapped address {:04X}", address),
         }
     }
 
-    fn write(&mut self, address: u16, value: u8) {
-        match address {
-            0x2000..=0x3fff => self.wram[address as usize & 0x1fff] = value,
+    fn write(&mut self, address: u32, value: u8) {
+        match (address >> 13) & 0xff {
+            0xf7 => todo!("SRAM Writes"),
+            0xf8 => self.wram[address as usize & 0x1fff] = value,
+            0xff => todo!("I/O Port Writes"),
             _ => panic!("Read from unmapped address {:04X}", address),
         }
     }

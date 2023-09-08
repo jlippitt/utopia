@@ -5,8 +5,8 @@ mod address_mode;
 mod instruction;
 mod operator;
 
-const ZERO_PAGE: u16 = 0x2000;
-const STACK_PAGE: u16 = 0x2100;
+const ZERO_PAGE: u32 = 0x2000;
+const STACK_PAGE: u32 = 0x2100;
 
 pub type Interrupt = u32;
 
@@ -21,8 +21,8 @@ enum IrqDisable {
 }
 
 pub trait Bus: fmt::Display {
-    fn read(&mut self, address: u16) -> u8;
-    fn write(&mut self, address: u16, value: u8);
+    fn read(&mut self, address: u32) -> u8;
+    fn write(&mut self, address: u32, value: u8);
     fn poll(&mut self) -> Interrupt;
     fn acknowledge(&mut self, interrupt: Interrupt);
 }
@@ -43,6 +43,7 @@ pub struct Core<T: Bus> {
     s: u8,
     pc: u16,
     flags: Flags,
+    mpr: [u32; 8],
     interrupt: Interrupt,
     bus: T,
 }
@@ -63,6 +64,7 @@ impl<T: Bus> Core<T> {
                 z: 0xff,
                 c: false,
             },
+            mpr: [0; 8],
             interrupt: INT_RESET,
             bus,
         }
@@ -329,24 +331,36 @@ impl<T: Bus> Core<T> {
         self.interrupt = self.bus.poll() & (self.flags.i as Interrupt);
     }
 
-    fn read(&mut self, address: u16) -> u8 {
+    fn map(&self, address: u16) -> u32 {
+        self.mpr[address as usize >> 13] | (address as u32 & 0x1fff)
+    }
+
+    fn read_physical(&mut self, address: u32) -> u8 {
         let value = self.bus.read(address);
-        debug!("  {:04X} => {:02X}", address, value);
+        debug!("  {:05X} => {:02X}", address, value);
         value
     }
 
-    fn write(&mut self, address: u16, value: u8) {
-        debug!("  {:04X} <= {:02X}", address, value);
+    fn write_physical(&mut self, address: u32, value: u8) {
+        debug!("  {:05X} <= {:02X}", address, value);
         self.bus.write(address, value);
+    }
+
+    fn read(&mut self, address: u16) -> u8 {
+        self.read_physical(self.map(address))
+    }
+
+    fn write(&mut self, address: u16, value: u8) {
+        self.write_physical(self.map(address), value);
     }
 
     fn pull(&mut self) -> u8 {
         self.s = self.s.wrapping_add(1);
-        self.read(STACK_PAGE | (self.s as u16))
+        self.read_physical(STACK_PAGE | (self.s as u32))
     }
 
     fn push(&mut self, value: u8) {
-        self.write(STACK_PAGE | (self.s as u16), value);
+        self.write_physical(STACK_PAGE | (self.s as u32), value);
         self.s = self.s.wrapping_sub(1);
     }
 
