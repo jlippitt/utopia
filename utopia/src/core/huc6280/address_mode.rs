@@ -1,4 +1,4 @@
-use super::{Bus, Core};
+use super::{Bus, Core, ZERO_PAGE};
 
 pub trait AddressMode {
     const NAME: &'static str;
@@ -16,8 +16,8 @@ fn add_index(core: &mut Core<impl Bus>, base: u16, index: u8, write: bool) -> u1
 }
 
 fn get_indirect(core: &mut Core<impl Bus>, direct: u8) -> u16 {
-    let low = core.read(direct as u16);
-    let high = core.read(direct.wrapping_add(1) as u16);
+    let low = core.read(ZERO_PAGE | direct as u16);
+    let high = core.read(ZERO_PAGE | direct.wrapping_add(1) as u16);
     u16::from_le_bytes([low, high])
 }
 
@@ -71,7 +71,7 @@ impl AddressMode for ZeroPage {
     const NAME: &'static str = "zp";
 
     fn resolve(core: &mut Core<impl Bus>, _write: bool) -> u16 {
-        core.next_byte() as u16
+        ZERO_PAGE | core.next_byte() as u16
     }
 }
 
@@ -82,8 +82,8 @@ impl AddressMode for ZeroPageX {
 
     fn resolve(core: &mut Core<impl Bus>, _write: bool) -> u16 {
         let base = core.next_byte();
-        core.read(base as u16);
-        base.wrapping_add(core.x) as u16
+        core.read(ZERO_PAGE | base as u16);
+        ZERO_PAGE | base.wrapping_add(core.x) as u16
     }
 }
 
@@ -94,8 +94,8 @@ impl AddressMode for ZeroPageY {
 
     fn resolve(core: &mut Core<impl Bus>, _write: bool) -> u16 {
         let base = core.next_byte();
-        core.read(base as u16);
-        base.wrapping_add(core.y) as u16
+        core.read(ZERO_PAGE | base as u16);
+        ZERO_PAGE | base.wrapping_add(core.y) as u16
     }
 }
 
@@ -106,7 +106,7 @@ impl AddressMode for ZeroPageXIndirect {
 
     fn resolve(core: &mut Core<impl Bus>, _write: bool) -> u16 {
         let base = core.next_byte();
-        core.read(base as u16);
+        core.read(ZERO_PAGE | base as u16);
         let direct = base.wrapping_add(core.x);
         get_indirect(core, direct)
     }

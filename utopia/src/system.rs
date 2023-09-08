@@ -23,6 +23,7 @@ pub enum SystemType {
     GameBoyAdvance,
     Nes,
     Nintendo64,
+    PCEngine,
     Snes,
 }
 
@@ -40,6 +41,7 @@ impl TryFrom<&Path> for SystemType {
             "gba" => Ok(Self::GameBoyAdvance),
             "n64" | "z64" => Ok(Self::Nintendo64),
             "nes" => Ok(Self::Nes),
+            "pce" => Ok(Self::PCEngine),
             "sfc" | "smc" => Ok(Self::Snes),
             _ => Err(format!("No system found for file extension '.{}'", extension).into()),
         }
@@ -105,6 +107,7 @@ pub fn create<'a, T: MemoryMapper + 'static>(
         SystemType::GameBoyAdvance => Box::new(gba::System::new(options)),
         SystemType::Nintendo64 => Box::new(n64::System::new(options)),
         SystemType::Nes => Box::new(nes::System::new(options)),
+        SystemType::PCEngine => Box::new(pce::System::new(options)),
         SystemType::Snes => Box::new(snes::System::new(options)),
     })
 }

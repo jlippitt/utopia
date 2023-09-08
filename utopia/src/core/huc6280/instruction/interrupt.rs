@@ -1,9 +1,9 @@
 use super::super::{Bus, Core, IrqDisable, STACK_PAGE};
 use tracing::debug;
 
-const NMI_VECTOR: u16 = 0xfffa;
-const RESET_VECTOR: u16 = 0xfffc;
-const IRQ_VECTOR: u16 = 0xfffe;
+const IRQ2_VECTOR: u16 = 0xfff6;
+const NMI_VECTOR: u16 = 0xfffc;
+const RESET_VECTOR: u16 = 0xfffe;
 
 fn push_state(core: &mut Core<impl Bus>, break_flag: bool) {
     core.push((core.pc >> 8) as u8);
@@ -29,7 +29,7 @@ pub fn irq(core: &mut Core<impl Bus>) {
     debug!("IRQ");
     core.read(core.pc);
     push_state(core, false);
-    jump_to_vector(core, IRQ_VECTOR);
+    jump_to_vector(core, IRQ2_VECTOR);
 }
 
 pub fn reset(core: &mut Core<impl Bus>) {
@@ -48,5 +48,5 @@ pub fn brk(core: &mut Core<impl Bus>) {
     debug!("BRK #const");
     core.next_byte();
     push_state(core, true);
-    jump_to_vector(core, IRQ_VECTOR);
+    jump_to_vector(core, IRQ2_VECTOR);
 }

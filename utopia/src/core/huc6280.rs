@@ -5,7 +5,8 @@ mod address_mode;
 mod instruction;
 mod operator;
 
-const STACK_PAGE: u16 = 0x0100;
+const ZERO_PAGE: u16 = 0x2000;
+const STACK_PAGE: u16 = 0x2100;
 
 pub type Interrupt = u32;
 

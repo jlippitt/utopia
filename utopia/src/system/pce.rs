@@ -1,11 +1,21 @@
 use crate::core::huc6280::{Bus, Core, Interrupt};
-use crate::{Error, InstanceOptions, JoypadState, MemoryMapper, WgpuContext};
+use crate::util::MirrorVec;
+use crate::{Error, InstanceOptions, JoypadState, MemoryMapper, SystemOptions, WgpuContext};
 use std::fmt;
+use tracing::debug;
 
 const DEFAULT_WIDTH: u32 = 256;
 const DEFAULT_HEIGHT: u32 = 224;
 
+const WRAM_SIZE: usize = 8192;
+
 pub struct System;
+
+impl System {
+    pub fn new(_options: SystemOptions<'_, impl MemoryMapper>) -> Self {
+        Self
+    }
+}
 
 impl<T: MemoryMapper> crate::System<T> for System {
     fn create_instance(&self, options: InstanceOptions) -> Result<Box<dyn crate::Instance>, Error> {
@@ -19,21 +29,24 @@ impl<T: MemoryMapper> crate::System<T> for System {
 
 pub struct Instance {
     wgpu_context: Option<WgpuContext>,
-    _core: Core<Hardware>,
+    core: Core<Hardware>,
 }
 
 impl Instance {
     fn new(options: InstanceOptions) -> Self {
         Self {
             wgpu_context: options.wgpu_context,
-            _core: Core::new(Hardware::new(options.rom_data)),
+            core: Core::new(Hardware::new(options.rom_data)),
         }
     }
 }
 
 impl crate::Instance for Instance {
     fn run_frame(&mut self, _joypad_state: &JoypadState) {
-        //
+        loop {
+            self.core.step();
+            debug!("{}", self.core);
+        }
     }
 
     fn wgpu_context(&self) -> &WgpuContext {
@@ -55,24 +68,34 @@ impl crate::Instance for Instance {
 }
 
 struct Hardware {
-    _rom_data: Vec<u8>,
+    rom_data: Vec<u8>,
+    wram: MirrorVec<u8>,
 }
 
 impl Hardware {
     fn new(rom_data: Vec<u8>) -> Self {
         Self {
-            _rom_data: rom_data,
+            rom_data,
+            wram: MirrorVec::new(WRAM_SIZE),
         }
     }
 }
 
 impl Bus for Hardware {
-    fn read(&mut self, _address: u16) -> u8 {
-        0
+    fn read(&mut self, address: u16) -> u8 {
+        match address {
+            0x0000..=0x1fff => 0, // TODO
+            0x2000..=0x3fff => self.wram[address as usize & 0x1fff],
+            0xe000..=0xffff => self.rom_data[address as usize & 0x1fff],
+            _ => panic!("Read from unmapped address {:04X}", address),
+        }
     }
 
-    fn write(&mut self, _address: u16, _value: u8) {
-        //
+    fn write(&mut self, address: u16, value: u8) {
+        match address {
+            0x2000..=0x3fff => self.wram[address as usize & 0x1fff] = value,
+            _ => panic!("Read from unmapped address {:04X}", address),
+        }
     }
 
     fn poll(&mut self) -> Interrupt {
