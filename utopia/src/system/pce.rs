@@ -1,11 +1,13 @@
-use crate::core::huc6280::{Bus, Core, Interrupt};
+use crate::core::huc6280::{self, Bus, Core};
 use crate::util::MirrorVec;
 use crate::{Error, InstanceOptions, JoypadState, MemoryMapper, SystemOptions, WgpuContext};
+use interrupt::Interrupt;
 use std::fmt;
 use tracing::{debug, warn};
 use vdc::Vdc;
 use vde::Vde;
 
+mod interrupt;
 mod vdc;
 mod vde;
 
@@ -74,8 +76,10 @@ impl crate::Instance for Instance {
 }
 
 struct Hardware {
+    cycles: u64,
     clock_speed: u64,
     mdr: u8,
+    interrupt: Interrupt,
     rom_data: Vec<u8>,
     wram: MirrorVec<u8>,
     vdc: Vdc,
@@ -84,18 +88,23 @@ struct Hardware {
 
 impl Hardware {
     fn new(rom_data: Vec<u8>) -> Self {
+        let interrupt = Interrupt::new();
+
         Self {
+            cycles: 0,
             clock_speed: SLOW_CYCLES,
             mdr: 0,
             rom_data,
             wram: MirrorVec::new(WRAM_SIZE),
-            vdc: Vdc::new(),
+            vdc: Vdc::new(interrupt.clone()),
             vde: Vde::new(),
+            interrupt,
         }
     }
 
     fn step(&mut self) {
-        self.vde.step(self.clock_speed);
+        self.cycles += self.clock_speed;
+        self.vde.step(&mut self.vdc, self.clock_speed);
     }
 }
 
@@ -136,12 +145,12 @@ impl Bus for Hardware {
         }
     }
 
-    fn poll(&mut self) -> Interrupt {
-        0
+    fn poll(&mut self) -> huc6280::Interrupt {
+        self.interrupt.poll()
     }
 
-    fn acknowledge(&mut self, _interrupt: Interrupt) {
-        //
+    fn acknowledge(&mut self, interrupt: huc6280::Interrupt) {
+        self.interrupt.clear(interrupt.into());
     }
 
     fn set_clock_speed(&mut self, clock_speed_high: bool) {
@@ -157,6 +166,6 @@ impl Bus for Hardware {
 
 impl fmt::Display for Hardware {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "T={} V={}", self.vde.cycles(), self.vde.line_counter())
+        write!(f, "T={} V={}", self.cycles, self.vde.line_counter())
     }
 }

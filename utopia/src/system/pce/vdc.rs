@@ -1,9 +1,10 @@
+use super::interrupt::{Interrupt, InterruptType};
 use bitflags::bitflags;
 use tracing::{debug, warn};
 
 bitflags! {
     #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-    struct InterruptEnable: u8 {
+    pub struct VdcInterrupt: u8 {
         const SPRITE_COLLISION = 0x01;
         const SPRITE_OVERFLOW = 0x02;
         const SCANLINE = 0x04;
@@ -14,24 +15,28 @@ bitflags! {
 pub struct Vdc {
     reg_index: u8,
     write_buffer: u8,
-    interrupt_enable: InterruptEnable,
+    interrupt_enable: VdcInterrupt,
+    interrupt_active: VdcInterrupt,
     scanline_match: u16,
     display_width: u16,
     display_height: u16,
+    interrupt: Interrupt,
 }
 
 impl Vdc {
     pub const DEFAULT_WIDTH: u16 = 256;
     pub const DEFAULT_HEIGHT: u16 = 224;
 
-    pub fn new() -> Self {
+    pub fn new(interrupt: Interrupt) -> Self {
         Self {
             reg_index: 0,
             write_buffer: 0,
-            interrupt_enable: InterruptEnable::empty(),
+            interrupt_enable: VdcInterrupt::empty(),
+            interrupt_active: VdcInterrupt::empty(),
             scanline_match: 0,
             display_width: Self::DEFAULT_WIDTH,
             display_height: Self::DEFAULT_HEIGHT,
+            interrupt,
         }
     }
 
@@ -56,13 +61,36 @@ impl Vdc {
         }
     }
 
+    pub fn raise_interrupt(&mut self, int_type: VdcInterrupt) {
+        if !self.interrupt_enable.contains(int_type) {
+            return;
+        }
+
+        self.interrupt_active |= int_type;
+        debug!("VDC Interrupt Raised: {:?}", int_type);
+        self.interrupt.raise(InterruptType::Irq1);
+    }
+
+    pub fn clear_interrupt(&mut self, int_type: VdcInterrupt) {
+        if !self.interrupt_active.contains(int_type) {
+            return;
+        }
+
+        self.interrupt_active &= int_type;
+        debug!("VDC Interrupt Cleared: {:?}", int_type);
+
+        if self.interrupt_active & self.interrupt_enable == VdcInterrupt::empty() {
+            self.interrupt.clear(InterruptType::Irq1);
+        }
+    }
+
     fn write_register(&mut self, high_byte: u8) {
         let value = ((high_byte as u16) << 8) | self.write_buffer as u16;
 
         match self.reg_index {
             0x05 => {
                 // TODO: Other settings
-                self.interrupt_enable = InterruptEnable::from_bits_retain(value as u8 & 0x0f);
+                self.interrupt_enable = VdcInterrupt::from_bits_retain(value as u8 & 0x0f);
                 debug!("VDC Interrupt Enable: {:?}", self.interrupt_enable);
             }
             0x06 => {

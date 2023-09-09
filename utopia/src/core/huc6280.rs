@@ -8,15 +8,18 @@ mod operator;
 const ZERO_PAGE: u32 = 0x1f0000;
 const STACK_PAGE: u32 = 0x1f0100;
 
-pub type Interrupt = u32;
+pub type Interrupt = u8;
 
-pub const INT_RESET: Interrupt = 0x0000_0001;
-pub const INT_NMI: Interrupt = 0x0000_0002;
+pub const INT_RESET: Interrupt = 0x01;
+pub const INT_NMI: Interrupt = 0x02;
+pub const INT_TIMER: Interrupt = 0x04;
+pub const INT_IRQ1: Interrupt = 0x08;
+pub const INT_IRQ2: Interrupt = 0x10;
 
-#[repr(u32)]
+#[repr(u8)]
 #[derive(Copy, Clone, Eq, PartialEq)]
 enum IrqDisable {
-    Clear = 0xffff_ffff,
+    Clear = 0xff,
     Set = INT_RESET | INT_NMI,
 }
 

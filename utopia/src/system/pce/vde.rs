@@ -1,3 +1,4 @@
+use super::vdc::{Vdc, VdcInterrupt};
 use tracing::{debug, warn};
 
 const CYCLES_PER_LINE: u64 = 1364;
@@ -7,7 +8,6 @@ const LINES_PER_FRAME_INTERLACE: u16 = 263;
 
 pub struct Vde {
     line_cycles: u64,
-    banked_cycles: u64,
     line_counter: u16,
     lines_per_frame: u16,
 }
@@ -16,14 +16,9 @@ impl Vde {
     pub fn new() -> Self {
         Self {
             line_cycles: 0,
-            banked_cycles: 0,
             line_counter: 0,
             lines_per_frame: LINES_PER_FRAME_NORMAL,
         }
-    }
-
-    pub fn cycles(&self) -> u64 {
-        self.line_cycles + self.banked_cycles
     }
 
     pub fn line_counter(&self) -> u16 {
@@ -52,16 +47,18 @@ impl Vde {
         }
     }
 
-    pub fn step(&mut self, cycles: u64) {
+    pub fn step(&mut self, vdc: &mut Vdc, cycles: u64) {
         self.line_cycles += cycles;
 
         if self.line_cycles >= CYCLES_PER_LINE {
             self.line_cycles -= CYCLES_PER_LINE;
-            self.banked_cycles += CYCLES_PER_LINE;
             self.line_counter += 1;
 
             if self.line_counter == self.lines_per_frame {
                 self.line_counter = 0;
+                vdc.clear_interrupt(VdcInterrupt::VBLANK);
+            } else if (self.line_counter + 64) == vdc.display_height() {
+                vdc.raise_interrupt(VdcInterrupt::VBLANK);
             }
         }
     }
