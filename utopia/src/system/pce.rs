@@ -9,9 +9,6 @@ use vde::Vde;
 mod vdc;
 mod vde;
 
-const DEFAULT_WIDTH: u32 = 256;
-const DEFAULT_HEIGHT: u32 = 224;
-
 const WRAM_SIZE: usize = 8192;
 
 const SLOW_CYCLES: u64 = 12;
@@ -27,7 +24,7 @@ impl System {
 
 impl<T: MemoryMapper> crate::System<T> for System {
     fn default_resolution(&self) -> (u32, u32) {
-        (DEFAULT_WIDTH, DEFAULT_HEIGHT)
+        (Vdc::DEFAULT_WIDTH as u32, Vdc::DEFAULT_HEIGHT as u32)
     }
 
     fn create_instance(&self, options: InstanceOptions) -> Result<Box<dyn crate::Instance>, Error> {
@@ -51,7 +48,8 @@ impl Instance {
 
 impl crate::Instance for Instance {
     fn resolution(&self) -> (u32, u32) {
-        (DEFAULT_WIDTH, DEFAULT_HEIGHT)
+        let vdc = &self.core.bus().vdc;
+        (vdc.display_width() as u32, vdc.display_height() as u32)
     }
 
     // Effectively deprecated. TODO: Remove from interface.

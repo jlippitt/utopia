@@ -16,16 +16,31 @@ pub struct Vdc {
     write_buffer: u8,
     interrupt_enable: InterruptEnable,
     scanline_match: u16,
+    display_width: u16,
+    display_height: u16,
 }
 
 impl Vdc {
+    pub const DEFAULT_WIDTH: u16 = 256;
+    pub const DEFAULT_HEIGHT: u16 = 224;
+
     pub fn new() -> Self {
         Self {
             reg_index: 0,
             write_buffer: 0,
             interrupt_enable: InterruptEnable::empty(),
             scanline_match: 0,
+            display_width: Self::DEFAULT_WIDTH,
+            display_height: Self::DEFAULT_HEIGHT,
         }
+    }
+
+    pub fn display_width(&self) -> u16 {
+        self.display_width
+    }
+
+    pub fn display_height(&self) -> u16 {
+        self.display_height
     }
 
     pub fn read(&self, address: u16, _prev_value: u8) -> u8 {
@@ -53,6 +68,14 @@ impl Vdc {
             0x06 => {
                 self.scanline_match = value & 0x03ff;
                 debug!("VDC Scanline Match: {}", self.scanline_match,);
+            }
+            0x0b => {
+                self.display_width = ((value & 0x3f) + 1) << 3;
+                debug!("VDC Display Width: {}", self.display_width)
+            }
+            0x0d => {
+                self.display_height = (value & 0x01ff) + 1;
+                debug!("VDC Display Height: {}", self.display_height)
             }
             _ => warn!(
                 "Unimplemented VDC Register Write: {:02X} <= {:04X}",
