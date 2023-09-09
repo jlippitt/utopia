@@ -86,6 +86,16 @@ impl ReadOperator for Bit {
     }
 }
 
+pub struct BitImmediate;
+
+impl ReadOperator for BitImmediate {
+    const NAME: &'static str = "BIT";
+
+    fn apply(core: &mut Core<impl Bus>, value: u8) {
+        core.flags.z = value & core.a;
+    }
+}
+
 pub struct Ora;
 
 impl ReadOperator for Ora {

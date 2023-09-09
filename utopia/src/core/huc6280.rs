@@ -145,7 +145,7 @@ impl<T: Bus> Core<T> {
 
             // +0x14
             //0x14 => instr::read::<addr::ZeroPageX, op::Nop>(self),
-            //0x34 => instr::read::<addr::ZeroPageX, op::Nop>(self),
+            0x34 => instr::read::<addr::ZeroPageX, op::Bit>(self),
             0x54 => instr::csl(self),
             0x74 => instr::write::<addr::ZeroPageX, op::Stz>(self),
             0x94 => instr::write::<addr::ZeroPageX, op::Sty>(self),
@@ -185,7 +185,7 @@ impl<T: Bus> Core<T> {
 
             // +0x1c
             //0x1c => instr::read::<addr::AbsoluteX, op::Nop>(self),
-            //0x3c => instr::read::<addr::AbsoluteX, op::Nop>(self),
+            0x3c => instr::read::<addr::AbsoluteX, op::Bit>(self),
             //0x5c => instr::read::<addr::AbsoluteX, op::Nop>(self),
             //0x7c => instr::read::<addr::AbsoluteX, op::Nop>(self),
             0x9c => instr::write::<addr::Absolute, op::Stz>(self),
@@ -240,7 +240,7 @@ impl<T: Bus> Core<T> {
             0x29 => instr::read::<addr::Immediate, op::And>(self),
             0x49 => instr::read::<addr::Immediate, op::Eor>(self),
             0x69 => instr::read::<addr::Immediate, op::Adc>(self),
-            //0x89 => instr::read::<addr::Immediate, op::Nop>(self),
+            0x89 => instr::read::<addr::Immediate, op::BitImmediate>(self),
             0xa9 => instr::read::<addr::Immediate, op::Lda>(self),
             0xc9 => instr::read::<addr::Immediate, op::Cmp>(self),
             0xe9 => instr::read::<addr::Immediate, op::Sbc>(self),
