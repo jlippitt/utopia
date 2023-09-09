@@ -12,10 +12,10 @@ pub fn jmp(core: &mut Core<impl Bus>) {
 pub fn jmp_indirect(core: &mut Core<impl Bus>) {
     debug!("JMP (addr)");
     let address = core.next_word();
+    core.read(core.pc);
     let low = core.read(address);
     core.poll();
-    // 6502 JMP bug:
-    let high = core.read((address & 0xff00) | (address.wrapping_add(1) & 0xff));
+    let high = core.read(address.wrapping_add(1));
     core.pc = u16::from_le_bytes([low, high]);
 }
 
