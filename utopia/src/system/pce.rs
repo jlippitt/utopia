@@ -3,7 +3,7 @@ use crate::util::MirrorVec;
 use crate::{Error, InstanceOptions, JoypadState, MemoryMapper, SystemOptions, WgpuContext};
 use interrupt::Interrupt;
 use std::fmt;
-use tracing::{debug, warn};
+use tracing::{debug, info, warn};
 use vdc::Vdc;
 use vde::Vde;
 
@@ -80,21 +80,37 @@ struct Hardware {
     clock_speed: u64,
     mdr: u8,
     interrupt: Interrupt,
-    rom_data: Vec<u8>,
+    rom: MirrorVec<u8>,
     wram: MirrorVec<u8>,
     vdc: Vdc,
     vde: Vde,
 }
 
 impl Hardware {
-    fn new(rom_data: Vec<u8>) -> Self {
+    fn new(mut rom_data: Vec<u8>) -> Self {
+        let rom_size = rom_data.len();
+
+        info!("ROM Size: {}", rom_size);
+
+        if rom_size == 0x060000 {
+            // 384K ROM gets split into 256K + 128K parts
+            let mut split_rom = Vec::with_capacity(0x100000);
+            split_rom.extend_from_slice(&rom_data[0x000000..0x040000]);
+            split_rom.extend_from_slice(&rom_data[0x000000..0x040000]);
+            split_rom.extend_from_slice(&rom_data[0x040000..0x060000]);
+            split_rom.extend_from_slice(&rom_data[0x040000..0x060000]);
+            split_rom.extend_from_slice(&rom_data[0x040000..0x060000]);
+            split_rom.extend_from_slice(&rom_data[0x040000..0x060000]);
+            rom_data = split_rom;
+        }
+
         let interrupt = Interrupt::new();
 
         Self {
             cycles: 0,
             clock_speed: SLOW_CYCLES,
             mdr: 0,
-            rom_data,
+            rom: rom_data.into(),
             wram: MirrorVec::new(WRAM_SIZE),
             vdc: Vdc::new(interrupt.clone()),
             vde: Vde::new(),
@@ -113,7 +129,7 @@ impl Bus for Hardware {
         self.step();
 
         self.mdr = match (address >> 13) & 0xff {
-            0x00..=0x7f => self.rom_data[address as usize],
+            0x00..=0x7f => self.rom[address as usize],
             0xf7 => todo!("SRAM Reads"),
             0xf8 => self.wram[address as usize & 0x1fff],
             0xff => match address & 0x1c00 {
