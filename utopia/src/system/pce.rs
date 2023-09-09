@@ -68,7 +68,9 @@ impl crate::Instance for Instance {
     }
 
     fn run_frame(&mut self, _joypad_state: &JoypadState) {
-        loop {
+        self.core.bus_mut().vde.start_frame();
+
+        while !self.core.bus().vde.frame_done() {
             self.core.step();
             debug!("{}", self.core);
         }

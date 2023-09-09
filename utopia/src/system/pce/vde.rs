@@ -7,6 +7,7 @@ const LINES_PER_FRAME_NORMAL: u16 = 262;
 const LINES_PER_FRAME_INTERLACE: u16 = 263;
 
 pub struct Vde {
+    frame_done: bool,
     line_cycles: u64,
     line_counter: u16,
     lines_per_frame: u16,
@@ -15,10 +16,19 @@ pub struct Vde {
 impl Vde {
     pub fn new() -> Self {
         Self {
+            frame_done: false,
             line_cycles: 0,
             line_counter: 0,
             lines_per_frame: LINES_PER_FRAME_NORMAL,
         }
+    }
+
+    pub fn frame_done(&self) -> bool {
+        self.frame_done
+    }
+
+    pub fn start_frame(&mut self) {
+        self.frame_done = false;
     }
 
     pub fn line_counter(&self) -> u16 {
@@ -57,6 +67,7 @@ impl Vde {
             if self.line_counter == self.lines_per_frame {
                 self.line_counter = 0;
             } else if self.line_counter == vdc.display_height() {
+                self.frame_done = true;
                 vdc.raise_interrupt(VdcInterrupt::VBLANK);
             } else if (self.line_counter + 64) == vdc.scanline_match() {
                 vdc.raise_interrupt(VdcInterrupt::SCANLINE);
