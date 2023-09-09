@@ -15,6 +15,7 @@ pub struct Vdc {
     reg_index: u8,
     write_buffer: u8,
     interrupt_enable: InterruptEnable,
+    scanline_match: u16,
 }
 
 impl Vdc {
@@ -23,6 +24,7 @@ impl Vdc {
             reg_index: 0,
             write_buffer: 0,
             interrupt_enable: InterruptEnable::empty(),
+            scanline_match: 0,
         }
     }
 
@@ -47,6 +49,10 @@ impl Vdc {
                 // TODO: Other settings
                 self.interrupt_enable = InterruptEnable::from_bits_retain(value as u8 & 0x0f);
                 debug!("VDC Interrupt Enable: {:?}", self.interrupt_enable);
+            }
+            0x06 => {
+                self.scanline_match = value & 0x03ff;
+                debug!("VDC Scanline Match: {}", self.scanline_match,);
             }
             _ => warn!(
                 "Unimplemented VDC Register Write: {:02X} <= {:04X}",

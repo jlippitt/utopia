@@ -2,14 +2,14 @@ use tracing::{debug, warn};
 
 const CYCLES_PER_LINE: u64 = 1364;
 
-const LINES_PER_FRAME_NORMAL: u32 = 262;
-const LINES_PER_FRAME_INTERLACE: u32 = 263;
+const LINES_PER_FRAME_NORMAL: u16 = 262;
+const LINES_PER_FRAME_INTERLACE: u16 = 263;
 
 pub struct Vde {
     line_cycles: u64,
     banked_cycles: u64,
-    line_counter: u32,
-    lines_per_frame: u32,
+    line_counter: u16,
+    lines_per_frame: u16,
 }
 
 impl Vde {
@@ -26,7 +26,7 @@ impl Vde {
         self.line_cycles + self.banked_cycles
     }
 
-    pub fn line_counter(&self) -> u32 {
+    pub fn line_counter(&self) -> u16 {
         self.line_counter
     }
 
