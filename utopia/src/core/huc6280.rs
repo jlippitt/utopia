@@ -96,8 +96,14 @@ impl<T: Bus> Core<T> {
             } else if (self.interrupt & INT_NMI) != 0 {
                 self.bus.acknowledge(INT_NMI);
                 instr::nmi(self);
+            } else if (self.interrupt & INT_TIMER) != 0 {
+                instr::timer(self);
+            } else if (self.interrupt & INT_IRQ1) != 0 {
+                instr::irq1(self);
+            } else if (self.interrupt & INT_IRQ2) != 0 {
+                instr::irq2(self);
             } else {
-                instr::irq(self);
+                panic!("Invalid interrupt mask: {:02X}", self.interrupt);
             }
 
             self.interrupt = 0;

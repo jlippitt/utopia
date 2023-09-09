@@ -2,6 +2,8 @@ use super::super::{Bus, Core, IrqDisable, STACK_PAGE};
 use tracing::debug;
 
 const IRQ2_VECTOR: u16 = 0xfff6;
+const IRQ1_VECTOR: u16 = 0xfff8;
+const TIMER_VECTOR: u16 = 0xfffa;
 const NMI_VECTOR: u16 = 0xfffc;
 const RESET_VECTOR: u16 = 0xfffe;
 
@@ -25,8 +27,22 @@ pub fn nmi(core: &mut Core<impl Bus>) {
     jump_to_vector(core, NMI_VECTOR);
 }
 
-pub fn irq(core: &mut Core<impl Bus>) {
-    debug!("IRQ");
+pub fn timer(core: &mut Core<impl Bus>) {
+    debug!("TIMER");
+    core.read(core.pc);
+    push_state(core, false);
+    jump_to_vector(core, TIMER_VECTOR);
+}
+
+pub fn irq1(core: &mut Core<impl Bus>) {
+    debug!("IRQ1");
+    core.read(core.pc);
+    push_state(core, false);
+    jump_to_vector(core, IRQ1_VECTOR);
+}
+
+pub fn irq2(core: &mut Core<impl Bus>) {
+    debug!("IRQ2");
     core.read(core.pc);
     push_state(core, false);
     jump_to_vector(core, IRQ2_VECTOR);
