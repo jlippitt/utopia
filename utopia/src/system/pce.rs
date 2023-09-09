@@ -2,12 +2,15 @@ use crate::core::huc6280::{Bus, Core, Interrupt};
 use crate::util::MirrorVec;
 use crate::{Error, InstanceOptions, JoypadState, MemoryMapper, SystemOptions, WgpuContext};
 use std::fmt;
-use tracing::{debug, warn};
+use tracing::{debug, info, warn};
 
 const DEFAULT_WIDTH: u32 = 256;
 const DEFAULT_HEIGHT: u32 = 224;
 
 const WRAM_SIZE: usize = 8192;
+
+const SLOW_CYCLES: u64 = 12;
+const FAST_CYCLES: u64 = 3;
 
 pub struct System;
 
@@ -68,6 +71,8 @@ impl crate::Instance for Instance {
 }
 
 struct Hardware {
+    cycles: u64,
+    clock_speed: u64,
     rom_data: Vec<u8>,
     wram: MirrorVec<u8>,
 }
@@ -75,14 +80,32 @@ struct Hardware {
 impl Hardware {
     fn new(rom_data: Vec<u8>) -> Self {
         Self {
+            cycles: 0,
+            clock_speed: SLOW_CYCLES,
             rom_data,
             wram: MirrorVec::new(WRAM_SIZE),
+        }
+    }
+
+    fn step(&mut self) {
+        self.cycles += self.clock_speed;
+    }
+
+    fn write_io(&mut self, address: u16, value: u8) {
+        match address {
+            0x0000 => info!("VDC Reg Select: {:02X}", value),
+            0x0002 => info!("VDC Data Low"),
+            0x0003 => info!("VDC Data High"),
+            0x1402 => info!("Interrupt Disable"),
+            _ => warn!("Unmapped I/O port write: {:04X} <= {:02X}", address, value),
         }
     }
 }
 
 impl Bus for Hardware {
     fn read(&mut self, address: u32) -> u8 {
+        self.step();
+
         match (address >> 13) & 0xff {
             0x00..=0x7f => self.rom_data[address as usize],
             0xf7 => todo!("SRAM Reads"),
@@ -98,10 +121,12 @@ impl Bus for Hardware {
     }
 
     fn write(&mut self, address: u32, value: u8) {
+        self.step();
+
         match (address >> 13) & 0xff {
             0xf7 => todo!("SRAM Writes"),
             0xf8 => self.wram[address as usize & 0x1fff] = value,
-            0xff => warn!("I/O Port Writes"),
+            0xff => self.write_io(address as u16 & 0x1fff, value),
             _ => panic!("Read from unmapped address {:06X}", address),
         }
     }
@@ -113,10 +138,20 @@ impl Bus for Hardware {
     fn acknowledge(&mut self, _interrupt: Interrupt) {
         //
     }
+
+    fn set_clock_speed(&mut self, clock_speed_high: bool) {
+        self.clock_speed = if clock_speed_high {
+            FAST_CYCLES
+        } else {
+            SLOW_CYCLES
+        };
+
+        debug!("Clock Speed: {}", self.clock_speed);
+    }
 }
 
 impl fmt::Display for Hardware {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "")
+        write!(f, "T={}", self.cycles)
     }
 }

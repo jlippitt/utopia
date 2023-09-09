@@ -25,6 +25,7 @@ pub trait Bus: fmt::Display {
     fn write(&mut self, address: u32, value: u8);
     fn poll(&mut self) -> Interrupt;
     fn acknowledge(&mut self, interrupt: Interrupt);
+    fn set_clock_speed(&mut self, clock_speed_high: bool);
 }
 
 pub struct Flags {
