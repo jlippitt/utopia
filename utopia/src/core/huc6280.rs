@@ -317,6 +317,8 @@ impl<T: Bus> Core<T> {
             0xea => instr::nop(self),
 
             // +0x1a
+            0x1a => instr::accumulator::<op::Inc>(self),
+            0x3a => instr::accumulator::<op::Dec>(self),
             0x5a => instr::phy(self),
             0x7a => instr::ply(self),
             0x9a => instr::txs(self),
