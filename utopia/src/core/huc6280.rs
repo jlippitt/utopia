@@ -317,8 +317,12 @@ impl<T: Bus> Core<T> {
             0xea => instr::nop(self),
 
             // +0x1a
+            0x5a => instr::phy(self),
+            0x7a => instr::ply(self),
             0x9a => instr::txs(self),
             0xba => instr::tsx(self),
+            0xda => instr::phx(self),
+            0xfa => instr::plx(self),
 
             // +0x0e
             0x0e => instr::modify::<addr::Absolute, op::Asl>(self),
