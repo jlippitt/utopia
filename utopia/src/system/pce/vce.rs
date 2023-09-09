@@ -6,14 +6,14 @@ const CYCLES_PER_LINE: u64 = 1364;
 const LINES_PER_FRAME_NORMAL: u16 = 262;
 const LINES_PER_FRAME_INTERLACE: u16 = 263;
 
-pub struct Vde {
+pub struct Vce {
     frame_done: bool,
     line_cycles: u64,
     line_counter: u16,
     lines_per_frame: u16,
 }
 
-impl Vde {
+impl Vce {
     pub fn new() -> Self {
         Self {
             frame_done: false,

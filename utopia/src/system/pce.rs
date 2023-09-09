@@ -4,12 +4,12 @@ use crate::{Error, InstanceOptions, JoypadState, MemoryMapper, SystemOptions, Wg
 use interrupt::Interrupt;
 use std::fmt;
 use tracing::{debug, info, warn};
+use vce::Vce;
 use vdc::Vdc;
-use vde::Vde;
 
 mod interrupt;
+mod vce;
 mod vdc;
-mod vde;
 
 const WRAM_SIZE: usize = 8192;
 
@@ -85,7 +85,7 @@ struct Hardware {
     rom: MirrorVec<u8>,
     wram: MirrorVec<u8>,
     vdc: Vdc,
-    vde: Vde,
+    vde: Vce,
 }
 
 impl Hardware {
@@ -115,7 +115,7 @@ impl Hardware {
             rom: rom_data.into(),
             wram: MirrorVec::new(WRAM_SIZE),
             vdc: Vdc::new(interrupt.clone()),
-            vde: Vde::new(),
+            vde: Vce::new(),
             interrupt,
         }
     }
