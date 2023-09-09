@@ -364,6 +364,26 @@ impl<T: Bus> Core<T> {
             // +0x13
             0x53 => instr::tam(self),
 
+            // +0x0f
+            0x0f => instr::branch::<op::Bbr<0>>(self),
+            0x2f => instr::branch::<op::Bbr<2>>(self),
+            0x4f => instr::branch::<op::Bbr<4>>(self),
+            0x6f => instr::branch::<op::Bbr<6>>(self),
+            0x8f => instr::branch::<op::Bbs<0>>(self),
+            0xaf => instr::branch::<op::Bbs<2>>(self),
+            0xcf => instr::branch::<op::Bbs<4>>(self),
+            0xef => instr::branch::<op::Bbs<6>>(self),
+
+            // +0x1f
+            0x1f => instr::branch::<op::Bbr<1>>(self),
+            0x3f => instr::branch::<op::Bbr<3>>(self),
+            0x5f => instr::branch::<op::Bbr<5>>(self),
+            0x7f => instr::branch::<op::Bbr<7>>(self),
+            0x9f => instr::branch::<op::Bbs<1>>(self),
+            0xbf => instr::branch::<op::Bbs<3>>(self),
+            0xdf => instr::branch::<op::Bbs<5>>(self),
+            0xff => instr::branch::<op::Bbs<7>>(self),
+
             opcode => panic!("Opcode {:02X} not yet implemented", opcode),
         }
     }

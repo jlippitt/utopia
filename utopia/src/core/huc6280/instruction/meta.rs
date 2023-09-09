@@ -38,22 +38,25 @@ pub fn modify<Addr: AddressMode, Op: ModifyOperator>(core: &mut Core<impl Bus>) 
 
 pub fn branch<Op: BranchOperator>(core: &mut Core<impl Bus>) {
     debug!("{} nearlabel", Op::NAME);
-    core.poll();
-    let offset = core.next_byte() as i8;
 
-    if Op::apply(&core.flags) {
+    if Op::apply(core) {
         debug!("Branch taken");
-        core.read(core.pc);
-
+        let offset = core.next_byte() as i8;
         let target = ((core.pc as i16).wrapping_add(offset as i16)) as u16;
 
         if (target & 0xff00) != (core.pc & 0xff00) {
+            core.read(core.pc);
             core.poll();
             core.read((core.pc & 0xff00) | (target & 0xff));
+        } else {
+            core.poll();
+            core.read(core.pc);
         }
 
         core.pc = target;
     } else {
         debug!("Branch not taken");
+        core.poll();
+        core.next_byte();
     }
 }
