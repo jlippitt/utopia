@@ -43,16 +43,9 @@ pub fn branch<Op: BranchOperator>(core: &mut Core<impl Bus>) {
         debug!("Branch taken");
         let offset = core.next_byte() as i8;
         let target = ((core.pc as i16).wrapping_add(offset as i16)) as u16;
-
-        if (target & 0xff00) != (core.pc & 0xff00) {
-            core.read(core.pc);
-            core.poll();
-            core.read((core.pc & 0xff00) | (target & 0xff));
-        } else {
-            core.poll();
-            core.read(core.pc);
-        }
-
+        core.read(core.pc);
+        core.poll();
+        core.read((core.pc & 0xff00) | (target & 0xff));
         core.pc = target;
     } else {
         debug!("Branch not taken");

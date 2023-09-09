@@ -82,3 +82,25 @@ impl ModifyOperator for Inc {
         result
     }
 }
+
+pub struct Smb<const BIT: u8>;
+
+impl<const BIT: u8> ModifyOperator for Smb<BIT> {
+    const NAME: &'static str =
+        unsafe { std::str::from_utf8_unchecked(&[b'S', b'M', b'B', b'0' + BIT]) };
+
+    fn apply(_core: &mut Core<impl Bus>, value: u8) -> u8 {
+        value | (1 << BIT)
+    }
+}
+
+pub struct Rmb<const BIT: u8>;
+
+impl<const BIT: u8> ModifyOperator for Rmb<BIT> {
+    const NAME: &'static str =
+        unsafe { std::str::from_utf8_unchecked(&[b'R', b'M', b'B', b'0' + BIT]) };
+
+    fn apply(_core: &mut Core<impl Bus>, value: u8) -> u8 {
+        value & !(1 << BIT)
+    }
+}

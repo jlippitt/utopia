@@ -364,6 +364,26 @@ impl<T: Bus> Core<T> {
             // +0x13
             0x53 => instr::tam(self),
 
+            // +0x07
+            0x07 => instr::modify::<addr::ZeroPage, op::Rmb<0>>(self),
+            0x27 => instr::modify::<addr::ZeroPage, op::Rmb<2>>(self),
+            0x47 => instr::modify::<addr::ZeroPage, op::Rmb<4>>(self),
+            0x67 => instr::modify::<addr::ZeroPage, op::Rmb<6>>(self),
+            0x87 => instr::modify::<addr::ZeroPage, op::Smb<0>>(self),
+            0xa7 => instr::modify::<addr::ZeroPage, op::Smb<2>>(self),
+            0xc7 => instr::modify::<addr::ZeroPage, op::Smb<4>>(self),
+            0xe7 => instr::modify::<addr::ZeroPage, op::Smb<6>>(self),
+
+            // +0x17
+            0x17 => instr::modify::<addr::ZeroPage, op::Rmb<1>>(self),
+            0x37 => instr::modify::<addr::ZeroPage, op::Rmb<3>>(self),
+            0x57 => instr::modify::<addr::ZeroPage, op::Rmb<5>>(self),
+            0x77 => instr::modify::<addr::ZeroPage, op::Rmb<7>>(self),
+            0x97 => instr::modify::<addr::ZeroPage, op::Smb<1>>(self),
+            0xb7 => instr::modify::<addr::ZeroPage, op::Smb<3>>(self),
+            0xd7 => instr::modify::<addr::ZeroPage, op::Smb<5>>(self),
+            0xf7 => instr::modify::<addr::ZeroPage, op::Smb<7>>(self),
+
             // +0x0f
             0x0f => instr::branch::<op::Bbr<0>>(self),
             0x2f => instr::branch::<op::Bbr<2>>(self),
