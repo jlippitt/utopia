@@ -83,6 +83,32 @@ impl ModifyOperator for Inc {
     }
 }
 
+pub struct Tsb;
+
+impl ModifyOperator for Tsb {
+    const NAME: &'static str = "TSB";
+
+    fn apply(core: &mut Core<impl Bus>, value: u8) -> u8 {
+        core.flags.n = value;
+        core.flags.v = value << 1;
+        core.flags.z = value & core.a;
+        value | core.a
+    }
+}
+
+pub struct Trb;
+
+impl ModifyOperator for Trb {
+    const NAME: &'static str = "TRB";
+
+    fn apply(core: &mut Core<impl Bus>, value: u8) -> u8 {
+        core.flags.n = value;
+        core.flags.v = value << 1;
+        core.flags.z = value & core.a;
+        value & !core.a
+    }
+}
+
 pub struct Smb<const BIT: u8>;
 
 impl<const BIT: u8> ModifyOperator for Smb<BIT> {
