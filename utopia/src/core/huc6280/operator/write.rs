@@ -34,3 +34,13 @@ impl WriteOperator for Sty {
         core.y
     }
 }
+
+pub struct Stz;
+
+impl WriteOperator for Stz {
+    const NAME: &'static str = "STZ";
+
+    fn apply(_core: &Core<impl Bus>) -> u8 {
+        0
+    }
+}
