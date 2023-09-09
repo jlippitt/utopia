@@ -30,7 +30,7 @@ pub fn modify<Addr: AddressMode, Op: ModifyOperator>(core: &mut Core<impl Bus>) 
     debug!("{} {}", Op::NAME, Addr::NAME);
     let address = Addr::resolve(core, true);
     let input = core.read_physical(address);
-    core.write_physical(address, input);
+    core.read_physical(address);
     core.poll();
     let result = Op::apply(core, input);
     core.write_physical(address, result);
