@@ -58,6 +58,8 @@ impl Vde {
                 self.line_counter = 0;
             } else if self.line_counter == vdc.display_height() {
                 vdc.raise_interrupt(VdcInterrupt::VBLANK);
+            } else if (self.line_counter + 64) == vdc.scanline_match() {
+                vdc.raise_interrupt(VdcInterrupt::SCANLINE);
             }
         }
     }

@@ -48,6 +48,10 @@ impl Vdc {
         self.display_height
     }
 
+    pub fn scanline_match(&self) -> u16 {
+        self.scanline_match
+    }
+
     pub fn read(&mut self, address: u16, _prev_value: u8) -> u8 {
         match address & 3 {
             0 => {
