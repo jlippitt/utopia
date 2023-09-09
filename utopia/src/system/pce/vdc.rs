@@ -1,12 +1,16 @@
 use tracing::warn;
 
 pub struct Vdc {
-    //
+    reg_index: u8,
+    write_buffer: u8,
 }
 
 impl Vdc {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            reg_index: 0,
+            write_buffer: 0,
+        }
     }
 
     pub fn read(&self, address: u16, _prev_value: u8) -> u8 {
@@ -14,6 +18,22 @@ impl Vdc {
     }
 
     pub fn write(&mut self, address: u16, value: u8) {
-        warn!("Unimplemented VDC Write: {:04X} <= {:02X}", address, value);
+        match address & 3 {
+            0 => self.reg_index = value & 0x1f,
+            2 => self.write_buffer = value,
+            3 => self.write_register(value),
+            _ => warn!("Unimplemented VDC Write: {:04X} <= {:02X}", address, value),
+        }
+    }
+
+    fn write_register(&mut self, high_byte: u8) {
+        let value = ((high_byte as u16) << 8) | self.write_buffer as u16;
+
+        match self.reg_index {
+            _ => warn!(
+                "Unimplemented VDC Register Write: {:02X} <= {:04X}",
+                self.reg_index, value
+            ),
+        }
     }
 }
