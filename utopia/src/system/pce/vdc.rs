@@ -48,8 +48,24 @@ impl Vdc {
         self.display_height
     }
 
-    pub fn read(&self, address: u16, _prev_value: u8) -> u8 {
-        unimplemented!("VDC Read: {:04X}", address);
+    pub fn read(&mut self, address: u16, _prev_value: u8) -> u8 {
+        match address & 3 {
+            0 => {
+                let mut status = self.interrupt_active.bits();
+
+                // VBlank bit is annoyingly moved to bit 5
+                status = (status & 0x07) | ((status & 0x08) << 2);
+
+                // TODO: DMA status
+
+                self.interrupt_active = VdcInterrupt::empty();
+                debug!("VDC Interrupts Cleared");
+                self.interrupt.clear(InterruptType::Irq1);
+
+                status
+            }
+            _ => unimplemented!("VDC Read: {:04X}", address),
+        }
     }
 
     pub fn write(&mut self, address: u16, value: u8) {
@@ -69,19 +85,6 @@ impl Vdc {
         self.interrupt_active |= int_type;
         debug!("VDC Interrupt Raised: {:?}", int_type);
         self.interrupt.raise(InterruptType::Irq1);
-    }
-
-    pub fn clear_interrupt(&mut self, int_type: VdcInterrupt) {
-        if !self.interrupt_active.contains(int_type) {
-            return;
-        }
-
-        self.interrupt_active &= int_type;
-        debug!("VDC Interrupt Cleared: {:?}", int_type);
-
-        if self.interrupt_active & self.interrupt_enable == VdcInterrupt::empty() {
-            self.interrupt.clear(InterruptType::Irq1);
-        }
     }
 
     fn write_register(&mut self, high_byte: u8) {

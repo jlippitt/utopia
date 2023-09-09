@@ -56,7 +56,6 @@ impl Vde {
 
             if self.line_counter == self.lines_per_frame {
                 self.line_counter = 0;
-                vdc.clear_interrupt(VdcInterrupt::VBLANK);
             } else if (self.line_counter + 64) == vdc.display_height() {
                 vdc.raise_interrupt(VdcInterrupt::VBLANK);
             }
