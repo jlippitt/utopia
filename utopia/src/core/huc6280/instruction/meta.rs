@@ -1,6 +1,8 @@
 use super::super::address_mode::AddressMode;
-use super::super::operator::{BranchOperator, ModifyOperator, ReadOperator, WriteOperator};
-use super::super::{Bus, Core};
+use super::super::operator::{
+    BranchOperator, ModifyOperator, ReadOperator, TransferOperator, WriteOperator,
+};
+use super::super::{Bus, Core, STACK_PAGE};
 use tracing::debug;
 
 pub fn read<Addr: AddressMode, Op: ReadOperator>(core: &mut Core<impl Bus>) {
@@ -52,4 +54,44 @@ pub fn branch<Op: BranchOperator>(core: &mut Core<impl Bus>) {
         core.poll();
         core.next_byte();
     }
+}
+
+pub fn transfer<Op: TransferOperator>(core: &mut Core<impl Bus>) {
+    debug!("{} src, dst, len", Op::NAME);
+
+    let mut src = core.next_word();
+    let mut dst = core.next_word();
+    let mut len = core.next_word();
+
+    core.push(core.y);
+    core.read_physical(STACK_PAGE | core.s as u32);
+    core.push(core.a);
+    core.read_physical(STACK_PAGE | core.s as u32);
+    core.write_physical(STACK_PAGE | core.s as u32, core.x);
+
+    let mut alternate = false;
+
+    loop {
+        let value = core.read(src);
+        core.write(dst, value);
+        Op::apply(&mut src, &mut dst, alternate);
+
+        core.read(core.pc);
+        core.read(core.pc);
+        core.read(core.pc);
+        core.read(core.pc);
+
+        alternate = !alternate;
+        len = len.wrapping_sub(1);
+
+        if len == 0 {
+            break;
+        }
+    }
+
+    core.x = core.read_physical(STACK_PAGE | core.s as u32);
+    core.read_physical(STACK_PAGE | core.s as u32);
+    core.a = core.pull();
+    core.read_physical(STACK_PAGE | core.s as u32);
+    core.y = core.pull();
 }
