@@ -1,8 +1,10 @@
 use super::interrupt::{Interrupt, InterruptType};
+use background::BackgroundLayer;
 use bitflags::bitflags;
 use tracing::{debug, warn};
 use vram::Vram;
 
+mod background;
 mod vram;
 
 bitflags! {
@@ -23,6 +25,7 @@ pub struct Vdc {
     display_width: u16,
     display_height: u16,
     vram: Vram,
+    bg: BackgroundLayer,
     interrupt: Interrupt,
 }
 
@@ -39,6 +42,7 @@ impl Vdc {
             display_width: Self::DEFAULT_WIDTH,
             display_height: Self::DEFAULT_HEIGHT,
             vram: Vram::new(),
+            bg: BackgroundLayer::new(),
             interrupt,
         }
     }
@@ -111,6 +115,7 @@ impl Vdc {
                 } else {
                     self.interrupt_enable = VdcInterrupt::from_bits_retain(value & 0x0f);
                     debug!("VDC Interrupt Enable: {:?}", self.interrupt_enable);
+                    self.bg.set_enabled((value & 0x80) != 0);
                 }
             }
             0x06 => {
@@ -120,6 +125,13 @@ impl Vdc {
                     (self.scanline_match & 0xff00) | value as u16
                 };
                 debug!("VDC Scanline Match: {}", self.scanline_match,);
+            }
+            0x07 => self.bg.set_scroll_x(msb, value),
+            0x08 => self.bg.set_scroll_y(msb, value),
+            0x09 => {
+                if !msb {
+                    self.bg.set_tile_map_size(value);
+                }
             }
             0x0b => {
                 if !msb {
