@@ -1,4 +1,5 @@
 use super::vdc::{Vdc, VdcInterrupt};
+use bitfield_struct::bitfield;
 use tracing::{debug, warn};
 
 const CYCLES_PER_LINE: u64 = 1364;
@@ -6,11 +7,25 @@ const CYCLES_PER_LINE: u64 = 1364;
 const LINES_PER_FRAME_NORMAL: u16 = 262;
 const LINES_PER_FRAME_INTERLACE: u16 = 263;
 
+#[bitfield(u16)]
+pub struct Color {
+    #[bits(3)]
+    blue: u8,
+    #[bits(3)]
+    red: u8,
+    #[bits(3)]
+    green: u8,
+    #[bits(7)]
+    __: u8,
+}
+
 pub struct Vce {
     frame_done: bool,
     line_cycles: u64,
     line_counter: u16,
     lines_per_frame: u16,
+    palette_index: u16,
+    palette: [Color; 512],
 }
 
 impl Vce {
@@ -20,6 +35,8 @@ impl Vce {
             line_cycles: 0,
             line_counter: 0,
             lines_per_frame: LINES_PER_FRAME_NORMAL,
+            palette_index: 0,
+            palette: [Color::new(); 512],
         }
     }
 
@@ -36,7 +53,7 @@ impl Vce {
     }
 
     pub fn read(&self, address: u16, _prev_value: u8) -> u8 {
-        unimplemented!("VDE Read: {:04X}", address);
+        unimplemented!("VCE Read: {:04X}", address);
     }
 
     pub fn write(&mut self, address: u16, value: u8) {
@@ -51,7 +68,41 @@ impl Vce {
                     LINES_PER_FRAME_NORMAL
                 };
 
-                debug!("VDE Lines Per Frame: {:04X}", self.lines_per_frame);
+                debug!("VCE Lines Per Frame: {:04X}", self.lines_per_frame);
+            }
+            2 => {
+                self.palette_index = (self.palette_index & 0xff00) | value as u16;
+                debug!("VCE Palette Index: {}", self.palette_index);
+            }
+            3 => {
+                self.palette_index = (self.palette_index & 0xff) | ((value as u16 & 0x01) << 8);
+                debug!("VCE Palette Index: {}", self.palette_index);
+            }
+            4 => {
+                let color = &mut self.palette[self.palette_index as usize];
+
+                *color = ((u16::from(*color) & 0xff00) | value as u16).into();
+
+                debug!(
+                    "VCE Palette Write (Low): {:04X} <= {:02X} ({:04X})",
+                    self.palette_index,
+                    value,
+                    u16::from(*color),
+                );
+            }
+            5 => {
+                let color = &mut self.palette[self.palette_index as usize];
+
+                *color = ((u16::from(*color) & 0xff) | ((value as u16 & 0x01) << 8)).into();
+
+                debug!(
+                    "VCE Palette Write (High): {:04X} <= {:02X} ({:04X})",
+                    self.palette_index,
+                    value,
+                    u16::from(*color),
+                );
+
+                self.palette_index = self.palette_index.wrapping_add(1) & 511;
             }
             _ => warn!("Unimplemented VDE Write: {:04X} <= {:02X}", address, value),
         }
