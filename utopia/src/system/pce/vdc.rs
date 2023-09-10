@@ -1,6 +1,9 @@
 use super::interrupt::{Interrupt, InterruptType};
 use bitflags::bitflags;
 use tracing::{debug, warn};
+use vram::Vram;
+
+mod vram;
 
 bitflags! {
     #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -19,6 +22,7 @@ pub struct Vdc {
     scanline_match: u16,
     display_width: u16,
     display_height: u16,
+    vram: Vram,
     interrupt: Interrupt,
 }
 
@@ -34,6 +38,7 @@ impl Vdc {
             scanline_match: 0,
             display_width: Self::DEFAULT_WIDTH,
             display_height: Self::DEFAULT_HEIGHT,
+            vram: Vram::new(),
             interrupt,
         }
     }
@@ -73,8 +78,8 @@ impl Vdc {
     pub fn write(&mut self, address: u16, value: u8) {
         match address & 3 {
             0 => self.reg_index = value & 0x1f,
-            2 => self.write_register(value, false),
-            3 => self.write_register(value, true),
+            2 => self.write_register(false, value),
+            3 => self.write_register(true, value),
             _ => warn!("Unimplemented VDC Write: {:04X} <= {:02X}", address, value),
         }
     }
@@ -89,8 +94,10 @@ impl Vdc {
         self.interrupt.raise(InterruptType::Irq1);
     }
 
-    fn write_register(&mut self, value: u8, msb: bool) {
+    fn write_register(&mut self, msb: bool, value: u8) {
         match self.reg_index {
+            0x00 => self.vram.set_write_address(msb, value),
+            0x02 => self.vram.write(msb, value),
             0x05 => {
                 // TODO: Other settings
                 if !msb {
