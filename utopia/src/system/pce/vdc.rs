@@ -3,11 +3,13 @@ use super::vce::Color;
 use background::BackgroundLayer;
 use bitflags::bitflags;
 use screen::Screen;
+use sprite::SpriteLayer;
 use tracing::{debug, warn};
 use vram::Vram;
 
 mod background;
 mod screen;
+mod sprite;
 mod vram;
 
 bitflags! {
@@ -27,6 +29,7 @@ pub struct Vdc {
     scanline_match: u16,
     vram: Vram,
     bg: BackgroundLayer,
+    sprite: SpriteLayer,
     line_buffer: Vec<Color>,
     screen: Screen,
     interrupt: Interrupt,
@@ -44,6 +47,7 @@ impl Vdc {
             scanline_match: 0,
             vram: Vram::new(),
             bg: BackgroundLayer::new(),
+            sprite: SpriteLayer::new(),
             line_buffer: vec![Color::new(); Self::DEFAULT_WIDTH as usize],
             screen: Screen::new(),
             interrupt,
@@ -135,9 +139,10 @@ impl Vdc {
                         _ => unreachable!(),
                     });
                 } else {
+                    self.bg.set_enabled((value & 0x80) != 0);
+                    self.sprite.set_enabled((value & 0x40) != 0);
                     self.interrupt_enable = VdcInterrupt::from_bits_retain(value & 0x0f);
                     debug!("VDC Interrupt Enable: {:?}", self.interrupt_enable);
-                    self.bg.set_enabled((value & 0x80) != 0);
                 }
             }
             0x06 => {
@@ -157,6 +162,7 @@ impl Vdc {
             }
             0x0b => self.screen.set_width(msb, value),
             0x0d => self.screen.set_height(msb, value),
+            0x13 => self.sprite.set_table_address(msb, value),
             _ => warn!(
                 "Unimplemented VDC Register Write: {:02X} <= {:04X}",
                 self.reg_index, value
