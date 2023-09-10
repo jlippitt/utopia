@@ -14,7 +14,7 @@ mod vram;
 
 bitflags! {
     #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-    pub struct VdcInterrupt: u8 {
+    struct VdcInterrupt: u8 {
         const SPRITE_COLLISION = 0x01;
         const SPRITE_OVERFLOW = 0x02;
         const SCANLINE = 0x04;
@@ -99,18 +99,17 @@ impl Vdc {
         }
     }
 
-    pub fn raise_interrupt(&mut self, int_type: VdcInterrupt) {
-        if !self.interrupt_enable.contains(int_type) {
-            return;
-        }
-
-        self.interrupt_active |= int_type;
-        debug!("VDC Interrupt Raised: {:?}", int_type);
-        self.interrupt.raise(InterruptType::Irq1);
-    }
-
     pub fn on_frame_start(&mut self) {
         self.screen.reset();
+    }
+
+    pub fn on_vblank_start(&mut self) {
+        self.sprite.transfer_dma(&self.vram);
+        self.raise_interrupt(VdcInterrupt::VBLANK);
+    }
+
+    pub fn on_scanline_match(&mut self) {
+        self.raise_interrupt(VdcInterrupt::SCANLINE);
     }
 
     pub fn render_line(&mut self, palette: &[Color], line: u16) {
@@ -162,11 +161,28 @@ impl Vdc {
             }
             0x0b => self.screen.set_width(msb, value),
             0x0d => self.screen.set_height(msb, value),
+            0x0f => {
+                if !msb {
+                    // TODO: Sprite DMA interrupt
+                    // TODO: Other flags
+                    self.sprite.set_dma_repeat((value & 0x10) != 0);
+                }
+            }
             0x13 => self.sprite.set_table_address(msb, value),
             _ => warn!(
                 "Unimplemented VDC Register Write: {:02X} <= {:04X}",
                 self.reg_index, value
             ),
         }
+    }
+
+    fn raise_interrupt(&mut self, int_type: VdcInterrupt) {
+        if !self.interrupt_enable.contains(int_type) {
+            return;
+        }
+
+        self.interrupt_active |= int_type;
+        debug!("VDC Interrupt Raised: {:?}", int_type);
+        self.interrupt.raise(InterruptType::Irq1);
     }
 }

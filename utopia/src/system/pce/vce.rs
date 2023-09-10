@@ -1,4 +1,4 @@
-use super::vdc::{Vdc, VdcInterrupt};
+use super::vdc::Vdc;
 use bitfield_struct::bitfield;
 use tracing::{debug, warn};
 
@@ -134,9 +134,9 @@ impl Vce {
                 vdc.on_frame_start();
             } else if self.line_counter == vdc.display_height() {
                 self.frame_done = true;
-                vdc.raise_interrupt(VdcInterrupt::VBLANK);
+                vdc.on_vblank_start();
             } else if (self.line_counter + 64) == vdc.scanline_match() {
-                vdc.raise_interrupt(VdcInterrupt::SCANLINE);
+                vdc.on_scanline_match();
             }
 
             self.hblank_start = if self.line_counter < vdc.display_height() {

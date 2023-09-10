@@ -108,12 +108,12 @@ impl BackgroundLayer {
     fn next_tile(&self, vram: &Vram, pos_y: u16, coarse_x: u16) -> Tile {
         let coarse_y = (pos_y >> 3) & self.tile_mirror_y;
         let tile_address = (coarse_y << self.tile_shift_y) + coarse_x;
-        let tile = vram.data(tile_address as usize);
+        let tile = vram.get(tile_address as usize);
         let chr_address = ((tile & 0x0fff) << 4) + (pos_y & 7);
 
         Tile {
-            chr_low: vram.data(chr_address as usize),
-            chr_high: vram.data(chr_address as usize + 8),
+            chr_low: vram.get(chr_address as usize),
+            chr_high: vram.get(chr_address as usize + 8),
             palette_offset: tile as usize >> 8,
         }
     }

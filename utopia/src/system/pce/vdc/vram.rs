@@ -20,7 +20,7 @@ impl Vram {
         }
     }
 
-    pub fn data(&self, address: usize) -> u16 {
+    pub fn get(&self, address: usize) -> u16 {
         self.data[address]
     }
 
