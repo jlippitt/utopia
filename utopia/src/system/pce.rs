@@ -145,6 +145,7 @@ impl Bus for Hardware {
             0xff => match address & 0x1c00 {
                 0x0000 => self.vdc.read(address as u16 & 0x03ff, self.mdr),
                 0x0400 => self.vde.read(address as u16 & 0x03ff, self.mdr),
+                0x0800 => 0, // TODO: PSG
                 0x1000 => 0, // TODO: Joypad
                 _ => panic!("Unmapped I/O port read: {:04X}", address),
             },
