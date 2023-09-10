@@ -100,7 +100,15 @@ impl Vdc {
             0x02 => self.vram.write(msb, value),
             0x05 => {
                 // TODO: Other settings
-                if !msb {
+                if msb {
+                    self.vram.set_increment_amount(match (value >> 3) & 3 {
+                        0 => 1,
+                        1 => 32,
+                        2 => 64,
+                        3 => 128,
+                        _ => unreachable!(),
+                    });
+                } else {
                     self.interrupt_enable = VdcInterrupt::from_bits_retain(value & 0x0f);
                     debug!("VDC Interrupt Enable: {:?}", self.interrupt_enable);
                 }

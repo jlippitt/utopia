@@ -5,6 +5,7 @@ const VRAM_WORD_SIZE: usize = 32768;
 
 pub struct Vram {
     write_address: u16,
+    increment_amount: u16,
     write_buffer: u8,
     data: MirrorVec<u16>,
 }
@@ -13,6 +14,7 @@ impl Vram {
     pub fn new() -> Self {
         Self {
             write_address: 0,
+            increment_amount: 1,
             write_buffer: 0,
             data: MirrorVec::new(VRAM_WORD_SIZE),
         }
@@ -26,6 +28,11 @@ impl Vram {
         };
 
         debug!("VRAM Write Address: {:04X}", self.write_address);
+    }
+
+    pub fn set_increment_amount(&mut self, value: u16) {
+        self.increment_amount = value;
+        debug!("VRAM Increment Amount: {}", self.increment_amount);
     }
 
     pub fn write(&mut self, msb: bool, value: u8) {
@@ -43,6 +50,6 @@ impl Vram {
             self.write_address, word_value
         );
 
-        self.write_address = self.write_address.wrapping_add(1);
+        self.write_address = self.write_address.wrapping_add(self.increment_amount);
     }
 }
