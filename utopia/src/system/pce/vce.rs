@@ -10,11 +10,11 @@ const LINES_PER_FRAME_INTERLACE: u16 = 263;
 #[bitfield(u16)]
 pub struct Color {
     #[bits(3)]
-    blue: u8,
+    pub blue: u8,
     #[bits(3)]
-    red: u8,
+    pub red: u8,
     #[bits(3)]
-    green: u8,
+    pub green: u8,
     #[bits(7)]
     __: u8,
 }
@@ -22,8 +22,10 @@ pub struct Color {
 pub struct Vce {
     frame_done: bool,
     line_cycles: u64,
+    hblank_start: u64,
     line_counter: u16,
     lines_per_frame: u16,
+    cycles_per_dot: u64,
     palette_index: u16,
     palette: [Color; 512],
 }
@@ -33,8 +35,10 @@ impl Vce {
         Self {
             frame_done: false,
             line_cycles: 0,
+            hblank_start: u64::MAX,
             line_counter: 0,
             lines_per_frame: LINES_PER_FRAME_NORMAL,
+            cycles_per_dot: 4,
             palette_index: 0,
             palette: [Color::new(); 512],
         }
@@ -59,7 +63,12 @@ impl Vce {
     pub fn write(&mut self, address: u16, value: u8) {
         match address & 7 {
             0 => {
-                // TODO: Dot clock
+                self.cycles_per_dot = match value & 3 {
+                    0 => 4,
+                    1 => 3,
+                    _ => 2,
+                };
+
                 // TODO: Color burst bit
 
                 self.lines_per_frame = if (value & 0x02) != 0 {
@@ -111,18 +120,30 @@ impl Vce {
     pub fn step(&mut self, vdc: &mut Vdc, cycles: u64) {
         self.line_cycles += cycles;
 
+        if self.line_cycles >= self.hblank_start {
+            self.hblank_start = u64::MAX;
+            vdc.render_line(&self.palette, self.line_counter);
+        }
+
         if self.line_cycles >= CYCLES_PER_LINE {
             self.line_cycles -= CYCLES_PER_LINE;
             self.line_counter += 1;
 
             if self.line_counter == self.lines_per_frame {
                 self.line_counter = 0;
+                vdc.on_frame_start();
             } else if self.line_counter == vdc.display_height() {
                 self.frame_done = true;
                 vdc.raise_interrupt(VdcInterrupt::VBLANK);
             } else if (self.line_counter + 64) == vdc.scanline_match() {
                 vdc.raise_interrupt(VdcInterrupt::SCANLINE);
             }
+
+            self.hblank_start = if self.line_counter < vdc.display_height() {
+                vdc.display_width() as u64 * self.cycles_per_dot
+            } else {
+                u64::MAX
+            };
         }
     }
 }

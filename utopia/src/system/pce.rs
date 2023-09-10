@@ -1,5 +1,5 @@
 use crate::core::huc6280::{self, Bus, Core};
-use crate::util::MirrorVec;
+use crate::util::{gfx, MirrorVec};
 use crate::{Error, InstanceOptions, JoypadState, MemoryMapper, SystemOptions, WgpuContext};
 use interrupt::Interrupt;
 use std::fmt;
@@ -54,9 +54,8 @@ impl crate::Instance for Instance {
         (vdc.display_width() as u32, vdc.display_height() as u32)
     }
 
-    // Effectively deprecated. TODO: Remove from interface.
     fn pixels(&self) -> &[u8] {
-        &[]
+        self.core.bus().vdc.pixels()
     }
 
     fn wgpu_context(&self) -> &WgpuContext {
@@ -73,6 +72,15 @@ impl crate::Instance for Instance {
         while !self.core.bus().vde.frame_done() {
             self.core.step();
             debug!("{}", self.core);
+        }
+
+        if let Some(wgpu_context) = &self.wgpu_context {
+            gfx::write_pixels_to_texture(
+                wgpu_context,
+                &wgpu_context.texture,
+                self.pixels(),
+                self.pitch(),
+            )
         }
     }
 }

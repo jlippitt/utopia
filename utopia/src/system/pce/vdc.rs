@@ -1,10 +1,13 @@
 use super::interrupt::{Interrupt, InterruptType};
+use super::vce::Color;
 use background::BackgroundLayer;
 use bitflags::bitflags;
+use screen::Screen;
 use tracing::{debug, warn};
 use vram::Vram;
 
 mod background;
+mod screen;
 mod vram;
 
 bitflags! {
@@ -22,16 +25,16 @@ pub struct Vdc {
     interrupt_enable: VdcInterrupt,
     interrupt_active: VdcInterrupt,
     scanline_match: u16,
-    display_width: u16,
-    display_height: u16,
     vram: Vram,
     bg: BackgroundLayer,
+    line_buffer: Vec<Color>,
+    screen: Screen,
     interrupt: Interrupt,
 }
 
 impl Vdc {
-    pub const DEFAULT_WIDTH: u16 = 256;
-    pub const DEFAULT_HEIGHT: u16 = 224;
+    pub const DEFAULT_WIDTH: u16 = Screen::DEFAULT_WIDTH;
+    pub const DEFAULT_HEIGHT: u16 = Screen::DEFAULT_HEIGHT;
 
     pub fn new(interrupt: Interrupt) -> Self {
         Self {
@@ -39,20 +42,24 @@ impl Vdc {
             interrupt_enable: VdcInterrupt::empty(),
             interrupt_active: VdcInterrupt::empty(),
             scanline_match: 0,
-            display_width: Self::DEFAULT_WIDTH,
-            display_height: Self::DEFAULT_HEIGHT,
             vram: Vram::new(),
             bg: BackgroundLayer::new(),
+            line_buffer: vec![Color::new(); Self::DEFAULT_WIDTH as usize],
+            screen: Screen::new(),
             interrupt,
         }
     }
 
+    pub fn pixels(&self) -> &[u8] {
+        self.screen.pixels()
+    }
+
     pub fn display_width(&self) -> u16 {
-        self.display_width
+        self.screen.width()
     }
 
     pub fn display_height(&self) -> u16 {
-        self.display_height
+        self.screen.height()
     }
 
     pub fn scanline_match(&self) -> u16 {
@@ -98,6 +105,18 @@ impl Vdc {
         self.interrupt.raise(InterruptType::Irq1);
     }
 
+    pub fn on_frame_start(&mut self) {
+        self.screen.reset();
+    }
+
+    pub fn render_line(&mut self, palette: &[Color], _line: u16) {
+        self.line_buffer.clear();
+        self.line_buffer
+            .resize(self.screen.width() as usize, palette[0]);
+
+        self.screen.draw_line(&self.line_buffer);
+    }
+
     fn write_register(&mut self, msb: bool, value: u8) {
         match self.reg_index {
             0x00 => self.vram.set_write_address(msb, value),
@@ -133,23 +152,8 @@ impl Vdc {
                     self.bg.set_tile_map_size(value);
                 }
             }
-            0x0b => {
-                if !msb {
-                    self.display_width = ((value as u16 & 0x3f) + 1) << 3;
-                    debug!("VDC Display Width: {}", self.display_width)
-                }
-            }
-            0x0d => {
-                let last_display_line = if msb {
-                    ((self.display_height - 1) & 0xff) | ((value as u16 & 0x01) << 8)
-                } else {
-                    ((self.display_height - 1) & 0xff00) | (value as u16)
-                };
-
-                self.display_height = last_display_line + 1;
-
-                debug!("VDC Display Height: {}", self.display_height)
-            }
+            0x0b => self.screen.set_width(msb, value),
+            0x0d => self.screen.set_height(msb, value),
             _ => warn!(
                 "Unimplemented VDC Register Write: {:02X} <= {:04X}",
                 self.reg_index, value
