@@ -30,6 +30,19 @@ pub fn jsr(core: &mut Core<impl Bus>) {
     core.pc = u16::from_le_bytes([low, high]);
 }
 
+pub fn bsr(core: &mut Core<impl Bus>) {
+    debug!("BSR nearlabel");
+    let offset = core.read(core.pc) as i8 as i16 as u16;
+    core.read_physical(STACK_PAGE | (core.s as u32));
+    core.push((core.pc >> 8) as u8);
+    core.push(core.pc as u8);
+    core.read(core.pc);
+    core.read(core.pc);
+    core.poll();
+    core.read(core.pc);
+    core.pc = core.pc.wrapping_add(1).wrapping_add(offset);
+}
+
 pub fn rts(core: &mut Core<impl Bus>) {
     debug!("RTS");
     core.read(core.pc);

@@ -133,11 +133,11 @@ impl SpriteLayer {
                 break;
             }
 
-            for cell_x in 0..=(sprite.attr.width() as usize) {
-                let pixel_y = raster_line - sprite.pos_y;
-                let cell_y = pixel_y >> 4;
-                let fine_y = pixel_y & 15;
+            let pixel_y = raster_line - sprite.pos_y;
+            let cell_y = pixel_y >> 4;
+            let fine_y = pixel_y & 15;
 
+            for cell_x in 0..=(sprite.attr.width() as usize) {
                 let base_address = ((sprite.chr_index as usize) << 5)
                     + ((cell_y as usize) << (6 + sprite.attr.width() as u32))
                     + (cell_x << 6)

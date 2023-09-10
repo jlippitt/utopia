@@ -136,7 +136,7 @@ impl<T: Bus> Core<T> {
             // +0x04
             0x04 => instr::modify::<addr::ZeroPage, op::Tsb>(self),
             0x24 => instr::read::<addr::ZeroPage, op::Bit>(self),
-            //0x44 => instr::read::<addr::ZeroPage, op::Nop>(self),
+            0x44 => instr::bsr(self),
             0x64 => instr::write::<addr::ZeroPage, op::Stz>(self),
             0x84 => instr::write::<addr::ZeroPage, op::Sty>(self),
             0xa4 => instr::read::<addr::ZeroPage, op::Ldy>(self),
