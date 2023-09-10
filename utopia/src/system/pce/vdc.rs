@@ -109,10 +109,13 @@ impl Vdc {
         self.screen.reset();
     }
 
-    pub fn render_line(&mut self, palette: &[Color], _line: u16) {
+    pub fn render_line(&mut self, palette: &[Color], line: u16) {
         self.line_buffer.clear();
         self.line_buffer
             .resize(self.screen.width() as usize, palette[0]);
+
+        self.bg
+            .render_line(&mut self.line_buffer, &self.vram, palette, line);
 
         self.screen.draw_line(&self.line_buffer);
     }

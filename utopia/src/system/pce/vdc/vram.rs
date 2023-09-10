@@ -20,6 +20,10 @@ impl Vram {
         }
     }
 
+    pub fn data(&self, address: usize) -> u16 {
+        self.data[address]
+    }
+
     pub fn set_write_address(&mut self, msb: bool, value: u8) {
         self.write_address = if msb {
             (self.write_address & 0xff) | ((value as u16) << 8)
