@@ -14,7 +14,6 @@ bitflags! {
 
 pub struct Vdc {
     reg_index: u8,
-    write_buffer: u8,
     interrupt_enable: VdcInterrupt,
     interrupt_active: VdcInterrupt,
     scanline_match: u16,
@@ -30,7 +29,6 @@ impl Vdc {
     pub fn new(interrupt: Interrupt) -> Self {
         Self {
             reg_index: 0,
-            write_buffer: 0,
             interrupt_enable: VdcInterrupt::empty(),
             interrupt_active: VdcInterrupt::empty(),
             scanline_match: 0,
@@ -75,8 +73,8 @@ impl Vdc {
     pub fn write(&mut self, address: u16, value: u8) {
         match address & 3 {
             0 => self.reg_index = value & 0x1f,
-            2 => self.write_buffer = value,
-            3 => self.write_register(value),
+            2 => self.write_register(value, false),
+            3 => self.write_register(value, true),
             _ => warn!("Unimplemented VDC Write: {:04X} <= {:02X}", address, value),
         }
     }
@@ -91,25 +89,38 @@ impl Vdc {
         self.interrupt.raise(InterruptType::Irq1);
     }
 
-    fn write_register(&mut self, high_byte: u8) {
-        let value = ((high_byte as u16) << 8) | self.write_buffer as u16;
-
+    fn write_register(&mut self, value: u8, msb: bool) {
         match self.reg_index {
             0x05 => {
                 // TODO: Other settings
-                self.interrupt_enable = VdcInterrupt::from_bits_retain(value as u8 & 0x0f);
-                debug!("VDC Interrupt Enable: {:?}", self.interrupt_enable);
+                if !msb {
+                    self.interrupt_enable = VdcInterrupt::from_bits_retain(value & 0x0f);
+                    debug!("VDC Interrupt Enable: {:?}", self.interrupt_enable);
+                }
             }
             0x06 => {
-                self.scanline_match = value & 0x03ff;
+                self.scanline_match = if msb {
+                    (self.scanline_match & 0xff) | ((value as u16 & 0x03) << 8)
+                } else {
+                    (self.scanline_match & 0xff00) | value as u16
+                };
                 debug!("VDC Scanline Match: {}", self.scanline_match,);
             }
             0x0b => {
-                self.display_width = ((value & 0x3f) + 1) << 3;
-                debug!("VDC Display Width: {}", self.display_width)
+                if !msb {
+                    self.display_width = ((value as u16 & 0x3f) + 1) << 3;
+                    debug!("VDC Display Width: {}", self.display_width)
+                }
             }
             0x0d => {
-                self.display_height = (value & 0x01ff) + 1;
+                let last_display_line = if msb {
+                    ((self.display_height - 1) & 0xff) | ((value as u16 & 0x01) << 8)
+                } else {
+                    ((self.display_height - 1) & 0xff00) | (value as u16)
+                };
+
+                self.display_height = last_display_line + 1;
+
                 debug!("VDC Display Height: {}", self.display_height)
             }
             _ => warn!(
