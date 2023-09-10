@@ -120,6 +120,9 @@ impl Vdc {
         self.bg
             .render_line(&mut self.line_buffer, &self.vram, palette, line);
 
+        self.sprite
+            .render_line(&mut self.line_buffer, &self.vram, palette, line);
+
         self.screen.draw_line(&self.line_buffer);
     }
 

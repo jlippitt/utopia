@@ -1,8 +1,10 @@
+use super::super::vce::Color;
 use super::vram::Vram;
 use bitfield_struct::bitfield;
 use tracing::debug;
 
 const TOTAL_SPRITES: usize = 64;
+const MAX_SPRITES_PER_LINE: usize = 64;
 
 #[bitfield(u16)]
 struct SpriteAttributes {
@@ -100,5 +102,79 @@ impl SpriteLayer {
 
         self.dma_scheduled = self.dma_repeat;
         debug!("Sprite DMA Scheduled: {}", self.dma_repeat);
+    }
+
+    pub fn render_line(
+        &self,
+        line_buffer: &mut [Color],
+        vram: &Vram,
+        palette: &[Color],
+        line: u16,
+    ) {
+        if !self.enabled {
+            return;
+        }
+
+        let raster_line = line + 64;
+
+        let mut sprites_selected = 0;
+
+        for sprite in &self.sprites {
+            if sprite.pos_y > raster_line
+                || (sprite.pos_y + (16 << sprite.attr.height())) <= raster_line
+            {
+                continue;
+            }
+
+            sprites_selected += 1;
+
+            if sprites_selected > MAX_SPRITES_PER_LINE {
+                // TODO: Sprite overflow flag/interrupt
+                break;
+            }
+
+            for cell_x in 0..=(sprite.attr.width() as usize) {
+                let pixel_y = raster_line - sprite.pos_y;
+                let cell_y = pixel_y >> 4;
+                let fine_y = pixel_y & 15;
+
+                let base_address = ((sprite.chr_index as usize) << 5)
+                    + ((cell_y as usize) << (6 + sprite.attr.width() as u32))
+                    + (cell_x << 6)
+                    + fine_y as usize;
+
+                let chr0 = vram.get(base_address);
+                let chr1 = vram.get(base_address + 16);
+                let chr2 = vram.get(base_address + 32);
+                let chr3 = vram.get(base_address + 48);
+
+                for pixel_x in 0..16 {
+                    let pos_x = sprite.pos_x as usize + (cell_x << 4) + pixel_x as usize;
+
+                    if pos_x < 32 || pos_x >= line_buffer.len() + 32 {
+                        continue;
+                    }
+
+                    // TODO: Foreground flag
+                    // TODO: Flipping
+
+                    let color0 = chr0 >> (15 - pixel_x) & 1;
+                    let color1 = chr1 >> (15 - pixel_x) & 1;
+                    let color2 = chr2 >> (15 - pixel_x) & 1;
+                    let color3 = chr3 >> (15 - pixel_x) & 1;
+
+                    let color_index = (color3 << 3) | (color2 << 2) | (color1 << 1) | color0;
+
+                    if color_index == 0 {
+                        continue;
+                    }
+
+                    let palette_index =
+                        256 + ((sprite.attr.palette_offset() as usize) << 4) + color_index as usize;
+
+                    line_buffer[pos_x - 32] = palette[palette_index];
+                }
+            }
+        }
     }
 }
