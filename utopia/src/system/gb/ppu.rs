@@ -173,6 +173,10 @@ impl Ppu {
             0x49 => self.dmg_palette_obj[1],
             0x4a => self.window_y,
             0x4b => self.window_x,
+            0x68 if self.is_cgb => self.cgb_palette_bg.address(),
+            0x69 if self.is_cgb => self.cgb_palette_bg.read(),
+            0x6a if self.is_cgb => self.cgb_palette_obj.address(),
+            0x6b if self.is_cgb => self.cgb_palette_obj.read(),
             _ => panic!("PPU register read {:02X} not yet implemented", address),
         }
     }
@@ -257,31 +261,23 @@ impl Ppu {
             0x4c => {
                 // Ignore for now
             }
-            0x4f => {
+            0x4f if self.is_cgb => {
                 if self.is_cgb {
                     self.vram_bank_offset = VRAM_BANK_SIZE * (value as usize & 0x01);
                     debug!("VRAM Bank Offset: {}", self.vram_bank_offset);
                 }
             }
-            0x68 => {
-                if self.is_cgb {
-                    self.cgb_palette_bg.set_address(value);
-                }
+            0x68 if self.is_cgb => {
+                self.cgb_palette_bg.set_address(value);
             }
-            0x69 => {
-                if self.is_cgb {
-                    self.cgb_palette_bg.write(value);
-                }
+            0x69 if self.is_cgb => {
+                self.cgb_palette_bg.write(value);
             }
-            0x6a => {
-                if self.is_cgb {
-                    self.cgb_palette_obj.set_address(value);
-                }
+            0x6a if self.is_cgb => {
+                self.cgb_palette_obj.set_address(value);
             }
-            0x6b => {
-                if self.is_cgb {
-                    self.cgb_palette_obj.write(value);
-                }
+            0x6b if self.is_cgb => {
+                self.cgb_palette_obj.write(value);
             }
             _ => panic!("PPU register write {:02X} not yet implemented", address),
         }

@@ -33,6 +33,12 @@ impl Palette {
         self.data[((palette_index << 2) + color_index) as usize]
     }
 
+    pub fn address(&self) -> u8 {
+        let mut value = self.address;
+        value |= if self.auto_increment { 0x80 } else { 0 };
+        value
+    }
+
     pub fn set_address(&mut self, value: u8) {
         self.address = value & 0x3f;
         self.auto_increment = (value & 0x80) != 0;
@@ -41,6 +47,28 @@ impl Palette {
             "{} Palette Auto-Increment: {}",
             self.name, self.auto_increment
         );
+    }
+
+    pub fn read(&self) -> u8 {
+        let color = &self.data[self.address as usize >> 1];
+
+        let value = if (self.address & 1) != 0 {
+            (u16::from(*color) >> 8) as u8
+        } else {
+            u16::from(*color) as u8
+        };
+
+        debug!(
+            "{} Palette Read: {:02X} => {:02X} ({:04X})",
+            self.name,
+            self.address,
+            value,
+            u16::from(*color)
+        );
+
+        // Note: No auto-increment after read
+
+        value
     }
 
     pub fn write(&mut self, value: u8) {
