@@ -28,8 +28,8 @@ impl Wram {
 
         let mut bank = value & 0x07;
 
-        if bank == 1 {
-            bank = 0;
+        if bank == 0 {
+            bank = 1;
         }
 
         self.bank_offset = bank as usize * WRAM_BANK_SIZE;
