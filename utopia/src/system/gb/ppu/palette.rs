@@ -1,22 +1,10 @@
-use bitfield_struct::bitfield;
 use tracing::debug;
-
-#[bitfield(u16)]
-pub struct Color {
-    #[bits(5)]
-    pub red: u8,
-    #[bits(5)]
-    pub green: u8,
-    #[bits(5)]
-    pub blue: u8,
-    __: bool,
-}
 
 pub struct Palette {
     address: u8,
     auto_increment: bool,
     name: &'static str,
-    data: [Color; 32],
+    data: [u16; 32],
 }
 
 impl Palette {
@@ -25,11 +13,11 @@ impl Palette {
             address: 0,
             auto_increment: false,
             name,
-            data: [Color::new(); 32],
+            data: [0; 32],
         }
     }
 
-    pub fn color(&self, palette_index: u8, color_index: u8) -> Color {
+    pub fn color(&self, palette_index: u8, color_index: u8) -> u16 {
         self.data[((palette_index << 2) + color_index) as usize]
     }
 
@@ -53,17 +41,14 @@ impl Palette {
         let color = &self.data[self.address as usize >> 1];
 
         let value = if (self.address & 1) != 0 {
-            (u16::from(*color) >> 8) as u8
+            (color >> 8) as u8
         } else {
-            u16::from(*color) as u8
+            *color as u8
         };
 
         debug!(
             "{} Palette Read: {:02X} => {:02X} ({:04X})",
-            self.name,
-            self.address,
-            value,
-            u16::from(*color)
+            self.name, self.address, value, color,
         );
 
         // Note: No auto-increment after read
@@ -75,17 +60,14 @@ impl Palette {
         let color = &mut self.data[self.address as usize >> 1];
 
         *color = if (self.address & 1) != 0 {
-            ((u16::from(*color) & 0xff) | ((value as u16 & 0x7f) << 8)).into()
+            (*color & 0xff) | ((value as u16 & 0x7f) << 8)
         } else {
-            ((u16::from(*color) & 0xff00) | value as u16).into()
+            (*color & 0xff00) | value as u16
         };
 
         debug!(
             "{} Palette Write: {:02X} <= {:02X} ({:04X})",
-            self.name,
-            self.address,
-            value,
-            u16::from(*color)
+            self.name, self.address, value, color,
         );
 
         if self.auto_increment {
