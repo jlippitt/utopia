@@ -201,7 +201,7 @@ impl<T: Mapped> Hardware<T> {
             hram: MirrorVec::new(HRAM_SIZE),
             wram: Wram::new(is_cgb),
             cartridge,
-            ppu: Ppu::new(skip_boot),
+            ppu: Ppu::new(is_cgb, skip_boot),
             apu: Apu::new(),
             joypad: Joypad::new(),
             bios_data,
@@ -313,7 +313,7 @@ impl<T: Mapped> Hardware<T> {
             0x04..=0x07 => self.timer.read(address),
             0x0f => self.interrupt.flag(),
             0x10..=0x3f => self.apu.read(address),
-            0x40..=0x4f => self.ppu.read_register(address),
+            0x40..=0x6f => self.ppu.read_register(address),
             0x80..=0xfe => self.hram[address as usize],
             0xff => self.interrupt.enable(),
             _ => {
@@ -338,11 +338,12 @@ impl<T: Mapped> Hardware<T> {
             0x0f => self.interrupt.set_flag(value),
             0x10..=0x3f => self.apu.write(address, value),
             0x46 => self.dma_address = Some((value as u16) << 8),
-            0x40..=0x4f => self.ppu.write_register(&mut self.interrupt, address, value),
             0x50 => {
                 self.bios_data = None;
                 debug!("BIOS disabled");
             }
+            // 0x46, 0x4d and 0x50 are matched above
+            0x40..=0x6f => self.ppu.write_register(&mut self.interrupt, address, value),
             0x70 => self.wram.set_bank(value),
             0x80..=0xfe => self.hram[address as usize] = value,
             0xff => self.interrupt.set_enable(value),

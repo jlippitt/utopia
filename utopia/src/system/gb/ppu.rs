@@ -1,6 +1,7 @@
 use super::interrupt::{Interrupt, InterruptType};
 use crate::util::MirrorVec;
 use oam::Oam;
+use palette::Palette;
 use render::RenderState;
 use screen::Screen;
 use tracing::debug;
@@ -8,6 +9,7 @@ use tracing::debug;
 pub use screen::{HEIGHT, WIDTH};
 
 mod oam;
+mod palette;
 mod render;
 mod screen;
 
@@ -50,6 +52,7 @@ struct InterruptEnable {
 
 pub struct Ppu {
     ready: bool,
+    is_cgb: bool,
     mode: Mode,
     line: u8,
     dot: u64,
@@ -59,9 +62,11 @@ pub struct Ppu {
     scroll_x: u8,
     window_y: u8,
     window_x: u8,
-    bg_palette: u8,
-    obj_palette: [u8; 2],
     lcd_y_compare: u8,
+    dmg_palette_bg: u8,
+    dmg_palette_obj: [u8; 2],
+    cgb_palette_bg: Palette,
+    cgb_palette_obj: Palette,
     render: RenderState,
     screen: Screen,
     vram: MirrorVec<u8>,
@@ -69,9 +74,10 @@ pub struct Ppu {
 }
 
 impl Ppu {
-    pub fn new(skip_boot: bool) -> Self {
+    pub fn new(is_cgb: bool, skip_boot: bool) -> Self {
         Self {
             ready: false,
+            is_cgb,
             mode: Mode::Oam,
             line: 0,
             dot: 0,
@@ -97,8 +103,10 @@ impl Ppu {
             window_y: 0,
             window_x: 0,
             lcd_y_compare: 0,
-            bg_palette: 0,
-            obj_palette: [0; 2],
+            dmg_palette_bg: 0,
+            dmg_palette_obj: [0; 2],
+            cgb_palette_bg: Palette::new("BG"),
+            cgb_palette_obj: Palette::new("OBJ"),
             render: Default::default(),
             screen: Screen::new(),
             vram: MirrorVec::new(VRAM_SIZE),
@@ -158,9 +166,9 @@ impl Ppu {
             0x43 => self.scroll_x,
             0x44 => self.line,
             0x45 => self.lcd_y_compare,
-            0x47 => self.bg_palette,
-            0x48 => self.obj_palette[0],
-            0x49 => self.obj_palette[1],
+            0x47 => self.dmg_palette_bg,
+            0x48 => self.dmg_palette_obj[0],
+            0x49 => self.dmg_palette_obj[1],
             0x4a => self.window_y,
             0x4b => self.window_x,
             _ => panic!("PPU register read {:02X} not yet implemented", address),
@@ -225,16 +233,16 @@ impl Ppu {
                 debug!("LCD Y Compare: {}", self.lcd_y_compare);
             }
             0x47 => {
-                self.bg_palette = value;
-                debug!("BG Palette: {:08b}", self.bg_palette);
+                self.dmg_palette_bg = value;
+                debug!("BG Palette: {:08b}", self.dmg_palette_bg);
             }
             0x48 => {
-                self.obj_palette[0] = value;
-                debug!("OBJ Palette 0: {:08b}", self.obj_palette[0]);
+                self.dmg_palette_obj[0] = value;
+                debug!("OBJ Palette 0: {:08b}", self.dmg_palette_obj[0]);
             }
             0x49 => {
-                self.obj_palette[1] = value;
-                debug!("OBJ Palette 1: {:08b}", self.obj_palette[1]);
+                self.dmg_palette_obj[1] = value;
+                debug!("OBJ Palette 1: {:08b}", self.dmg_palette_obj[1]);
             }
             0x4a => {
                 self.window_y = value;
@@ -243,6 +251,26 @@ impl Ppu {
             0x4b => {
                 self.window_x = value;
                 debug!("Window X: {}", self.window_x);
+            }
+            0x68 => {
+                if self.is_cgb {
+                    self.cgb_palette_bg.set_address(value);
+                }
+            }
+            0x69 => {
+                if self.is_cgb {
+                    self.cgb_palette_bg.write(value);
+                }
+            }
+            0x6a => {
+                if self.is_cgb {
+                    self.cgb_palette_obj.set_address(value);
+                }
+            }
+            0x6b => {
+                if self.is_cgb {
+                    self.cgb_palette_obj.write(value);
+                }
             }
             _ => debug!("PPU register write {:02X} not yet implemented", address),
         }

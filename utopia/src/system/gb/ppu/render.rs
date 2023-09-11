@@ -84,10 +84,10 @@ impl super::Ppu {
             && (bg_pixel == 0 || !sprite_pixel.below_bg);
 
         let color = if sprite_visible {
-            let sprite_palette = self.obj_palette[sprite_pixel.palette as usize];
+            let sprite_palette = self.dmg_palette_obj[sprite_pixel.palette as usize];
             (sprite_palette >> (sprite_pixel.color << 1)) & 3
         } else if self.ctrl.bg_enable {
-            (self.bg_palette >> (bg_pixel << 1)) & 3
+            (self.dmg_palette_bg >> (bg_pixel << 1)) & 3
         } else {
             0
         };
