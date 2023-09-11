@@ -346,7 +346,11 @@ impl<T: Mapped> Hardware<T> {
                 self.bios_data = None;
                 debug!("BIOS disabled");
             }
-            0x51..=0x55 => self.dma.write(address, value),
+            0x51..=0x55 => {
+                if self.cartridge.is_cgb() && self.dma.write(address, value) {
+                    self.transfer_vram_dma();
+                }
+            }
             // 0x46, 0x4d and 0x50..=0x55 are matched above
             0x40..=0x6f => self.ppu.write_register(&mut self.interrupt, address, value),
             0x70 => self.wram.set_bank(value),

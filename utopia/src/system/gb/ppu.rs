@@ -285,11 +285,11 @@ impl Ppu {
     }
 
     pub fn read_vram(&self, address: u16) -> u8 {
-        self.vram[self.vram_bank_offset + address as usize]
+        self.vram[self.vram_bank_offset + (address as usize & 0x1fff)]
     }
 
     pub fn write_vram(&mut self, address: u16, value: u8) {
-        self.vram[self.vram_bank_offset + address as usize] = value;
+        self.vram[self.vram_bank_offset + (address as usize & 0x1fff)] = value;
     }
 
     pub fn read_oam(&self, address: u8) -> u8 {
