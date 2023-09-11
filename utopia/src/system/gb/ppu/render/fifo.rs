@@ -1,4 +1,16 @@
 use super::super::oam::Sprite;
+use bitfield_struct::bitfield;
+
+#[bitfield(u8)]
+pub struct BgAttrByte {
+    #[bits(3)]
+    pub palette: u8,
+    pub bank: bool,
+    __: bool,
+    pub flip_x: bool,
+    pub flip_y: bool,
+    pub above_obj: bool,
+}
 
 #[derive(Copy, Clone, Default)]
 pub struct BgPixel {
@@ -10,7 +22,7 @@ pub struct BgPixel {
 #[derive(Default)]
 pub struct BackgroundFifo {
     chr: (u8, u8),
-    palette: u8,
+    attr: BgAttrByte,
     remaining: u8,
 }
 
@@ -19,18 +31,18 @@ impl BackgroundFifo {
         self.remaining == 0
     }
 
-    pub fn palette(&self) -> u8 {
-        self.palette
+    pub fn attr(&self) -> BgAttrByte {
+        self.attr
     }
 
     pub fn clear(&mut self) {
         self.remaining = 0;
     }
 
-    pub fn try_push(&mut self, chr: (u8, u8), palette: u8) -> bool {
+    pub fn try_push(&mut self, chr: (u8, u8), attr: BgAttrByte) -> bool {
         if self.remaining == 0 {
             self.chr = chr;
-            self.palette = palette;
+            self.attr = attr;
             self.remaining = 8;
             true
         } else {

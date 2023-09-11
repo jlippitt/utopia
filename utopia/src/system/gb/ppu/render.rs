@@ -1,21 +1,9 @@
 use super::oam::Sprite;
 use super::palette::Color;
-use bitfield_struct::bitfield;
-use fifo::{BackgroundFifo, SpriteFifo};
+use fifo::{BackgroundFifo, BgAttrByte, SpriteFifo};
 use tracing::trace;
 
 mod fifo;
-
-#[bitfield(u8)]
-struct CgbAttrByte {
-    #[bits(3)]
-    palette: u8,
-    bank: bool,
-    __: bool,
-    flip_x: bool,
-    flip_y: bool,
-    priority: bool,
-}
 
 #[derive(Default)]
 pub struct RenderState {
@@ -25,7 +13,7 @@ pub struct RenderState {
     bg_coarse_x: u16,
     bg_fine_x: u8,
     bg_tile: u8,
-    bg_attr: CgbAttrByte,
+    bg_attr: BgAttrByte,
     bg_chr: (u8, u8),
     bg_fifo: BackgroundFifo,
     window_start: u8,
@@ -103,7 +91,7 @@ impl super::Ppu {
                     .color(sprite_pixel.palette, sprite_pixel.color)
             } else if self.ctrl.bg_enable {
                 self.cgb_palette_bg
-                    .color(self.render.bg_fifo.palette(), bg_pixel)
+                    .color(self.render.bg_fifo.attr().palette(), bg_pixel)
             } else {
                 Color::new()
             };
@@ -165,7 +153,7 @@ impl super::Ppu {
                 if self
                     .render
                     .bg_fifo
-                    .try_push(self.render.bg_chr, self.render.bg_attr.palette())
+                    .try_push(self.render.bg_chr, self.render.bg_attr)
                 {
                     self.render.bg_step = 0;
                 }
