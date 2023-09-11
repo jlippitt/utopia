@@ -1,5 +1,5 @@
 use super::oam::Sprite;
-use fifo::{BackgroundFifo, BgAttrByte, SpriteFifo};
+use fifo::{BackgroundFifo, BgAttrByte, SpriteFifo, SpritePixel};
 use tracing::trace;
 
 mod fifo;
@@ -82,7 +82,7 @@ impl super::Ppu {
 
         let sprite_visible = self.ctrl.obj_enable
             && sprite_pixel.color != 0
-            && (bg_pixel == 0 || !sprite_pixel.below_bg);
+            && (bg_pixel == 0 || self.obj_above_bg(&sprite_pixel));
 
         if self.is_cgb {
             let color = if sprite_visible {
@@ -237,5 +237,14 @@ impl super::Ppu {
         let flip_mask = if sprite.attr.flip_y() { line_mask } else { 0 };
 
         bank_offset | ((tile & tile_mask) << 4) | ((fine_y ^ flip_mask) << 1)
+    }
+
+    fn obj_above_bg(&self, sprite_pixel: &SpritePixel) -> bool {
+        if self.is_cgb {
+            !self.ctrl.bg_enable
+                || (!sprite_pixel.below_bg && !self.render.bg_fifo.attr().above_obj())
+        } else {
+            !sprite_pixel.below_bg
+        }
     }
 }
