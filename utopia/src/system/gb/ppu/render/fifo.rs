@@ -44,6 +44,12 @@ impl BackgroundFifo {
             self.chr = chr;
             self.attr = attr;
             self.remaining = 8;
+
+            if attr.flip_x() {
+                self.chr.0 = self.chr.0.reverse_bits();
+                self.chr.1 = self.chr.1.reverse_bits();
+            }
+
             true
         } else {
             false

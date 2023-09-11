@@ -215,7 +215,9 @@ impl super::Ppu {
             0
         };
 
-        bank_offset | (tile << 4) | (fine_y << 1)
+        let flip_mask = if self.render.bg_attr.flip_y() { 7 } else { 0 };
+
+        bank_offset | (tile << 4) | ((fine_y ^ flip_mask) << 1)
     }
 
     fn sprite_chr_address(&self, sprite: &Sprite) -> u16 {
