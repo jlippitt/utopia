@@ -254,6 +254,9 @@ impl Ppu {
                 self.window_x = value;
                 debug!("Window X: {}", self.window_x);
             }
+            0x4c => {
+                // Ignore for now
+            }
             0x4f => {
                 if self.is_cgb {
                     self.vram_bank_offset = VRAM_BANK_SIZE * (value as usize & 0x01);
