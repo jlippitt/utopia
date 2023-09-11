@@ -16,7 +16,7 @@ impl Wram {
 
         Self {
             data: MirrorVec::new(WRAM_BANK_SIZE * num_banks),
-            bank_value: 1,
+            bank_value: 0,
             bank_offset: WRAM_BANK_SIZE,
         }
     }
