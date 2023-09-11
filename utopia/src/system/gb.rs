@@ -14,6 +14,7 @@ use std::error::Error;
 use std::fmt;
 use timer::Timer;
 use tracing::{debug, warn};
+use wram::Wram;
 
 mod apu;
 mod cartridge;
@@ -21,8 +22,8 @@ mod interrupt;
 mod joypad;
 mod ppu;
 mod timer;
+mod wram;
 
-const WRAM_SIZE: usize = 8192;
 const HRAM_SIZE: usize = 128;
 
 const M_CYCLE_LENGTH: u64 = 4;
@@ -176,7 +177,7 @@ struct Hardware<T: Mapped> {
     interrupt: Interrupt,
     timer: Timer,
     hram: MirrorVec<u8>,
-    wram: MirrorVec<u8>,
+    wram: Wram,
     cartridge: Cartridge<T>,
     ppu: Ppu,
     apu: Apu,
@@ -190,13 +191,15 @@ impl<T: Mapped> Hardware<T> {
         bios_data: Option<Vec<u8>>,
         skip_boot: bool,
     ) -> Result<Self, Box<dyn Error>> {
+        let is_cgb = cartridge.is_cgb();
+
         Ok(Self {
             cycles: 0,
             dma_address: None,
             interrupt: Interrupt::new(),
             timer: Timer::new(),
             hram: MirrorVec::new(HRAM_SIZE),
-            wram: MirrorVec::new(WRAM_SIZE),
+            wram: Wram::new(is_cgb),
             cartridge,
             ppu: Ppu::new(skip_boot),
             apu: Apu::new(),
@@ -340,6 +343,7 @@ impl<T: Mapped> Hardware<T> {
                 self.bios_data = None;
                 debug!("BIOS disabled");
             }
+            0x70 => self.wram.set_bank(value),
             0x80..=0xfe => self.hram[address as usize] = value,
             0xff => self.interrupt.set_enable(value),
             _ => panic!("Unmapped register write: {:02X} <= {:02X}", address, value),
