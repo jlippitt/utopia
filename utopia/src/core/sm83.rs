@@ -15,6 +15,7 @@ pub trait Bus: fmt::Display {
     fn write_high(&mut self, address: u8, value: u8);
     fn poll(&self) -> u8;
     fn acknowledge(&mut self, mask: u8);
+    fn stop(&mut self);
 }
 
 #[derive(Clone, Default)]
@@ -118,6 +119,7 @@ impl<T: Bus> Core<T> {
             // +0x00 / +0x08
             0x00 => instr::nop(self),
             0x08 => instr::ld_u16_sp(self),
+            0x10 => instr::stop(self),
             0x18 => instr::jr(self),
             0x20 => instr::jr_conditional::<cond::NZ>(self),
             0x28 => instr::jr_conditional::<cond::Z>(self),

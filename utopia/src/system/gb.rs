@@ -177,6 +177,8 @@ struct Hardware<T: Mapped> {
     cycles: u64,
     dma_address: Option<u16>,
     interrupt: Interrupt,
+    double_speed: bool,
+    speed_switch: bool,
     timer: Timer,
     hram: MirrorVec<u8>,
     wram: Wram,
@@ -200,6 +202,8 @@ impl<T: Mapped> Hardware<T> {
             cycles: 0,
             dma_address: None,
             interrupt: Interrupt::new(),
+            double_speed: false,
+            speed_switch: false,
             timer: Timer::new(),
             hram: MirrorVec::new(HRAM_SIZE),
             wram: Wram::new(is_cgb),
@@ -216,9 +220,13 @@ impl<T: Mapped> Hardware<T> {
         self.cycles += M_CYCLE_LENGTH;
         self.timer
             .step(&mut self.interrupt, &mut self.apu, M_CYCLE_LENGTH);
-        self.ppu.step(&mut self.interrupt, M_CYCLE_LENGTH);
 
-        if (self.cycles & 3) == 0 {
+        self.ppu.step(
+            &mut self.interrupt,
+            M_CYCLE_LENGTH >> (self.double_speed as u32),
+        );
+
+        if (self.cycles & (7 >> (!self.double_speed as u32))) == 0 {
             self.apu.step();
         }
 
@@ -317,6 +325,13 @@ impl<T: Mapped> Hardware<T> {
             0x04..=0x07 => self.timer.read(address),
             0x0f => self.interrupt.flag(),
             0x10..=0x3f => self.apu.read(address),
+            0x4d => {
+                let mut value = 0;
+                value |= if self.double_speed { 0x80 } else { 0 };
+                value |= if self.speed_switch { 0x01 } else { 0 };
+                value
+            }
+            // 0x4d is already matched above
             0x40..=0x6f => self.ppu.read_register(address),
             0x80..=0xfe => self.hram[address as usize],
             0xff => self.interrupt.enable(),
@@ -342,6 +357,10 @@ impl<T: Mapped> Hardware<T> {
             0x0f => self.interrupt.set_flag(value),
             0x10..=0x3f => self.apu.write(address, value),
             0x46 => self.dma_address = Some((value as u16) << 8),
+            0x4d => {
+                self.speed_switch = (value & 0x01) != 0;
+                debug!("Speed Switch Requested");
+            }
             0x50 => {
                 self.bios_data = None;
                 debug!("BIOS disabled");
@@ -351,7 +370,8 @@ impl<T: Mapped> Hardware<T> {
                     self.transfer_vram_dma();
                 }
             }
-            // 0x46, 0x4d and 0x50..=0x55 are matched above
+            0x56 => (), // Infrared Port: Ignore
+            // 0x46, 0x4d and 0x50..=0x56 are matched above
             0x40..=0x6f => self.ppu.write_register(&mut self.interrupt, address, value),
             0x70 => self.wram.set_bank(value),
             0x80..=0xfe => self.hram[address as usize] = value,
@@ -411,6 +431,15 @@ impl<T: Mapped> Bus for Hardware<T> {
 
     fn acknowledge(&mut self, mask: u8) {
         self.interrupt.acknowledge(mask);
+    }
+
+    fn stop(&mut self) {
+        assert!(self.cartridge.is_cgb());
+
+        if self.speed_switch {
+            self.double_speed = !self.double_speed;
+            debug!("Double Speed Mode: {}", self.double_speed);
+        }
     }
 }
 

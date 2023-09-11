@@ -10,6 +10,11 @@ pub fn halt(core: &mut Core<impl Bus>) {
     core.halted = true;
 }
 
+pub fn stop(core: &mut Core<impl Bus>) {
+    debug!("STOP");
+    core.bus.stop();
+}
+
 pub fn di(core: &mut Core<impl Bus>) {
     debug!("DI");
     core.ime = false;
