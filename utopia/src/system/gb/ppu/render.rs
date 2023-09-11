@@ -1,8 +1,20 @@
 use super::oam::Sprite;
+use bitfield_struct::bitfield;
 use fifo::{BackgroundFifo, SpriteFifo};
 use tracing::trace;
 
 mod fifo;
+
+#[bitfield(u8)]
+struct CgbAttrByte {
+    #[bits(3)]
+    palette: u8,
+    bank: bool,
+    __: bool,
+    flip_x: bool,
+    flip_y: bool,
+    priority: bool,
+}
 
 #[derive(Default)]
 pub struct RenderState {
@@ -12,6 +24,7 @@ pub struct RenderState {
     bg_coarse_x: u16,
     bg_fine_x: u8,
     bg_tile: u8,
+    bg_attr: CgbAttrByte,
     bg_chr: (u8, u8),
     bg_fifo: BackgroundFifo,
     window_start: u8,
@@ -113,6 +126,11 @@ impl super::Ppu {
                 trace!("BG Tile Address: {:04X}", address);
 
                 self.render.bg_tile = self.vram[address as usize];
+
+                if self.is_cgb {
+                    self.render.bg_attr = self.vram[8192 + address as usize].into();
+                }
+
                 self.render.bg_coarse_x += 1;
                 self.render.bg_step += 1;
             }
@@ -186,7 +204,13 @@ impl super::Ppu {
 
         let fine_y = self.bg_pos_y() as u16 & 7;
 
-        (tile << 4) | (fine_y << 1)
+        let bank_offset = if self.is_cgb && self.render.bg_attr.bank() {
+            8192
+        } else {
+            0
+        };
+
+        bank_offset | (tile << 4) | (fine_y << 1)
     }
 
     fn sprite_chr_address(&self, sprite: &Sprite) -> u16 {
