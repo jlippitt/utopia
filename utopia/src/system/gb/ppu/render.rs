@@ -1,5 +1,4 @@
 use super::oam::Sprite;
-use super::palette::Color;
 use fifo::{BackgroundFifo, BgAttrByte, SpriteFifo};
 use tracing::trace;
 
@@ -89,11 +88,9 @@ impl super::Ppu {
             let color = if sprite_visible {
                 self.cgb_palette_obj
                     .color(sprite_pixel.palette, sprite_pixel.color)
-            } else if self.ctrl.bg_enable {
+            } else {
                 self.cgb_palette_bg
                     .color(self.render.bg_fifo.attr().palette(), bg_pixel)
-            } else {
-                Color::new()
             };
             self.screen.draw_pixel_cgb(color);
         } else {
