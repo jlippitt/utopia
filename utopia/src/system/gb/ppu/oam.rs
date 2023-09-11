@@ -1,18 +1,27 @@
+use bitfield_struct::bitfield;
 use tracing::debug;
 
 const OAM_SIZE: usize = 160;
 const TOTAL_SPRITES: usize = OAM_SIZE / 4;
 const MAX_SPRITES_PER_LINE: usize = 10;
 
+#[bitfield(u8)]
+pub struct SpriteAttrByte {
+    #[bits(3)]
+    pub cgb_palette: u8,
+    pub bank: bool,
+    pub dmg_palette: bool,
+    pub flip_x: bool,
+    pub flip_y: bool,
+    pub below_bg: bool,
+}
+
 #[derive(Copy, Clone, Default, Debug)]
 pub struct Sprite {
     pub y: u8,
     pub x: u8,
     pub chr: u8,
-    pub palette: bool,
-    pub flip_x: bool,
-    pub flip_y: bool,
-    pub below_bg: bool,
+    pub attr: SpriteAttrByte,
 }
 
 pub struct Oam {
@@ -58,14 +67,8 @@ impl Oam {
                 debug!("Sprite {} CHR: {}", index, sprite.chr);
             }
             3 => {
-                sprite.palette = (value & 0x10) != 0;
-                sprite.flip_x = (value & 0x20) != 0;
-                sprite.flip_y = (value & 0x40) != 0;
-                sprite.below_bg = (value & 0x80) != 0;
-                debug!("Sprite {} Palette: {}", index, sprite.palette as u32);
-                debug!("Sprite {} Flip X: {}", index, sprite.flip_x);
-                debug!("Sprite {} Flip Y: {}", index, sprite.flip_y);
-                debug!("Sprite {} Below BG: {}", index, sprite.below_bg);
+                sprite.attr = value.into();
+                debug!("Sprite {} Attr: {:?}", index, sprite.attr);
             }
             _ => unreachable!(),
         }

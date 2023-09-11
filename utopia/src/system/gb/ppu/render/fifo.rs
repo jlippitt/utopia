@@ -55,7 +55,7 @@ impl BackgroundFifo {
 pub struct SpritePixel {
     pub color: u8,
     pub below_bg: bool,
-    pub palette: bool,
+    pub palette: u8,
 }
 
 #[derive(Default)]
@@ -65,7 +65,7 @@ pub struct SpriteFifo {
 }
 
 impl SpriteFifo {
-    pub fn push(&mut self, sprite: &Sprite, chr: (u8, u8)) {
+    pub fn push(&mut self, sprite: &Sprite, chr: (u8, u8), is_cgb: bool) {
         let colors: [u8; 8] = [
             ((chr.0 >> 7) & 1) | ((chr.1 >> 6) & 2),
             ((chr.0 >> 6) & 1) | ((chr.1 >> 5) & 2),
@@ -86,7 +86,7 @@ impl SpriteFifo {
                 continue;
             }
 
-            let color = if sprite.flip_x {
+            let color = if sprite.attr.flip_x() {
                 colors[total_pixels - write_index - 1]
             } else {
                 colors[8 - total_pixels + write_index]
@@ -94,8 +94,12 @@ impl SpriteFifo {
 
             *pixel = SpritePixel {
                 color,
-                below_bg: sprite.below_bg,
-                palette: sprite.palette,
+                below_bg: sprite.attr.below_bg(),
+                palette: if is_cgb {
+                    sprite.attr.cgb_palette()
+                } else {
+                    sprite.attr.dmg_palette() as u8
+                },
             };
         }
     }

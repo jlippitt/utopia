@@ -99,7 +99,10 @@ impl super::Ppu {
 
         if self.is_cgb {
             // TODO: Sprites
-            let color = if self.ctrl.bg_enable {
+            let color = if sprite_visible {
+                self.cgb_palette_obj
+                    .color(sprite_pixel.palette, sprite_pixel.color)
+            } else if self.ctrl.bg_enable {
                 self.cgb_palette_bg
                     .color(self.render.bg_fifo.palette(), bg_pixel)
             } else {
@@ -195,7 +198,9 @@ impl super::Ppu {
             }
             6 => {
                 // Push
-                self.render.sprite_fifo.push(sprite, self.render.sprite_chr);
+                self.render
+                    .sprite_fifo
+                    .push(sprite, self.render.sprite_chr, self.is_cgb);
                 self.oam.next_sprite();
                 self.render.sprite_step = 0;
             }
@@ -238,9 +243,15 @@ impl super::Ppu {
             (0xff, 7)
         };
 
-        let fine_y = (self.line.wrapping_sub(sprite.y) as u16) & line_mask;
-        let flip_mask = if sprite.flip_y { line_mask } else { 0 };
+        let bank_offset = if self.is_cgb && sprite.attr.bank() {
+            8192
+        } else {
+            0
+        };
 
-        ((tile & tile_mask) << 4) | ((fine_y ^ flip_mask) << 1)
+        let fine_y = (self.line.wrapping_sub(sprite.y) as u16) & line_mask;
+        let flip_mask = if sprite.attr.flip_y() { line_mask } else { 0 };
+
+        bank_offset | ((tile & tile_mask) << 4) | ((fine_y ^ flip_mask) << 1)
     }
 }
