@@ -29,6 +29,10 @@ impl Palette {
         }
     }
 
+    pub fn color(&self, palette_index: u8, color_index: u8) -> Color {
+        self.data[((palette_index << 2) + color_index) as usize]
+    }
+
     pub fn set_address(&mut self, value: u8) {
         self.address = value & 0x3f;
         self.auto_increment = (value & 0x80) != 0;

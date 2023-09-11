@@ -1,8 +1,16 @@
 use super::super::oam::Sprite;
 
+#[derive(Copy, Clone, Default)]
+pub struct BgPixel {
+    pub color: u8,
+    pub below_bg: bool,
+    pub palette: bool,
+}
+
 #[derive(Default)]
 pub struct BackgroundFifo {
     chr: (u8, u8),
+    palette: u8,
     remaining: u8,
 }
 
@@ -11,13 +19,18 @@ impl BackgroundFifo {
         self.remaining == 0
     }
 
+    pub fn palette(&self) -> u8 {
+        self.palette
+    }
+
     pub fn clear(&mut self) {
         self.remaining = 0;
     }
 
-    pub fn try_push(&mut self, chr: (u8, u8)) -> bool {
+    pub fn try_push(&mut self, chr: (u8, u8), palette: u8) -> bool {
         if self.remaining == 0 {
             self.chr = chr;
+            self.palette = palette;
             self.remaining = 8;
             true
         } else {
@@ -27,11 +40,11 @@ impl BackgroundFifo {
 
     pub fn pop(&mut self) -> Option<u8> {
         if self.remaining != 0 {
-            let pixel = ((self.chr.0 >> 7) & 1) + ((self.chr.1 >> 6) & 2);
+            let color = ((self.chr.0 >> 7) & 1) + ((self.chr.1 >> 6) & 2);
             self.chr.0 <<= 1;
             self.chr.1 <<= 1;
             self.remaining -= 1;
-            Some(pixel)
+            Some(color)
         } else {
             None
         }

@@ -1,4 +1,5 @@
 use super::oam::Sprite;
+use super::palette::Color;
 use bitfield_struct::bitfield;
 use fifo::{BackgroundFifo, SpriteFifo};
 use tracing::trace;
@@ -96,16 +97,27 @@ impl super::Ppu {
             && sprite_pixel.color != 0
             && (bg_pixel == 0 || !sprite_pixel.below_bg);
 
-        let color = if sprite_visible {
-            let sprite_palette = self.dmg_palette_obj[sprite_pixel.palette as usize];
-            (sprite_palette >> (sprite_pixel.color << 1)) & 3
-        } else if self.ctrl.bg_enable {
-            (self.dmg_palette_bg >> (bg_pixel << 1)) & 3
+        if self.is_cgb {
+            // TODO: Sprites
+            let color = if self.ctrl.bg_enable {
+                self.cgb_palette_bg
+                    .color(self.render.bg_fifo.palette(), bg_pixel)
+            } else {
+                Color::new()
+            };
+            self.screen.draw_pixel_cgb(color);
         } else {
-            0
-        };
+            let color = if sprite_visible {
+                let sprite_palette = self.dmg_palette_obj[sprite_pixel.palette as usize];
+                (sprite_palette >> (sprite_pixel.color << 1)) & 3
+            } else if self.ctrl.bg_enable {
+                (self.dmg_palette_bg >> (bg_pixel << 1)) & 3
+            } else {
+                0
+            };
+            self.screen.draw_pixel_dmg(color);
+        }
 
-        self.screen.draw_pixel(color);
         self.render.pos_x += 1;
     }
 
@@ -148,7 +160,11 @@ impl super::Ppu {
             }
             6 => {
                 // Push
-                if self.render.bg_fifo.try_push(self.render.bg_chr) {
+                if self
+                    .render
+                    .bg_fifo
+                    .try_push(self.render.bg_chr, self.render.bg_attr.palette())
+                {
                     self.render.bg_step = 0;
                 }
             }
