@@ -320,12 +320,14 @@ impl<T: Mapped> Hardware<T> {
     }
 
     fn read_high_normal(&mut self, address: u8) -> u8 {
+        let is_cgb = self.cartridge.is_cgb();
+
         match address {
             0x00 => self.joypad.read(),
             0x04..=0x07 => self.timer.read(address),
             0x0f => self.interrupt.flag(),
             0x10..=0x3f => self.apu.read(address),
-            0x4d => {
+            0x4d if is_cgb => {
                 let mut value = 0;
                 value |= if self.double_speed { 0x80 } else { 0 };
                 value |= if self.speed_switch { 0x01 } else { 0 };
@@ -333,6 +335,7 @@ impl<T: Mapped> Hardware<T> {
             }
             // 0x4d is already matched above
             0x40..=0x6f => self.ppu.read_register(address),
+            0x70 if is_cgb => self.wram.bank(),
             0x80..=0xfe => self.hram[address as usize],
             0xff => self.interrupt.enable(),
             _ => {
@@ -350,6 +353,8 @@ impl<T: Mapped> Hardware<T> {
     }
 
     fn write_high_normal(&mut self, address: u8, value: u8) {
+        let is_cgb = self.cartridge.is_cgb();
+
         match address {
             0x00 => self.joypad.write(value),
             0x01 | 0x02 => (), // TODO: Serial port
@@ -357,7 +362,7 @@ impl<T: Mapped> Hardware<T> {
             0x0f => self.interrupt.set_flag(value),
             0x10..=0x3f => self.apu.write(address, value),
             0x46 => self.dma_address = Some((value as u16) << 8),
-            0x4d => {
+            0x4d if is_cgb => {
                 self.speed_switch = (value & 0x01) != 0;
                 debug!("Speed Switch Requested");
             }
@@ -365,15 +370,15 @@ impl<T: Mapped> Hardware<T> {
                 self.bios_data = None;
                 debug!("BIOS disabled");
             }
-            0x51..=0x55 => {
-                if self.cartridge.is_cgb() && self.dma.write(address, value) {
+            0x51..=0x55 if is_cgb => {
+                if self.dma.write(address, value) {
                     self.transfer_vram_dma();
                 }
             }
-            0x56 => (), // Infrared Port: Ignore
+            0x56 if is_cgb => (), // Infrared Port: Ignore
             // 0x46, 0x4d and 0x50..=0x56 are matched above
             0x40..=0x6f => self.ppu.write_register(&mut self.interrupt, address, value),
-            0x70 => self.wram.set_bank(value),
+            0x70 if is_cgb => self.wram.set_bank(value),
             0x80..=0xfe => self.hram[address as usize] = value,
             0xff => self.interrupt.set_enable(value),
             _ => panic!("Unmapped register write: {:02X} <= {:02X}", address, value),

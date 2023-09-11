@@ -6,8 +6,8 @@ const WRAM_BANK_SIZE: usize = 4096;
 
 pub struct Wram {
     data: MirrorVec<u8>,
+    bank_value: u8,
     bank_offset: usize,
-    is_cgb: bool,
 }
 
 impl Wram {
@@ -16,23 +16,25 @@ impl Wram {
 
         Self {
             data: MirrorVec::new(WRAM_BANK_SIZE * num_banks),
+            bank_value: 1,
             bank_offset: WRAM_BANK_SIZE,
-            is_cgb,
         }
     }
 
+    pub fn bank(&self) -> u8 {
+        self.bank_value
+    }
+
     pub fn set_bank(&mut self, value: u8) {
-        if !self.is_cgb {
-            return;
+        self.bank_value = value & 0x07;
+
+        if self.bank_value == 0 {
+            self.bank_value = 1;
         }
 
-        let mut bank = value & 0x07;
+        self.bank_offset = self.bank_value as usize * WRAM_BANK_SIZE;
 
-        if bank == 0 {
-            bank = 1;
-        }
-
-        self.bank_offset = bank as usize * WRAM_BANK_SIZE;
+        debug!("WRAM Bank Value: {:02X}", self.bank_value);
         debug!("WRAM Bank Offset: {}", self.bank_offset);
     }
 }
