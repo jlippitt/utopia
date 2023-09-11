@@ -7,6 +7,7 @@ use crate::{
 };
 use apu::Apu;
 use cartridge::Cartridge;
+use dma::Dma;
 use interrupt::Interrupt;
 use joypad::Joypad;
 use ppu::Ppu;
@@ -18,6 +19,7 @@ use wram::Wram;
 
 mod apu;
 mod cartridge;
+mod dma;
 mod interrupt;
 mod joypad;
 mod ppu;
@@ -182,6 +184,7 @@ struct Hardware<T: Mapped> {
     ppu: Ppu,
     apu: Apu,
     joypad: Joypad,
+    dma: Dma,
     bios_data: Option<Vec<u8>>,
 }
 
@@ -204,6 +207,7 @@ impl<T: Mapped> Hardware<T> {
             ppu: Ppu::new(is_cgb, skip_boot),
             apu: Apu::new(),
             joypad: Joypad::new(),
+            dma: Dma::new(),
             bios_data,
         })
     }
@@ -342,7 +346,8 @@ impl<T: Mapped> Hardware<T> {
                 self.bios_data = None;
                 debug!("BIOS disabled");
             }
-            // 0x46, 0x4d and 0x50 are matched above
+            0x51..=0x55 => self.dma.write(address, value),
+            // 0x46, 0x4d and 0x50..=0x55 are matched above
             0x40..=0x6f => self.ppu.write_register(&mut self.interrupt, address, value),
             0x70 => self.wram.set_bank(value),
             0x80..=0xfe => self.hram[address as usize] = value,
