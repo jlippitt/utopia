@@ -98,7 +98,6 @@ impl super::Ppu {
             && (bg_pixel == 0 || !sprite_pixel.below_bg);
 
         if self.is_cgb {
-            // TODO: Sprites
             let color = if sprite_visible {
                 self.cgb_palette_obj
                     .color(sprite_pixel.palette, sprite_pixel.color)
