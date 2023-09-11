@@ -35,7 +35,7 @@ impl TryFrom<&Path> for SystemType {
             .unwrap_or("".to_owned());
 
         match extension.as_str() {
-            "gb" => Ok(Self::GameBoy),
+            "gb" | "gbc" => Ok(Self::GameBoy),
             "gba" => Ok(Self::GameBoyAdvance),
             "n64" | "z64" => Ok(Self::Nintendo64),
             "nes" => Ok(Self::Nes),

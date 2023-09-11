@@ -13,6 +13,7 @@ const BATTERY_BACKED: [u8; 9] = [0x03, 0x06, 0x0d, 0x10, 0x13, 0x1b, 0x1e, 0x22,
 pub struct Cartridge<T: Mapped> {
     rom: MirrorVec<u8>,
     ram: Mirror<T>,
+    cgb: bool,
     mappings: Mappings,
     mapper: MbcType,
 }
@@ -22,8 +23,8 @@ impl<T: Mapped> Cartridge<T> {
         rom: Vec<u8>,
         memory_mapper: &impl MemoryMapper<Mapped = T>,
     ) -> Result<Self, Box<dyn Error>> {
+        let cgb = (rom[0x0143] & 0x80) != 0;
         let mapper_number = rom[0x0147];
-
         let rom_size = BASE_ROM_SIZE << rom[0x0148];
 
         let ram_size = match rom[0x0149] {
@@ -35,6 +36,7 @@ impl<T: Mapped> Cartridge<T> {
         };
 
         info!("Title: {}", String::from_utf8_lossy(&rom[0x0134..=0x0143]));
+        info!("Model: {}", if cgb { "CGB" } else { "DMG" });
         info!("Mapper Number: {:02X}", mapper_number);
         info!("ROM Size: {}", rom_size);
         info!("RAM Size: {}", ram_size);
@@ -49,9 +51,14 @@ impl<T: Mapped> Cartridge<T> {
         Ok(Self {
             rom: rom.into(),
             ram: memory_mapper.open(ram_size, battery_backed)?.into(),
+            cgb,
             mappings,
             mapper,
         })
+    }
+
+    pub fn is_cgb(&self) -> bool {
+        self.cgb
     }
 
     pub fn read_rom(&self, address: u16) -> u8 {

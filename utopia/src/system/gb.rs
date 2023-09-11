@@ -81,8 +81,16 @@ impl<T: Mapped> Instance<T> {
         skip_boot: bool,
         options: InstanceOptions,
     ) -> Result<Self, Box<dyn Error>> {
+        let cartridge = Cartridge::new(options.rom_data, memory_mapper)?;
+
         let bios_data = if !skip_boot {
-            bios_loader.load("dmg_boot").ok()
+            let bios_name = if cartridge.is_cgb() {
+                "cgb_boot"
+            } else {
+                "dmg_boot"
+            };
+
+            bios_loader.load(bios_name).ok()
         } else {
             None
         };
@@ -104,7 +112,7 @@ impl<T: Mapped> Instance<T> {
         );
 
         // TODO: Should skip boot sequence for other hardware components as well
-        let hw = Hardware::new(memory_mapper, skip_boot, options.rom_data, bios_data)?;
+        let hw = Hardware::new(cartridge, bios_data, skip_boot)?;
 
         let core = Core::new(hw, initial_state);
 
@@ -173,15 +181,14 @@ struct Hardware<T: Mapped> {
     ppu: Ppu,
     apu: Apu,
     joypad: Joypad,
-    bios_data: Option<MirrorVec<u8>>,
+    bios_data: Option<Vec<u8>>,
 }
 
 impl<T: Mapped> Hardware<T> {
-    pub fn new<U: MemoryMapper<Mapped = T>>(
-        memory_mapper: &U,
-        skip_boot: bool,
-        rom_data: Vec<u8>,
+    fn new(
+        cartridge: Cartridge<T>,
         bios_data: Option<Vec<u8>>,
+        skip_boot: bool,
     ) -> Result<Self, Box<dyn Error>> {
         Ok(Self {
             cycles: 0,
@@ -190,11 +197,11 @@ impl<T: Mapped> Hardware<T> {
             timer: Timer::new(),
             hram: MirrorVec::new(HRAM_SIZE),
             wram: MirrorVec::new(WRAM_SIZE),
-            cartridge: Cartridge::new(rom_data, memory_mapper)?,
+            cartridge,
             ppu: Ppu::new(skip_boot),
             apu: Apu::new(),
             joypad: Joypad::new(),
-            bios_data: bios_data.map(MirrorVec::from),
+            bios_data,
         })
     }
 
@@ -234,8 +241,8 @@ impl<T: Mapped> Hardware<T> {
     fn read_normal(&mut self, address: u16) -> u8 {
         match address >> 13 {
             0 => {
-                if address < 0x0100 {
-                    if let Some(bios_data) = &self.bios_data {
+                if let Some(bios_data) = &self.bios_data {
+                    if address < 0x0100 || (address >= 0x0200 && self.cartridge.is_cgb()) {
                         bios_data[address as usize]
                     } else {
                         self.cartridge.read_rom(address)
@@ -307,8 +314,8 @@ impl<T: Mapped> Hardware<T> {
             0x80..=0xfe => self.hram[address as usize],
             0xff => self.interrupt.enable(),
             _ => {
-                warn!("Unmapped register read: {:02X}", address);
-                0xff
+                panic!("Unmapped register read: {:02X}", address);
+                //0xff
             }
         }
     }
@@ -335,7 +342,7 @@ impl<T: Mapped> Hardware<T> {
             }
             0x80..=0xfe => self.hram[address as usize] = value,
             0xff => self.interrupt.set_enable(value),
-            _ => warn!("Unmapped register write: {:02X} <= {:02X}", address, value),
+            _ => panic!("Unmapped register write: {:02X} <= {:02X}", address, value),
         }
     }
 
