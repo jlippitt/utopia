@@ -13,7 +13,7 @@ mod palette;
 mod render;
 mod screen;
 
-const VRAM_SIZE: usize = 8192;
+const VRAM_BANK_SIZE: usize = 8192;
 
 const VBLANK_LINE: u8 = 144;
 const TOTAL_LINES: u8 = 154;
@@ -70,6 +70,7 @@ pub struct Ppu {
     render: RenderState,
     screen: Screen,
     vram: MirrorVec<u8>,
+    vram_bank_offset: usize,
     oam: Oam,
 }
 
@@ -109,7 +110,8 @@ impl Ppu {
             cgb_palette_obj: Palette::new("OBJ"),
             render: Default::default(),
             screen: Screen::new(),
-            vram: MirrorVec::new(VRAM_SIZE),
+            vram: MirrorVec::new(VRAM_BANK_SIZE * if is_cgb { 2 } else { 1 }),
+            vram_bank_offset: 0,
             oam: Oam::new(),
         }
     }
@@ -252,6 +254,12 @@ impl Ppu {
                 self.window_x = value;
                 debug!("Window X: {}", self.window_x);
             }
+            0x4f => {
+                if self.is_cgb {
+                    self.vram_bank_offset = VRAM_BANK_SIZE * (value as usize & 0x01);
+                    debug!("VRAM Bank Offset: {}", self.vram_bank_offset);
+                }
+            }
             0x68 => {
                 if self.is_cgb {
                     self.cgb_palette_bg.set_address(value);
@@ -272,16 +280,16 @@ impl Ppu {
                     self.cgb_palette_obj.write(value);
                 }
             }
-            _ => debug!("PPU register write {:02X} not yet implemented", address),
+            _ => panic!("PPU register write {:02X} not yet implemented", address),
         }
     }
 
     pub fn read_vram(&self, address: u16) -> u8 {
-        self.vram[address as usize]
+        self.vram[self.vram_bank_offset + address as usize]
     }
 
     pub fn write_vram(&mut self, address: u16, value: u8) {
-        self.vram[address as usize] = value;
+        self.vram[self.vram_bank_offset + address as usize] = value;
     }
 
     pub fn read_oam(&self, address: u8) -> u8 {
