@@ -37,8 +37,8 @@ impl Mbc for Mbc5 {
     }
 
     fn write_register(&mut self, mappings: &mut Mappings, address: u16, value: u8) {
-        match address & 0xe000 {
-            0x0000 => {
+        match address & 0xf000 {
+            0x0000 | 0x1000 => {
                 self.ram_enable = (value & 0x0f) == 0x0a;
                 debug!("MBC5 RAM Enable: {}", self.ram_enable);
             }
@@ -46,15 +46,15 @@ impl Mbc for Mbc5 {
                 self.rom_bank = (self.rom_bank & 0xff00) | value as u16;
                 debug!("MBC5 ROM Bank: {:02X}", self.rom_bank);
             }
-            0x4000 => {
+            0x3000 => {
                 self.rom_bank = (self.rom_bank & 0xff) | ((value as u16 & 0x01) << 8);
                 debug!("MBC5 ROM Bank: {:02X}", self.rom_bank);
             }
-            0x6000 => {
+            0x4000 | 0x5000 => {
                 self.ram_bank = value & 0x0f;
                 debug!("MBC5 RAM Bank: {}", self.ram_bank);
             }
-            _ => unreachable!(),
+            _ => unimplemented!("MBC5 Register Write: {:04X} <= {:02X}", address, value),
         }
 
         self.update_mappings(mappings);
