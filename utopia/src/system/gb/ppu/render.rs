@@ -211,7 +211,7 @@ impl super::Ppu {
         let fine_y = self.bg_pos_y() as u16 & 7;
 
         let bank_offset = if self.is_cgb && self.render.bg_attr.bank() {
-            VRAM_BANK_SIZE
+            VRAM_BANK_SIZE as u16
         } else {
             0
         };
@@ -231,7 +231,7 @@ impl super::Ppu {
         };
 
         let bank_offset = if self.is_cgb && sprite.attr.bank() {
-            VRAM_BANK_SIZE
+            VRAM_BANK_SIZE as u16
         } else {
             0
         };
