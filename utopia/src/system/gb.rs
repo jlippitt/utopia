@@ -98,8 +98,20 @@ impl<T: Mapped> Instance<T> {
             None
         };
 
-        let initial_state = bios_data.is_none().then_some(
-            // TODO: This post-boot state should depend on hardware model
+        let initial_state = bios_data.is_none().then_some(if cartridge.is_cgb() {
+            State {
+                a: 0x11,
+                b: 0x00,
+                c: 0x00,
+                d: 0xff,
+                e: 0x56,
+                h: 0x00,
+                l: 0x0d,
+                sp: 0xfffe,
+                pc: 0x0100,
+                f: 0x80,
+            }
+        } else {
             State {
                 a: 0x01,
                 b: 0x00,
@@ -111,8 +123,8 @@ impl<T: Mapped> Instance<T> {
                 sp: 0xfffe,
                 pc: 0x0100,
                 f: 0xb0, // TODO: H & C should depend on header checksum
-            },
-        );
+            }
+        });
 
         // TODO: Should skip boot sequence for other hardware components as well
         let hw = Hardware::new(cartridge, bios_data, skip_boot)?;
