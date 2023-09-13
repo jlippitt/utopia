@@ -22,6 +22,17 @@ impl Dma {
         self.hblank_mode
     }
 
+    pub fn read(&self, address: u8) -> u8 {
+        match address {
+            0x51 => (self.src_address >> 8) as u8,
+            0x52 => self.src_address as u8,
+            0x53 => (self.dst_address >> 8) as u8,
+            0x54 => self.dst_address as u8,
+            0x55 => self.len,
+            _ => unreachable!(),
+        }
+    }
+
     pub fn write(&mut self, address: u8, value: u8) -> bool {
         match address {
             0x51 => {
@@ -41,8 +52,17 @@ impl Dma {
                 debug!("DMA Destination Address: {:04X}", self.dst_address);
             }
             0x55 => {
-                self.len = value & 0x7f;
+                let prev_hblank_mode = self.hblank_mode;
                 self.hblank_mode = (value & 0x80) != 0;
+
+                debug!("DMA HBlank Mode: {}", self.hblank_mode);
+
+                if !self.hblank_mode && prev_hblank_mode {
+                    self.len |= 0x80;
+                    return false;
+                }
+
+                self.len = value & 0x7f;
 
                 debug!(
                     "DMA Length: {} ({})",
@@ -50,11 +70,9 @@ impl Dma {
                     (self.len as usize + 1) << 4
                 );
 
-                debug!("DMA HBlank Mode: {}", self.hblank_mode);
-
                 return !self.hblank_mode;
             }
-            _ => unimplemented!("DMA Write: {:04X} <= {:02X}", address, value),
+            _ => unreachable!(),
         }
 
         false

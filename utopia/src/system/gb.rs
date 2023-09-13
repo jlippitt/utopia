@@ -348,7 +348,8 @@ impl<T: Mapped> Hardware<T> {
                 value |= if self.speed_switch { 0x01 } else { 0 };
                 value
             }
-            // 0x4d is already matched above
+            0x51..=0x55 if is_cgb => self.dma.read(address),
+            // 0x4d and 0x51..=0x55 are already matched above
             0x40..=0x6f => self.ppu.read_register(address),
             0x70 if is_cgb => self.wram.bank(),
             0x80..=0xfe => self.hram[address as usize],
