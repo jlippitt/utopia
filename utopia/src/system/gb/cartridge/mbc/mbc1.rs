@@ -1,4 +1,4 @@
-use super::{Mappings, Mbc};
+use super::{Mappings, Mbc, RamMapping};
 use tracing::debug;
 
 pub struct Mbc1 {
@@ -17,13 +17,15 @@ impl Mbc1 {
     }
 
     fn update_mappings(&self, mappings: &mut Mappings) {
-        mappings.ram = self.ram_enable.then(|| {
-            if self.mode {
+        mappings.ram = if self.ram_enable {
+            RamMapping::Offset(if self.mode {
                 Mappings::RAM_PAGE_SIZE * self.register[1] as usize
             } else {
                 0
-            }
-        });
+            })
+        } else {
+            RamMapping::None
+        };
 
         let high_bank_offset = (self.register[1] as usize) << 5;
 

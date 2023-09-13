@@ -1,6 +1,6 @@
 use crate::util::mirror::{Mirror, MirrorVec};
 use crate::{Mapped, MemoryMapper};
-use mbc::{Mappings, Mbc, MbcType};
+use mbc::{Mappings, Mbc, MbcType, RamMapping};
 use std::error::Error;
 use tracing::info;
 
@@ -67,16 +67,18 @@ impl<T: Mapped> Cartridge<T> {
     }
 
     pub fn read_ram(&self, address: u16) -> u8 {
-        if let Some(offset) = self.mappings.ram {
-            self.ram[offset | (address as usize & 0x1fff)]
-        } else {
-            0xff
+        match self.mappings.ram {
+            RamMapping::Offset(offset) => self.ram[offset | (address as usize & 0x1fff)],
+            RamMapping::Custom => self.mapper.read_ram(address),
+            RamMapping::None => 0xff,
         }
     }
 
     pub fn write_ram(&mut self, address: u16, value: u8) {
-        if let Some(offset) = self.mappings.ram {
-            self.ram[offset | (address as usize & 0x1fff)] = value;
+        match self.mappings.ram {
+            RamMapping::Offset(offset) => self.ram[offset | (address as usize & 0x1fff)] = value,
+            RamMapping::Custom => self.mapper.write_ram(address, value),
+            RamMapping::None => (),
         }
     }
 

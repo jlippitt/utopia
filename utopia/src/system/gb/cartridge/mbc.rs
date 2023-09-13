@@ -12,7 +12,14 @@ mod rom_only;
 #[enum_dispatch]
 pub trait Mbc {
     fn init_mappings(&mut self, _mappings: &mut Mappings) {}
+
     fn write_register(&mut self, _mappings: &mut Mappings, _address: u16, _value: u8) {}
+
+    fn read_ram(&self, _address: u16) -> u8 {
+        0xff
+    }
+
+    fn write_ram(&mut self, _address: u16, _value: u8) {}
 }
 
 #[enum_dispatch(Mbc)]
@@ -35,10 +42,17 @@ impl MbcType {
     }
 }
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum RamMapping {
+    Offset(usize),
+    Custom,
+    None,
+}
+
 #[derive(Debug)]
 pub struct Mappings {
     pub rom: [usize; 2],
-    pub ram: Option<usize>,
+    pub ram: RamMapping,
 }
 
 impl Mappings {
@@ -48,7 +62,7 @@ impl Mappings {
     pub fn new() -> Self {
         Self {
             rom: [0, Self::ROM_PAGE_SIZE],
-            ram: None,
+            ram: RamMapping::None,
         }
     }
 }
