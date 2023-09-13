@@ -173,6 +173,7 @@ impl Ppu {
             0x49 => self.dmg_palette_obj[1],
             0x4a => self.window_y,
             0x4b => self.window_x,
+            0x4f if self.is_cgb => 0xfe | (self.vram_bank_offset >> 13) as u8,
             0x68 if self.is_cgb => self.cgb_palette_bg.address(),
             0x69 if self.is_cgb => self.cgb_palette_bg.read(),
             0x6a if self.is_cgb => self.cgb_palette_obj.address(),
@@ -262,10 +263,8 @@ impl Ppu {
                 // Ignore for now
             }
             0x4f if self.is_cgb => {
-                if self.is_cgb {
-                    self.vram_bank_offset = VRAM_BANK_SIZE * (value as usize & 0x01);
-                    debug!("VRAM Bank Offset: {}", self.vram_bank_offset);
-                }
+                self.vram_bank_offset = VRAM_BANK_SIZE * (value as usize & 0x01);
+                debug!("VRAM Bank Offset: {}", self.vram_bank_offset);
             }
             0x68 if self.is_cgb => {
                 self.cgb_palette_bg.set_address(value);

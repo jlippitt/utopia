@@ -71,6 +71,7 @@ impl BackgroundFifo {
 
 #[derive(Copy, Clone, Default)]
 pub struct SpritePixel {
+    pub priority: u8,
     pub color: u8,
     pub below_bg: bool,
     pub palette: u8,
@@ -100,17 +101,18 @@ impl SpriteFifo {
         for write_index in 0..total_pixels {
             let pixel = &mut self.pixels[(self.read_index + write_index) & 7];
 
-            if pixel.color != 0 {
-                continue;
-            }
-
             let color = if sprite.attr.flip_x() {
                 colors[total_pixels - write_index - 1]
             } else {
                 colors[8 - total_pixels + write_index]
             };
 
+            if pixel.color != 0 && (!is_cgb || color == 0 || pixel.priority <= sprite.id) {
+                continue;
+            }
+
             *pixel = SpritePixel {
+                priority: sprite.id,
                 color,
                 below_bg: sprite.attr.below_bg(),
                 palette: if is_cgb {

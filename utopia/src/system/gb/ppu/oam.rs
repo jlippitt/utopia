@@ -18,6 +18,7 @@ pub struct SpriteAttrByte {
 
 #[derive(Copy, Clone, Default, Debug)]
 pub struct Sprite {
+    pub id: u8,
     pub y: u8,
     pub x: u8,
     pub chr: u8,
@@ -36,7 +37,12 @@ impl Oam {
     pub fn new() -> Self {
         Self {
             data: vec![0; OAM_SIZE],
-            sprites: vec![Default::default(); TOTAL_SPRITES],
+            sprites: (0..TOTAL_SPRITES as u8)
+                .map(|id| Sprite {
+                    id,
+                    ..Default::default()
+                })
+                .collect(),
             selected: [0; MAX_SPRITES_PER_LINE],
             read_index: 0,
             write_index: 0,
