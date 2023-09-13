@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use super::{Mappings, Mbc, RamMapping};
 use tracing::debug;
 
@@ -7,7 +9,6 @@ struct RtcState {
     minute: u8,
     hour: u8,
     day: u16,
-    halted: bool,
     carry: bool,
 }
 
@@ -15,8 +16,10 @@ pub struct Mbc3 {
     rom_bank: u8,
     ram_bank: u8,
     ram_enable: bool,
-    rtc_current: RtcState,
+    rtc_initial: RtcState,
     rtc_latched: RtcState,
+    rtc_halted: bool,
+    start_time: Instant,
 }
 
 impl Mbc3 {
@@ -25,8 +28,10 @@ impl Mbc3 {
             ram_enable: false,
             rom_bank: 1,
             ram_bank: 0,
-            rtc_current: Default::default(),
+            rtc_initial: Default::default(),
             rtc_latched: Default::default(),
+            rtc_halted: false,
+            start_time: Instant::now(),
         }
     }
 
@@ -42,6 +47,20 @@ impl Mbc3 {
         } else {
             RamMapping::None
         };
+    }
+
+    fn current_time(&self) -> RtcState {
+        let elapsed = self.start_time.elapsed().as_secs();
+
+        let day = self.rtc_initial.day as u64 + (elapsed / (24 * 60 * 60));
+
+        RtcState {
+            second: self.rtc_initial.second + (elapsed % 60) as u8,
+            minute: self.rtc_initial.minute + (elapsed / 60 % 60) as u8,
+            hour: self.rtc_initial.hour + (elapsed / (60 * 60) % 24) as u8,
+            day: (day & 511) as u16,
+            carry: day > 511,
+        }
     }
 }
 
@@ -72,7 +91,12 @@ impl Mbc for Mbc3 {
                 debug!("MBC3 RAM Bank: {}", self.ram_bank);
             }
             0x6000 => {
-                self.rtc_latched = self.rtc_current.clone();
+                if self.rtc_halted {
+                    self.rtc_latched = self.rtc_initial.clone();
+                } else {
+                    self.rtc_latched = self.current_time();
+                }
+
                 debug!("MBC3 RTC Latched");
             }
             _ => unreachable!(),
@@ -89,7 +113,7 @@ impl Mbc for Mbc3 {
             0x0b => self.rtc_latched.day as u8,
             0x0c => {
                 let mut value = (self.rtc_latched.day >> 8) as u8 & 0x01;
-                value |= if self.rtc_latched.halted { 0x40 } else { 0 };
+                value |= if self.rtc_halted { 0x40 } else { 0 };
                 value |= if self.rtc_latched.carry { 0x80 } else { 0 };
                 value
             }
@@ -99,14 +123,23 @@ impl Mbc for Mbc3 {
 
     fn write_ram(&mut self, _address: u16, value: u8) {
         match self.ram_bank {
-            0x08 => self.rtc_current.second = value,
-            0x09 => self.rtc_current.minute = value,
-            0x0a => self.rtc_current.hour = value,
-            0x0b => self.rtc_current.day = (self.rtc_current.day & 0xff00) | value as u16,
+            0x08 => self.rtc_initial.second = value,
+            0x09 => self.rtc_initial.minute = value,
+            0x0a => self.rtc_initial.hour = value,
+            0x0b => self.rtc_initial.day = (self.rtc_initial.day & 0xff00) | value as u16,
             0x0c => {
-                self.rtc_current.day = (self.rtc_current.day & 0xff) | ((value as u16 & 0x01) << 8);
-                self.rtc_current.halted = (value & 0x40) != 0;
-                self.rtc_current.carry = (value & 0x80) != 0;
+                self.rtc_initial.day = (self.rtc_initial.day & 0xff) | ((value as u16 & 0x01) << 8);
+                self.rtc_initial.carry = (value & 0x80) != 0;
+
+                let prev_halted = self.rtc_halted;
+                self.rtc_halted = (value & 0x40) != 0;
+
+                if self.rtc_halted && !prev_halted {
+                    // 'Freeze' the current time
+                    self.rtc_initial = self.current_time();
+                } else if !self.rtc_halted && prev_halted {
+                    self.start_time = Instant::now();
+                }
             }
             _ => unimplemented!(
                 "MBC3 RTC Register Write: {:02X} <= {:02X}",
