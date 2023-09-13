@@ -5,6 +5,7 @@ pub struct Dma {
     src_address: u16,
     dst_address: u16,
     len: u8,
+    hblank_mode: bool,
 }
 
 impl Dma {
@@ -13,7 +14,12 @@ impl Dma {
             src_address: 0,
             dst_address: 0,
             len: 0,
+            hblank_mode: false,
         }
+    }
+
+    pub fn is_hblank_mode(&self) -> bool {
+        self.hblank_mode
     }
 
     pub fn write(&mut self, address: u8, value: u8) -> bool {
@@ -35,11 +41,8 @@ impl Dma {
                 debug!("DMA Destination Address: {:04X}", self.dst_address);
             }
             0x55 => {
-                if (value & 0x80) != 0 {
-                    todo!("HBlank DMA");
-                }
-
                 self.len = value & 0x7f;
+                self.hblank_mode = (value & 0x80) != 0;
 
                 debug!(
                     "DMA Length: {} ({})",
@@ -47,7 +50,9 @@ impl Dma {
                     (self.len as usize + 1) << 4
                 );
 
-                return true;
+                debug!("DMA HBlank Mode: {}", self.hblank_mode);
+
+                return !self.hblank_mode;
             }
             _ => unimplemented!("DMA Write: {:04X} <= {:02X}", address, value),
         }
@@ -60,7 +65,7 @@ impl<T: Mapped> super::Hardware<T> {
     pub fn transfer_vram_dma(&mut self) {
         debug!("DMA Transfer Begin");
 
-        while self.dma.len != 0xff {
+        loop {
             for byte in 0..16 {
                 let value = self.read_normal(self.dma.src_address);
 
@@ -82,6 +87,18 @@ impl<T: Mapped> super::Hardware<T> {
             }
 
             self.dma.len = self.dma.len.wrapping_sub(1);
+
+            let done = self.dma.len != 0xff;
+
+            if self.dma.hblank_mode {
+                if done {
+                    self.dma.hblank_mode = false;
+                }
+
+                break;
+            } else if done {
+                break;
+            }
         }
 
         debug!("DMA Transfer End");

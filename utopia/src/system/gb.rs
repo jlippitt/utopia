@@ -233,10 +233,13 @@ impl<T: Mapped> Hardware<T> {
         self.timer
             .step(&mut self.interrupt, &mut self.apu, M_CYCLE_LENGTH);
 
-        self.ppu.step(
+        if self.ppu.step(
             &mut self.interrupt,
             M_CYCLE_LENGTH >> (self.double_speed as u32),
-        );
+        ) && self.dma.is_hblank_mode()
+        {
+            self.transfer_vram_dma()
+        }
 
         if (self.cycles & (7 >> (!self.double_speed as u32))) == 0 {
             self.apu.step();

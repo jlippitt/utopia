@@ -298,10 +298,12 @@ impl Ppu {
         self.oam.write(address, value)
     }
 
-    pub fn step(&mut self, interrupt: &mut Interrupt, cycles: u64) {
+    pub fn step(&mut self, interrupt: &mut Interrupt, cycles: u64) -> bool {
         if !self.ctrl.lcd_enable {
-            return;
+            return false;
         }
+
+        let mut hblank_started = false;
 
         for _ in 0..cycles {
             match self.mode {
@@ -349,10 +351,13 @@ impl Ppu {
 
                     if done {
                         self.set_mode(interrupt, Mode::HBlank);
+                        hblank_started = true;
                     }
                 }
             }
         }
+
+        hblank_started
     }
 
     fn set_mode(&mut self, interrupt: &mut Interrupt, mode: Mode) {
