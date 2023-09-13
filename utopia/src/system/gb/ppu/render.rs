@@ -1,4 +1,5 @@
 use super::oam::Sprite;
+use super::VRAM_BANK_SIZE;
 use fifo::{BackgroundFifo, BgAttrByte, SpriteFifo, SpritePixel};
 use tracing::trace;
 
@@ -127,7 +128,7 @@ impl super::Ppu {
                 self.render.bg_tile = self.vram[address as usize];
 
                 if self.is_cgb {
-                    self.render.bg_attr = self.vram[8192 + address as usize].into();
+                    self.render.bg_attr = self.vram[VRAM_BANK_SIZE + address as usize].into();
                 }
 
                 self.render.bg_coarse_x += 1;
@@ -210,7 +211,7 @@ impl super::Ppu {
         let fine_y = self.bg_pos_y() as u16 & 7;
 
         let bank_offset = if self.is_cgb && self.render.bg_attr.bank() {
-            8192
+            VRAM_BANK_SIZE
         } else {
             0
         };
@@ -230,7 +231,7 @@ impl super::Ppu {
         };
 
         let bank_offset = if self.is_cgb && sprite.attr.bank() {
-            8192
+            VRAM_BANK_SIZE
         } else {
             0
         };
