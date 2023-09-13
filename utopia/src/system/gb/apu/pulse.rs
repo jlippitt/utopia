@@ -9,6 +9,7 @@ const DUTY_CYCLE: [[u8; 8]; 4] = [
 ];
 
 pub struct Pulse {
+    power: bool,
     enabled: bool,
     timer: Timer,
     sequencer: Sequencer<8>,
@@ -21,6 +22,7 @@ pub struct Pulse {
 impl Pulse {
     pub fn new(sweep_enabled: bool) -> Self {
         Self {
+            power: false,
             enabled: false,
             timer: Timer::new(Timer::MAX_PERIOD),
             sequencer: Sequencer::new(&DUTY_CYCLE[0]),
@@ -29,6 +31,10 @@ impl Pulse {
             envelope: Envelope::new(),
             read_value: [0xff; 5],
         }
+    }
+
+    pub fn enabled(&self) -> bool {
+        self.enabled
     }
 
     pub fn output(&self) -> u8 {
@@ -59,7 +65,12 @@ impl Pulse {
             }
             2 => {
                 self.envelope.set_control(value);
+                self.power = (value & 0xf8) != 0;
                 self.read_value[2] = value;
+
+                if !self.power {
+                    self.enabled = false;
+                }
             }
             3 => self.timer.set_frequency_low(value),
             4 => {
@@ -68,7 +79,7 @@ impl Pulse {
                 self.read_value[4] = 0xbf | (value & 0x40);
 
                 if (value & 0x80) != 0 {
-                    self.enabled = true;
+                    self.enabled = self.power;
                     self.timer.reset();
                     self.length_counter.reset();
                     self.envelope.reset();

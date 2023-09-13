@@ -3,8 +3,8 @@ use super::component::{LengthCounter, Timer};
 const VOLUME_SHIFT: [u32; 4] = [4, 0, 1, 2];
 
 pub struct Wave {
-    enabled: bool,
     power: bool,
+    enabled: bool,
     timer: Timer,
     sample: u8,
     read_index: usize,
@@ -17,8 +17,8 @@ pub struct Wave {
 impl Wave {
     pub fn new() -> Self {
         Self {
-            enabled: false,
             power: false,
+            enabled: false,
             timer: Timer::new(Timer::MAX_PERIOD),
             sample: 0,
             read_index: 0,
@@ -29,8 +29,12 @@ impl Wave {
         }
     }
 
+    pub fn enabled(&self) -> bool {
+        self.enabled
+    }
+
     pub fn output(&self) -> u8 {
-        if self.power && self.enabled {
+        if self.enabled {
             self.sample >> self.volume_shift
         } else {
             0
@@ -46,6 +50,10 @@ impl Wave {
             0 => {
                 self.power = (value & 0x80) != 0;
                 self.read_value[0] = 0x7f | (value & 0x80);
+
+                if !self.power {
+                    self.enabled = false;
+                }
             }
             1 => self.length_counter.set_period(value as u32),
             2 => {
@@ -59,7 +67,7 @@ impl Wave {
                 self.read_value[4] = 0xbf | (value & 0x40);
 
                 if (value & 0x80) != 0 {
-                    self.enabled = true;
+                    self.enabled = self.power;
                     self.timer.reset();
                     self.read_index = 0;
                     self.length_counter.reset();

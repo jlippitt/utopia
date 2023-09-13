@@ -3,6 +3,7 @@ use super::component::{Envelope, LengthCounter, Timer};
 const DIVIDER: [u32; 8] = [2, 4, 8, 12, 16, 20, 24, 28];
 
 pub struct Noise {
+    power: bool,
     enabled: bool,
     timer: Timer,
     shift: u16,
@@ -15,6 +16,7 @@ pub struct Noise {
 impl Noise {
     pub fn new() -> Self {
         Self {
+            power: false,
             enabled: false,
             timer: Timer::new(DIVIDER[0]),
             shift: 0x7fff,
@@ -23,6 +25,10 @@ impl Noise {
             envelope: Envelope::new(),
             read_value: [0xff; 5],
         }
+    }
+
+    pub fn enabled(&self) -> bool {
+        self.enabled
     }
 
     pub fn output(&self) -> u8 {
@@ -43,7 +49,12 @@ impl Noise {
             1 => self.length_counter.set_period(value as u32 & 0x3f),
             2 => {
                 self.envelope.set_control(value);
+                self.power = (value & 0xf8) != 0;
                 self.read_value[2] = value;
+
+                if !self.power {
+                    self.enabled = false;
+                }
             }
             3 => {
                 let shift = value >> 4;
@@ -57,7 +68,7 @@ impl Noise {
                 self.read_value[4] = 0xbf | (value & 0x40);
 
                 if (value & 0x80) != 0 {
-                    self.enabled = true;
+                    self.enabled = self.power;
                     self.timer.reset();
                     self.shift = 0x7fff;
                     self.length_counter.reset();

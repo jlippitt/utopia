@@ -30,11 +30,6 @@ impl Envelope {
         self.initial = value >> 4;
         self.increment = (value & 0x08) != 0;
         self.period = value as u32 & 0x07;
-
-        if (value & 0xf8) == 0 {
-            // This turns the DAC off
-            self.volume = 0;
-        }
     }
 
     pub fn step(&mut self) {

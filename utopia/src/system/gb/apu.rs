@@ -75,6 +75,15 @@ impl Apu {
                 value |= if self.channels[1].enabled[3] { 0x08 } else { 0 };
                 value
             }
+            0x26 => {
+                let mut value = 0x70;
+                value |= if self.pulse1.enabled() { 0x01 } else { 0 };
+                value |= if self.pulse2.enabled() { 0x02 } else { 0 };
+                value |= if self.wave.enabled() { 0x04 } else { 0 };
+                value |= if self.noise.enabled() { 0x08 } else { 0 };
+                value |= if self.power { 0x80 } else { 0 };
+                value
+            }
             _ => {
                 warn!("APU register read not yet implemented: {:02X}", address);
                 0
