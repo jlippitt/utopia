@@ -106,7 +106,7 @@ impl<T: Mapped> super::Hardware<T> {
 
             self.dma.len = self.dma.len.wrapping_sub(1);
 
-            let done = self.dma.len != 0xff;
+            let done = self.dma.len == 0xff;
 
             if self.dma.hblank_mode {
                 if done {
