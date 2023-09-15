@@ -13,9 +13,22 @@ pub fn jmp_indirect(core: &mut Core<impl Bus>) {
     debug!("JMP (addr)");
     let address = core.next_word();
     core.read(core.pc);
+    core.read(address);
     let low = core.read(address);
     core.poll();
     let high = core.read(address.wrapping_add(1));
+    core.pc = u16::from_le_bytes([low, high]);
+}
+
+pub fn jmp_indirect_x(core: &mut Core<impl Bus>) {
+    debug!("JMP (addr,X)");
+    let base = core.next_word();
+    core.read(core.pc);
+    core.read(base);
+    let indexed = base.wrapping_add(core.x as u16);
+    let low = core.read(indexed);
+    core.poll();
+    let high = core.read(indexed.wrapping_add(1));
     core.pc = u16::from_le_bytes([low, high]);
 }
 
