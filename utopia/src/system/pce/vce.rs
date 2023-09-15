@@ -135,7 +135,9 @@ impl Vce {
             } else if self.line_counter == vdc.display_height() {
                 self.frame_done = true;
                 vdc.on_vblank_start();
-            } else if (self.line_counter + 64) == vdc.scanline_match() {
+            }
+
+            if (self.line_counter + 64) == vdc.scanline_match() {
                 vdc.on_scanline_match();
             }
 
