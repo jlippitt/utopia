@@ -1,7 +1,7 @@
 use crate::core::huc6280;
 use std::cell::Cell;
 use std::rc::Rc;
-use tracing::debug;
+use tracing::{debug, warn};
 
 #[repr(u32)]
 #[allow(dead_code)]
@@ -16,18 +16,20 @@ pub enum InterruptType {
 
 #[derive(Clone)]
 pub struct Interrupt {
-    inner: Rc<Cell<huc6280::Interrupt>>,
+    status: Rc<Cell<huc6280::Interrupt>>,
+    mask: Rc<Cell<huc6280::Interrupt>>,
 }
 
 impl Interrupt {
     pub fn new() -> Self {
         Self {
-            inner: Default::default(),
+            status: Default::default(),
+            mask: Default::default(),
         }
     }
 
     pub fn poll(&self) -> huc6280::Interrupt {
-        self.inner.get()
+        self.status.get() & !self.mask.get()
     }
 
     // pub fn has(&self, int_type: InterruptType) -> bool {
@@ -35,17 +37,30 @@ impl Interrupt {
     // }
 
     pub fn clear(&mut self, int_type: InterruptType) {
-        let mut value = self.inner.get();
+        let mut value = self.status.get();
         value &= !(int_type as huc6280::Interrupt);
-        self.inner.set(value);
+        self.status.set(value);
         debug!("Interrupt Cleared: {:?}", int_type);
     }
 
     pub fn raise(&mut self, int_type: InterruptType) {
-        let mut value = self.inner.get();
+        let mut value = self.status.get();
         value |= int_type as huc6280::Interrupt;
-        self.inner.set(value);
+        self.status.set(value);
         debug!("Interrupt Raised: {:?}", int_type);
+    }
+
+    pub fn write(&mut self, address: u16, value: u8) {
+        match address & 3 {
+            2 => {
+                self.mask.set(value);
+                debug!("Interrupt Mask: {:02X}", self.mask.get());
+            }
+            _ => warn!(
+                "Unmapped Interrupt Controller Write: {:04X} <= {:02X}",
+                address, value
+            ),
+        }
     }
 }
 
