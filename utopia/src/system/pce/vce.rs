@@ -77,7 +77,8 @@ impl Vce {
                     LINES_PER_FRAME_NORMAL
                 };
 
-                debug!("VCE Lines Per Frame: {:04X}", self.lines_per_frame);
+                debug!("VCE Cycles Per Dot: {}", self.cycles_per_dot);
+                debug!("VCE Lines Per Frame: {}", self.lines_per_frame);
             }
             2 => {
                 self.palette_index = (self.palette_index & 0xff00) | value as u16;
