@@ -114,7 +114,7 @@ impl BackgroundLayer {
         Tile {
             chr_low: vram.get(chr_address as usize),
             chr_high: vram.get(chr_address as usize + 8),
-            palette_offset: tile as usize >> 8,
+            palette_offset: (tile as usize >> 8) & 0x01f0,
         }
     }
 }
