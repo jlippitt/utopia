@@ -133,14 +133,29 @@ impl SpriteLayer {
                 break;
             }
 
-            let pixel_y = raster_line - sprite.pos_y;
+            let pixel_y = {
+                let offset_y = raster_line - sprite.pos_y;
+
+                if sprite.attr.flip_y() {
+                    offset_y ^ ((16 << sprite.attr.height()) - 1)
+                } else {
+                    offset_y
+                }
+            };
+
+            let (cell_flip_x, pixel_flip_x) = if sprite.attr.flip_x() {
+                (sprite.attr.width() as usize, 15)
+            } else {
+                (0, 0)
+            };
+
             let cell_y = pixel_y >> 4;
             let fine_y = pixel_y & 15;
 
             for cell_x in 0..=(sprite.attr.width() as usize) {
                 let base_address = ((sprite.chr_index as usize) << 5)
                     + ((cell_y as usize) << (6 + sprite.attr.width() as u32))
-                    + (cell_x << 6)
+                    + ((cell_x ^ cell_flip_x) << 6)
                     + fine_y as usize;
 
                 let chr0 = vram.get(base_address);
@@ -156,12 +171,12 @@ impl SpriteLayer {
                     }
 
                     // TODO: Foreground flag
-                    // TODO: Flipping
 
-                    let color0 = chr0 >> (15 - pixel_x) & 1;
-                    let color1 = chr1 >> (15 - pixel_x) & 1;
-                    let color2 = chr2 >> (15 - pixel_x) & 1;
-                    let color3 = chr3 >> (15 - pixel_x) & 1;
+                    let shift = (15 - pixel_x) ^ pixel_flip_x;
+                    let color0 = (chr0 >> shift) & 1;
+                    let color1 = (chr1 >> shift) & 1;
+                    let color2 = (chr2 >> shift) & 1;
+                    let color3 = (chr3 >> shift) & 1;
 
                     let color_index = (color3 << 3) | (color2 << 2) | (color1 << 1) | color0;
 
