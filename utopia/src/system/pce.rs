@@ -168,8 +168,13 @@ impl<T: Mapped> Bus for Hardware<T> {
                 0x0000 => self.vdc.read(address as u16 & 0x03ff, self.mdr),
                 0x0400 => self.vde.read(address as u16 & 0x03ff, self.mdr),
                 0x0800 => 0, // TODO: PSG
+                0x0c00 => todo!("Timer"),
                 0x1000 => 0, // TODO: Joypad
-                _ => panic!("Unmapped I/O port read: {:04X}", address),
+                0x1400 => todo!("Interrupt Control"),
+                _ => {
+                    warn!("Unmapped I/O port read: {:04X}", address);
+                    0xff
+                }
             },
             _ => panic!("Read from unmapped address {:06X}", address),
         };
