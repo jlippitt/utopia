@@ -86,6 +86,8 @@ impl Vdc {
 
                 status
             }
+            2 => self.read_register(false),
+            3 => self.read_register(true),
             _ => unimplemented!("VDC Read: {:04X}", address),
         }
     }
@@ -126,9 +128,17 @@ impl Vdc {
         self.screen.draw_line(&self.line_buffer);
     }
 
+    fn read_register(&mut self, msb: bool) -> u8 {
+        match self.reg_index {
+            0x02 => self.vram.read(msb),
+            _ => unimplemented!("VDC Register Read: {:02X}", self.reg_index),
+        }
+    }
+
     fn write_register(&mut self, msb: bool, value: u8) {
         match self.reg_index {
             0x00 => self.vram.set_write_address(msb, value),
+            0x01 => self.vram.set_read_address(msb, value),
             0x02 => self.vram.write(msb, value),
             0x05 => {
                 // TODO: Other settings
