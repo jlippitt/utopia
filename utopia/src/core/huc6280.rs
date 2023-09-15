@@ -362,6 +362,8 @@ impl<T: Bus> Core<T> {
             0x03 => instr::st0(self),
             0x23 => instr::st2(self),
             0x43 => instr::tma(self),
+            0x83 => instr::tst::<addr::ZeroPage>(self),
+            0xa3 => instr::tst::<addr::ZeroPageX>(self),
             0xc3 => instr::transfer::<op::Tdd>(self),
             0xe3 => instr::transfer::<op::Tia>(self),
 
@@ -369,6 +371,8 @@ impl<T: Bus> Core<T> {
             0x13 => instr::st1(self),
             0x53 => instr::tam(self),
             0x73 => instr::transfer::<op::Tii>(self),
+            0x93 => instr::tst::<addr::Absolute>(self),
+            0xb3 => instr::tst::<addr::AbsoluteX>(self),
             0xd3 => instr::transfer::<op::Tin>(self),
             0xf3 => instr::transfer::<op::Tai>(self),
 

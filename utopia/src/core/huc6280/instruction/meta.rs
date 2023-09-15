@@ -95,3 +95,15 @@ pub fn transfer<Op: TransferOperator>(core: &mut Core<impl Bus>) {
     core.read_physical(STACK_PAGE | core.s as u32);
     core.y = core.pull();
 }
+
+pub fn tst<Addr: AddressMode>(core: &mut Core<impl Bus>) {
+    debug!("TST #const, {}", Addr::NAME);
+    let mask = core.next_byte();
+    let address = Addr::resolve(core, false);
+    let value = core.read_physical(address);
+    core.read(core.pc);
+    core.read(core.pc);
+    core.flags.n = value;
+    core.flags.v = value << 1;
+    core.flags.z = value & mask;
+}
