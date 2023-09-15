@@ -3,6 +3,7 @@ use crate::util::mirror::Mirror;
 use crate::util::{gfx, MirrorVec};
 use crate::{InstanceOptions, JoypadState, Mapped, MemoryMapper, SystemOptions, WgpuContext};
 use interrupt::Interrupt;
+use joypad::Joypad;
 use std::error::Error;
 use std::fmt;
 use tracing::{debug, info, warn};
@@ -10,6 +11,7 @@ use vce::Vce;
 use vdc::Vdc;
 
 mod interrupt;
+mod joypad;
 mod vce;
 mod vdc;
 
@@ -83,7 +85,8 @@ impl<T: Mapped> crate::Instance for Instance<T> {
         self.wgpu_context.as_mut().unwrap()
     }
 
-    fn run_frame(&mut self, _joypad_state: &JoypadState) {
+    fn run_frame(&mut self, joypad_state: &JoypadState) {
+        self.core.bus_mut().joypad.update(joypad_state);
         self.core.bus_mut().vde.start_frame();
 
         while !self.core.bus().vde.frame_done() {
@@ -112,6 +115,7 @@ struct Hardware<T: Mapped> {
     wram: MirrorVec<u8>,
     vdc: Vdc,
     vde: Vce,
+    joypad: Joypad,
 }
 
 impl<T: Mapped> Hardware<T> {
@@ -146,6 +150,7 @@ impl<T: Mapped> Hardware<T> {
             wram: MirrorVec::new(WRAM_SIZE),
             vdc: Vdc::new(interrupt.clone()),
             vde: Vce::new(),
+            joypad: Joypad::new(),
             interrupt,
         })
     }
@@ -169,7 +174,7 @@ impl<T: Mapped> Bus for Hardware<T> {
                 0x0400 => self.vde.read(address as u16 & 0x03ff, self.mdr),
                 0x0800 => 0, // TODO: PSG
                 0x0c00 => todo!("Timer"),
-                0x1000 => 0, // TODO: Joypad
+                0x1000 => 0x30 | self.joypad.read(),
                 0x1400 => todo!("Interrupt Control"),
                 _ => {
                     warn!("Unmapped I/O port read: {:04X}", address);
@@ -193,6 +198,7 @@ impl<T: Mapped> Bus for Hardware<T> {
             0xff => match address & 0x1c00 {
                 0x0000 => self.vdc.write(address as u16 & 0x03ff, value),
                 0x0400 => self.vde.write(address as u16 & 0x03ff, value),
+                0x1000 => self.joypad.write(value),
                 _ => warn!("Unmapped I/O port write: {:04X} <= {:02X}", address, value),
             },
             _ => panic!("Read from unmapped address {:06X}", address),
