@@ -132,7 +132,7 @@ impl Vce {
 
             if self.line_counter == self.lines_per_frame {
                 self.line_counter = 0;
-                vdc.on_frame_start();
+                vdc.on_frame_start(&self.palette);
             } else if self.line_counter == vdc.display_height() {
                 self.frame_done = true;
                 vdc.on_vblank_start();

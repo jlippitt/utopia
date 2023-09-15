@@ -24,6 +24,8 @@ bitflags! {
 
 pub struct Vdc {
     reg_index: u8,
+    render_enable: bool,
+    active_render: bool,
     interrupt_enable: VdcInterrupt,
     interrupt_active: VdcInterrupt,
     scanline_match: u16,
@@ -42,6 +44,8 @@ impl Vdc {
     pub fn new(interrupt: Interrupt) -> Self {
         Self {
             reg_index: 0,
+            render_enable: false,
+            active_render: false,
             interrupt_enable: VdcInterrupt::empty(),
             interrupt_active: VdcInterrupt::empty(),
             scanline_match: 0,
@@ -101,8 +105,15 @@ impl Vdc {
         }
     }
 
-    pub fn on_frame_start(&mut self) {
+    pub fn on_frame_start(&mut self, palette: &[Color]) {
         self.screen.reset();
+
+        self.active_render = self.render_enable;
+        debug!("VDC Active Render: {}", self.active_render);
+
+        if !self.active_render {
+            self.screen.blank(palette[0]);
+        }
     }
 
     pub fn on_vblank_start(&mut self) {
@@ -115,6 +126,10 @@ impl Vdc {
     }
 
     pub fn render_line(&mut self, palette: &[Color], line: u16) {
+        if !self.active_render {
+            return;
+        }
+
         self.line_buffer.clear();
         self.line_buffer
             .resize(self.screen.width() as usize, palette[0]);
@@ -153,7 +168,9 @@ impl Vdc {
                 } else {
                     self.bg.set_enabled((value & 0x80) != 0);
                     self.sprite.set_enabled((value & 0x40) != 0);
+                    self.render_enable = (value & 0xc0) != 0;
                     self.interrupt_enable = VdcInterrupt::from_bits_retain(value & 0x0f);
+                    debug!("VDC Render Enable: {}", self.render_enable);
                     debug!("VDC Interrupt Enable: {:?}", self.interrupt_enable);
                 }
             }
