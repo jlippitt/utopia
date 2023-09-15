@@ -49,7 +49,7 @@ impl BackgroundLayer {
         } else {
             (self.scroll_y & 0xff00) | value as u16
         };
-        debug!("BG Scroll Y: {}", self.scroll_x);
+        debug!("BG Scroll Y: {}", self.scroll_y);
     }
 
     pub fn set_tile_map_size(&mut self, value: u8) {
