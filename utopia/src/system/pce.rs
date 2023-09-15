@@ -198,6 +198,7 @@ impl<T: Mapped> Bus for Hardware<T> {
             0xff => match address & 0x1c00 {
                 0x0000 => self.vdc.write(address as u16 & 0x03ff, value),
                 0x0400 => self.vde.write(address as u16 & 0x03ff, value),
+                0x0800 => (), // TODO: PSG
                 0x1000 => self.joypad.write(value),
                 _ => warn!("Unmapped I/O port write: {:04X} <= {:02X}", address, value),
             },
