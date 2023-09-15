@@ -1,7 +1,9 @@
 use crate::core::huc6280::{self, Bus, Core};
+use crate::util::mirror::Mirror;
 use crate::util::{gfx, MirrorVec};
-use crate::{Error, InstanceOptions, JoypadState, MemoryMapper, SystemOptions, WgpuContext};
+use crate::{InstanceOptions, JoypadState, Mapped, MemoryMapper, SystemOptions, WgpuContext};
 use interrupt::Interrupt;
+use std::error::Error;
 use std::fmt;
 use tracing::{debug, info, warn};
 use vce::Vce;
@@ -11,44 +13,59 @@ mod interrupt;
 mod vce;
 mod vdc;
 
+const SRAM_SIZE: usize = 8192;
 const WRAM_SIZE: usize = 8192;
 
 const SLOW_CYCLES: u64 = 12;
 const FAST_CYCLES: u64 = 3;
 
-pub struct System;
-
-impl System {
-    pub fn new(_options: SystemOptions<'_, impl MemoryMapper>) -> Self {
-        Self
-    }
+pub struct System<'a, T: MemoryMapper + 'static> {
+    memory_mapper: &'a T,
 }
 
-impl<T: MemoryMapper> crate::System<T> for System {
-    fn default_resolution(&self) -> (u32, u32) {
-        (Vdc::DEFAULT_WIDTH as u32, Vdc::DEFAULT_HEIGHT as u32)
-    }
-
-    fn create_instance(&self, options: InstanceOptions) -> Result<Box<dyn crate::Instance>, Error> {
-        Ok(Box::new(Instance::new(options)))
-    }
-}
-
-pub struct Instance {
-    wgpu_context: Option<WgpuContext>,
-    core: Core<Hardware>,
-}
-
-impl Instance {
-    fn new(options: InstanceOptions) -> Self {
+impl<'a, T: MemoryMapper> System<'a, T> {
+    pub fn new(options: SystemOptions<'a, T>) -> Self {
         Self {
-            wgpu_context: options.wgpu_context,
-            core: Core::new(Hardware::new(options.rom_data)),
+            memory_mapper: options.memory_mapper,
         }
     }
 }
 
-impl crate::Instance for Instance {
+impl<'a, T: MemoryMapper> crate::System<T> for System<'a, T> {
+    fn default_resolution(&self) -> (u32, u32) {
+        (Vdc::DEFAULT_WIDTH as u32, Vdc::DEFAULT_HEIGHT as u32)
+    }
+
+    fn create_instance(
+        &self,
+        options: InstanceOptions,
+    ) -> Result<Box<dyn crate::Instance>, crate::Error> {
+        let result = Instance::new(self.memory_mapper, options);
+
+        Ok(Box::new(
+            result.map_err(|err| crate::Error(err.to_string()))?,
+        ))
+    }
+}
+
+pub struct Instance<T: Mapped> {
+    wgpu_context: Option<WgpuContext>,
+    core: Core<Hardware<T>>,
+}
+
+impl<T: Mapped> Instance<T> {
+    fn new(
+        memory_mapper: &impl MemoryMapper<Mapped = T>,
+        options: InstanceOptions,
+    ) -> Result<Self, Box<dyn Error>> {
+        Ok(Self {
+            wgpu_context: options.wgpu_context,
+            core: Core::new(Hardware::new(options.rom_data, memory_mapper)?),
+        })
+    }
+}
+
+impl<T: Mapped> crate::Instance for Instance<T> {
     fn resolution(&self) -> (u32, u32) {
         let vdc = &self.core.bus().vdc;
         (vdc.display_width() as u32, vdc.display_height() as u32)
@@ -85,19 +102,23 @@ impl crate::Instance for Instance {
     }
 }
 
-struct Hardware {
+struct Hardware<T: Mapped> {
     cycles: u64,
     clock_speed: u64,
     mdr: u8,
     interrupt: Interrupt,
     rom: MirrorVec<u8>,
+    sram: Mirror<T>,
     wram: MirrorVec<u8>,
     vdc: Vdc,
     vde: Vce,
 }
 
-impl Hardware {
-    fn new(mut rom_data: Vec<u8>) -> Self {
+impl<T: Mapped> Hardware<T> {
+    fn new(
+        mut rom_data: Vec<u8>,
+        memory_mapper: &impl MemoryMapper<Mapped = T>,
+    ) -> Result<Self, Box<dyn Error>> {
         let rom_size = rom_data.len();
 
         info!("ROM Size: {}", rom_size);
@@ -116,16 +137,17 @@ impl Hardware {
 
         let interrupt = Interrupt::new();
 
-        Self {
+        Ok(Self {
             cycles: 0,
             clock_speed: SLOW_CYCLES,
             mdr: 0,
             rom: rom_data.into(),
+            sram: memory_mapper.open(SRAM_SIZE, true)?.into(),
             wram: MirrorVec::new(WRAM_SIZE),
             vdc: Vdc::new(interrupt.clone()),
             vde: Vce::new(),
             interrupt,
-        }
+        })
     }
 
     fn step(&mut self) {
@@ -134,13 +156,13 @@ impl Hardware {
     }
 }
 
-impl Bus for Hardware {
+impl<T: Mapped> Bus for Hardware<T> {
     fn read(&mut self, address: u32) -> u8 {
         self.step();
 
         self.mdr = match (address >> 13) & 0xff {
             0x00..=0x7f => self.rom[address as usize],
-            0xf7 => todo!("SRAM Reads"),
+            0xf7 => self.sram[address as usize & 0x1fff],
             0xf8 => self.wram[address as usize & 0x1fff],
             0xff => match address & 0x1c00 {
                 0x0000 => self.vdc.read(address as u16 & 0x03ff, self.mdr),
@@ -161,7 +183,7 @@ impl Bus for Hardware {
         self.mdr = value;
 
         match (address >> 13) & 0xff {
-            0xf7 => todo!("SRAM Writes"),
+            0xf7 => self.sram[address as usize & 0x1fff] = value,
             0xf8 => self.wram[address as usize & 0x1fff] = value,
             0xff => match address & 0x1c00 {
                 0x0000 => self.vdc.write(address as u16 & 0x03ff, value),
@@ -191,7 +213,7 @@ impl Bus for Hardware {
     }
 }
 
-impl fmt::Display for Hardware {
+impl<T: Mapped> fmt::Display for Hardware<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "T={} V={}", self.cycles, self.vde.line_counter())
     }
