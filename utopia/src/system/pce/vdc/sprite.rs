@@ -120,9 +120,9 @@ impl SpriteLayer {
         let mut sprites_selected = 0;
 
         for sprite in &self.sprites {
-            if sprite.pos_y > raster_line
-                || (sprite.pos_y + (16 << sprite.attr.height())) <= raster_line
-            {
+            let height = 16 * (sprite.attr.height() as u16 + 1);
+
+            if sprite.pos_y > raster_line || (sprite.pos_y + height) <= raster_line {
                 continue;
             }
 
@@ -137,7 +137,7 @@ impl SpriteLayer {
                 let offset_y = raster_line - sprite.pos_y;
 
                 if sprite.attr.flip_y() {
-                    offset_y ^ ((16 << sprite.attr.height()) - 1)
+                    offset_y ^ (height - 1)
                 } else {
                     offset_y
                 }
