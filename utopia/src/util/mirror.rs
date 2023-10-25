@@ -49,10 +49,6 @@ impl<T: Mirrorable + Resizable> Mirror<T> {
             mask: mask_for(new_len),
         }
     }
-
-    pub fn inner(&self) -> &T {
-        &self.inner
-    }
 }
 
 impl<T: Mirrorable> From<T> for Mirror<T> {
