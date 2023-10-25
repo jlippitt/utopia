@@ -1,6 +1,7 @@
 use crate::{BiosLoader, Error, MemoryMapper};
 use std::collections::VecDeque;
 use std::path::Path;
+use std::sync::Arc;
 
 pub mod gb;
 pub mod gba;
@@ -61,11 +62,11 @@ pub trait System<T: MemoryMapper> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct WgpuContext {
-    pub device: wgpu::Device,
-    pub queue: wgpu::Queue,
-    pub texture: wgpu::Texture,
+    pub device: Arc<wgpu::Device>,
+    pub queue: Arc<wgpu::Queue>,
+    pub texture: Arc<wgpu::Texture>,
 }
 
 #[derive(Debug)]
