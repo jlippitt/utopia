@@ -223,7 +223,7 @@ impl VideoController {
     pub fn redraw(
         &mut self,
         window_target: &EventLoopWindowTarget<AppEvent<impl MemoryMapper>>,
-        draw_fn: impl Fn(wgpu::TextureView),
+        draw_fn: impl Fn(&wgpu::Texture),
     ) -> Result<(), Box<dyn Error>> {
         let monitor_size = self.window.current_monitor().unwrap().size();
 
@@ -234,8 +234,7 @@ impl VideoController {
         }
 
         let output = self.surface.get_current_texture()?;
-        let canvas = output.texture.create_view(&Default::default());
-        draw_fn(canvas);
+        draw_fn(&output.texture);
         output.present();
 
         Ok(())

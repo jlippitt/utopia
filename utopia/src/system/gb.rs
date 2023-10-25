@@ -129,8 +129,12 @@ impl<T: Mapped> Instance<T> {
         let hw = Hardware::new(cartridge, bios_data, skip_boot)?;
         let core = Core::new(hw, initial_state);
 
-        let mut upscaler = Upscaler::new(options.wgpu_context);
-        upscaler.set_texture_size(ppu::WIDTH as u32, ppu::HEIGHT as u32);
+        let upscaler = Upscaler::new(
+            options.wgpu_context,
+            (ppu::WIDTH as u32, ppu::HEIGHT as u32).into(),
+            options.output_resolution,
+            false,
+        );
 
         Ok(Instance { core, upscaler })
     }
@@ -167,7 +171,7 @@ impl<T: Mapped> crate::Instance for Instance<T> {
         self.upscaler.update(self.core.bus().ppu.pixels());
     }
 
-    fn present(&self, canvas: wgpu::TextureView) {
+    fn present(&self, canvas: &wgpu::Texture) {
         self.upscaler.render(canvas);
     }
 }

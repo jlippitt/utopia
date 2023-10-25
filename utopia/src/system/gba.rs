@@ -111,7 +111,7 @@ impl crate::Instance for Instance {
         }
     }
 
-    fn present(&self, _canvas: wgpu::TextureView) {
+    fn present(&self, _canvas: &wgpu::Texture) {
         // TODO: Render pixels to WGPU texture
     }
 }

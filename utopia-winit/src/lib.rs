@@ -90,6 +90,7 @@ impl ResetState {
         let instance = system.create_instance(InstanceOptions {
             rom_data: options.rom_data,
             wgpu_context: video.ctx().clone(),
+            output_resolution: <(u32, u32)>::from(video.window().inner_size()).into(),
         })?;
 
         let mut audio = AudioController::new(instance.sample_rate())?;

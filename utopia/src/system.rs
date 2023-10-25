@@ -1,4 +1,5 @@
 use super::WgpuContext;
+use crate::util::size::Size;
 use crate::{BiosLoader, Error, MemoryMapper};
 use std::collections::VecDeque;
 use std::path::Path;
@@ -63,11 +64,12 @@ pub trait System<T: MemoryMapper> {
 pub struct InstanceOptions {
     pub rom_data: Vec<u8>,
     pub wgpu_context: WgpuContext,
+    pub output_resolution: Size,
 }
 
 pub trait Instance {
     fn run_frame(&mut self, joypad_state: &JoypadState);
-    fn present(&self, canvas: wgpu::TextureView);
+    fn present(&self, canvas: &wgpu::Texture);
 
     fn resolution(&self) -> (u32, u32);
     fn pixels(&self) -> &[u8];

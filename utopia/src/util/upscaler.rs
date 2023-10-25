@@ -1,4 +1,6 @@
+use crate::util::size::Size;
 use crate::WgpuContext;
+use std::cell::Cell;
 use wgpu::util::DeviceExt;
 
 #[repr(C)]
@@ -21,29 +23,6 @@ impl Vertex {
     }
 }
 
-const VERTICES: &[Vertex] = &[
-    // Top Left
-    Vertex {
-        position: [-1.0, 1.0],
-        tex_coords: [0.0, 0.0],
-    },
-    // Bottom Left
-    Vertex {
-        position: [-1.0, -1.0],
-        tex_coords: [0.0, 1.0],
-    },
-    // Top Right
-    Vertex {
-        position: [1.0, 1.0],
-        tex_coords: [1.0, 0.0],
-    },
-    // Bottom Right
-    Vertex {
-        position: [1.0, -1.0],
-        tex_coords: [1.0, 1.0],
-    },
-];
-
 #[rustfmt::skip]
 const INDICES: &[u16] = &[
     0, 1, 2,
@@ -51,20 +30,21 @@ const INDICES: &[u16] = &[
 ];
 
 pub struct Upscaler {
-    resample: bool,
     ctx: WgpuContext,
-    texture: Option<wgpu::Texture>,
-    bind_group: Option<wgpu::BindGroup>,
-    bind_group_layout: wgpu::BindGroupLayout,
-    sampler_nearest: wgpu::Sampler,
-    sampler_linear: wgpu::Sampler,
+    texture: wgpu::Texture,
+    bind_group: wgpu::BindGroup,
+    _bind_group_layout: wgpu::BindGroupLayout,
+    target_size: Cell<Size>,
+    _resample: bool,
+    _sampler_nearest: wgpu::Sampler,
+    _sampler_linear: wgpu::Sampler,
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
 }
 
 impl Upscaler {
-    pub fn new(ctx: WgpuContext) -> Self {
+    pub fn new(ctx: WgpuContext, source_size: Size, target_size: Size, resample: bool) -> Self {
         let WgpuContext {
             device,
             output_format,
@@ -143,10 +123,25 @@ impl Upscaler {
             multiview: None,
         });
 
+        let texture = create_texture(device, source_size);
+
+        let bind_group = create_bind_group(
+            device,
+            &bind_group_layout,
+            &texture,
+            if resample {
+                &sampler_linear
+            } else {
+                &sampler_nearest
+            },
+        );
+
+        let clip_rect = create_clip_rect(source_size, target_size);
+
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Upscaler Vertex Buffer"),
-            contents: bytemuck::cast_slice(VERTICES),
-            usage: wgpu::BufferUsages::VERTEX,
+            contents: bytemuck::cast_slice(&clip_rect),
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -156,13 +151,14 @@ impl Upscaler {
         });
 
         Self {
-            resample: false,
             ctx,
-            texture: None,
-            bind_group: None,
-            bind_group_layout,
-            sampler_nearest,
-            sampler_linear,
+            texture,
+            bind_group,
+            _bind_group_layout: bind_group_layout,
+            target_size: Cell::new(target_size),
+            _resample: resample,
+            _sampler_linear: sampler_nearest,
+            _sampler_nearest: sampler_linear,
             render_pipeline,
             vertex_buffer,
             index_buffer,
@@ -190,47 +186,29 @@ impl Upscaler {
     //     self.resample = resample;
     // }
 
-    pub fn set_texture_size(&mut self, width: u32, height: u32) {
-        let WgpuContext { device, .. } = &self.ctx;
+    // pub fn set_source_size(&mut self, size: Size) {
+    //     let WgpuContext { device, .. } = &self.ctx;
 
-        if width != 0 && height != 0 {
-            let should_update = self.texture.is_none()
-                || self
-                    .texture
-                    .as_ref()
-                    .is_some_and(|texture| width != texture.width() || height != texture.height());
+    //     if size != self.texture.size().into() {
+    //         self.texture = create_texture(device, size);
 
-            if should_update {
-                let texture = create_texture(device, width, height);
-
-                self.bind_group = Some(create_bind_group(
-                    device,
-                    &self.bind_group_layout,
-                    &texture,
-                    if self.resample {
-                        &self.sampler_linear
-                    } else {
-                        &self.sampler_nearest
-                    },
-                ));
-
-                self.texture = Some(texture);
-            }
-        } else {
-            self.texture = None;
-            self.bind_group = None;
-        }
-    }
+    //         self.bind_group = create_bind_group(
+    //             device,
+    //             &self.bind_group_layout,
+    //             &self.texture,
+    //             if self.resample {
+    //                 &self.sampler_linear
+    //             } else {
+    //                 &self.sampler_nearest
+    //             },
+    //         );
+    //     }
+    // }
 
     pub fn update(&self, pixels: &[u8]) {
-        let texture = self
-            .texture
-            .as_ref()
-            .expect("Texture size must be set before uploading pixel data");
-
         self.ctx.queue.write_texture(
             wgpu::ImageCopyTexture {
-                texture,
+                texture: &self.texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
@@ -238,15 +216,29 @@ impl Upscaler {
             pixels,
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: Some(texture.width() * 4),
-                rows_per_image: Some(texture.height()),
+                bytes_per_row: Some(self.texture.width() * 4),
+                rows_per_image: Some(self.texture.height()),
             },
-            texture.size(),
+            self.texture.size(),
         );
     }
 
-    pub fn render(&self, canvas: wgpu::TextureView) {
+    pub fn render(&self, canvas: &wgpu::Texture) {
         let WgpuContext { device, queue, .. } = &self.ctx;
+
+        let canvas_size = canvas.size().into();
+
+        if self.target_size.get() != canvas_size {
+            self.target_size.set(canvas_size);
+
+            let clip_rect = create_clip_rect(self.texture.size().into(), canvas_size);
+
+            self.ctx
+                .queue
+                .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&clip_rect));
+        }
+
+        let view = canvas.create_view(&Default::default());
 
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Upscaler Render Encoder"),
@@ -256,7 +248,7 @@ impl Upscaler {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Upscaler Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &canvas,
+                    view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -271,30 +263,21 @@ impl Upscaler {
                 depth_stencil_attachment: None,
             });
 
-            if let Some(bind_group) = &self.bind_group {
-                render_pass.set_pipeline(&self.render_pipeline);
-                render_pass.set_bind_group(0, bind_group, &[]);
-                render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-                render_pass
-                    .set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-                render_pass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
-            }
+            render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_bind_group(0, &self.bind_group, &[]);
+            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
         }
 
         queue.submit(std::iter::once(encoder.finish()));
     }
 }
 
-fn create_texture(device: &wgpu::Device, width: u32, height: u32) -> wgpu::Texture {
-    let size = wgpu::Extent3d {
-        width,
-        height,
-        depth_or_array_layers: 1,
-    };
-
+fn create_texture(device: &wgpu::Device, size: Size) -> wgpu::Texture {
     device.create_texture(&wgpu::TextureDescriptor {
         label: Some("Upscaler Texture"),
-        size,
+        size: size.into(),
         mip_level_count: 1,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
@@ -340,4 +323,42 @@ fn create_bind_group(
             ],
         }
     })
+}
+
+fn create_clip_rect(source: Size, target: Size) -> [Vertex; 4] {
+    let scale_factor = (target.width / source.width).min(target.height / source.height);
+
+    let scaled_width = source.width * scale_factor;
+    let scaled_height = source.height * scale_factor;
+
+    let offset_x = (target.width - scaled_width) / 2;
+    let offset_y = (target.height - scaled_height) / 2;
+
+    let left = (offset_x as f32 / target.width as f32) * 2.0 - 1.0;
+    let right = ((offset_x + scaled_width) as f32 / target.width as f32) * 2.0 - 1.0;
+    let top = 1.0 - (offset_y as f32 / target.height as f32) * 2.0;
+    let bottom = 1.0 - ((offset_y + scaled_height) as f32 / target.height as f32) * 2.0;
+
+    [
+        // Top Left
+        Vertex {
+            position: [left, top],
+            tex_coords: [0.0, 0.0],
+        },
+        // Bottom Left
+        Vertex {
+            position: [left, bottom],
+            tex_coords: [0.0, 1.0],
+        },
+        // Top Right
+        Vertex {
+            position: [right, top],
+            tex_coords: [1.0, 0.0],
+        },
+        // Bottom Right
+        Vertex {
+            position: [right, bottom],
+            tex_coords: [1.0, 1.0],
+        },
+    ]
 }
