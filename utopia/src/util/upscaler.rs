@@ -222,26 +222,31 @@ impl Upscaler {
         }
     }
 
-    pub fn render(&self, canvas: wgpu::TextureView, pixels: &[u8]) {
-        let WgpuContext { device, queue, .. } = &self.ctx;
+    pub fn update(&self, pixels: &[u8]) {
+        let texture = self
+            .texture
+            .as_ref()
+            .expect("Texture size must be set before uploading pixel data");
 
-        if let Some(texture) = &self.texture {
-            queue.write_texture(
-                wgpu::ImageCopyTexture {
-                    texture,
-                    mip_level: 0,
-                    origin: wgpu::Origin3d::ZERO,
-                    aspect: wgpu::TextureAspect::All,
-                },
-                pixels,
-                wgpu::ImageDataLayout {
-                    offset: 0,
-                    bytes_per_row: Some(texture.width() * 4),
-                    rows_per_image: Some(texture.height()),
-                },
-                texture.size(),
-            );
-        }
+        self.ctx.queue.write_texture(
+            wgpu::ImageCopyTexture {
+                texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            pixels,
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: Some(texture.width() * 4),
+                rows_per_image: Some(texture.height()),
+            },
+            texture.size(),
+        );
+    }
+
+    pub fn render(&self, canvas: wgpu::TextureView) {
+        let WgpuContext { device, queue, .. } = &self.ctx;
 
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Upscaler Render Encoder"),

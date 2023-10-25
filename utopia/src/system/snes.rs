@@ -111,10 +111,12 @@ impl<T: Mapped> crate::Instance for Instance<T> {
 
         let cpu_cycles = core.bus().clock.cycles();
         core.bus_mut().apu.run_until(cpu_cycles);
+
+        self.upscaler.update(self.core.bus().ppu.pixels());
     }
 
     fn present(&self, canvas: wgpu::TextureView) {
-        self.upscaler.render(canvas, self.core.bus().ppu.pixels());
+        self.upscaler.render(canvas);
     }
 }
 
