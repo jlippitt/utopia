@@ -10,7 +10,7 @@ use video::VideoController;
 use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoopBuilder, EventLoopProxy, EventLoopWindowTarget};
-use winit::keyboard::Key;
+use winit::keyboard::{Key, NamedKey};
 
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
@@ -157,18 +157,18 @@ fn start_event_loop<T: MemoryMapper>(
 
     let mut state = ResetState::new(&event_loop, options)?;
 
-    let event_loop_body = move |event, window_target: &_, control_flow: &mut ControlFlow| {
-        control_flow.set_poll();
+    let event_loop_body = move |event, elwt: &EventLoopWindowTarget<_>| {
+        elwt.set_control_flow(ControlFlow::Poll);
 
         match event {
             Event::WindowEvent { event, .. } => match event {
-                WindowEvent::CloseRequested => control_flow.set_exit(),
+                WindowEvent::CloseRequested => elwt.exit(),
                 WindowEvent::KeyboardInput { event, .. } => {
                     if event.state == ElementState::Pressed {
                         match event.logical_key {
-                            Key::Escape => control_flow.set_exit(),
-                            Key::F11 => {
-                                state.video.toggle_full_screen(window_target).unwrap();
+                            Key::Named(NamedKey::Escape) => elwt.exit(),
+                            Key::Named(NamedKey::F11) => {
+                                state.video.toggle_full_screen(elwt).unwrap();
                             }
                             _ => (),
                         }
@@ -187,20 +187,18 @@ fn start_event_loop<T: MemoryMapper>(
                     state.video.on_window_size_changed().unwrap();
                     state.audio.resync();
                 }
+                WindowEvent::RedrawRequested => {
+                    state
+                        .video
+                        .redraw(elwt, |canvas| state.instance.present(canvas))
+                        .unwrap();
+                }
                 _ => (),
             },
             Event::UserEvent(AppEvent::Reset(options)) => {
-                state = ResetState::new(window_target, options).unwrap();
+                state = ResetState::new(elwt, options).unwrap();
             }
-            Event::UserEvent(AppEvent::UpdateViewport) => {
-                state.video.update_viewport(window_target)
-            }
-            Event::RedrawRequested(..) => {
-                state
-                    .video
-                    .redraw(window_target, |canvas| state.instance.present(canvas))
-                    .unwrap();
-            }
+            Event::UserEvent(AppEvent::UpdateViewport) => state.video.update_viewport(elwt),
             Event::AboutToWait => {
                 state.gamepad.handle_events(&mut state.joypad_state);
 
@@ -220,14 +218,14 @@ fn start_event_loop<T: MemoryMapper>(
                     let source_size: PhysicalSize<u32> = state.instance.resolution().into();
 
                     if source_size != state.video.source_size() {
-                        state.video.set_source_size(window_target, source_size);
+                        state.video.set_source_size(elwt, source_size);
                     }
                 }
 
                 state.video.window().request_redraw();
 
                 if state.sync == Sync::Audio {
-                    control_flow.set_wait_until(state.audio.sync_time())
+                    elwt.set_control_flow(ControlFlow::WaitUntil(state.audio.sync_time()));
                 }
             }
             _ => (),

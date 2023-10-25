@@ -16,4 +16,4 @@ num-derive = "0.4.0"
 num-traits = "0.2.16"
 subslice = "0.2.3"
 tracing = { version = "0.1.37", features = ["release_max_level_info"] }
-wgpu = { version = "0.17.0", features = ["webgl"] }
+wgpu = { version = "0.17.1", features = ["webgl"] }
