@@ -113,14 +113,6 @@ impl crate::Instance for Instance {
         unimplemented!("Raw pixel output for N64");
     }
 
-    fn wgpu_context(&self) -> &WgpuContext {
-        &self.core.bus().wgpu_context
-    }
-
-    fn wgpu_context_mut(&mut self) -> &mut WgpuContext {
-        &mut self.core.bus_mut().wgpu_context
-    }
-
     fn run_frame(&mut self, joypad_state: &JoypadState) {
         let core = &mut self.core;
 

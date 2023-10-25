@@ -91,14 +91,6 @@ impl<T: Mapped> crate::Instance for Instance<T> {
         Some(self.core.bus_mut().apu.audio_queue())
     }
 
-    fn wgpu_context(&self) -> &WgpuContext {
-        self.wgpu_context.as_ref().unwrap()
-    }
-
-    fn wgpu_context_mut(&mut self) -> &mut WgpuContext {
-        self.wgpu_context.as_mut().unwrap()
-    }
-
     fn run_frame(&mut self, joypad_state: &JoypadState) {
         let core = &mut self.core;
 

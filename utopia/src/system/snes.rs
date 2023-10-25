@@ -97,14 +97,6 @@ impl<T: Mapped> crate::Instance for Instance<T> {
         SAMPLE_RATE
     }
 
-    fn wgpu_context(&self) -> &WgpuContext {
-        self.wgpu_context.as_ref().unwrap()
-    }
-
-    fn wgpu_context_mut(&mut self) -> &mut WgpuContext {
-        self.wgpu_context.as_mut().unwrap()
-    }
-
     fn audio_queue(&mut self) -> Option<&mut crate::AudioQueue> {
         Some(self.core.bus_mut().apu.audio_queue())
     }

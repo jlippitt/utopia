@@ -63,7 +63,7 @@ impl<'a, T: MemoryMapper> crate::System<T> for System<'a, T> {
 
 pub struct Instance {
     core: Core<Hardware>,
-    wgpu_context: Option<WgpuContext>,
+    _wgpu_context: Option<WgpuContext>,
 }
 
 impl Instance {
@@ -89,7 +89,7 @@ impl Instance {
 
         Ok(Self {
             core,
-            wgpu_context: options.wgpu_context,
+            _wgpu_context: options.wgpu_context,
         })
     }
 }
@@ -101,14 +101,6 @@ impl crate::Instance for Instance {
 
     fn pixels(&self) -> &[u8] {
         &PIXELS
-    }
-
-    fn wgpu_context(&self) -> &WgpuContext {
-        self.wgpu_context.as_ref().unwrap()
-    }
-
-    fn wgpu_context_mut(&mut self) -> &mut WgpuContext {
-        self.wgpu_context.as_mut().unwrap()
     }
 
     fn run_frame(&mut self, _joypad_state: &JoypadState) {
