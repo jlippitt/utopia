@@ -1,7 +1,7 @@
+use super::WgpuContext;
 use crate::{BiosLoader, Error, MemoryMapper};
 use std::collections::VecDeque;
 use std::path::Path;
-use std::sync::Arc;
 
 pub mod gb;
 pub mod gba;
@@ -59,21 +59,15 @@ pub trait System<T: MemoryMapper> {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct WgpuContext {
-    pub device: Arc<wgpu::Device>,
-    pub queue: Arc<wgpu::Queue>,
-    pub texture: Arc<wgpu::Texture>,
-}
-
 #[derive(Debug)]
 pub struct InstanceOptions {
     pub rom_data: Vec<u8>,
-    pub wgpu_context: Option<WgpuContext>,
+    pub wgpu_context: WgpuContext,
 }
 
 pub trait Instance {
     fn run_frame(&mut self, joypad_state: &JoypadState);
+    fn present(&self, canvas: wgpu::TextureView);
 
     fn resolution(&self) -> (u32, u32);
     fn pixels(&self) -> &[u8];

@@ -63,7 +63,7 @@ impl<'a, T: MemoryMapper> crate::System<T> for System<'a, T> {
 
 pub struct Instance {
     core: Core<Hardware>,
-    _wgpu_context: Option<WgpuContext>,
+    _wgpu_context: WgpuContext,
 }
 
 impl Instance {
@@ -109,7 +109,9 @@ impl crate::Instance for Instance {
         loop {
             core.step();
         }
+    }
 
+    fn present(&self, _canvas: wgpu::TextureView) {
         // TODO: Render pixels to WGPU texture
     }
 }

@@ -1,9 +1,8 @@
 use crate::core::sm83::{Bus, Core, State};
-use crate::util::gfx;
 use crate::util::mirror::MirrorVec;
+use crate::util::upscaler::Upscaler;
 use crate::{
     AudioQueue, BiosLoader, InstanceOptions, JoypadState, Mapped, MemoryMapper, SystemOptions,
-    WgpuContext,
 };
 use apu::Apu;
 use cartridge::Cartridge;
@@ -74,7 +73,7 @@ impl<'a, T: MemoryMapper> crate::System<T> for System<'a, T> {
 
 pub struct Instance<T: Mapped> {
     core: Core<Hardware<T>>,
-    wgpu_context: Option<WgpuContext>,
+    upscaler: Upscaler,
 }
 
 impl<T: Mapped> Instance<T> {
@@ -128,13 +127,12 @@ impl<T: Mapped> Instance<T> {
 
         // TODO: Should skip boot sequence for other hardware components as well
         let hw = Hardware::new(cartridge, bios_data, skip_boot)?;
-
         let core = Core::new(hw, initial_state);
 
-        Ok(Instance {
-            core,
-            wgpu_context: options.wgpu_context,
-        })
+        let mut upscaler = Upscaler::new(options.wgpu_context);
+        upscaler.set_texture_size(ppu::WIDTH as u32, ppu::HEIGHT as u32);
+
+        Ok(Instance { core, upscaler })
     }
 }
 
@@ -165,15 +163,10 @@ impl<T: Mapped> crate::Instance for Instance<T> {
             debug!("{}", core);
             core.step();
         }
+    }
 
-        if let Some(wgpu_context) = &self.wgpu_context {
-            gfx::write_pixels_to_texture(
-                wgpu_context,
-                &wgpu_context.texture,
-                self.pixels(),
-                self.pitch(),
-            )
-        }
+    fn present(&self, canvas: wgpu::TextureView) {
+        self.upscaler.render(canvas, self.core.bus().ppu.pixels());
     }
 }
 

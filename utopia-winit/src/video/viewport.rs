@@ -17,12 +17,9 @@ use web_sys::HtmlCanvasElement;
 // We should be running at approx 60 FPS or more
 const MIN_REFRESH_RATE: u32 = 59900;
 
-pub type ClipRect = [[f32; 2]; 4];
-
 pub struct Viewport {
     size: PhysicalSize<u32>,
     offset: Option<PhysicalPosition<u32>>,
-    clip_rect: Option<ClipRect>,
     video_mode: Option<VideoMode>,
 }
 
@@ -39,12 +36,10 @@ impl Viewport {
             if full_screen {
                 let default_video_mode = monitor.video_modes().next().unwrap();
                 let video_mode = best_fit(source_size, monitor).unwrap_or(default_video_mode);
-                let clip_rect = clip(source_size, video_mode.size());
 
                 Self {
                     offset: Some((0, 0).into()),
                     size: source_size,
-                    clip_rect: Some(clip_rect),
                     video_mode: Some(video_mode),
                 }
             } else {
@@ -55,7 +50,6 @@ impl Viewport {
                 Self {
                     size: target_size,
                     offset: Some(offset),
-                    clip_rect: None,
                     video_mode: None,
                 }
             }
@@ -63,7 +57,6 @@ impl Viewport {
             Self {
                 size: source_size,
                 offset: Some((0, 0).into()),
-                clip_rect: None,
                 video_mode: None,
             }
         }
@@ -85,7 +78,6 @@ impl Viewport {
         Self {
             size: target_size,
             offset: None,
-            clip_rect: None,
             video_mode: None,
         }
     }
@@ -96,10 +88,6 @@ impl Viewport {
 
     pub fn offset(&self) -> Option<PhysicalPosition<u32>> {
         self.offset
-    }
-
-    pub fn clip_rect(&self) -> Option<ClipRect> {
-        self.clip_rect
     }
 
     pub fn video_mode(&self) -> Option<&VideoMode> {
@@ -152,21 +140,6 @@ fn best_fit(source: PhysicalSize<u32>, monitor: MonitorHandle) -> Option<VideoMo
     }
 
     best_mode
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn clip(source: PhysicalSize<u32>, target: PhysicalSize<u32>) -> [[f32; 2]; 4] {
-    let PhysicalSize { width, height } = upscale(source, target);
-
-    let offset_x = (target.width - width) / 2;
-    let offset_y = (target.height - height) / 2;
-
-    let left = (offset_x as f32 / target.width as f32) * 2.0 - 1.0;
-    let right = ((offset_x + width) as f32 / target.width as f32) * 2.0 - 1.0;
-    let top = 1.0 - (offset_y as f32 / target.height as f32) * 2.0;
-    let bottom = 1.0 - ((offset_y + height) as f32 / target.height as f32) * 2.0;
-
-    [[left, top], [left, bottom], [right, top], [right, bottom]]
 }
 
 fn scale_factor(source: PhysicalSize<u32>, target: PhysicalSize<u32>) -> u32 {

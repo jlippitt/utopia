@@ -10,11 +10,11 @@
 
 pub use system::{
     create, AudioQueue, Instance, InstanceOptions, JoypadState, System, SystemOptions, SystemType,
-    WgpuContext,
 };
 
 use std::error;
 use std::fmt;
+use std::sync::Arc;
 
 use util::mirror::MirrorableMut;
 
@@ -81,4 +81,11 @@ impl MemoryMapper for DefaultMemoryMapper {
     fn open(&self, len: usize, _battery_backed: bool) -> Result<Self::Mapped, Error> {
         Ok(vec![0; len])
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct WgpuContext {
+    pub device: Arc<wgpu::Device>,
+    pub queue: Arc<wgpu::Queue>,
+    pub output_format: wgpu::TextureFormat,
 }

@@ -3,7 +3,7 @@ pub use mirror::MirrorVec;
 
 pub mod audio;
 pub mod facade;
-pub mod gfx;
 pub mod mirror;
+pub mod upscaler;
 
 mod color;

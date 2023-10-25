@@ -89,7 +89,7 @@ impl ResetState {
 
         let instance = system.create_instance(InstanceOptions {
             rom_data: options.rom_data,
-            wgpu_context: Some(video.ctx().clone()),
+            wgpu_context: video.ctx().clone(),
         })?;
 
         let mut audio = AudioController::new(instance.sample_rate())?;
@@ -195,7 +195,10 @@ fn start_event_loop<T: MemoryMapper>(
                 state.video.update_viewport(window_target)
             }
             Event::RedrawRequested(..) => {
-                state.video.render(window_target).unwrap();
+                state
+                    .video
+                    .redraw(window_target, |canvas| state.instance.present(canvas))
+                    .unwrap();
             }
             Event::AboutToWait => {
                 state.gamepad.handle_events(&mut state.joypad_state);

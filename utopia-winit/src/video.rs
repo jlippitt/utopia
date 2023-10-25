@@ -1,6 +1,6 @@
 use super::AppEvent;
-use renderer::Renderer;
 use std::error::Error;
+use std::sync::Arc;
 use utopia::{MemoryMapper, WgpuContext};
 use viewport::Viewport;
 use winit::dpi::{PhysicalSize, Size};
@@ -12,12 +12,13 @@ use web_sys::HtmlCanvasElement;
 #[cfg(target_arch = "wasm32")]
 use winit::platform::web::{WindowBuilderExtWebSys, WindowExtWebSys};
 
-mod renderer;
 mod viewport;
 
 pub struct VideoController {
     window: Window,
-    renderer: Renderer,
+    surface: wgpu::Surface,
+    config: wgpu::SurfaceConfiguration,
+    ctx: WgpuContext,
     source_size: PhysicalSize<u32>,
     prev_monitor_size: PhysicalSize<u32>,
     full_screen: bool,
@@ -60,25 +61,76 @@ impl VideoController {
 
         let window = window_builder.build(window_target)?;
 
-        let renderer = Renderer::create_with_context(
-            &window,
-            source_size,
-            viewport.size(),
-            viewport.clip_rect(),
-            vsync,
-        )?;
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::all(),
+            dx12_shader_compiler: Default::default(),
+        });
+
+        let surface = unsafe { instance.create_surface(&window)? };
+
+        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::default(),
+            compatible_surface: Some(&surface),
+            force_fallback_adapter: false,
+        }))
+        .unwrap();
+
+        let (device, queue) = pollster::block_on(adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                features: wgpu::Features::empty(),
+                #[cfg(target_arch = "wasm32")]
+                limits: wgpu::Limits::downlevel_webgl2_defaults(),
+                #[cfg(not(target_arch = "wasm32"))]
+                limits: wgpu::Limits::default(),
+                label: None,
+            },
+            None,
+        ))?;
+
+        let capabilities = surface.get_capabilities(&adapter);
+
+        let output_format = capabilities
+            .formats
+            .iter()
+            .copied()
+            .find(|f| f.is_srgb())
+            .unwrap_or(capabilities.formats[0]);
+
+        let present_mode = if vsync {
+            wgpu::PresentMode::AutoVsync
+        } else {
+            wgpu::PresentMode::AutoNoVsync
+        };
+
+        let config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: output_format,
+            width: viewport.size().width,
+            height: viewport.size().height,
+            present_mode,
+            alpha_mode: capabilities.alpha_modes[0],
+            view_formats: Vec::new(),
+        };
+
+        surface.configure(&device, &config);
+
+        let ctx = WgpuContext {
+            device: Arc::new(device),
+            queue: Arc::new(queue),
+            output_format,
+        };
 
         let monitor_size = window.current_monitor().unwrap().size();
 
-        let video = Self {
+        Ok(Self {
             window,
-            renderer,
+            surface,
+            config,
+            ctx,
             source_size,
             prev_monitor_size: monitor_size,
             full_screen,
-        };
-
-        Ok(video)
+        })
     }
 
     pub fn window(&self) -> &Window {
@@ -86,7 +138,7 @@ impl VideoController {
     }
 
     pub fn ctx(&self) -> &WgpuContext {
-        self.renderer.ctx()
+        &self.ctx
     }
 
     pub fn source_size(&self) -> PhysicalSize<u32> {
@@ -100,7 +152,6 @@ impl VideoController {
     ) {
         self.source_size = source_size;
         self.update_viewport(window_target);
-        self.renderer.update_source_size(source_size);
     }
 
     pub fn toggle_full_screen(
@@ -133,7 +184,13 @@ impl VideoController {
 
     pub fn on_window_size_changed(&mut self) -> Result<(), Box<dyn Error>> {
         let new_size = self.window.inner_size();
-        self.renderer.resize(new_size)?;
+
+        if new_size.width > 0 && new_size.height > 0 {
+            self.config.width = new_size.width;
+            self.config.height = new_size.height;
+            self.surface.configure(&self.ctx.device, &self.config);
+        }
+
         Ok(())
     }
 
@@ -161,13 +218,12 @@ impl VideoController {
                 .window
                 .request_inner_size(Size::Physical(viewport.size()));
         }
-
-        self.renderer.update_clip_rect(viewport.clip_rect());
     }
 
-    pub fn render(
+    pub fn redraw(
         &mut self,
         window_target: &EventLoopWindowTarget<AppEvent<impl MemoryMapper>>,
+        draw_fn: impl Fn(wgpu::TextureView),
     ) -> Result<(), Box<dyn Error>> {
         let monitor_size = self.window.current_monitor().unwrap().size();
 
@@ -177,7 +233,10 @@ impl VideoController {
             self.on_window_size_changed()?;
         }
 
-        self.renderer.render()?;
+        let output = self.surface.get_current_texture()?;
+        let canvas = output.texture.create_view(&Default::default());
+        draw_fn(canvas);
+        output.present();
 
         Ok(())
     }

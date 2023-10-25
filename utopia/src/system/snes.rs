@@ -1,9 +1,7 @@
 use crate::core::wdc65c816::{Bus, Core, Interrupt, INT_NMI};
-use crate::util::gfx;
 use crate::util::mirror::{Mirror, MirrorVec};
-use crate::{
-    BiosLoader, InstanceOptions, JoypadState, Mapped, MemoryMapper, SystemOptions, WgpuContext,
-};
+use crate::util::upscaler::Upscaler;
+use crate::{BiosLoader, InstanceOptions, JoypadState, Mapped, MemoryMapper, SystemOptions};
 use apu::Apu;
 use clock::{Clock, Event, FAST_CYCLES, TIMER_IRQ};
 use dma::Dma;
@@ -65,7 +63,7 @@ impl<'a, T: MemoryMapper> crate::System<T> for System<'a, T> {
 
 pub struct Instance<T: Mapped> {
     core: Core<Hardware<T>>,
-    wgpu_context: Option<WgpuContext>,
+    upscaler: Upscaler,
 }
 
 impl<T: Mapped> Instance<T> {
@@ -77,10 +75,10 @@ impl<T: Mapped> Instance<T> {
         let hw = Hardware::new(bios_loader, memory_mapper, options.rom_data)?;
         let core = Core::new(hw);
 
-        Ok(Instance {
-            core,
-            wgpu_context: options.wgpu_context,
-        })
+        let mut upscaler = Upscaler::new(options.wgpu_context);
+        upscaler.set_texture_size(ppu::WIDTH as u32, ppu::HEIGHT as u32);
+
+        Ok(Instance { core, upscaler })
     }
 }
 
@@ -113,15 +111,10 @@ impl<T: Mapped> crate::Instance for Instance<T> {
 
         let cpu_cycles = core.bus().clock.cycles();
         core.bus_mut().apu.run_until(cpu_cycles);
+    }
 
-        if let Some(wgpu_context) = &self.wgpu_context {
-            gfx::write_pixels_to_texture(
-                wgpu_context,
-                &wgpu_context.texture,
-                self.pixels(),
-                self.pitch(),
-            )
-        }
+    fn present(&self, canvas: wgpu::TextureView) {
+        self.upscaler.render(canvas, self.core.bus().ppu.pixels());
     }
 }
 
