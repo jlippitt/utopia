@@ -127,7 +127,7 @@ impl Pif {
                         output.push(0x00);
                         output.push(0x02); // TODO: Controller Pak
                     }
-                    1 | 2 | 3 => return None,
+                    1..=3 => return None,
                     4 => {
                         // Provide 4 Kbit EEPROM by default
                         // TODO: Support other EEPROM sizes

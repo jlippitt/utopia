@@ -31,7 +31,7 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
 
     if (word & 0x0e00_0010) == 0x0000_0010 {
         match (word >> 5) & 7 {
-            0 | 1 | 2 | 3 => dispatch_var_shift(core, pc, word),
+            0..=3 => dispatch_var_shift(core, pc, word),
             4 => dispatch_swap_mul(core, pc, word),
             5 => dispatch_halfword(core, pc, word),
             6 => dispatch_signed::<0>(core, pc, word),

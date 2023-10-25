@@ -281,7 +281,7 @@ impl<T: Mapped> Hardware<T> {
                     self.cartridge.read_rom(address)
                 }
             }
-            1 | 2 | 3 => self.cartridge.read_rom(address),
+            1..=3 => self.cartridge.read_rom(address),
             4 => self.ppu.read_vram(address),
             5 => self.cartridge.read_ram(address),
             6 => self.wram[address as usize],
@@ -310,7 +310,7 @@ impl<T: Mapped> Hardware<T> {
 
     fn write_normal(&mut self, address: u16, value: u8) {
         match address >> 13 {
-            0 | 1 | 2 | 3 => self.cartridge.write_register(address, value),
+            0..=3 => self.cartridge.write_register(address, value),
             4 => self.ppu.write_vram(address, value),
             5 => self.cartridge.write_ram(address, value),
             6 => self.wram[address as usize] = value,

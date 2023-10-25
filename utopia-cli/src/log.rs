@@ -155,7 +155,7 @@ mod debug {
 
     impl DebugSubscriber {
         pub fn new() -> io::Result<Self> {
-            let env_value = env::var(ENV_VAR_NAME).unwrap_or(String::new());
+            let env_value = env::var(ENV_VAR_NAME).unwrap_or_default();
             let level = Level::from_str(&env_value).unwrap_or(Level::DEBUG);
             let router = Arc::new(Mutex::new(LogRouter::new()?));
             Ok(Self { level, router })
