@@ -78,7 +78,7 @@ impl ResetState {
             }
         });
 
-        let (video, wgpu_context) = VideoController::create_with_context(
+        let video = VideoController::create_with_context(
             window_target,
             source_size,
             options.full_screen,
@@ -89,7 +89,7 @@ impl ResetState {
 
         let instance = system.create_instance(InstanceOptions {
             rom_data: options.rom_data,
-            wgpu_context: Some(wgpu_context),
+            wgpu_context: Some(video.ctx().clone()),
         })?;
 
         let mut audio = AudioController::new(instance.sample_rate())?;
@@ -167,13 +167,7 @@ fn start_event_loop<T: MemoryMapper>(
                         match event.logical_key {
                             Key::Escape => control_flow.set_exit(),
                             Key::F11 => {
-                                state
-                                    .video
-                                    .toggle_full_screen(
-                                        state.instance.wgpu_context(),
-                                        window_target,
-                                    )
-                                    .unwrap();
+                                state.video.toggle_full_screen(window_target).unwrap();
                             }
                             _ => (),
                         }
@@ -185,17 +179,11 @@ fn start_event_loop<T: MemoryMapper>(
                     state.audio.resync();
                 }
                 WindowEvent::Resized(..) => {
-                    state
-                        .video
-                        .on_window_size_changed(state.instance.wgpu_context())
-                        .unwrap();
+                    state.video.on_window_size_changed().unwrap();
                     state.audio.resync();
                 }
                 WindowEvent::ScaleFactorChanged { .. } => {
-                    state
-                        .video
-                        .on_window_size_changed(state.instance.wgpu_context())
-                        .unwrap();
+                    state.video.on_window_size_changed().unwrap();
                     state.audio.resync();
                 }
                 _ => (),
@@ -203,14 +191,11 @@ fn start_event_loop<T: MemoryMapper>(
             Event::UserEvent(AppEvent::Reset(options)) => {
                 state = ResetState::new(window_target, options).unwrap();
             }
-            Event::UserEvent(AppEvent::UpdateViewport) => state
-                .video
-                .update_viewport(state.instance.wgpu_context(), window_target),
+            Event::UserEvent(AppEvent::UpdateViewport) => {
+                state.video.update_viewport(window_target)
+            }
             Event::RedrawRequested(..) => {
-                state
-                    .video
-                    .render(state.instance.wgpu_context(), window_target)
-                    .unwrap();
+                state.video.render(window_target).unwrap();
             }
             Event::AboutToWait => {
                 state.gamepad.handle_events(&mut state.joypad_state);
@@ -231,11 +216,7 @@ fn start_event_loop<T: MemoryMapper>(
                     let source_size: PhysicalSize<u32> = state.instance.resolution().into();
 
                     if source_size != state.video.source_size() {
-                        state.video.set_source_size(
-                            state.instance.wgpu_context_mut(),
-                            window_target,
-                            source_size,
-                        );
+                        state.video.set_source_size(window_target, source_size);
                     }
                 }
 

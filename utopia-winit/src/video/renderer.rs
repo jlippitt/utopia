@@ -1,5 +1,6 @@
 use super::viewport::ClipRect;
 use std::error::Error;
+use std::sync::Arc;
 use utopia::WgpuContext;
 use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
@@ -34,6 +35,7 @@ const INDICES: &[u16] = &[
 ];
 
 pub struct Renderer {
+    ctx: WgpuContext,
     surface: wgpu::Surface,
     config: wgpu::SurfaceConfiguration,
     texture_bind_group: wgpu::BindGroup,
@@ -50,7 +52,7 @@ impl Renderer {
         target_size: PhysicalSize<u32>,
         clip_rect: Option<ClipRect>,
         vsync: bool,
-    ) -> Result<(Self, WgpuContext), Box<dyn Error>> {
+    ) -> Result<Self, Box<dyn Error>> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
             dx12_shader_compiler: Default::default(),
@@ -191,7 +193,14 @@ impl Renderer {
             usage: wgpu::BufferUsages::INDEX,
         });
 
-        let renderer = Self {
+        let ctx = WgpuContext {
+            device: Arc::new(device),
+            queue: Arc::new(queue),
+            texture: Arc::new(texture),
+        };
+
+        Ok(Self {
+            ctx,
             surface,
             config,
             texture_bind_group,
@@ -199,51 +208,51 @@ impl Renderer {
             render_pipeline,
             vertex_buffer,
             index_buffer,
-        };
-
-        let wgpu_context = WgpuContext {
-            device,
-            queue,
-            texture,
-        };
-
-        Ok((renderer, wgpu_context))
+        })
     }
 
-    pub fn resize(
-        &mut self,
-        ctx: &WgpuContext,
-        target_size: PhysicalSize<u32>,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn ctx(&self) -> &WgpuContext {
+        &self.ctx
+    }
+
+    pub fn resize(&mut self, target_size: PhysicalSize<u32>) -> Result<(), Box<dyn Error>> {
         if target_size.width > 0 && target_size.height > 0 {
             self.config.width = target_size.width;
             self.config.height = target_size.height;
-            self.surface.configure(&ctx.device, &self.config);
+            self.surface.configure(&self.ctx.device, &self.config);
         }
 
         Ok(())
     }
 
-    pub fn update_source_size(&mut self, ctx: &mut WgpuContext, source_size: PhysicalSize<u32>) {
-        (ctx.texture, self.texture_bind_group) =
-            create_texture(&ctx.device, &self.texture_bind_group_layout, source_size);
+    pub fn update_source_size(&mut self, source_size: PhysicalSize<u32>) {
+        (
+            *Arc::get_mut(&mut self.ctx.texture).unwrap(),
+            self.texture_bind_group,
+        ) = create_texture(
+            &self.ctx.device,
+            &self.texture_bind_group_layout,
+            source_size,
+        );
     }
 
-    pub fn update_clip_rect(&self, ctx: &WgpuContext, clip_rect: Option<ClipRect>) {
+    pub fn update_clip_rect(&self, clip_rect: Option<ClipRect>) {
         let vertices = vertices_from_clip_rect(clip_rect);
 
-        ctx.queue
+        self.ctx
+            .queue
             .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
     }
 
-    pub fn render(&mut self, ctx: &WgpuContext) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
 
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        let mut encoder = ctx
+        let mut encoder = self
+            .ctx
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
@@ -275,7 +284,7 @@ impl Renderer {
             render_pass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
         }
 
-        ctx.queue.submit(std::iter::once(encoder.finish()));
+        self.ctx.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
         Ok(())

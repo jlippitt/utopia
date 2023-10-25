@@ -30,7 +30,7 @@ impl VideoController {
         full_screen: bool,
         vsync: bool,
         #[cfg(target_arch = "wasm32")] canvas: HtmlCanvasElement,
-    ) -> Result<(Self, WgpuContext), Box<dyn Error>> {
+    ) -> Result<Self, Box<dyn Error>> {
         #[cfg(target_arch = "wasm32")]
         let view_target = &canvas;
 
@@ -60,7 +60,7 @@ impl VideoController {
 
         let window = window_builder.build(window_target)?;
 
-        let (renderer, wgpu_context) = Renderer::create_with_context(
+        let renderer = Renderer::create_with_context(
             &window,
             source_size,
             viewport.size(),
@@ -78,11 +78,15 @@ impl VideoController {
             full_screen,
         };
 
-        Ok((video, wgpu_context))
+        Ok(video)
     }
 
     pub fn window(&self) -> &Window {
         &self.window
+    }
+
+    pub fn ctx(&self) -> &WgpuContext {
+        self.renderer.ctx()
     }
 
     pub fn source_size(&self) -> PhysicalSize<u32> {
@@ -91,18 +95,16 @@ impl VideoController {
 
     pub fn set_source_size(
         &mut self,
-        ctx: &mut WgpuContext,
         window_target: &EventLoopWindowTarget<AppEvent<impl MemoryMapper>>,
         source_size: PhysicalSize<u32>,
     ) {
         self.source_size = source_size;
-        self.update_viewport(ctx, window_target);
-        self.renderer.update_source_size(ctx, source_size);
+        self.update_viewport(window_target);
+        self.renderer.update_source_size(source_size);
     }
 
     pub fn toggle_full_screen(
         &mut self,
-        _ctx: &WgpuContext,
         window_target: &EventLoopWindowTarget<AppEvent<impl MemoryMapper>>,
     ) -> Result<(), Box<dyn Error>> {
         self.full_screen = !self.full_screen;
@@ -129,15 +131,14 @@ impl VideoController {
         Ok(())
     }
 
-    pub fn on_window_size_changed(&mut self, ctx: &WgpuContext) -> Result<(), Box<dyn Error>> {
+    pub fn on_window_size_changed(&mut self) -> Result<(), Box<dyn Error>> {
         let new_size = self.window.inner_size();
-        self.renderer.resize(ctx, new_size)?;
+        self.renderer.resize(new_size)?;
         Ok(())
     }
 
     pub fn update_viewport(
         &mut self,
-        ctx: &WgpuContext,
         window_target: &EventLoopWindowTarget<AppEvent<impl MemoryMapper>>,
     ) {
         #[cfg(target_arch = "wasm32")]
@@ -161,23 +162,22 @@ impl VideoController {
                 .request_inner_size(Size::Physical(viewport.size()));
         }
 
-        self.renderer.update_clip_rect(ctx, viewport.clip_rect());
+        self.renderer.update_clip_rect(viewport.clip_rect());
     }
 
     pub fn render(
         &mut self,
-        ctx: &WgpuContext,
         window_target: &EventLoopWindowTarget<AppEvent<impl MemoryMapper>>,
     ) -> Result<(), Box<dyn Error>> {
         let monitor_size = self.window.current_monitor().unwrap().size();
 
         if monitor_size != self.prev_monitor_size {
             self.prev_monitor_size = monitor_size;
-            self.update_viewport(ctx, window_target);
-            self.on_window_size_changed(ctx)?;
+            self.update_viewport(window_target);
+            self.on_window_size_changed()?;
         }
 
-        self.renderer.render(ctx)?;
+        self.renderer.render()?;
 
         Ok(())
     }
