@@ -44,8 +44,12 @@ impl Viewport {
                 }
             } else {
                 let monitor_size = monitor.size();
-                let target_size = upscale(source_size, monitor_size);
-                let offset = center(target_size, monitor_size);
+
+                // HACK: Leave some space for the desktop environment
+                let usable_size = PhysicalSize::new(monitor_size.width, monitor_size.height - 80);
+
+                let target_size = upscale(source_size, usable_size);
+                let offset = center(target_size, usable_size);
 
                 Self {
                     size: target_size,
