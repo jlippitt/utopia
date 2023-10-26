@@ -1,7 +1,7 @@
 use address_mode::{ReadAddress, WriteAddress};
 use condition::Condition;
 use std::fmt;
-use tracing::debug;
+use tracing::trace;
 
 mod address_mode;
 mod condition;
@@ -605,29 +605,29 @@ impl<T: Bus> Core<T> {
     }
 
     fn idle(&mut self) {
-        debug!("  IO");
+        trace!("  IO");
         self.bus.idle();
     }
 
     fn read(&mut self, address: u16) -> u8 {
         let value = self.bus.read(address);
-        debug!("  {:04X} => {:02X}", address, value);
+        trace!("  {:04X} => {:02X}", address, value);
         value
     }
 
     fn write(&mut self, address: u16, value: u8) {
-        debug!("  {:04X} <= {:02X}", address, value);
+        trace!("  {:04X} <= {:02X}", address, value);
         self.bus.write(address, value);
     }
 
     fn read_high(&mut self, address: u8) -> u8 {
         let value = self.bus.read_high(address);
-        debug!("  FF{:02X} => {:02X}", address, value);
+        trace!("  FF{:02X} => {:02X}", address, value);
         value
     }
 
     fn write_high(&mut self, address: u8, value: u8) {
-        debug!("  FF{:02X} <= {:02X}", address, value);
+        trace!("  FF{:02X} <= {:02X}", address, value);
         self.bus.write_high(address, value);
     }
 

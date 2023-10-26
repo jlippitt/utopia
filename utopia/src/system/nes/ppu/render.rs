@@ -1,6 +1,6 @@
 use super::super::cartridge::Cartridge;
 use crate::Mapped;
-use tracing::debug;
+use tracing::trace;
 
 const ATTR_SHIFT: [u32; 4] = [0, 0x5555, 0xaaaa, 0xffff];
 
@@ -135,7 +135,7 @@ impl super::Ppu {
 
             if index == 0 && self.sprite_zero_selected && bg_present && self.dot != 255 {
                 self.status.sprite_zero_hit = true;
-                debug!("Sprite Zero Hit: {}", self.status.sprite_zero_hit);
+                trace!("Sprite Zero Hit: {}", self.status.sprite_zero_hit);
             }
 
             if sprite_present {
@@ -253,12 +253,12 @@ impl super::Ppu {
 
     fn copy_horizontal(&mut self) {
         self.regs.v = (self.regs.v & 0x7be0) | (self.regs.t & 0x041f);
-        debug!("PPU VRAM Address (Copy Horizontal): {:04X}", self.regs.v);
+        trace!("PPU VRAM Address (Copy Horizontal): {:04X}", self.regs.v);
     }
 
     fn copy_vertical(&mut self) {
         self.regs.v = (self.regs.v & 0x041f) | (self.regs.t & 0x7be0);
-        debug!("PPU VRAM Address (Copy Vertical): {:04X}", self.regs.v);
+        trace!("PPU VRAM Address (Copy Vertical): {:04X}", self.regs.v);
     }
 
     fn increment_horizontal(&mut self) {
@@ -286,7 +286,7 @@ impl super::Ppu {
             self.regs.v += 0x1000;
         }
 
-        debug!("PPU VRAM Address (Increment Vertical): {:04X}", self.regs.v);
+        trace!("PPU VRAM Address (Increment Vertical): {:04X}", self.regs.v);
     }
 
     fn tile_address(&self) -> u16 {

@@ -1,21 +1,21 @@
 use super::super::{Bus, Core, Mode, EMULATION_STACK_PAGE};
 use std::mem;
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 
 pub fn nop(core: &mut Core<impl Bus>) {
-    debug!("NOP");
+    trace!("NOP");
     core.poll();
     core.idle();
 }
 
 pub fn wdm(core: &mut Core<impl Bus>) {
-    debug!("WDM #const");
+    trace!("WDM #const");
     core.poll();
     core.next_byte();
 }
 
 pub fn xba(core: &mut Core<impl Bus>) {
-    debug!("XBA");
+    trace!("XBA");
     core.poll();
     core.idle();
     core.idle();
@@ -24,7 +24,7 @@ pub fn xba(core: &mut Core<impl Bus>) {
 }
 
 pub fn xce(core: &mut Core<impl Bus>) {
-    debug!("XCE");
+    trace!("XCE");
     core.poll();
     core.idle();
 
@@ -42,13 +42,13 @@ pub fn xce(core: &mut Core<impl Bus>) {
 }
 
 pub fn wai(core: &mut Core<impl Bus>) {
-    debug!("WAI");
+    trace!("WAI");
     core.idle();
     core.waiting = true;
 }
 
 pub fn stp(core: &mut Core<impl Bus>) {
-    debug!("STP");
+    trace!("STP");
     core.idle();
     core.stopped = true;
     warn!("Processor stopped");

@@ -1,8 +1,8 @@
 use super::super::{Bus, Core};
-use tracing::debug;
+use tracing::trace;
 
 pub fn jmp(core: &mut Core<impl Bus>) {
-    debug!("JMP addr");
+    trace!("JMP addr");
     let low = core.next_byte();
     core.poll();
     let high = core.next_byte();
@@ -11,7 +11,7 @@ pub fn jmp(core: &mut Core<impl Bus>) {
 }
 
 pub fn jmp_long(core: &mut Core<impl Bus>) {
-    debug!("JMP long");
+    trace!("JMP long");
     let low = core.next_byte();
     let high = core.next_byte();
     core.poll();
@@ -20,7 +20,7 @@ pub fn jmp_long(core: &mut Core<impl Bus>) {
 }
 
 pub fn jmp_indirect(core: &mut Core<impl Bus>) {
-    debug!("JMP (addr)");
+    trace!("JMP (addr)");
     let low_address = core.next_word();
     let low = core.read(low_address as u32);
     core.poll();
@@ -31,7 +31,7 @@ pub fn jmp_indirect(core: &mut Core<impl Bus>) {
 }
 
 pub fn jmp_x_indirect(core: &mut Core<impl Bus>) {
-    debug!("JMP (addr,X)");
+    trace!("JMP (addr,X)");
     let low_address = core.next_word().wrapping_add(core.x);
     core.idle();
     let low = core.read((core.pc & 0xffff_0000) | low_address as u32);
@@ -43,7 +43,7 @@ pub fn jmp_x_indirect(core: &mut Core<impl Bus>) {
 }
 
 pub fn jmp_indirect_long(core: &mut Core<impl Bus>) {
-    debug!("JMP [addr]");
+    trace!("JMP [addr]");
     let low_address = core.next_word();
     let low = core.read(low_address as u32);
     let high_address = low_address.wrapping_add(1);
@@ -55,7 +55,7 @@ pub fn jmp_indirect_long(core: &mut Core<impl Bus>) {
 }
 
 pub fn jsr<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("JSR addr");
+    trace!("JSR addr");
     let low = core.next_byte();
     let high = core.read(core.pc);
     let target = u16::from_le_bytes([low, high]);
@@ -67,7 +67,7 @@ pub fn jsr<const E: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn jsr_x_indirect<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("JSR (addr,X)");
+    trace!("JSR (addr,X)");
     let low_base = core.next_byte();
     core.push::<E>((core.pc >> 8) as u8);
     core.push::<E>(core.pc as u8);
@@ -84,7 +84,7 @@ pub fn jsr_x_indirect<const E: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn jsl<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("JSL long");
+    trace!("JSL long");
     let low = core.next_byte();
     let high = core.next_byte();
     core.push::<E>((core.pc >> 16) as u8);
@@ -97,7 +97,7 @@ pub fn jsl<const E: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn brl(core: &mut Core<impl Bus>) {
-    debug!("BRL label");
+    trace!("BRL label");
     let offset = core.next_word();
     core.poll();
     core.idle();
@@ -105,7 +105,7 @@ pub fn brl(core: &mut Core<impl Bus>) {
 }
 
 pub fn rts<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("RTS");
+    trace!("RTS");
     core.idle();
     core.idle();
     let low = core.pull::<E>();
@@ -117,7 +117,7 @@ pub fn rts<const E: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn rtl<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("RTL");
+    trace!("RTL");
     core.idle();
     core.idle();
     let low = core.pull::<E>();
@@ -129,7 +129,7 @@ pub fn rtl<const E: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn rti<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("RTI");
+    trace!("RTI");
     core.idle();
     core.idle();
     let flags = core.pull::<E>();

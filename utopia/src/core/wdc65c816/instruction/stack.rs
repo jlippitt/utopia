@@ -1,6 +1,6 @@
 use super::super::address_mode::{AddressMode, DirectIndirect};
 use super::super::{Bus, Core};
-use tracing::debug;
+use tracing::trace;
 
 fn push_register<const E: bool, const MX: bool>(core: &mut Core<impl Bus>, value: u16) {
     core.idle();
@@ -34,14 +34,14 @@ fn pull_register<const E: bool, const MX: bool>(core: &mut Core<impl Bus>, mask:
 }
 
 pub fn php<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("PHP");
+    trace!("PHP");
     core.idle();
     core.poll();
     core.push::<E>(core.flags_to_u8::<E>(true));
 }
 
 pub fn plp<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("PLP");
+    trace!("PLP");
     core.idle();
     core.idle();
     core.poll();
@@ -50,51 +50,51 @@ pub fn plp<const E: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn pha<const E: bool, const M: bool>(core: &mut Core<impl Bus>) {
-    debug!("PHA.{}", super::size(M));
+    trace!("PHA.{}", super::size(M));
     push_register::<E, M>(core, core.a);
 }
 
 pub fn pla<const E: bool, const M: bool>(core: &mut Core<impl Bus>) {
-    debug!("PLA.{}", super::size(M));
+    trace!("PLA.{}", super::size(M));
     core.a = pull_register::<E, M>(core, core.a & 0xff00);
 }
 
 pub fn phx<const E: bool, const X: bool>(core: &mut Core<impl Bus>) {
-    debug!("PHX.{}", super::size(X));
+    trace!("PHX.{}", super::size(X));
     push_register::<E, X>(core, core.x);
 }
 
 pub fn plx<const E: bool, const X: bool>(core: &mut Core<impl Bus>) {
-    debug!("PLX.{}", super::size(X));
+    trace!("PLX.{}", super::size(X));
     core.x = pull_register::<E, X>(core, 0);
 }
 
 pub fn phy<const E: bool, const X: bool>(core: &mut Core<impl Bus>) {
-    debug!("PHY.{}", super::size(X));
+    trace!("PHY.{}", super::size(X));
     push_register::<E, X>(core, core.y);
 }
 
 pub fn ply<const E: bool, const X: bool>(core: &mut Core<impl Bus>) {
-    debug!("PLY.{}", super::size(X));
+    trace!("PLY.{}", super::size(X));
     core.y = pull_register::<E, X>(core, 0);
 }
 
 pub fn phk<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("PHK");
+    trace!("PHK");
     core.idle();
     core.poll();
     core.push::<E>((core.pc >> 16) as u8);
 }
 
 pub fn phb<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("PHB");
+    trace!("PHB");
     core.idle();
     core.poll();
     core.push::<E>((core.dbr >> 16) as u8);
 }
 
 pub fn plb<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("PLB");
+    trace!("PLB");
     core.idle();
     core.idle();
     core.poll();
@@ -104,7 +104,7 @@ pub fn plb<const E: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn phd<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("PHD");
+    trace!("PHD");
     core.idle();
     core.push::<E>((core.d >> 8) as u8);
     core.poll();
@@ -112,7 +112,7 @@ pub fn phd<const E: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn pld<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("PLD");
+    trace!("PLD");
     core.idle();
     core.idle();
     let low = core.pull::<E>();
@@ -123,7 +123,7 @@ pub fn pld<const E: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn pea<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("PEA addr");
+    trace!("PEA addr");
     let target = core.next_word();
     core.push::<E>((target >> 8) as u8);
     core.poll();
@@ -131,7 +131,7 @@ pub fn pea<const E: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn pei<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("PEI (dp)");
+    trace!("PEI (dp)");
     let target = DirectIndirect::<false>::resolve(core, true);
     core.push::<E>((target >> 8) as u8);
     core.poll();
@@ -139,7 +139,7 @@ pub fn pei<const E: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn per<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("PER label");
+    trace!("PER label");
     let offset = core.next_word();
     let target = (core.pc as u16).wrapping_add(offset);
     core.push::<E>((target >> 8) as u8);

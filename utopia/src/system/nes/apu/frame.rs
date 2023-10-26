@@ -1,5 +1,5 @@
 use super::super::interrupt::{Interrupt, InterruptType};
-use tracing::debug;
+use tracing::trace;
 
 const STEPS: [u64; 5] = [7458, 14914, 22372, 29830, 37282];
 
@@ -42,10 +42,10 @@ impl FrameCounter {
         } else {
             Mode::Short
         };
-        debug!("Frame Counter Mode: {:?}", self.mode);
+        trace!("Frame Counter Mode: {:?}", self.mode);
 
         self.irq_inhibit = (value & 0x40) != 0;
-        debug!("Frame Counter IRQ Inhibit: {}", self.irq_inhibit);
+        trace!("Frame Counter IRQ Inhibit: {}", self.irq_inhibit);
 
         if self.irq_inhibit {
             self.interrupt.clear(InterruptType::FrameIrq);
@@ -107,9 +107,10 @@ impl FrameCounter {
 
         self.target_cycles = STEPS[self.step as usize];
 
-        debug!(
+        trace!(
             "Frame Counter Step: {} (Target Cycles: {})",
-            self.step, self.target_cycles
+            self.step,
+            self.target_cycles
         );
 
         frame

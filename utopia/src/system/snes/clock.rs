@@ -2,7 +2,7 @@ use crate::core::wdc65c816::{Interrupt, INT_NMI};
 use std::fmt;
 use std::iter::Peekable;
 use std::slice;
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 
 pub const FAST_CYCLES: u64 = 6;
 pub const SLOW_CYCLES: u64 = 8;
@@ -123,7 +123,7 @@ impl Clock {
 
     pub fn set_interlace(&mut self, interlace: bool) {
         self.interlace = interlace;
-        debug!("Screen Interlace: {}", self.interlace);
+        trace!("Screen Interlace: {}", self.interlace);
     }
 
     pub fn set_nmi_occurred(&mut self, interrupt: &mut Interrupt, nmi_occurred: bool) {
@@ -134,7 +134,7 @@ impl Clock {
         }
 
         self.nmi_occurred = nmi_occurred;
-        debug!("NMI Occurred: {}", self.nmi_occurred);
+        trace!("NMI Occurred: {}", self.nmi_occurred);
     }
 
     pub fn set_nmi_active(&mut self, interrupt: &mut Interrupt, nmi_active: bool) {
@@ -145,7 +145,7 @@ impl Clock {
         }
 
         self.nmi_active = nmi_active;
-        debug!("NMI Active: {}", self.nmi_active);
+        trace!("NMI Active: {}", self.nmi_active);
     }
 
     pub fn set_irq_mode(&mut self, interrupt: &mut Interrupt, value: u8) {
@@ -157,7 +157,7 @@ impl Clock {
             _ => panic!("Invalid IRQ mode: {}", value),
         };
 
-        debug!("IRQ Mode: {:?}", self.irq_mode);
+        trace!("IRQ Mode: {:?}", self.irq_mode);
 
         if self.irq_mode == IrqMode::None {
             *interrupt &= !TIMER_IRQ;
@@ -168,25 +168,25 @@ impl Clock {
 
     pub fn set_irq_x_low(&mut self, value: u8) {
         self.irq_x = (self.irq_x & 0xff00) | (value as u16);
-        debug!("IRQ X: {}", self.irq_x);
+        trace!("IRQ X: {}", self.irq_x);
         self.update_irq_cycle(false);
     }
 
     pub fn set_irq_x_high(&mut self, value: u8) {
         self.irq_x = (self.irq_x & 0xff) | ((value as u16 & 0x01) << 8);
-        debug!("IRQ X: {}", self.irq_x);
+        trace!("IRQ X: {}", self.irq_x);
         self.update_irq_cycle(false);
     }
 
     pub fn set_irq_y_low(&mut self, value: u8) {
         self.irq_y = (self.irq_y & 0xff00) | (value as u16);
-        debug!("IRQ Y: {}", self.irq_y);
+        trace!("IRQ Y: {}", self.irq_y);
         self.update_irq_cycle(false);
     }
 
     pub fn set_irq_y_high(&mut self, value: u8) {
         self.irq_y = (self.irq_y & 0xff) | ((value as u16 & 0x01) << 8);
-        debug!("IRQ Y: {}", self.irq_y);
+        trace!("IRQ Y: {}", self.irq_y);
         self.update_irq_cycle(false);
     }
 
@@ -197,7 +197,7 @@ impl Clock {
         }
 
         self.fast_rom_cycles = if enabled { FAST_CYCLES } else { SLOW_CYCLES };
-        debug!("FastROM Cycles: {}", self.fast_rom_cycles);
+        trace!("FastROM Cycles: {}", self.fast_rom_cycles);
     }
 
     pub fn add_cycles(&mut self, cycles: u64) {
@@ -225,7 +225,7 @@ impl Clock {
                     self.total_lines += 1;
                 };
 
-                debug!("Total Lines: {}", self.total_lines);
+                trace!("Total Lines: {}", self.total_lines);
             }
 
             self.update_irq_cycle(true);

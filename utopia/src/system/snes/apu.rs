@@ -4,7 +4,7 @@ use crate::AudioQueue;
 use dsp::Dsp;
 use std::fmt;
 use timer::Timer;
-use tracing::{debug, debug_span};
+use tracing::{debug_span, trace};
 
 mod dsp;
 mod timer;
@@ -41,15 +41,15 @@ impl Apu {
     pub fn write(&mut self, address: u8, value: u8) {
         let index = address as usize & 3;
         self.core.bus_mut().input_ports[index] = value;
-        debug!("APU Input Port {}: {:02X}", index, value);
+        trace!("APU Input Port {}: {:02X}", index, value);
     }
 
     pub fn run_until(&mut self, cpu_cycles: u64) {
-        debug!("[CPU:{} => APU:{}]", cpu_cycles, self.core.bus().cycles);
+        trace!("[CPU:{} => APU:{}]", cpu_cycles, self.core.bus().cycles);
 
         let _span = debug_span!("spc700").entered();
 
-        debug!("[CPU:{} => APU:{}]", cpu_cycles, self.core.bus().cycles);
+        trace!("[CPU:{} => APU:{}]", cpu_cycles, self.core.bus().cycles);
 
         self.core.bus_mut().time_remaining +=
             (cpu_cycles - self.prev_cpu_cycles) as i64 * APU_CLOCK_RATE;
@@ -58,7 +58,7 @@ impl Apu {
 
         while self.core.bus().time_remaining > 0 {
             self.core.step();
-            debug!("{}", self.core);
+            trace!("{}", self.core);
         }
     }
 }
@@ -149,24 +149,24 @@ impl Bus for Hardware {
                     if (value & 0x10) != 0 {
                         self.input_ports[0] = 0;
                         self.input_ports[1] = 0;
-                        debug!("Input Ports 0 & 1 Reset");
+                        trace!("Input Ports 0 & 1 Reset");
                     }
 
                     if (value & 0x20) != 0 {
                         self.input_ports[2] = 0;
                         self.input_ports[3] = 0;
-                        debug!("Input Ports 2 & 3 Reset");
+                        trace!("Input Ports 2 & 3 Reset");
                     }
 
                     self.ipl_rom_enabled = (value & 0x80) != 0;
-                    debug!("IPL ROM Enabled: {}", self.ipl_rom_enabled);
+                    trace!("IPL ROM Enabled: {}", self.ipl_rom_enabled);
                 }
                 0x02 => self.dsp.set_address(value),
                 0x03 => self.dsp.write(value),
                 0x04..=0x07 => {
                     let index = address as usize & 3;
                     self.output_ports[index] = value;
-                    debug!("APU Output Port {}: {:02X}", index, value);
+                    trace!("APU Output Port {}: {:02X}", index, value);
                 }
                 0x0a => self.timers[0].set_divider(value),
                 0x0b => self.timers[1].set_divider(value),

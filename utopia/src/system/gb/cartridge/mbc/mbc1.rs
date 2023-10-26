@@ -1,5 +1,5 @@
 use super::{Mappings, Mbc, RamMapping};
-use tracing::debug;
+use tracing::trace;
 
 pub struct Mbc1 {
     ram_enable: bool,
@@ -38,8 +38,8 @@ impl Mbc1 {
         let rom_bank = high_bank_offset + (self.register[0] as usize);
         mappings.rom[1] = Mappings::ROM_PAGE_SIZE * rom_bank;
 
-        debug!("MBC1 ROM Mapping: {:?}", mappings.rom);
-        debug!("MBC1 RAM Mapping: {:?}", mappings.ram);
+        trace!("MBC1 ROM Mapping: {:?}", mappings.rom);
+        trace!("MBC1 RAM Mapping: {:?}", mappings.ram);
     }
 }
 
@@ -52,7 +52,7 @@ impl Mbc for Mbc1 {
         match address & 0xe000 {
             0x0000 => {
                 self.ram_enable = (value & 0x0f) == 0x0a;
-                debug!("MBC1 RAM Enable: {}", self.ram_enable);
+                trace!("MBC1 RAM Enable: {}", self.ram_enable);
             }
             0x2000 => {
                 self.register[0] = value & 0x1f;
@@ -62,15 +62,15 @@ impl Mbc for Mbc1 {
                     self.register[0] = 1;
                 }
 
-                debug!("MBC1 Register 0: {:02X}", self.register[0]);
+                trace!("MBC1 Register 0: {:02X}", self.register[0]);
             }
             0x4000 => {
                 self.register[1] = value & 0x03;
-                debug!("MBC1 Register 1: {:02X}", self.register[1]);
+                trace!("MBC1 Register 1: {:02X}", self.register[1]);
             }
             0x6000 => {
                 self.mode = (value & 0x01) != 0;
-                debug!("MBC1 Mode: {}", self.mode);
+                trace!("MBC1 Mode: {}", self.mode);
             }
             _ => unreachable!(),
         }

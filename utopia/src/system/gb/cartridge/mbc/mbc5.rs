@@ -1,5 +1,5 @@
 use super::{Mappings, Mbc, RamMapping};
-use tracing::debug;
+use tracing::trace;
 
 pub struct Mbc5 {
     ram_enable: bool,
@@ -26,8 +26,8 @@ impl Mbc5 {
         mappings.rom[0] = 0;
         mappings.rom[1] = Mappings::ROM_PAGE_SIZE * self.rom_bank as usize;
 
-        debug!("MBC5 ROM Mapping: {:?}", mappings.rom);
-        debug!("MBC5 RAM Mapping: {:?}", mappings.ram);
+        trace!("MBC5 ROM Mapping: {:?}", mappings.rom);
+        trace!("MBC5 RAM Mapping: {:?}", mappings.ram);
     }
 }
 
@@ -40,19 +40,19 @@ impl Mbc for Mbc5 {
         match address & 0xf000 {
             0x0000 | 0x1000 => {
                 self.ram_enable = (value & 0x0f) == 0x0a;
-                debug!("MBC5 RAM Enable: {}", self.ram_enable);
+                trace!("MBC5 RAM Enable: {}", self.ram_enable);
             }
             0x2000 => {
                 self.rom_bank = (self.rom_bank & 0xff00) | value as u16;
-                debug!("MBC5 ROM Bank: {:02X}", self.rom_bank);
+                trace!("MBC5 ROM Bank: {:02X}", self.rom_bank);
             }
             0x3000 => {
                 self.rom_bank = (self.rom_bank & 0xff) | ((value as u16 & 0x01) << 8);
-                debug!("MBC5 ROM Bank: {:02X}", self.rom_bank);
+                trace!("MBC5 ROM Bank: {:02X}", self.rom_bank);
             }
             0x4000 | 0x5000 => {
                 self.ram_bank = value & 0x0f;
-                debug!("MBC5 RAM Bank: {}", self.ram_bank);
+                trace!("MBC5 RAM Bank: {}", self.ram_bank);
             }
             _ => unimplemented!("MBC5 Register Write: {:04X} <= {:02X}", address, value),
         }

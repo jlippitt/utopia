@@ -1,8 +1,8 @@
 use super::super::{Bus, Core};
-use tracing::debug;
+use tracing::trace;
 
 pub fn decw(core: &mut Core<impl Bus>) {
-    debug!("DECW d");
+    trace!("DECW d");
 
     let low_address = core.next_byte();
     let low_value = core.read_direct(low_address);
@@ -19,7 +19,7 @@ pub fn decw(core: &mut Core<impl Bus>) {
 }
 
 pub fn incw(core: &mut Core<impl Bus>) {
-    debug!("INCW d");
+    trace!("INCW d");
 
     let low_address = core.next_byte();
     let low_value = core.read_direct(low_address);
@@ -36,7 +36,7 @@ pub fn incw(core: &mut Core<impl Bus>) {
 }
 
 pub fn cmpw(core: &mut Core<impl Bus>) {
-    debug!("CMPW YA, d");
+    trace!("CMPW YA, d");
 
     let low_address = core.next_byte();
     let low = core.read_direct(low_address);
@@ -55,7 +55,7 @@ pub fn cmpw(core: &mut Core<impl Bus>) {
 }
 
 pub fn addw(core: &mut Core<impl Bus>) {
-    debug!("ADDW YA, d");
+    trace!("ADDW YA, d");
 
     let low_address = core.next_byte();
     let low = core.read_direct(low_address);
@@ -79,7 +79,7 @@ pub fn addw(core: &mut Core<impl Bus>) {
 }
 
 pub fn subw(core: &mut Core<impl Bus>) {
-    debug!("SUBW YA, d");
+    trace!("SUBW YA, d");
 
     let low_address = core.next_byte();
     let low = core.read_direct(low_address);
@@ -103,7 +103,7 @@ pub fn subw(core: &mut Core<impl Bus>) {
 }
 
 pub fn movw_read(core: &mut Core<impl Bus>) {
-    debug!("MOVW YA, d");
+    trace!("MOVW YA, d");
     let low_address = core.next_byte();
     core.a = core.read_direct(low_address);
     core.idle();
@@ -114,7 +114,7 @@ pub fn movw_read(core: &mut Core<impl Bus>) {
 }
 
 pub fn movw_write(core: &mut Core<impl Bus>) {
-    debug!("MOVW d, YA");
+    trace!("MOVW d, YA");
     let low_address = core.next_byte();
     core.read_direct(low_address);
     core.write_direct(low_address, core.a);

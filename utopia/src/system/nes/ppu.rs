@@ -7,7 +7,7 @@ use oam::Oam;
 use palette::Palette;
 use render::RenderState;
 use screen::Screen;
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 
 mod oam;
 mod palette;
@@ -130,7 +130,7 @@ impl Ppu {
                 if self.status.nmi_occurred {
                     result |= 0x80;
                     self.status.nmi_occurred = false;
-                    debug!("NMI Occurred: {}", self.status.nmi_occurred);
+                    trace!("NMI Occurred: {}", self.status.nmi_occurred);
                     self.interrupt.clear(InterruptType::Nmi);
                 }
 
@@ -154,9 +154,11 @@ impl Ppu {
 
                 self.read_buffer = cartridge.read_vram(address);
 
-                debug!(
+                trace!(
                     "VRAM Read: {:04X} => {:02X} ({:02X})",
-                    address, value, self.read_buffer
+                    address,
+                    value,
+                    self.read_buffer
                 );
 
                 self.regs.v = (self.regs.v + self.control.vram_increment) & 0x7fff;
@@ -165,7 +167,7 @@ impl Ppu {
                 value
             }
             _ => {
-                debug!("Unmapped PPU read {:04X}:", address);
+                trace!("Unmapped PPU read {:04X}:", address);
                 // TODO: PPU Open Bus
                 0
             }
@@ -190,12 +192,12 @@ impl Ppu {
                 self.control.vram_increment = if (value & 0x04) != 0 { 32 } else { 1 };
                 self.regs.t = (self.regs.t & 0x73ff) | ((value as u16 & 0x03) << 10);
 
-                debug!("PPU NMI Active: {}", self.control.nmi_active);
-                debug!("PPU Sprite Size: {}", 8 << self.control.sprite_size as u32);
-                debug!("PPU BG CHR Offset: {}", self.control.bg_chr_offset);
-                debug!("PPU Sprite CHR Offset: {}", self.control.sprite_chr_offset);
-                debug!("PPU VRAM Increment: {}", self.control.vram_increment);
-                debug!("PPU TMP Address: {:04X}", self.regs.t);
+                trace!("PPU NMI Active: {}", self.control.nmi_active);
+                trace!("PPU Sprite Size: {}", 8 << self.control.sprite_size as u32);
+                trace!("PPU BG CHR Offset: {}", self.control.bg_chr_offset);
+                trace!("PPU Sprite CHR Offset: {}", self.control.sprite_chr_offset);
+                trace!("PPU VRAM Increment: {}", self.control.vram_increment);
+                trace!("PPU TMP Address: {:04X}", self.regs.t);
             }
             1 => {
                 self.mask.render_enabled = (value & 0x18) != 0;
@@ -212,9 +214,9 @@ impl Ppu {
                     _ => i32::MAX,
                 };
 
-                debug!("PPU Render Enabled: {}", self.mask.render_enabled);
-                debug!("PPU BG Start: {}", self.mask.bg_start);
-                debug!("PPU Sprite Start: {}", self.mask.sprite_start);
+                trace!("PPU Render Enabled: {}", self.mask.render_enabled);
+                trace!("PPU BG Start: {}", self.mask.bg_start);
+                trace!("PPU Sprite Start: {}", self.mask.sprite_start);
             }
             3 => self.oam.set_address(value),
             4 => self.oam.write(value),
@@ -223,12 +225,12 @@ impl Ppu {
                     self.regs.t = (self.regs.t & 0x0c1f)
                         | ((value as u16 & 0xf8) << 2)
                         | ((value as u16 & 0x07) << 12);
-                    debug!("PPU TMP Address: {:04X}", self.regs.t);
+                    trace!("PPU TMP Address: {:04X}", self.regs.t);
                 } else {
                     self.regs.t = (self.regs.t & 0x7fe0) | ((value >> 3) as u16);
                     self.regs.x = value & 0x07;
-                    debug!("PPU TMP Address: {:04X}", self.regs.t);
-                    debug!("PPU Fine X: {}", self.regs.x);
+                    trace!("PPU TMP Address: {:04X}", self.regs.t);
+                    trace!("PPU Fine X: {}", self.regs.x);
                 }
 
                 self.regs.w = !self.regs.w;
@@ -237,12 +239,12 @@ impl Ppu {
                 if self.regs.w {
                     self.regs.t = (self.regs.t & 0xff00) | value as u16;
                     self.regs.v = self.regs.t;
-                    debug!("PPU TMP Address: {:04X}", self.regs.t);
-                    debug!("PPU VRAM Address: {:04X}", self.regs.v);
+                    trace!("PPU TMP Address: {:04X}", self.regs.t);
+                    trace!("PPU VRAM Address: {:04X}", self.regs.v);
                     cartridge.on_ppu_address_changed(self.regs.v);
                 } else {
                     self.regs.t = (self.regs.t & 0xff) | ((value as u16 & 0x3f) << 8);
-                    debug!("PPU TMP Address: {:04X}", self.regs.t);
+                    trace!("PPU TMP Address: {:04X}", self.regs.t);
                 }
 
                 self.regs.w = !self.regs.w;
@@ -250,7 +252,7 @@ impl Ppu {
             7 => {
                 let address = self.regs.v & 0x3fff;
 
-                debug!("VRAM Write: {:04X} = {:02X}", address, value);
+                trace!("VRAM Write: {:04X} = {:02X}", address, value);
 
                 if address >= 0x3f00 {
                     self.palette.write(address, value);
@@ -295,7 +297,7 @@ impl Ppu {
             self.ready = true;
 
             self.status.nmi_occurred = true;
-            debug!("PPU NMI Occurred: {}", self.status.nmi_occurred);
+            trace!("PPU NMI Occurred: {}", self.status.nmi_occurred);
 
             if self.control.nmi_active {
                 self.interrupt.raise(InterruptType::Nmi);
@@ -304,12 +306,12 @@ impl Ppu {
             self.line = PRE_RENDER_LINE;
 
             self.status.nmi_occurred = false;
-            debug!("PPU NMI Occurred: {}", self.status.nmi_occurred);
+            trace!("PPU NMI Occurred: {}", self.status.nmi_occurred);
 
             self.interrupt.clear(InterruptType::Nmi);
 
             self.status.sprite_zero_hit = false;
-            debug!("Sprite Zero Hit: {}", self.status.sprite_zero_hit);
+            trace!("Sprite Zero Hit: {}", self.status.sprite_zero_hit);
         }
     }
 }

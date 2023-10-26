@@ -1,10 +1,13 @@
 use super::super::{Bus, Core, REGS};
-use tracing::debug;
+use tracing::trace;
 
 pub fn addi(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} ADDI {}, {}, {}",
-        core.pc, REGS[rt], REGS[rs], value as i16
+        core.pc,
+        REGS[rt],
+        REGS[rs],
+        value as i16
     );
 
     let ivalue = value as i16 as i32;
@@ -18,9 +21,12 @@ pub fn addi(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
 }
 
 pub fn addiu(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} ADDIU {}, {}, {}",
-        core.pc, REGS[rt], REGS[rs], value as i16
+        core.pc,
+        REGS[rt],
+        REGS[rs],
+        value as i16
     );
 
     let ivalue = value as i16 as i32 as u32;

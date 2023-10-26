@@ -1,5 +1,5 @@
 use super::super::{Bus, Core, IrqDisable};
-use tracing::debug;
+use tracing::trace;
 
 const NATIVE_COP_VECTOR: u16 = 0xffe4;
 const NATIVE_BRK_VECTOR: u16 = 0xffe6;
@@ -30,7 +30,7 @@ fn jump_to_vector(core: &mut Core<impl Bus>, vector: u16) {
 }
 
 pub fn reset(core: &mut Core<impl Bus>) {
-    debug!("RESET");
+    trace!("RESET");
     core.idle();
 
     for _ in 0..=2 {
@@ -42,7 +42,7 @@ pub fn reset(core: &mut Core<impl Bus>) {
 }
 
 pub fn nmi<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("NMI");
+    trace!("NMI");
     core.idle();
     push_state::<E>(core, false);
 
@@ -56,7 +56,7 @@ pub fn nmi<const E: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn irq<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("IRQ");
+    trace!("IRQ");
     core.idle();
     push_state::<E>(core, false);
 
@@ -70,7 +70,7 @@ pub fn irq<const E: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn brk<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("BRK #const");
+    trace!("BRK #const");
     core.next_byte();
     push_state::<E>(core, true);
 
@@ -84,7 +84,7 @@ pub fn brk<const E: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn cop<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("COP #const");
+    trace!("COP #const");
     core.next_byte();
     push_state::<E>(core, true);
 

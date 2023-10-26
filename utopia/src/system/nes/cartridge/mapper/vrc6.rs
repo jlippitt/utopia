@@ -4,7 +4,7 @@ use super::{
 };
 use pulse::Pulse;
 use saw::Saw;
-use tracing::debug;
+use tracing::trace;
 
 mod pulse;
 mod saw;
@@ -53,15 +53,15 @@ impl Mapper for Vrc6 {
     fn init_mappings(&mut self, mappings: &mut Mappings) {
         mappings.map_prg_rom(14, 2, self.prg_rom_size - PRG_BANK_SIZE);
         mappings.map_registers(8, 8);
-        debug!("VRC6 PRG Read Mappings: {:?}", mappings.prg_read);
-        debug!("VRC6 PRG Write Mappings: {:?}", mappings.prg_write);
+        trace!("VRC6 PRG Read Mappings: {:?}", mappings.prg_read);
+        trace!("VRC6 PRG Write Mappings: {:?}", mappings.prg_write);
     }
 
     fn write_register(&mut self, mappings: &mut Mappings, address: u16, value: u8) {
         match address & 0xf003 {
             0x8000..=0x8003 => {
                 mappings.map_prg_rom(8, 4, PRG_BANK_SIZE * 2 * (value as usize & 0x0f));
-                debug!("VRC6 PRG Read Mappings: {:?}", mappings.prg_read);
+                trace!("VRC6 PRG Read Mappings: {:?}", mappings.prg_read);
             }
             0x9000 => self.pulse1.set_control(value),
             0x9001 => self.pulse1.set_freq_period_low(value),
@@ -81,8 +81,8 @@ impl Mapper for Vrc6 {
                 self.pulse2.set_freq_shift(freq_shift);
                 self.saw.set_freq_shift(freq_shift);
 
-                debug!("VRC6 Audio Halted: {}", self.audio_halted);
-                debug!("VRC6 Frequency Shift: {}", freq_shift);
+                trace!("VRC6 Audio Halted: {}", self.audio_halted);
+                trace!("VRC6 Frequency Shift: {}", freq_shift);
             }
             0xa000 => self.pulse2.set_control(value),
             0xa001 => self.pulse2.set_freq_period_low(value),
@@ -109,17 +109,17 @@ impl Mapper for Vrc6 {
                     mappings.unmap_prg(6, 2);
                 }
 
-                debug!("VRC6 PRG Read Mappings: {:?}", mappings.prg_read);
-                debug!("VRC6 PRG Write Mappings: {:?}", mappings.prg_write);
-                debug!("VRC6 Name Mappings: {:?}", mappings.name);
+                trace!("VRC6 PRG Read Mappings: {:?}", mappings.prg_read);
+                trace!("VRC6 PRG Write Mappings: {:?}", mappings.prg_write);
+                trace!("VRC6 Name Mappings: {:?}", mappings.name);
             }
             0xc000..=0xc003 => {
                 mappings.map_prg_rom(12, 2, PRG_BANK_SIZE * (value as usize & 0x1f));
-                debug!("VRC6 PRG Read Mappings: {:?}", mappings.prg_read);
+                trace!("VRC6 PRG Read Mappings: {:?}", mappings.prg_read);
             }
             0xd000..=0xd003 => {
                 mappings.map_chr(address as usize - 0xd000, 1, CHR_PAGE_SIZE * value as usize);
-                debug!("VRC6 CHR Mappings: {:?}", mappings.chr);
+                trace!("VRC6 CHR Mappings: {:?}", mappings.chr);
             }
             0xe000..=0xe003 => {
                 mappings.map_chr(
@@ -127,33 +127,33 @@ impl Mapper for Vrc6 {
                     1,
                     CHR_PAGE_SIZE * value as usize,
                 );
-                debug!("VRC6 CHR Mappings: {:?}", mappings.chr);
+                trace!("VRC6 CHR Mappings: {:?}", mappings.chr);
             }
             0xf000 => {
                 self.irq_latch = value;
-                debug!("VRC6 IRQ Latch: {}", self.irq_latch);
+                trace!("VRC6 IRQ Latch: {}", self.irq_latch);
             }
             0xf001 => {
                 self.irq_mode = (value & 0x04) != 0;
                 self.irq_enable = (value & 0x02) != 0;
                 self.irq_enable_after_ack = (value & 0x01) != 0;
 
-                debug!("VRC6 IRQ Mode: {}", self.irq_mode);
-                debug!("VRC6 IRQ Enable: {}", self.irq_enable);
-                debug!("VRC6 IRQ Enable After ACK: {}", self.irq_enable_after_ack);
+                trace!("VRC6 IRQ Mode: {}", self.irq_mode);
+                trace!("VRC6 IRQ Enable: {}", self.irq_enable);
+                trace!("VRC6 IRQ Enable After ACK: {}", self.irq_enable_after_ack);
 
                 self.interrupt.clear(InterruptType::MapperIrq);
 
                 if self.irq_enable {
                     self.irq_divider = IRQ_DIVIDER;
                     self.irq_counter = self.irq_latch;
-                    debug!("VRC6 IRQ Counter: {}", self.irq_counter);
+                    trace!("VRC6 IRQ Counter: {}", self.irq_counter);
                 }
             }
             0xf002 => {
                 self.interrupt.clear(InterruptType::MapperIrq);
                 self.irq_enable = self.irq_enable_after_ack;
-                debug!("VRC6 IRQ Enable: {}", self.irq_enable);
+                trace!("VRC6 IRQ Enable: {}", self.irq_enable);
             }
             _ => (),
         }
@@ -182,12 +182,12 @@ impl Mapper for Vrc6 {
 
         if self.irq_counter != 0xff {
             self.irq_counter = self.irq_counter.wrapping_add(1);
-            debug!("VRC6 IRQ Counter: {}", self.irq_counter);
+            trace!("VRC6 IRQ Counter: {}", self.irq_counter);
             return;
         }
 
         self.irq_counter = self.irq_latch;
-        debug!("VRC6 IRQ Counter: {}", self.irq_counter);
+        trace!("VRC6 IRQ Counter: {}", self.irq_counter);
 
         self.interrupt.raise(InterruptType::MapperIrq);
     }

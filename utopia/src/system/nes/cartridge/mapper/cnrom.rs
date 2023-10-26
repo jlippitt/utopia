@@ -1,5 +1,5 @@
 use super::{Mapper, Mappings};
-use tracing::debug;
+use tracing::trace;
 
 const CHR_BANK_SIZE: usize = 8192;
 
@@ -18,6 +18,6 @@ impl Mapper for CnRom {
 
     fn write_register(&mut self, mappings: &mut Mappings, _address: u16, value: u8) {
         mappings.map_chr(0, 8, CHR_BANK_SIZE * value as usize);
-        debug!("CNROM CHR Mapping: {:?}", mappings.chr);
+        trace!("CNROM CHR Mapping: {:?}", mappings.chr);
     }
 }

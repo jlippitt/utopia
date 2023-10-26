@@ -1,5 +1,5 @@
 use super::WIDTH;
-use tracing::{debug, trace};
+use tracing::trace;
 
 pub type BoolMask = [bool; WIDTH / 2];
 
@@ -42,14 +42,14 @@ impl Window {
     pub fn set_left(&mut self, value: u8) -> bool {
         let modified = value != self.left;
         self.left = value;
-        debug!("{} Left: {}", self.name, self.left);
+        trace!("{} Left: {}", self.name, self.left);
         modified
     }
 
     pub fn set_right(&mut self, value: u8) -> bool {
         let modified = value != self.right;
         self.right = value;
-        debug!("{} Right: {}", self.name, self.right);
+        trace!("{} Right: {}", self.name, self.right);
         modified
     }
 }
@@ -73,10 +73,10 @@ impl WindowMask {
         self.w1_enabled = (value & 0x02) != 0;
         self.w2_inverted = (value & 0x04) != 0;
         self.w2_enabled = (value & 0x08) != 0;
-        debug!("{} W1 Enabled: {}", self.name, self.w1_enabled);
-        debug!("{} W1 Inverted: {}", self.name, self.w1_inverted);
-        debug!("{} W2 Enabled: {}", self.name, self.w2_enabled);
-        debug!("{} W2 Inverted: {}", self.name, self.w2_inverted);
+        trace!("{} W1 Enabled: {}", self.name, self.w1_enabled);
+        trace!("{} W1 Inverted: {}", self.name, self.w1_inverted);
+        trace!("{} W2 Enabled: {}", self.name, self.w2_enabled);
+        trace!("{} W2 Inverted: {}", self.name, self.w2_inverted);
         self.dirty = true;
     }
 
@@ -88,7 +88,7 @@ impl WindowMask {
             3 => Operator::Xnor,
             _ => panic!("Invalid window mask operator: {}", value),
         };
-        debug!("{} Operator: {:?}", self.name, self.operator);
+        trace!("{} Operator: {:?}", self.name, self.operator);
         self.dirty = true;
     }
 
@@ -110,7 +110,7 @@ impl WindowMask {
                 self.mask.fill(false);
             }
 
-            debug!("{} Updated", self.name);
+            trace!("{} Updated", self.name);
             trace!("{:?}", self.mask);
         }
 

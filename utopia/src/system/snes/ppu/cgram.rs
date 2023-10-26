@@ -1,5 +1,5 @@
 use crate::util::MirrorVec;
-use tracing::debug;
+use tracing::trace;
 
 const CGRAM_SIZE: usize = 256;
 
@@ -27,7 +27,7 @@ impl Cgram {
     pub fn set_address(&mut self, value: u8) {
         self.address = value;
         self.high_byte = false;
-        debug!("CGRAM Address: {:02X}", self.address);
+        trace!("CGRAM Address: {:02X}", self.address);
     }
 
     pub fn read(&mut self) -> u8 {
@@ -41,9 +41,11 @@ impl Cgram {
             self.data[address] as u8
         };
 
-        debug!(
+        trace!(
             "CGRAM Read: {:02X}.{} => {:02X}",
-            address, self.high_byte as u32, value
+            address,
+            self.high_byte as u32,
+            value
         );
 
         self.high_byte = !self.high_byte;
@@ -55,7 +57,7 @@ impl Cgram {
         if self.high_byte {
             let word_value = ((value as u16 & 0x7f) << 8) | (self.buffer as u16);
             self.data[self.address as usize] = word_value;
-            debug!("CGRAM Write: {:02X} <= {:04X}", self.address, word_value);
+            trace!("CGRAM Write: {:02X} <= {:04X}", self.address, word_value);
             self.address = self.address.wrapping_add(1);
         } else {
             self.buffer = value;

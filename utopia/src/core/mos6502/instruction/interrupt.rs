@@ -1,5 +1,5 @@
 use super::super::{Bus, Core, IrqDisable, STACK_PAGE};
-use tracing::debug;
+use tracing::trace;
 
 const NMI_VECTOR: u16 = 0xfffa;
 const RESET_VECTOR: u16 = 0xfffc;
@@ -19,21 +19,21 @@ fn jump_to_vector(core: &mut Core<impl Bus>, vector: u16) {
 }
 
 pub fn nmi(core: &mut Core<impl Bus>) {
-    debug!("NMI");
+    trace!("NMI");
     core.read(core.pc);
     push_state(core, false);
     jump_to_vector(core, NMI_VECTOR);
 }
 
 pub fn irq(core: &mut Core<impl Bus>) {
-    debug!("IRQ");
+    trace!("IRQ");
     core.read(core.pc);
     push_state(core, false);
     jump_to_vector(core, IRQ_VECTOR);
 }
 
 pub fn reset(core: &mut Core<impl Bus>) {
-    debug!("RESET");
+    trace!("RESET");
     core.read(core.pc);
 
     for _ in 0..=2 {
@@ -45,7 +45,7 @@ pub fn reset(core: &mut Core<impl Bus>) {
 }
 
 pub fn brk(core: &mut Core<impl Bus>) {
-    debug!("BRK #const");
+    trace!("BRK #const");
     core.next_byte();
     push_state(core, true);
     jump_to_vector(core, IRQ_VECTOR);

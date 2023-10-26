@@ -2,7 +2,7 @@ use super::buffer::Tile;
 use super::oam::TOTAL_SPRITES;
 use super::window::MASK_NONE;
 use bitflags::bitflags;
-use tracing::{debug, trace};
+use tracing::trace;
 
 const MAX_SPRITES_PER_LINE: usize = 32;
 const MAX_TILES_PER_LINE: usize = 34;
@@ -71,7 +71,7 @@ impl ObjectLayer {
 
     pub fn clear_flags(&mut self) {
         self.flags = Flags::empty();
-        debug!("OBJ Flags Cleared");
+        trace!("OBJ Flags Cleared");
     }
 
     pub fn set_control(&mut self, value: u8) {
@@ -82,17 +82,20 @@ impl ObjectLayer {
         self.size_x = SIZE_X[size_index];
         self.size_y = SIZE_Y[size_index];
 
-        debug!("OBJ Name Base: {:04X}", self.name_base);
-        debug!("OBJ CHR Offset: {:04X}", self.name_offset);
-        debug!(
+        trace!("OBJ Name Base: {:04X}", self.name_base);
+        trace!("OBJ CHR Offset: {:04X}", self.name_offset);
+        trace!(
             "OBJ Size: {}x{}, {}x{}",
-            self.size_x[0], self.size_y[0], self.size_x[1], self.size_y[1]
+            self.size_x[0],
+            self.size_y[0],
+            self.size_x[1],
+            self.size_y[1]
         )
     }
 
     pub fn set_interlace(&mut self, interlace: bool) {
         self.interlace = interlace;
-        debug!("OBJ Interlace: {}", interlace);
+        trace!("OBJ Interlace: {}", interlace);
     }
 }
 
@@ -142,7 +145,7 @@ impl super::Ppu {
 
             if write_index == 0 {
                 self.obj.flags.insert(Flags::RANGE_OVER);
-                debug!("Line {}: Range Over", line);
+                trace!("Line {}: Range Over", line);
                 break;
             }
 
@@ -153,7 +156,7 @@ impl super::Ppu {
         let count = self.obj.selected_sprites.len() - write_index;
 
         if count > 0 {
-            debug!("Line {}: {} Sprites Selected", line, count);
+            trace!("Line {}: {} Sprites Selected", line, count);
         }
 
         write_index
@@ -208,7 +211,7 @@ impl super::Ppu {
 
                 if write_index == 0 {
                     self.obj.flags.insert(Flags::TIME_OVER);
-                    debug!("Line {}: Time Over", line);
+                    trace!("Line {}: Time Over", line);
                     break 'outer;
                 }
 
@@ -234,7 +237,7 @@ impl super::Ppu {
         let count = MAX_TILES_PER_LINE - write_index;
 
         if count > 0 {
-            debug!("Line {}: {} Tiles Selected", line, count);
+            trace!("Line {}: {} Tiles Selected", line, count);
         }
 
         write_index

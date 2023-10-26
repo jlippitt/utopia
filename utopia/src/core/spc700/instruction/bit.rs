@@ -1,12 +1,12 @@
 use super::super::{Bus, Core};
-use tracing::debug;
+use tracing::trace;
 
 fn decode(bit_address: u16) -> (u16, u16) {
     (bit_address & 0x1fff, (bit_address >> 13) & 7)
 }
 
 pub fn or1(core: &mut Core<impl Bus>) {
-    debug!("OR1 C, m.b");
+    trace!("OR1 C, m.b");
     let (address, bit) = decode(core.next_word());
     let value = core.read(address);
     core.idle();
@@ -14,7 +14,7 @@ pub fn or1(core: &mut Core<impl Bus>) {
 }
 
 pub fn or1_not(core: &mut Core<impl Bus>) {
-    debug!("OR1 C, /m.b");
+    trace!("OR1 C, /m.b");
     let (address, bit) = decode(core.next_word());
     let value = core.read(address);
     core.idle();
@@ -22,21 +22,21 @@ pub fn or1_not(core: &mut Core<impl Bus>) {
 }
 
 pub fn and1(core: &mut Core<impl Bus>) {
-    debug!("AND1 C, m.b");
+    trace!("AND1 C, m.b");
     let (address, bit) = decode(core.next_word());
     let value = core.read(address);
     core.flags.c &= (value & (1 << bit)) != 0;
 }
 
 pub fn and1_not(core: &mut Core<impl Bus>) {
-    debug!("AND1 C, /m.b");
+    trace!("AND1 C, /m.b");
     let (address, bit) = decode(core.next_word());
     let value = core.read(address);
     core.flags.c &= (value & (1 << bit)) == 0;
 }
 
 pub fn eor1(core: &mut Core<impl Bus>) {
-    debug!("EOR1 C, m.b");
+    trace!("EOR1 C, m.b");
     let (address, bit) = decode(core.next_word());
     let value = core.read(address);
     core.idle();
@@ -44,14 +44,14 @@ pub fn eor1(core: &mut Core<impl Bus>) {
 }
 
 pub fn mov1_read(core: &mut Core<impl Bus>) {
-    debug!("MOV1 C, m.b");
+    trace!("MOV1 C, m.b");
     let (address, bit) = decode(core.next_word());
     let value = core.read(address);
     core.flags.c = (value & (1 << bit)) != 0;
 }
 
 pub fn mov1_write(core: &mut Core<impl Bus>) {
-    debug!("MOV1 m.b, C");
+    trace!("MOV1 m.b, C");
     let (address, bit) = decode(core.next_word());
     let value = core.read(address);
     core.idle();
@@ -60,14 +60,14 @@ pub fn mov1_write(core: &mut Core<impl Bus>) {
 }
 
 pub fn not1(core: &mut Core<impl Bus>) {
-    debug!("NOT1 m.b");
+    trace!("NOT1 m.b");
     let (address, bit) = decode(core.next_word());
     let value = core.read(address);
     core.write(address, value ^ (1 << bit));
 }
 
 pub fn tset1(core: &mut Core<impl Bus>) {
-    debug!("TSET1 !a");
+    trace!("TSET1 !a");
     let address = core.next_word();
     let value = core.read(address);
     core.read(address); // This happens a second time?
@@ -77,7 +77,7 @@ pub fn tset1(core: &mut Core<impl Bus>) {
 }
 
 pub fn tclr1(core: &mut Core<impl Bus>) {
-    debug!("TCLR1 !a");
+    trace!("TCLR1 !a");
     let address = core.next_word();
     let value = core.read(address);
     core.read(address); // This happens a second time?

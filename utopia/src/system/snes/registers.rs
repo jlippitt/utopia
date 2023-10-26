@@ -1,6 +1,6 @@
 use super::clock::TIMER_IRQ;
 use crate::Mapped;
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 
 pub struct Registers {
     io_port: u8,
@@ -25,9 +25,11 @@ impl Registers {
         // TODO: Simulate hardware delay
         self.remainder = (self.multiplicand as u16) * (value as u16);
 
-        debug!(
+        trace!(
             "Multiplication (Unsigned): {} * {} = {}",
-            self.multiplicand, value, self.remainder
+            self.multiplicand,
+            value,
+            self.remainder
         );
     }
 
@@ -41,9 +43,12 @@ impl Registers {
             self.remainder = self.dividend;
         }
 
-        debug!(
+        trace!(
             "Division (Unsigned): {} / {} = {} ({})",
-            self.dividend, value, self.quotient, self.remainder
+            self.dividend,
+            value,
+            self.quotient,
+            self.remainder
         );
     }
 }
@@ -130,21 +135,21 @@ impl<T: Mapped> super::Hardware<T> {
             0x01 => {
                 // TODO: PPU Latch
                 self.regs.io_port = value;
-                debug!("IO Port: {:02X}", self.regs.io_port);
+                trace!("IO Port: {:02X}", self.regs.io_port);
                 self.ppu.set_latch_enabled(&self.clock, (value & 0x80) != 0);
             }
             0x02 => {
                 self.regs.multiplicand = value;
-                debug!("Multiplicand: {}", self.regs.multiplicand);
+                trace!("Multiplicand: {}", self.regs.multiplicand);
             }
             0x03 => self.regs.multiply(value),
             0x04 => {
                 self.regs.dividend = (self.regs.dividend & 0xff00) | (value as u16);
-                debug!("Dividend: {}", self.regs.dividend);
+                trace!("Dividend: {}", self.regs.dividend);
             }
             0x05 => {
                 self.regs.dividend = (self.regs.dividend & 0xff) | ((value as u16) << 8);
-                debug!("Dividend: {}", self.regs.dividend);
+                trace!("Dividend: {}", self.regs.dividend);
             }
             0x06 => self.regs.divide(value),
             0x07 => self.clock.set_irq_x_low(value),

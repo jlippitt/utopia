@@ -1,5 +1,5 @@
 use super::{Mapper, Mappings, MirrorMode};
-use tracing::debug;
+use tracing::trace;
 
 const PRG_BANK_SIZE: usize = 8192;
 const CHR_BANK_SIZE: usize = 4096;
@@ -32,7 +32,7 @@ impl Mmc2 {
             CHR_BANK_SIZE * self.chr_bank[1][self.chr_latch[1] as usize] as usize,
         );
 
-        debug!("MMC2 CHR Mapping: {:?}", mappings.chr);
+        trace!("MMC2 CHR Mapping: {:?}", mappings.chr);
     }
 }
 
@@ -41,8 +41,8 @@ impl Mapper for Mmc2 {
         mappings.map_prg_rom(8, 2, 0);
         mappings.map_prg_rom(10, 6, self.prg_rom_size - (PRG_BANK_SIZE * 3));
         mappings.map_registers(10, 6);
-        debug!("MMC2 PRG Read Mapping: {:?}", mappings.prg_read);
-        debug!("MMC2 PRG Write Mapping: {:?}", mappings.prg_write);
+        trace!("MMC2 PRG Read Mapping: {:?}", mappings.prg_read);
+        trace!("MMC2 PRG Write Mapping: {:?}", mappings.prg_write);
         self.update_chr_mappings(mappings);
     }
 
@@ -50,26 +50,26 @@ impl Mapper for Mmc2 {
         match address & 0xf000 {
             0xa000 => {
                 mappings.map_prg_rom(8, 2, PRG_BANK_SIZE * (value as usize & 0x0f));
-                debug!("MMC2 PRG Read Mapping: {:?}", mappings.prg_read);
+                trace!("MMC2 PRG Read Mapping: {:?}", mappings.prg_read);
             }
             0xb000 => {
                 self.chr_bank[0][0] = value & 0x1f;
-                debug!("MMC2 CHR Bank 0 (FD): {}", self.chr_bank[0][0]);
+                trace!("MMC2 CHR Bank 0 (FD): {}", self.chr_bank[0][0]);
                 self.update_chr_mappings(mappings);
             }
             0xc000 => {
                 self.chr_bank[0][1] = value & 0x1f;
-                debug!("MMC2 CHR Bank 0 (FE): {}", self.chr_bank[0][1]);
+                trace!("MMC2 CHR Bank 0 (FE): {}", self.chr_bank[0][1]);
                 self.update_chr_mappings(mappings);
             }
             0xd000 => {
                 self.chr_bank[1][0] = value & 0x1f;
-                debug!("MMC2 CHR Bank 1 (FD): {}", self.chr_bank[1][0]);
+                trace!("MMC2 CHR Bank 1 (FD): {}", self.chr_bank[1][0]);
                 self.update_chr_mappings(mappings);
             }
             0xe000 => {
                 self.chr_bank[1][1] = value & 0x1f;
-                debug!("MMC2 CHR Bank 1 (FE): {}", self.chr_bank[1][1]);
+                trace!("MMC2 CHR Bank 1 (FE): {}", self.chr_bank[1][1]);
                 self.update_chr_mappings(mappings);
             }
             0xf000 => {
@@ -79,9 +79,9 @@ impl Mapper for Mmc2 {
                     MirrorMode::Vertical
                 };
 
-                debug!("MMC2 Mirror Mode: {:?}", mirror_mode);
+                trace!("MMC2 Mirror Mode: {:?}", mirror_mode);
                 mappings.mirror_nametables(mirror_mode);
-                debug!("MMC2 Name Mappings: {:?}", mappings.name);
+                trace!("MMC2 Name Mappings: {:?}", mappings.name);
             }
             _ => unreachable!(),
         }

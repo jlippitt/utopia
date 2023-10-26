@@ -1,5 +1,5 @@
 use super::{Mapper, Mappings, NameTable, MIRROR_HORIZONTAL, MIRROR_VERTICAL};
-use tracing::debug;
+use tracing::trace;
 
 const PRG_BANK_SIZE: usize = 16384;
 const CHR_BANK_SIZE: usize = 4096;
@@ -30,30 +30,30 @@ impl Mmc1 {
     }
 
     fn write_internal_register(&mut self, mappings: &mut Mappings, address: u16, value: u8) {
-        debug!("MMC1 Register Write: {:04X} <= {:02X}", address, value);
+        trace!("MMC1 Register Write: {:04X} <= {:02X}", address, value);
 
         match address & 0xe000 {
             0x8000 => {
                 self.mirror_mode = value & 0x03;
                 self.prg_rom_mode = (value & 0x0c) >> 2;
                 self.chr_mode = (value & 0x10) != 0;
-                debug!("MMC1 Mirror Mode: {}", self.mirror_mode);
-                debug!("MMC1 PRG ROM Mode: {}", self.prg_rom_mode);
-                debug!("MMC1 CHR Mode: {}", self.chr_mode as u32);
+                trace!("MMC1 Mirror Mode: {}", self.mirror_mode);
+                trace!("MMC1 PRG ROM Mode: {}", self.prg_rom_mode);
+                trace!("MMC1 CHR Mode: {}", self.chr_mode as u32);
             }
             0xa000 => {
                 self.chr_bank[0] = value;
-                debug!("MMC1 CHR Bank 0: {}", self.chr_bank[0]);
+                trace!("MMC1 CHR Bank 0: {}", self.chr_bank[0]);
             }
             0xc000 => {
                 self.chr_bank[1] = value;
-                debug!("MMC1 CHR Bank 1: {}", self.chr_bank[1]);
+                trace!("MMC1 CHR Bank 1: {}", self.chr_bank[1]);
             }
             0xe000 => {
                 self.prg_bank = value & 0x0f;
                 self.prg_ram_enabled = (value & 0x10) == 0;
-                debug!("MMC1 PRG Bank: {}", self.prg_bank);
-                debug!("MMC1 PRG RAM Enabled: {}", self.prg_ram_enabled);
+                trace!("MMC1 PRG Bank: {}", self.prg_bank);
+                trace!("MMC1 PRG RAM Enabled: {}", self.prg_ram_enabled);
             }
             _ => unreachable!(),
         }
@@ -96,10 +96,10 @@ impl Mmc1 {
             mappings.map_chr(0, 8, CHR_BANK_SIZE * (self.chr_bank[0] & 0x1e) as usize);
         }
 
-        debug!("MMC1 PRG Read Mappings: {:?}", mappings.prg_read);
-        debug!("MMC1 PRG Write Mappings: {:?}", mappings.prg_write);
-        debug!("MMC1 Name Mappings: {:?}", mappings.name);
-        debug!("MMC1 CHR Mappings: {:?}", mappings.chr);
+        trace!("MMC1 PRG Read Mappings: {:?}", mappings.prg_read);
+        trace!("MMC1 PRG Write Mappings: {:?}", mappings.prg_write);
+        trace!("MMC1 Name Mappings: {:?}", mappings.name);
+        trace!("MMC1 CHR Mappings: {:?}", mappings.chr);
     }
 }
 
@@ -114,8 +114,8 @@ impl Mapper for Mmc1 {
         if (value & 0x80) != 0 {
             self.shift = 0x10;
             self.prg_rom_mode = 3;
-            debug!("MMC1 Shift: {:02X}", self.shift);
-            debug!("MMC1 PRG ROM Mode: {}", self.prg_rom_mode);
+            trace!("MMC1 Shift: {:02X}", self.shift);
+            trace!("MMC1 PRG ROM Mode: {}", self.prg_rom_mode);
             self.update_mappings(mappings);
             return;
         }
@@ -129,6 +129,6 @@ impl Mapper for Mmc1 {
             self.shift = 0x10;
         }
 
-        debug!("MMC1 Shift: {:02X}", self.shift);
+        trace!("MMC1 Shift: {:02X}", self.shift);
     }
 }

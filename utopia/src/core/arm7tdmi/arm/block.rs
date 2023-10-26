@@ -1,6 +1,6 @@
 use super::super::{Bus, Core, REGS};
 use arrayvec::ArrayVec;
-use tracing::debug;
+use tracing::trace;
 
 const ADDRESS: [&str; 4] = ["DA", "IA", "DB", "IB"];
 
@@ -54,7 +54,7 @@ pub fn ldm<const PU: u8, const S: bool, const W: bool>(
     let rn = ((word >> 16) & 15) as usize;
     let mut base = core.get(rn);
 
-    debug!(
+    trace!(
         "{:08X} LDM{} {}{}, {{ {} }}{}",
         pc,
         ADDRESS[PU as usize],
@@ -93,7 +93,7 @@ pub fn stm<const PU: u8, const S: bool, const W: bool>(
     let rn = ((word >> 16) & 15) as usize;
     let mut base = core.get(rn);
 
-    debug!(
+    trace!(
         "{:08X} STM{} {}{}, {{ {} }}{}",
         pc,
         ADDRESS[PU as usize],

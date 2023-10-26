@@ -7,7 +7,7 @@ use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::Float;
 use round::*;
 use std::fmt;
-use tracing::debug;
+use tracing::trace;
 use transfer::*;
 
 mod arithmetic;
@@ -115,7 +115,7 @@ impl Cp1 {
 
     fn set_c(&mut self, value: bool) {
         self.ctrl.c = value;
-        debug!("  C = {}", value as u32);
+        trace!("  C = {}", value as u32);
     }
 
     fn set_s(&mut self, reg: usize, value: f32) {
@@ -124,7 +124,7 @@ impl Cp1 {
         }
 
         self.regs[reg].s = value;
-        debug!("  $F{}.S: {}", reg, value);
+        trace!("  $F{}.S: {}", reg, value);
     }
 
     fn set_d(&mut self, reg: usize, value: f64) {
@@ -138,12 +138,12 @@ impl Cp1 {
             panic!("Tried to set odd-numbered CP1 register when FR=0");
         }
 
-        debug!("  $F{}.D: {}", reg, value);
+        trace!("  $F{}.D: {}", reg, value);
     }
 
     fn set_w(&mut self, reg: usize, value: i32) {
         self.regs[reg].w = value;
-        debug!("  $F{}.W: {:08X}", reg, value);
+        trace!("  $F{}.W: {:08X}", reg, value);
     }
 
     fn set_l(&mut self, reg: usize, value: i64) {
@@ -157,7 +157,7 @@ impl Cp1 {
             panic!("Tried to set odd-numbered CP1 register when FR=0");
         }
 
-        debug!("  $F{}.L: {:016X}", reg, value);
+        trace!("  $F{}.L: {:016X}", reg, value);
     }
 
     fn round<T: Float>(&self, value: T) -> T {
@@ -214,9 +214,12 @@ impl fmt::Display for Flags {
 }
 
 pub fn lwc1(core: &mut Core<impl Bus>, base: usize, ft: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} LWC1 $F{}, {}({})",
-        core.pc, ft, value as i16, REGS[base]
+        core.pc,
+        ft,
+        value as i16,
+        REGS[base]
     );
 
     let ivalue = value as i16 as i32 as u32;
@@ -226,9 +229,12 @@ pub fn lwc1(core: &mut Core<impl Bus>, base: usize, ft: usize, value: u32) {
 }
 
 pub fn ldc1(core: &mut Core<impl Bus>, base: usize, ft: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} LDC1 $F{}, {}({})",
-        core.pc, ft, value as i16, REGS[base]
+        core.pc,
+        ft,
+        value as i16,
+        REGS[base]
     );
 
     let ivalue = value as i16 as i32 as u32;
@@ -238,9 +244,12 @@ pub fn ldc1(core: &mut Core<impl Bus>, base: usize, ft: usize, value: u32) {
 }
 
 pub fn swc1(core: &mut Core<impl Bus>, base: usize, ft: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} SWC1 $F{}, {}({})",
-        core.pc, ft, value as i16, REGS[base]
+        core.pc,
+        ft,
+        value as i16,
+        REGS[base]
     );
 
     let ivalue = value as i16 as i32 as u32;
@@ -249,9 +258,12 @@ pub fn swc1(core: &mut Core<impl Bus>, base: usize, ft: usize, value: u32) {
 }
 
 pub fn sdc1(core: &mut Core<impl Bus>, base: usize, ft: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} SDC1 $F{}, {}({})",
-        core.pc, ft, value as i16, REGS[base]
+        core.pc,
+        ft,
+        value as i16,
+        REGS[base]
     );
 
     let ivalue = value as i16 as i32 as u32;

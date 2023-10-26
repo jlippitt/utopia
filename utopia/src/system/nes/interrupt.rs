@@ -1,7 +1,7 @@
 use crate::core::mos6502;
 use std::cell::Cell;
 use std::rc::Rc;
-use tracing::debug;
+use tracing::trace;
 
 #[repr(u32)]
 #[allow(dead_code)]
@@ -38,14 +38,14 @@ impl Interrupt {
         let mut value = self.inner.get();
         value &= !(int_type as mos6502::Interrupt);
         self.inner.set(value);
-        debug!("Interrupt Cleared: {:?}", int_type);
+        trace!("Interrupt Cleared: {:?}", int_type);
     }
 
     pub fn raise(&mut self, int_type: InterruptType) {
         let mut value = self.inner.get();
         value |= int_type as mos6502::Interrupt;
         self.inner.set(value);
-        debug!("Interrupt Raised: {:?}", int_type);
+        trace!("Interrupt Raised: {:?}", int_type);
     }
 }
 

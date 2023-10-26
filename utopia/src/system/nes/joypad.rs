@@ -1,5 +1,5 @@
 use crate::JoypadState;
-use tracing::debug;
+use tracing::trace;
 
 pub struct Joypad {
     current_state: [u8; 2],
@@ -49,7 +49,7 @@ impl Joypad {
 
         if self.latch && !latch {
             self.polled_state = self.current_state;
-            debug!("Joypad State Latched");
+            trace!("Joypad State Latched");
         }
 
         self.latch = latch;

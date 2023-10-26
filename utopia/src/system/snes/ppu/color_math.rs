@@ -1,6 +1,6 @@
 use super::buffer::LAYER_BACKDROP;
 use super::window::{BoolMask, MASK_NONE};
-use tracing::debug;
+use tracing::trace;
 
 const WINDOW_INDEX: usize = 5;
 
@@ -63,18 +63,18 @@ impl ColorMath {
             0
         };
 
-        debug!("Color Math Clip: {:?}", self.clip);
-        debug!("Color Math Prevent: {:?}", self.prevent);
-        debug!("Color Math RHS Mask: {:08b}", self.rhs_mask);
+        trace!("Color Math Clip: {:?}", self.clip);
+        trace!("Color Math Prevent: {:?}", self.prevent);
+        trace!("Color Math RHS Mask: {:08b}", self.rhs_mask);
     }
 
     pub fn set_operator(&mut self, value: u8) {
         self.subtract = (value & 0x80) != 0;
         self.half = (value & 0x40) != 0;
         self.lhs_mask = value & 0x3f;
-        debug!("Color Math Subtract: {}", self.subtract);
-        debug!("Color Math Half: {}", self.half);
-        debug!("Color Math LHS Mask: {:08b}", self.lhs_mask);
+        trace!("Color Math Subtract: {}", self.subtract);
+        trace!("Color Math Half: {}", self.half);
+        trace!("Color Math LHS Mask: {:08b}", self.lhs_mask);
     }
 
     pub fn set_fixed_color(&mut self, value: u8) {
@@ -92,7 +92,7 @@ impl ColorMath {
             self.fixed_color = (self.fixed_color & !(0x1f << 10)) | (intensity << 10);
         }
 
-        debug!("Color Math Fixed Color: {:04X}", self.fixed_color);
+        trace!("Color Math Fixed Color: {:04X}", self.fixed_color);
     }
 }
 

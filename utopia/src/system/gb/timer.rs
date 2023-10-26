@@ -1,6 +1,6 @@
 use super::apu::Apu;
 use super::interrupt::{Interrupt, InterruptType};
-use tracing::debug;
+use tracing::trace;
 
 const PERIOD_MASKS: [u64; 4] = [1023, 15, 63, 255];
 const APU_DIVIDER_MASK: u64 = 8191;
@@ -50,22 +50,22 @@ impl Timer {
                 }
 
                 self.divider = 0;
-                debug!("Timer Divider Reset");
+                trace!("Timer Divider Reset");
             }
             5 => {
                 self.counter = value;
-                debug!("Timer Counter: {}", self.counter);
+                trace!("Timer Counter: {}", self.counter);
             }
             6 => {
                 self.modulo = value;
-                debug!("Timer Modulo: {}", self.modulo);
+                trace!("Timer Modulo: {}", self.modulo);
             }
             7 => {
                 self.control.raw = value;
                 self.control.enable = (value & 0x04) != 0;
                 self.control.period_mask = PERIOD_MASKS[value as usize & 0x03];
-                debug!("Timer Enable: {}", self.control.enable);
-                debug!("Timer Period Mask: {}", self.control.period_mask);
+                trace!("Timer Enable: {}", self.control.enable);
+                trace!("Timer Period Mask: {}", self.control.period_mask);
             }
             _ => unreachable!(),
         }
@@ -90,7 +90,7 @@ impl Timer {
                 interrupt.raise(InterruptType::Timer);
             }
 
-            debug!("Timer Counter: {}", self.counter);
+            trace!("Timer Counter: {}", self.counter);
         }
     }
 }

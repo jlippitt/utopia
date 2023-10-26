@@ -1,4 +1,4 @@
-use tracing::debug;
+use tracing::trace;
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug)]
@@ -30,7 +30,7 @@ impl Interrupt {
 
     pub fn set_flag(&mut self, value: u8) {
         self.flag = value & 0x1f;
-        debug!("Interrupt Flag: {:05b}", self.flag);
+        trace!("Interrupt Flag: {:05b}", self.flag);
     }
 
     pub fn enable(&self) -> u8 {
@@ -39,12 +39,12 @@ impl Interrupt {
 
     pub fn set_enable(&mut self, value: u8) {
         self.enable = value & 0x1f;
-        debug!("Interrupt Enable: {:05b}", self.enable);
+        trace!("Interrupt Enable: {:05b}", self.enable);
     }
 
     pub fn raise(&mut self, interrupt_type: InterruptType) {
         self.flag |= interrupt_type as u8;
-        debug!("Interrupt Raised: {:?}", interrupt_type);
+        trace!("Interrupt Raised: {:?}", interrupt_type);
     }
 
     pub fn acknowledge(&mut self, mask: u8) {

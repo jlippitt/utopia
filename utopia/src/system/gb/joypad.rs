@@ -1,6 +1,6 @@
 use crate::JoypadState;
 use bitflags::bitflags;
-use tracing::debug;
+use tracing::trace;
 
 bitflags! {
     #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -57,6 +57,6 @@ impl Joypad {
 
     pub fn write(&mut self, value: u8) {
         self.select = Select::from_bits_truncate(!value);
-        debug!("Joypad Select: {:?}", self.select);
+        trace!("Joypad Select: {:?}", self.select);
     }
 }

@@ -1,5 +1,5 @@
 use crate::util::MirrorVec;
-use tracing::debug;
+use tracing::trace;
 
 pub struct Directory {
     base_address: u16,
@@ -12,7 +12,7 @@ impl Directory {
 
     pub fn set_base_address(&mut self, value: u8) {
         self.base_address = (value as u16) << 8;
-        debug!("DIR Base Address: {:04X}", self.base_address);
+        trace!("DIR Base Address: {:04X}", self.base_address);
     }
 
     pub fn start_address(&self, ram: &MirrorVec<u8>, source: u8) -> u16 {
@@ -30,7 +30,7 @@ impl Directory {
     fn byte(&self, ram: &MirrorVec<u8>, source: u8, byte: usize) -> u8 {
         let address = self.base_address as usize + ((source as usize) << 2) + byte;
         let value = ram[address];
-        debug!("DIR Read: {:04X} => {:02X}", address, value);
+        trace!("DIR Read: {:04X} => {:02X}", address, value);
         value
     }
 }

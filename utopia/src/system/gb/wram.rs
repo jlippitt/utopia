@@ -1,6 +1,6 @@
 use crate::util::MirrorVec;
 use std::ops::{Index, IndexMut};
-use tracing::debug;
+use tracing::trace;
 
 const WRAM_BANK_SIZE: usize = 4096;
 
@@ -34,8 +34,8 @@ impl Wram {
 
         self.bank_offset = self.bank_value as usize * WRAM_BANK_SIZE;
 
-        debug!("WRAM Bank Value: {:02X}", self.bank_value);
-        debug!("WRAM Bank Offset: {}", self.bank_offset);
+        trace!("WRAM Bank Value: {:02X}", self.bank_value);
+        trace!("WRAM Bank Offset: {}", self.bank_offset);
     }
 }
 

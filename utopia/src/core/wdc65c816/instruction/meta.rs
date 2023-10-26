@@ -1,10 +1,10 @@
 use super::super::address_mode::AddressMode;
 use super::super::operator::{BranchOperator, ModifyOperator, ReadOperator, WriteOperator};
 use super::super::{Bus, Core};
-use tracing::debug;
+use tracing::trace;
 
 pub fn immediate<const MX: bool, Op: ReadOperator>(core: &mut Core<impl Bus>) {
-    debug!("{}.{} #const", Op::NAME, super::size(MX));
+    trace!("{}.{} #const", Op::NAME, super::size(MX));
 
     if MX {
         core.poll();
@@ -19,7 +19,7 @@ pub fn immediate<const MX: bool, Op: ReadOperator>(core: &mut Core<impl Bus>) {
 }
 
 pub fn read<const MX: bool, Addr: AddressMode, Op: ReadOperator>(core: &mut Core<impl Bus>) {
-    debug!("{}.{} {}", Op::NAME, super::size(MX), Addr::NAME);
+    trace!("{}.{} {}", Op::NAME, super::size(MX), Addr::NAME);
     let low_address = Addr::resolve(core, false);
 
     if MX {
@@ -36,7 +36,7 @@ pub fn read<const MX: bool, Addr: AddressMode, Op: ReadOperator>(core: &mut Core
 }
 
 pub fn write<const MX: bool, Addr: AddressMode, Op: WriteOperator>(core: &mut Core<impl Bus>) {
-    debug!("{}.{} {}", Op::NAME, super::size(MX), Addr::NAME);
+    trace!("{}.{} {}", Op::NAME, super::size(MX), Addr::NAME);
     let low_address = Addr::resolve(core, true);
 
     if MX {
@@ -53,7 +53,7 @@ pub fn write<const MX: bool, Addr: AddressMode, Op: WriteOperator>(core: &mut Co
 }
 
 pub fn accumulator<const M: bool, Op: ModifyOperator>(core: &mut Core<impl Bus>) {
-    debug!("{}.{} A", Op::NAME, super::size(M));
+    trace!("{}.{} A", Op::NAME, super::size(M));
     core.poll();
     core.idle();
 
@@ -66,7 +66,7 @@ pub fn accumulator<const M: bool, Op: ModifyOperator>(core: &mut Core<impl Bus>)
 }
 
 pub fn modify<const M: bool, Addr: AddressMode, Op: ModifyOperator>(core: &mut Core<impl Bus>) {
-    debug!("{}.{} {}", Op::NAME, super::size(M), Addr::NAME);
+    trace!("{}.{} {}", Op::NAME, super::size(M), Addr::NAME);
     let low_address = Addr::resolve(core, true);
 
     if M {
@@ -89,11 +89,11 @@ pub fn modify<const M: bool, Addr: AddressMode, Op: ModifyOperator>(core: &mut C
 }
 
 pub fn branch<const E: bool, Op: BranchOperator>(core: &mut Core<impl Bus>) {
-    debug!("{} nearlabel", Op::NAME);
+    trace!("{} nearlabel", Op::NAME);
 
     if Op::apply(&core.flags) {
         let offset = ((core.next_byte() as i8) as i32) as u32;
-        debug!("Branch taken");
+        trace!("Branch taken");
         let target = (core.pc & 0xffff0000) | (core.pc.wrapping_add(offset) & 0xffff);
 
         if E && (target & 0xff00) != (core.pc & 0xff00) {
@@ -106,6 +106,6 @@ pub fn branch<const E: bool, Op: BranchOperator>(core: &mut Core<impl Bus>) {
     } else {
         core.poll();
         core.next_byte();
-        debug!("Branch not taken");
+        trace!("Branch not taken");
     }
 }

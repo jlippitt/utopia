@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use super::{Mappings, Mbc, RamMapping};
-use tracing::debug;
+use tracing::trace;
 
 #[derive(Clone, Default)]
 struct RtcState {
@@ -74,7 +74,7 @@ impl Mbc for Mbc3 {
         match address & 0xe000 {
             0x0000 => {
                 self.ram_enable = (value & 0x0f) == 0x0a;
-                debug!("MBC3 RAM Enable: {}", self.ram_enable);
+                trace!("MBC3 RAM Enable: {}", self.ram_enable);
             }
             0x2000 => {
                 self.rom_bank = value & 0x7f;
@@ -84,11 +84,11 @@ impl Mbc for Mbc3 {
                     self.rom_bank = 1;
                 }
 
-                debug!("MBC3 ROM Bank: {}", self.rom_bank);
+                trace!("MBC3 ROM Bank: {}", self.rom_bank);
             }
             0x4000 => {
                 self.ram_bank = value & 0x0f;
-                debug!("MBC3 RAM Bank: {}", self.ram_bank);
+                trace!("MBC3 RAM Bank: {}", self.ram_bank);
             }
             0x6000 => {
                 if self.rtc_halted {
@@ -97,7 +97,7 @@ impl Mbc for Mbc3 {
                     self.rtc_latched = self.current_time();
                 }
 
-                debug!("MBC3 RTC Latched");
+                trace!("MBC3 RTC Latched");
             }
             _ => unreachable!(),
         }

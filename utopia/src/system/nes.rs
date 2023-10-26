@@ -9,7 +9,7 @@ use interrupt::Interrupt;
 use joypad::Joypad;
 use ppu::Ppu;
 use std::fmt;
-use tracing::debug;
+use tracing::trace;
 
 const WRAM_SIZE: usize = 2048;
 const CLIP_LINES: usize = 8;
@@ -100,7 +100,7 @@ impl<T: Mapped> crate::Instance for Instance<T> {
 
         while !core.bus().ppu.ready() {
             core.step();
-            debug!("{}", core);
+            trace!("{}", core);
         }
 
         self.upscaler.update(self.core.bus().ppu.pixels());
@@ -172,7 +172,7 @@ impl<T: Mapped> Hardware<T> {
     }
 
     fn transfer_dma(&mut self) {
-        debug!("DMA Transfer Begin");
+        trace!("DMA Transfer Begin");
 
         self.step_all();
 
@@ -192,21 +192,21 @@ impl<T: Mapped> Hardware<T> {
 
                 let address = base_address + index;
                 let value = self.read(address);
-                debug!("DMA Write: OAM <= {:02X} <= {:04X}", value, address);
+                trace!("DMA Write: OAM <= {:02X} <= {:04X}", value, address);
                 self.ppu.write_oam(value);
             }
         } else {
             self.load_dmc_sample();
         }
 
-        debug!("DMA Transfer End");
+        trace!("DMA Transfer End");
     }
 
     fn load_dmc_sample(&mut self) {
         self.dma_request.remove(DmaRequest::DMC);
         let address = self.apu.dmc_sample_address();
         let value = self.read(address);
-        debug!("DMA Write: DMC <= {:02X} <= {:04X}", value, address);
+        trace!("DMA Write: DMC <= {:02X} <= {:04X}", value, address);
         self.apu.write_dmc_sample(value);
     }
 }

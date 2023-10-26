@@ -1,5 +1,5 @@
 use crate::util::MirrorVec;
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 
 #[rustfmt::skip]
 const GAUSS: [i32; 512] = [
@@ -74,7 +74,7 @@ impl BrrDecoder {
 
     pub fn decode_next(&mut self, ram: &MirrorVec<u8>) {
         let header = self.next_byte(ram);
-        debug!("Voice {} Block Header: {:02X}", self.id, header);
+        trace!("Voice {} Block Header: {:02X}", self.id, header);
 
         let filter = (header >> 2) & 3;
         let shift = header >> 4;
@@ -91,7 +91,7 @@ impl BrrDecoder {
             _ => LoopMode::Normal,
         };
 
-        debug!("Voice {} Loop Mode: {:?}", self.id, self.loop_mode);
+        trace!("Voice {} Loop Mode: {:?}", self.id, self.loop_mode);
     }
 
     pub fn sample(&mut self, counter: usize) -> i32 {
@@ -149,9 +149,11 @@ impl BrrDecoder {
         let clamped_output = output.clamp(i16::MIN as i32, i16::MAX as i32);
         self.buffer[self.write_index] = clamped_output;
 
-        debug!(
+        trace!(
             "Voice {} Sample {}: {}",
-            self.id, self.write_index, clamped_output
+            self.id,
+            self.write_index,
+            clamped_output
         );
 
         self.write_index = (self.write_index + 1) & 31;
@@ -160,9 +162,11 @@ impl BrrDecoder {
     fn next_byte(&mut self, ram: &MirrorVec<u8>) -> u8 {
         let value = ram[self.read_address as usize];
 
-        debug!(
+        trace!(
             "Voice {} BRR Read: {:04X} => {:02X}",
-            self.id, self.read_address, value
+            self.id,
+            self.read_address,
+            value
         );
 
         self.read_address = self.read_address.wrapping_add(1);

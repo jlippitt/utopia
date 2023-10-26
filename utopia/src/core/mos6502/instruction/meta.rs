@@ -1,10 +1,10 @@
 use super::super::address_mode::AddressMode;
 use super::super::operator::{BranchOperator, ModifyOperator, ReadOperator, WriteOperator};
 use super::super::{Bus, Core};
-use tracing::debug;
+use tracing::trace;
 
 pub fn read<Addr: AddressMode, Op: ReadOperator>(core: &mut Core<impl Bus>) {
-    debug!("{} {}", Op::NAME, Addr::NAME);
+    trace!("{} {}", Op::NAME, Addr::NAME);
     let address = Addr::resolve(core, false);
     core.poll();
     let value = core.read(address);
@@ -12,7 +12,7 @@ pub fn read<Addr: AddressMode, Op: ReadOperator>(core: &mut Core<impl Bus>) {
 }
 
 pub fn write<Addr: AddressMode, Op: WriteOperator>(core: &mut Core<impl Bus>) {
-    debug!("{} {}", Op::NAME, Addr::NAME);
+    trace!("{} {}", Op::NAME, Addr::NAME);
     let address = Addr::resolve(core, true);
     core.poll();
     let value = Op::apply(core);
@@ -20,14 +20,14 @@ pub fn write<Addr: AddressMode, Op: WriteOperator>(core: &mut Core<impl Bus>) {
 }
 
 pub fn accumulator<Op: ModifyOperator>(core: &mut Core<impl Bus>) {
-    debug!("{} A", Op::NAME);
+    trace!("{} A", Op::NAME);
     core.poll();
     core.read(core.pc);
     core.a = Op::apply(core, core.a);
 }
 
 pub fn modify<Addr: AddressMode, Op: ModifyOperator>(core: &mut Core<impl Bus>) {
-    debug!("{} {}", Op::NAME, Addr::NAME);
+    trace!("{} {}", Op::NAME, Addr::NAME);
     let address = Addr::resolve(core, true);
     let input = core.read(address);
     core.write(address, input);
@@ -37,12 +37,12 @@ pub fn modify<Addr: AddressMode, Op: ModifyOperator>(core: &mut Core<impl Bus>) 
 }
 
 pub fn branch<Op: BranchOperator>(core: &mut Core<impl Bus>) {
-    debug!("{} nearlabel", Op::NAME);
+    trace!("{} nearlabel", Op::NAME);
     core.poll();
     let offset = core.next_byte() as i8;
 
     if Op::apply(&core.flags) {
-        debug!("Branch taken");
+        trace!("Branch taken");
         core.read(core.pc);
 
         let target = ((core.pc as i16).wrapping_add(offset as i16)) as u16;
@@ -54,6 +54,6 @@ pub fn branch<Op: BranchOperator>(core: &mut Core<impl Bus>) {
 
         core.pc = target;
     } else {
-        debug!("Branch not taken");
+        trace!("Branch not taken");
     }
 }

@@ -1,7 +1,7 @@
 use crate::AudioQueue;
 use noise::Noise;
 use pulse::Pulse;
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 use wave::Wave;
 
 mod component;
@@ -146,7 +146,7 @@ impl Apu {
     }
 
     pub fn on_divider_clock(&mut self) {
-        debug!("APU Divider Clock");
+        trace!("APU Divider Clock");
         self.divider += 1;
         self.pulse1.on_divider_clock(self.divider);
         self.pulse2.on_divider_clock(self.divider);

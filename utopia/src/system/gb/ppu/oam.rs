@@ -1,5 +1,5 @@
 use bitfield_struct::bitfield;
-use tracing::debug;
+use tracing::trace;
 
 const OAM_SIZE: usize = 160;
 const TOTAL_SPRITES: usize = OAM_SIZE / 4;
@@ -62,19 +62,19 @@ impl Oam {
         match address & 3 {
             0 => {
                 sprite.y = value;
-                debug!("Sprite {} Y: {}", index, sprite.y);
+                trace!("Sprite {} Y: {}", index, sprite.y);
             }
             1 => {
                 sprite.x = value;
-                debug!("Sprite {} X: {}", index, sprite.x);
+                trace!("Sprite {} X: {}", index, sprite.x);
             }
             2 => {
                 sprite.chr = value;
-                debug!("Sprite {} CHR: {}", index, sprite.chr);
+                trace!("Sprite {} CHR: {}", index, sprite.chr);
             }
             3 => {
                 sprite.attr = value.into();
-                debug!("Sprite {} Attr: {:?}", index, sprite.attr);
+                trace!("Sprite {} Attr: {:?}", index, sprite.attr);
             }
             _ => unreachable!(),
         }
@@ -92,7 +92,7 @@ impl Oam {
             }
 
             if self.write_index >= MAX_SPRITES_PER_LINE {
-                debug!("Line {}: Sprite Overflow", line);
+                trace!("Line {}: Sprite Overflow", line);
                 break;
             }
 
@@ -115,7 +115,7 @@ impl Oam {
             self.write_index += 1;
         }
 
-        debug!("Line {}: {} Sprites Selected", line, self.write_index);
+        trace!("Line {}: {} Sprites Selected", line, self.write_index);
     }
 
     pub fn sprite_ready(&self, pos_x: u8) -> bool {

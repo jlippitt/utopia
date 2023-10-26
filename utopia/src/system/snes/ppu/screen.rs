@@ -1,5 +1,5 @@
 use super::buffer::PixelBuffer;
-use tracing::debug;
+use tracing::trace;
 
 pub const WIDTH: usize = 512;
 pub const HEIGHT: usize = 448;
@@ -62,7 +62,7 @@ impl Screen {
 
     pub fn set_brightness(&mut self, value: u8) {
         self.intensity = &BRIGHTNESS_TABLE[value as usize];
-        debug!("Brightness: {}", value);
+        trace!("Brightness: {}", value);
     }
 
     pub fn draw_lo_res(&mut self, main_screen: &PixelBuffer) {

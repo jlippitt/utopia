@@ -5,7 +5,7 @@ pub use cp0::Cp0;
 
 use crate::util::facade::Value;
 use cp1::Cp1;
-use tracing::debug;
+use tracing::trace;
 
 mod coprocessor;
 mod cp0;
@@ -144,7 +144,7 @@ impl<T: Bus> Core<T> {
         }
 
         self.regs[reg] = value as i32 as i64 as u64;
-        debug!("  {}: {:08X}", REGS[reg], value);
+        trace!("  {}: {:08X}", REGS[reg], value);
     }
 
     pub fn setd(&mut self, reg: usize, value: u64) {
@@ -158,26 +158,26 @@ impl<T: Bus> Core<T> {
         }
 
         self.regs[reg] = value;
-        debug!("  {}: {:016X}", REGS[reg], value);
+        trace!("  {}: {:016X}", REGS[reg], value);
     }
 
     pub fn read_byte(&mut self, address: u32) -> u8 {
         let value = self.bus.read(address);
-        debug!("  [{:08X}] => {:02X}", address, value);
+        trace!("  [{:08X}] => {:02X}", address, value);
         value
     }
 
     pub fn read_halfword(&mut self, address: u32) -> u16 {
         debug_assert!(T::ALLOW_MISALIGNED || (address & 1) == 0);
         let value = self.bus.read(address);
-        debug!("  [{:08X}] => {:04X}", address, value);
+        trace!("  [{:08X}] => {:04X}", address, value);
         value
     }
 
     pub fn read_word(&mut self, address: u32) -> u32 {
         debug_assert!(T::ALLOW_MISALIGNED || (address & 3) == 0);
         let value = self.bus.read(address);
-        debug!("  [{:08X}] => {:08X}", address, value);
+        trace!("  [{:08X}] => {:08X}", address, value);
         value
     }
 
@@ -189,19 +189,19 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn write_byte(&mut self, address: u32, value: u8) {
-        debug!("  [{:08X}] <= {:02X}", address, value);
+        trace!("  [{:08X}] <= {:02X}", address, value);
         self.bus.write(address, value);
     }
 
     pub fn write_halfword(&mut self, address: u32, value: u16) {
         debug_assert!(T::ALLOW_MISALIGNED || (address & 1) == 0);
-        debug!("  [{:08X}] <= {:04X}", address, value);
+        trace!("  [{:08X}] <= {:04X}", address, value);
         self.bus.write(address, value);
     }
 
     pub fn write_word(&mut self, address: u32, value: u32) {
         debug_assert!(T::ALLOW_MISALIGNED || (address & 3) == 0);
-        debug!("  [{:08X}] <= {:08X}", address, value);
+        trace!("  [{:08X}] <= {:08X}", address, value);
         self.bus.write(address, value);
     }
 
@@ -214,27 +214,27 @@ impl<T: Bus> Core<T> {
     fn set_lo(&mut self, value: u32) {
         debug_assert!(T::MUL_DIV);
         self.lo = value as i32 as i64 as u64;
-        debug!("  LO: {:08X}", value);
+        trace!("  LO: {:08X}", value);
     }
 
     fn setd_lo(&mut self, value: u64) {
         debug_assert!(T::MUL_DIV);
         debug_assert!(T::INSTR_64);
         self.lo = value;
-        debug!("  LO: {:016X}", value);
+        trace!("  LO: {:016X}", value);
     }
 
     fn set_hi(&mut self, value: u32) {
         debug_assert!(T::MUL_DIV);
         self.hi = value as i32 as i64 as u64;
-        debug!("  HI: {:08X}", value);
+        trace!("  HI: {:08X}", value);
     }
 
     fn setd_hi(&mut self, value: u64) {
         debug_assert!(T::MUL_DIV);
         debug_assert!(T::INSTR_64);
         self.hi = value;
-        debug!("  HI: {:016X}", value);
+        trace!("  HI: {:016X}", value);
     }
 
     fn jump_now(&mut self, address: u32) {

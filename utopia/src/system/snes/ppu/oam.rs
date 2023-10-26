@@ -1,5 +1,5 @@
 use crate::util::MirrorVec;
-use tracing::debug;
+use tracing::trace;
 
 pub const TOTAL_SPRITES: usize = 128;
 
@@ -60,22 +60,22 @@ impl Oam {
 
     pub fn reload_internal_address(&mut self) {
         self.internal_address = self.external_address;
-        debug!("OAM Internal Address: {:04X}", self.internal_address);
+        trace!("OAM Internal Address: {:04X}", self.internal_address);
         self.high_byte = false;
     }
 
     pub fn set_address_low(&mut self, value: u8) {
         self.external_address = (self.external_address & 0xff00) | (value as u16);
-        debug!("OAM External Address: {:04X}", self.external_address);
+        trace!("OAM External Address: {:04X}", self.external_address);
         self.reload_internal_address();
     }
 
     pub fn set_address_high(&mut self, value: u8) {
         self.external_address = (self.external_address & 0xff) | ((value as u16 & 0x01) << 8);
-        debug!("OAM External Address: {:04X}", self.external_address);
+        trace!("OAM External Address: {:04X}", self.external_address);
         self.reload_internal_address();
         self.priority_enabled = (value & 0x80) != 0;
-        debug!("OAM Priority Enabled: {}", self.priority_enabled);
+        trace!("OAM Priority Enabled: {}", self.priority_enabled);
     }
 
     pub fn read(&mut self) -> u8 {
@@ -101,9 +101,11 @@ impl Oam {
             }
         };
 
-        debug!(
+        trace!(
             "OAM Read: {:02X}.{} => {:02X}",
-            address, self.high_byte as u32, value
+            address,
+            self.high_byte as u32,
+            value
         );
 
         self.high_byte = !self.high_byte;
@@ -120,9 +122,10 @@ impl Oam {
 
                 self.lower_table[address] = word_value;
 
-                debug!(
+                trace!(
                     "OAM Write (Lower Table): {:02X} <= {:04X}",
-                    address, word_value
+                    address,
+                    word_value
                 );
 
                 self.update_sprite_cache_lower(address, word_value);
@@ -142,9 +145,11 @@ impl Oam {
                 self.upper_table[address] = (self.upper_table[address] & 0xff00) | (value as u16);
             }
 
-            debug!(
+            trace!(
                 "OAM Write (Upper Table): {:02X}.{} <= {:02X}",
-                address, self.high_byte as u32, value
+                address,
+                self.high_byte as u32,
+                value
             );
 
             self.update_sprite_cache_upper(address, self.high_byte, value);
@@ -160,8 +165,8 @@ impl Oam {
         if (address & 1) == 0 {
             sprite.x = (sprite.x & 0xff00) | (word_value & 0xff);
             sprite.y = word_value >> 8;
-            debug!("Sprite {} X: {}", id, sprite.x);
-            debug!("Sprite {} Y: {}", id, sprite.y);
+            trace!("Sprite {} X: {}", id, sprite.x);
+            trace!("Sprite {} Y: {}", id, sprite.y);
         } else {
             sprite.name = word_value & 0xff;
             sprite.table = (word_value & 0x0100) != 0;
@@ -170,12 +175,12 @@ impl Oam {
             sprite.flip_x = (word_value & 0x4000) != 0;
             sprite.flip_y = (word_value & 0x8000) != 0;
 
-            debug!("Sprite {} Name: {:02X}", id, sprite.name);
-            debug!("Sprite {} Table: {}", id, sprite.table);
-            debug!("Sprite {} Palette: {}", id, sprite.palette);
-            debug!("Sprite {} Priority: {}", id, sprite.priority);
-            debug!("Sprite {} Flip X: {}", id, sprite.flip_x);
-            debug!("Sprite {} Flip Y: {}", id, sprite.flip_y);
+            trace!("Sprite {} Name: {:02X}", id, sprite.name);
+            trace!("Sprite {} Table: {}", id, sprite.table);
+            trace!("Sprite {} Palette: {}", id, sprite.palette);
+            trace!("Sprite {} Priority: {}", id, sprite.priority);
+            trace!("Sprite {} Flip X: {}", id, sprite.flip_x);
+            trace!("Sprite {} Flip Y: {}", id, sprite.flip_y);
         }
     }
 
@@ -186,8 +191,8 @@ impl Oam {
             let sprite = &mut self.sprites[id];
             sprite.x = (sprite.x & 0xff) | ((value as u16 & 0x01) << 8);
             sprite.size = (value & 0x02) != 0;
-            debug!("Sprite {} X: {}", id, sprite.x);
-            debug!("Sprite {} Size: {}", id, sprite.size);
+            trace!("Sprite {} X: {}", id, sprite.x);
+            trace!("Sprite {} Size: {}", id, sprite.size);
             value >>= 2;
         }
     }

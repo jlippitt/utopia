@@ -1,6 +1,6 @@
 use super::buffer::Pixel;
 use super::window::MASK_NONE;
-use tracing::debug;
+use tracing::trace;
 
 const PRIORITY: u8 = 2;
 
@@ -43,9 +43,11 @@ impl Mode7Settings {
         let rhs = self.matrix_b >> 8;
         let result = self.matrix_a * rhs;
 
-        debug!(
+        trace!(
             "Multiplication (Signed): {} * {} = {}",
-            self.matrix_a, rhs, result
+            self.matrix_a,
+            rhs,
+            result
         );
 
         result
@@ -56,50 +58,50 @@ impl Mode7Settings {
         self.flip_y = if (value & 0x02) != 0 { 255 } else { 0 };
         self.transparency_fill = (value & 0xc0) == 0x80;
         self.tile_zero_fill = (value & 0xc0) == 0xc0;
-        debug!("Mode 7 Flip X: {}", self.flip_x);
-        debug!("Mode 7 Flip Y: {}", self.flip_y);
-        debug!("Mode 7 Transparency Fill: {}", self.transparency_fill);
-        debug!("Mode 7 Tile Zero Fill: {}", self.tile_zero_fill);
+        trace!("Mode 7 Flip X: {}", self.flip_x);
+        trace!("Mode 7 Flip Y: {}", self.flip_y);
+        trace!("Mode 7 Transparency Fill: {}", self.transparency_fill);
+        trace!("Mode 7 Tile Zero Fill: {}", self.tile_zero_fill);
     }
 
     pub fn set_matrix_a(&mut self, value: u8) {
         self.matrix_a = (self.word_value(value) as i16) as i32;
-        debug!("Mode 7 Matrix A: {}", self.matrix_a);
+        trace!("Mode 7 Matrix A: {}", self.matrix_a);
     }
 
     pub fn set_matrix_b(&mut self, value: u8) {
         self.matrix_b = (self.word_value(value) as i16) as i32;
-        debug!("Mode 7 Matrix B: {}", self.matrix_b);
+        trace!("Mode 7 Matrix B: {}", self.matrix_b);
     }
 
     pub fn set_matrix_c(&mut self, value: u8) {
         self.matrix_c = (self.word_value(value) as i16) as i32;
-        debug!("Mode 7 Matrix C: {}", self.matrix_c);
+        trace!("Mode 7 Matrix C: {}", self.matrix_c);
     }
 
     pub fn set_matrix_d(&mut self, value: u8) {
         self.matrix_d = (self.word_value(value) as i16) as i32;
-        debug!("Mode 7 Matrix D: {}", self.matrix_d);
+        trace!("Mode 7 Matrix D: {}", self.matrix_d);
     }
 
     pub fn set_center_x(&mut self, value: u8) {
         self.center_x = sign_extend_13(self.word_value(value));
-        debug!("Mode 7 Center X: {}", self.center_x);
+        trace!("Mode 7 Center X: {}", self.center_x);
     }
 
     pub fn set_center_y(&mut self, value: u8) {
         self.center_y = sign_extend_13(self.word_value(value));
-        debug!("Mode 7 Center Y: {}", self.center_y);
+        trace!("Mode 7 Center Y: {}", self.center_y);
     }
 
     pub fn set_scroll_x(&mut self, value: u8) {
         self.scroll_x = sign_extend_13(self.word_value(value));
-        debug!("Mode 7 Scroll X: {}", self.scroll_x);
+        trace!("Mode 7 Scroll X: {}", self.scroll_x);
     }
 
     pub fn set_scroll_y(&mut self, value: u8) {
         self.scroll_y = sign_extend_13(self.word_value(value));
-        debug!("Mode 7 Scroll Y: {}", self.scroll_y);
+        trace!("Mode 7 Scroll Y: {}", self.scroll_y);
     }
 
     fn word_value(&mut self, value: u8) -> u16 {

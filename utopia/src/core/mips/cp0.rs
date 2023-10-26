@@ -1,6 +1,6 @@
 use super::{Bus, Coprocessor0, Core, Interrupt, REGS};
 use bitfield_struct::bitfield;
-use tracing::debug;
+use tracing::trace;
 
 const INT_TIMER: Interrupt = 0x80;
 
@@ -116,7 +116,7 @@ impl Coprocessor0 for Cp0 {
         let rd = ((word >> 11) & 31) as usize;
         let cp0 = &core.cp0;
 
-        debug!("{:08X} MFC0 {}, {}", core.pc, REGS[rt], Self::REGS[rd]);
+        trace!("{:08X} MFC0 {}, {}", core.pc, REGS[rt], Self::REGS[rd]);
 
         let result = match rd {
             0 => cp0.index,
@@ -142,50 +142,50 @@ impl Coprocessor0 for Cp0 {
         let value = core.get(rt);
         let cp0 = &mut core.cp0;
 
-        debug!("{:08X} MTC0 {}, {}", core.pc, REGS[rt], Self::REGS[rd]);
+        trace!("{:08X} MTC0 {}, {}", core.pc, REGS[rt], Self::REGS[rd]);
 
         match rd {
             0 => {
                 cp0.index = value & 0x8000_003f;
-                debug!("  CP0 Index: {}", cp0.index);
+                trace!("  CP0 Index: {}", cp0.index);
             }
             2 => {
                 cp0.lo0 = value;
-                debug!("  CP0 LO0: {:08X}", cp0.lo0);
+                trace!("  CP0 LO0: {:08X}", cp0.lo0);
             }
             3 => {
                 cp0.lo1 = value;
-                debug!("  CP0 LO1: {:08X}", cp0.lo1);
+                trace!("  CP0 LO1: {:08X}", cp0.lo1);
             }
             5 => {
                 cp0.page_mask = value & 0x01ff_e000;
-                debug!("  CP0 Page Mask: {:08X}", cp0.page_mask);
+                trace!("  CP0 Page Mask: {:08X}", cp0.page_mask);
             }
             6 => {
                 cp0.wired = value & 0x0000_003f;
-                debug!("  CP0 Wired: {:08X}", cp0.wired);
+                trace!("  CP0 Wired: {:08X}", cp0.wired);
             }
             10 => {
                 cp0.hi = value;
-                debug!("  CP0 HI: {:08X}", cp0.hi);
+                trace!("  CP0 HI: {:08X}", cp0.hi);
             }
             11 => {
                 cp0.compare = value;
-                debug!("  CP0 Compare: {:08X}", cp0.compare);
+                trace!("  CP0 Compare: {:08X}", cp0.compare);
                 cp0.int_active &= !INT_TIMER;
             }
             12 => {
                 cp0.status = value.into();
-                debug!("  CP0 Status: {:?}", cp0.status);
+                trace!("  CP0 Status: {:?}", cp0.status);
                 core.cp1.set_reg_size(core.cp0.status.fr());
             }
             14 => {
                 cp0.epc = value;
-                debug!("  CP0 EPC: {:08X}", cp0.epc);
+                trace!("  CP0 EPC: {:08X}", cp0.epc);
             }
             30 => {
                 cp0.error_epc = value;
-                debug!("  CP0 Error EPC: {:08X}", cp0.error_epc);
+                trace!("  CP0 Error EPC: {:08X}", cp0.error_epc);
             }
             _ => {
                 if value != 0 {
@@ -236,7 +236,7 @@ impl Coprocessor0 for Cp0 {
         }
 
         // Handle interrupt exception
-        debug!("-- Exception: {:08b} --", int_active);
+        trace!("-- Exception: {:08b} --", int_active);
 
         let int_pending = (cp0.cause.ip() & 0x03) | (int_active & 0xfc);
         cp0.cause.set_ip(int_pending);
@@ -257,7 +257,7 @@ impl Coprocessor0 for Cp0 {
 }
 
 fn tlbr(core: &mut Core<impl Bus<Cp0 = Cp0>>) {
-    debug!("{:08X} TLBR", core.pc);
+    trace!("{:08X} TLBR", core.pc);
 
     let tlb_entry = &core.cp0.tlb_entries[core.cp0.index as usize];
 
@@ -267,14 +267,14 @@ fn tlbr(core: &mut Core<impl Bus<Cp0 = Cp0>>) {
     core.cp0.page_mask = tlb_entry.page_mask;
     core.cp0.hi = tlb_entry.hi;
 
-    debug!("  CP0 LO0: {:08X}", core.cp0.lo0);
-    debug!("  CP0 LO1: {:08X}", core.cp0.lo1);
-    debug!("  CP0 Page Mask: {:08X}", core.cp0.page_mask);
-    debug!("  CP0 HI: {:08X}", core.cp0.hi);
+    trace!("  CP0 LO0: {:08X}", core.cp0.lo0);
+    trace!("  CP0 LO1: {:08X}", core.cp0.lo1);
+    trace!("  CP0 Page Mask: {:08X}", core.cp0.page_mask);
+    trace!("  CP0 HI: {:08X}", core.cp0.hi);
 }
 
 fn tlbwi(core: &mut Core<impl Bus<Cp0 = Cp0>>) {
-    debug!("{:08X} TLBWI", core.pc);
+    trace!("{:08X} TLBWI", core.pc);
 
     let tlb_entry = &mut core.cp0.tlb_entries[core.cp0.index as usize];
     tlb_entry.lo0 = core.cp0.lo0;
@@ -282,11 +282,11 @@ fn tlbwi(core: &mut Core<impl Bus<Cp0 = Cp0>>) {
     tlb_entry.page_mask = core.cp0.page_mask;
     tlb_entry.hi = core.cp0.hi & !core.cp0.page_mask;
 
-    debug!("TLB Entry {}: {:X?}", core.cp0.index, tlb_entry);
+    trace!("TLB Entry {}: {:X?}", core.cp0.index, tlb_entry);
 }
 
 fn tlbp(core: &mut Core<impl Bus<Cp0 = Cp0>>) {
-    debug!("{:08X} TLBP", core.pc);
+    trace!("{:08X} TLBP", core.pc);
 
     let index = core.cp0.tlb_entries.iter().position(|entry| {
         let mask = if ((entry.lo0 & entry.lo1) & 1) != 0 {
@@ -305,11 +305,11 @@ fn tlbp(core: &mut Core<impl Bus<Cp0 = Cp0>>) {
         core.cp0.index |= 0x8000_0000;
     }
 
-    debug!("  CP0 Index: {}", core.cp0.index);
+    trace!("  CP0 Index: {}", core.cp0.index);
 }
 
 fn eret(core: &mut Core<impl Bus<Cp0 = Cp0>>) {
-    debug!("{:08X} ERET", core.pc);
+    trace!("{:08X} ERET", core.pc);
 
     if core.cp0.status.erl() {
         core.jump_now(core.cp0.error_epc);

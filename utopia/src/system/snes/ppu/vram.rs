@@ -1,5 +1,5 @@
 use crate::util::MirrorVec;
-use tracing::{debug, trace};
+use tracing::trace;
 
 const VRAM_SIZE: usize = 32768;
 
@@ -61,20 +61,20 @@ impl Vram {
 
         self.increment_high = (value & 0x80) != 0;
 
-        debug!("VRAM Remap Mode: {}", self.remap_mode);
-        debug!("VRAM Increment Amount: {}", self.increment_amount);
-        debug!("VRAM Increment High: {}", self.increment_high);
+        trace!("VRAM Remap Mode: {}", self.remap_mode);
+        trace!("VRAM Increment Amount: {}", self.increment_amount);
+        trace!("VRAM Increment High: {}", self.increment_high);
     }
 
     pub fn set_address_low(&mut self, value: u8) {
         self.address = (self.address & 0xff00) | (value as u16);
-        debug!("VRAM Address: {:04X}", self.address);
+        trace!("VRAM Address: {:04X}", self.address);
         self.prefetch();
     }
 
     pub fn set_address_high(&mut self, value: u8) {
         self.address = (self.address & 0xff) | ((value as u16) << 8);
-        debug!("VRAM Address: {:04X}", self.address);
+        trace!("VRAM Address: {:04X}", self.address);
         self.prefetch();
     }
 
@@ -104,9 +104,11 @@ impl Vram {
         let address = self.remap_address();
         self.data[address] = (self.data[address] & 0xff00) | (value as u16);
 
-        debug!(
+        trace!(
             "VRAM Write (Low): {:04X} <= {:02X} ({:04X})",
-            address, value, self.data[address]
+            address,
+            value,
+            self.data[address]
         );
 
         self.update_chr_cache(address, 0, value as u16);
@@ -120,9 +122,11 @@ impl Vram {
         let address = self.remap_address();
         self.data[address] = (self.data[address] & 0xff) | ((value as u16) << 8);
 
-        debug!(
+        trace!(
             "VRAM Write (High): {:04X} <= {:02X} ({:04X})",
-            address, value, self.data[address]
+            address,
+            value,
+            self.data[address]
         );
 
         self.update_chr_cache(address, 1, value as u16);
@@ -147,7 +151,7 @@ impl Vram {
     fn prefetch(&mut self) {
         let address = self.remap_address();
         self.read_buffer = self.data[address];
-        debug!("VRAM Read: {:04X} => {:04X}", address, self.read_buffer);
+        trace!("VRAM Read: {:04X} => {:04X}", address, self.read_buffer);
     }
 
     fn update_chr_cache(&mut self, address: usize, plane: u8, value: u16) {

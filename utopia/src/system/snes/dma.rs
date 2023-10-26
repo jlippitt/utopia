@@ -1,6 +1,6 @@
 use super::clock::SLOW_CYCLES;
 use crate::Mapped;
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 
 struct Mode {
     offsets: [u8; 4],
@@ -116,12 +116,12 @@ impl Dma {
 
     pub fn set_dma_enabled(&mut self, value: u8) {
         self.dma_enabled = value;
-        debug!("DMA Enabled: {:08b}", self.dma_enabled);
+        trace!("DMA Enabled: {:08b}", self.dma_enabled);
     }
 
     pub fn set_hdma_enabled(&mut self, value: u8) {
         self.hdma_enabled = value;
-        debug!("HDMA Enabled: {:08b}", self.hdma_enabled);
+        trace!("HDMA Enabled: {:08b}", self.hdma_enabled);
     }
 
     pub fn read(&self, address: u8, prev_value: u8) -> u8 {
@@ -171,55 +171,55 @@ impl Dma {
                 channel.ctrl.hdma_indirect = (value & 0x40) != 0;
                 channel.ctrl.reverse = (value & 0x80) != 0;
                 channel.ctrl.raw = value;
-                debug!("DMA{} Mode: {}", id, mode_index);
-                debug!("DMA{} Fixed: {}", id, channel.ctrl.fixed);
-                debug!("DMA{} Decrement: {}", id, channel.ctrl.decrement);
-                debug!("DMA{} HDMA Indirect: {}", id, channel.ctrl.hdma_indirect);
-                debug!("DMA{} Reverse: {}", id, channel.ctrl.reverse);
+                trace!("DMA{} Mode: {}", id, mode_index);
+                trace!("DMA{} Fixed: {}", id, channel.ctrl.fixed);
+                trace!("DMA{} Decrement: {}", id, channel.ctrl.decrement);
+                trace!("DMA{} HDMA Indirect: {}", id, channel.ctrl.hdma_indirect);
+                trace!("DMA{} Reverse: {}", id, channel.ctrl.reverse);
             }
             0x01 => {
                 channel.destination = value;
-                debug!("DMA{} Destination: {:02X}", id, channel.destination);
+                trace!("DMA{} Destination: {:02X}", id, channel.destination);
             }
             0x02 => {
                 channel.source = (channel.source & 0xffff_ff00) | (value as u32);
-                debug!("DMA{} Source: {:06X}", id, channel.source);
+                trace!("DMA{} Source: {:06X}", id, channel.source);
             }
             0x03 => {
                 channel.source = (channel.source & 0xffff_00ff) | ((value as u32) << 8);
-                debug!("DMA{} Source: {:06X}", id, channel.source);
+                trace!("DMA{} Source: {:06X}", id, channel.source);
             }
             0x04 => {
                 channel.source = (channel.source & 0xff00_ffff) | ((value as u32) << 16);
-                debug!("DMA{} Source: {:06X}", id, channel.source);
+                trace!("DMA{} Source: {:06X}", id, channel.source);
             }
             0x05 => {
                 channel.indirect = (channel.indirect & 0xffff_ff00) | (value as u32);
-                debug!("DMA{} Indirect: {:06X}", id, channel.indirect);
+                trace!("DMA{} Indirect: {:06X}", id, channel.indirect);
             }
             0x06 => {
                 channel.indirect = (channel.indirect & 0xffff_00ff) | ((value as u32) << 8);
-                debug!("DMA{} Indirect: {:06X}", id, channel.indirect);
+                trace!("DMA{} Indirect: {:06X}", id, channel.indirect);
             }
             0x07 => {
                 channel.indirect = (channel.indirect & 0xff00_ffff) | ((value as u32) << 16);
-                debug!("DMA{} Indirect: {:06X}", id, channel.indirect);
+                trace!("DMA{} Indirect: {:06X}", id, channel.indirect);
             }
             0x08 => {
                 channel.table = (channel.table & 0xff00) | (value as u16);
-                debug!("DMA{} Table: {:04X}", id, channel.table);
+                trace!("DMA{} Table: {:04X}", id, channel.table);
             }
             0x09 => {
                 channel.table = (channel.table & 0x00ff) | ((value as u16) << 8);
-                debug!("DMA{} Table: {:04X}", id, channel.table);
+                trace!("DMA{} Table: {:04X}", id, channel.table);
             }
             0x0a => {
                 channel.counter = value;
-                debug!("DMA{} Counter: {:02X}", id, channel.counter);
+                trace!("DMA{} Counter: {:02X}", id, channel.counter);
             }
             0x0b | 0x0f => {
                 channel.unknown = value;
-                debug!("DMA{} Unknown: {:02X}", id, channel.unknown);
+                trace!("DMA{} Unknown: {:02X}", id, channel.unknown);
             }
             _ => warn!("Unmapped DMA write: {:02X} <= {:02X}", address, value),
         }
@@ -229,13 +229,13 @@ impl Dma {
 impl<T: Mapped> super::Hardware<T> {
     pub(super) fn transfer_dma(&mut self) {
         // TODO: More accurate timing - but this will do for now
-        debug!("DMA Transfer Begin");
+        trace!("DMA Transfer Begin");
         self.step(SLOW_CYCLES);
         self.iter_channels(self.dma.dma_enabled, |hw, id| {
             hw.transfer_dma_for_channel(id)
         });
         self.dma.dma_enabled = 0;
-        debug!("DMA Transfer End");
+        trace!("DMA Transfer End");
     }
 
     pub(super) fn init_hdma(&mut self) {
@@ -244,11 +244,11 @@ impl<T: Mapped> super::Hardware<T> {
         }
 
         // TODO: More accurate timing - but this will do for now
-        debug!("HDMA Init Begin");
+        trace!("HDMA Init Begin");
         self.step(SLOW_CYCLES);
         self.dma.hdma_terminated = 0;
         self.iter_channels(self.dma.hdma_enabled, |hw, id| hw.init_hdma_for_channel(id));
-        debug!("HDMA Init End");
+        trace!("HDMA Init End");
     }
 
     pub(super) fn transfer_hdma(&mut self) {
@@ -259,10 +259,10 @@ impl<T: Mapped> super::Hardware<T> {
         }
 
         // TODO: More accurate timing - but this will do for now
-        debug!("HDMA Transfer Begin");
+        trace!("HDMA Transfer Begin");
         self.step(SLOW_CYCLES);
         self.iter_channels(hdma_active, |hw, id| hw.transfer_hdma_for_channel(id));
-        debug!("HDMA Transfer End");
+        trace!("HDMA Transfer End");
     }
 
     fn iter_channels(&mut self, active: u8, callback: impl Fn(&mut Self, usize)) {
@@ -318,7 +318,7 @@ impl<T: Mapped> super::Hardware<T> {
         {
             let channel = &mut self.dma.channels[id];
             channel.table = channel.source as u16;
-            debug!("DMA{} Table: {:04X}", id, channel.table);
+            trace!("DMA{} Table: {:04X}", id, channel.table);
         }
 
         self.reload_hdma(id);
@@ -358,10 +358,10 @@ impl<T: Mapped> super::Hardware<T> {
             let channel = &mut self.dma.channels[id];
 
             channel.counter = channel.counter.wrapping_sub(1);
-            debug!("DMA{} Counter: {:02X}", id, channel.counter);
+            trace!("DMA{} Counter: {:02X}", id, channel.counter);
 
             channel.do_transfer = (channel.counter & 0x80) != 0;
-            debug!("DMA{} Do Transfer: {}", id, channel.do_transfer);
+            trace!("DMA{} Do Transfer: {}", id, channel.do_transfer);
 
             channel.counter
         };
@@ -377,12 +377,12 @@ impl<T: Mapped> super::Hardware<T> {
         {
             let channel = &mut self.dma.channels[id];
             channel.counter = counter;
-            debug!("DMA{} Counter: {:02X}", id, channel.counter);
+            trace!("DMA{} Counter: {:02X}", id, channel.counter);
         }
 
         if counter == 0 {
             self.dma.hdma_terminated |= 1 << id;
-            debug!("DMA{} HDMA Terminated", id);
+            trace!("DMA{} HDMA Terminated", id);
             return;
         }
 
@@ -392,14 +392,14 @@ impl<T: Mapped> super::Hardware<T> {
             {
                 let channel = &mut self.dma.channels[id];
                 channel.indirect = (channel.indirect & 0xffff_0000) | (indirect as u32);
-                debug!("DMA{} Indirect: {:06X}", id, channel.indirect);
+                trace!("DMA{} Indirect: {:06X}", id, channel.indirect);
             }
         }
 
         {
             let channel = &mut self.dma.channels[id];
             channel.do_transfer = true;
-            debug!("DMA{} Do Transfer: {}", id, channel.do_transfer);
+            trace!("DMA{} Do Transfer: {}", id, channel.do_transfer);
         }
     }
 
@@ -415,7 +415,7 @@ impl<T: Mapped> super::Hardware<T> {
 
         let value = self.read_bus_a(address);
 
-        debug!("DMA{} Table Read: {:06X} => {:02X}", id, address, value);
+        trace!("DMA{} Table Read: {:06X} => {:02X}", id, address, value);
 
         value
     }
@@ -431,16 +431,22 @@ impl<T: Mapped> super::Hardware<T> {
 
         if reverse {
             let value = self.read_bus_b(port);
-            debug!(
+            trace!(
                 "DMA{} Read: {:02X} => {:02X} => {:06X}",
-                id, port, value, address
+                id,
+                port,
+                value,
+                address
             );
             self.write_bus_a(address, value);
         } else {
             let value = self.read_bus_a(address);
-            debug!(
+            trace!(
                 "DMA{} Write: {:02X} <= {:02X} <= {:06X}",
-                id, port, value, address
+                id,
+                port,
+                value,
+                address
             );
             self.write_bus_b(port, value);
         }

@@ -2,7 +2,7 @@ use super::directory::Directory;
 use crate::util::MirrorVec;
 use decoder::{BrrDecoder, LoopMode};
 use envelope::Envelope;
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 
 mod decoder;
 mod envelope;
@@ -55,27 +55,27 @@ impl Voice {
 
     pub fn set_volume_left(&mut self, value: u8) {
         self.volume_left = value as i8 as i32;
-        debug!("Voice {} Volume Left: {}", self.id, self.volume_left);
+        trace!("Voice {} Volume Left: {}", self.id, self.volume_left);
     }
 
     pub fn set_volume_right(&mut self, value: u8) {
         self.volume_right = value as i8 as i32;
-        debug!("Voice {} Volume Right: {}", self.id, self.volume_right);
+        trace!("Voice {} Volume Right: {}", self.id, self.volume_right);
     }
 
     pub fn set_pitch_low(&mut self, value: u8) {
         self.pitch = (self.pitch & 0x3f00) | (value as usize);
-        debug!("Voice {} Pitch: {:04X}", self.id, self.pitch);
+        trace!("Voice {} Pitch: {:04X}", self.id, self.pitch);
     }
 
     pub fn set_pitch_high(&mut self, value: u8) {
         self.pitch = (self.pitch & 0xff) | ((value as usize & 0x3f) << 8);
-        debug!("Voice {} Pitch: {:04X}", self.id, self.pitch);
+        trace!("Voice {} Pitch: {:04X}", self.id, self.pitch);
     }
 
     pub fn set_source(&mut self, value: u8) {
         self.source = value;
-        debug!("Voice {} Source: {:02X}", self.id, self.source);
+        trace!("Voice {} Source: {:02X}", self.id, self.source);
     }
 
     pub fn set_adsr_low(&mut self, value: u8) {
@@ -92,22 +92,22 @@ impl Voice {
 
     pub fn set_key_on(&mut self, key_on: bool) {
         self.key_on = key_on;
-        debug!("Voice {} Key On: {}", self.id, self.key_on);
+        trace!("Voice {} Key On: {}", self.id, self.key_on);
     }
 
     pub fn set_key_off(&mut self, key_off: bool) {
         self.key_off = key_off;
-        debug!("Voice {} Key Off: {}", self.id, self.key_off);
+        trace!("Voice {} Key Off: {}", self.id, self.key_off);
     }
 
     pub fn set_noise_enabled(&mut self, noise_enabled: bool) {
         self.noise_enabled = noise_enabled;
-        debug!("Voice {} Noise Enabled: {}", self.id, self.noise_enabled);
+        trace!("Voice {} Noise Enabled: {}", self.id, self.noise_enabled);
     }
 
     pub fn set_echo_enabled(&mut self, echo_enabled: bool) {
         self.echo_enabled = echo_enabled;
-        debug!("Voice {} Echo Enabled: {}", self.id, self.echo_enabled);
+        trace!("Voice {} Echo Enabled: {}", self.id, self.echo_enabled);
     }
 
     pub fn step(
@@ -122,7 +122,7 @@ impl Voice {
             self.counter = 0;
 
             let start_address = dir.start_address(ram, self.source);
-            debug!("Voice {} Start Address: {:04X}", self.id, start_address);
+            trace!("Voice {} Start Address: {:04X}", self.id, start_address);
             self.decoder.restart(ram, start_address);
 
             self.envelope.restart();
@@ -156,7 +156,7 @@ impl Voice {
         let left = (output * self.volume_left) >> 6;
         let right = (output * self.volume_right) >> 6;
 
-        debug!("Voice {} Output: ({}, {})", self.id, left, right);
+        trace!("Voice {} Output: ({}, {})", self.id, left, right);
 
         (left, right)
     }
@@ -164,14 +164,14 @@ impl Voice {
     fn next_block(&mut self, dir: &Directory, ram: &MirrorVec<u8>) {
         if self.decoder.loop_mode() != LoopMode::Normal {
             // TODO: Set END flag
-            debug!("Voice {} End", self.id);
+            trace!("Voice {} End", self.id);
 
             if self.decoder.loop_mode() == LoopMode::EndMute {
                 self.envelope.mute();
             }
 
             let loop_address = dir.loop_address(ram, self.source);
-            debug!("Voice {} Loop Address: {:04X}", self.id, loop_address);
+            trace!("Voice {} Loop Address: {:04X}", self.id, loop_address);
             self.decoder.restart(ram, loop_address);
         } else {
             self.decoder.decode_next(ram);

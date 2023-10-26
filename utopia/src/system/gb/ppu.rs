@@ -4,7 +4,7 @@ use oam::Oam;
 use palette::Palette;
 use render::RenderState;
 use screen::Screen;
-use tracing::debug;
+use tracing::trace;
 
 pub use screen::{HEIGHT, WIDTH};
 
@@ -188,12 +188,12 @@ impl Ppu {
                 let lcd_enable = (value & 0x80) != 0;
 
                 if lcd_enable && !self.ctrl.lcd_enable {
-                    debug!("Screen On");
+                    trace!("Screen On");
                     self.set_mode(interrupt, Mode::Oam);
                     self.ctrl.lcd_enable = true;
                     self.screen.reset();
                 } else if !lcd_enable && self.ctrl.lcd_enable {
-                    debug!("Screen Off");
+                    trace!("Screen Off");
                     self.mode = Mode::HBlank;
                     self.line = 0;
                     self.dot = 0;
@@ -207,13 +207,13 @@ impl Ppu {
                 self.ctrl.window_tile_offset = BASE_TILE_OFFSET + ((value as u16 & 0x40) << 4);
                 self.ctrl.obj_enable = (value & 0x02) != 0;
                 self.ctrl.obj_size = (value & 0x04) != 0;
-                debug!("BG Enable: {}", self.ctrl.bg_enable);
-                debug!("BG Tile Offset: {:04X}", self.ctrl.bg_tile_offset);
-                debug!("Window Enable: {}", self.ctrl.window_enable);
-                debug!("Window Tile Offset: {:04X}", self.ctrl.window_tile_offset);
-                debug!("BG CHR Select: {}", self.ctrl.bg_chr_select);
-                debug!("OBJ Enable: {}", self.ctrl.obj_enable);
-                debug!("OBJ Size: 8x{}", 8 << self.ctrl.obj_size as u32);
+                trace!("BG Enable: {}", self.ctrl.bg_enable);
+                trace!("BG Tile Offset: {:04X}", self.ctrl.bg_tile_offset);
+                trace!("Window Enable: {}", self.ctrl.window_enable);
+                trace!("Window Tile Offset: {:04X}", self.ctrl.window_tile_offset);
+                trace!("BG CHR Select: {}", self.ctrl.bg_chr_select);
+                trace!("OBJ Enable: {}", self.ctrl.obj_enable);
+                trace!("OBJ Size: 8x{}", 8 << self.ctrl.obj_size as u32);
 
                 self.ctrl.raw = value;
             }
@@ -222,49 +222,49 @@ impl Ppu {
                 self.interrupt_enable.vblank = (value & 0x10) != 0;
                 self.interrupt_enable.oam = (value & 0x20) != 0;
                 self.interrupt_enable.lcd_y = (value & 0x40) != 0;
-                debug!("HBlank Interrupt Enable: {}", self.interrupt_enable.hblank);
-                debug!("VBlank Interrupt Enable: {}", self.interrupt_enable.vblank);
-                debug!("OAM Interrupt Enable: {}", self.interrupt_enable.oam);
-                debug!("LCD Y Interrupt Enable: {}", self.interrupt_enable.lcd_y);
+                trace!("HBlank Interrupt Enable: {}", self.interrupt_enable.hblank);
+                trace!("VBlank Interrupt Enable: {}", self.interrupt_enable.vblank);
+                trace!("OAM Interrupt Enable: {}", self.interrupt_enable.oam);
+                trace!("LCD Y Interrupt Enable: {}", self.interrupt_enable.lcd_y);
             }
             0x42 => {
                 self.scroll_y = value;
-                debug!("Scroll Y: {}", self.scroll_y);
+                trace!("Scroll Y: {}", self.scroll_y);
             }
             0x43 => {
                 self.scroll_x = value;
-                debug!("Scroll X: {}", self.scroll_x);
+                trace!("Scroll X: {}", self.scroll_x);
             }
             0x45 => {
                 self.lcd_y_compare = value;
-                debug!("LCD Y Compare: {}", self.lcd_y_compare);
+                trace!("LCD Y Compare: {}", self.lcd_y_compare);
             }
             0x47 => {
                 self.dmg_palette_bg = value;
-                debug!("BG Palette: {:08b}", self.dmg_palette_bg);
+                trace!("BG Palette: {:08b}", self.dmg_palette_bg);
             }
             0x48 => {
                 self.dmg_palette_obj[0] = value;
-                debug!("OBJ Palette 0: {:08b}", self.dmg_palette_obj[0]);
+                trace!("OBJ Palette 0: {:08b}", self.dmg_palette_obj[0]);
             }
             0x49 => {
                 self.dmg_palette_obj[1] = value;
-                debug!("OBJ Palette 1: {:08b}", self.dmg_palette_obj[1]);
+                trace!("OBJ Palette 1: {:08b}", self.dmg_palette_obj[1]);
             }
             0x4a => {
                 self.window_y = value;
-                debug!("Window Y: {}", self.window_y);
+                trace!("Window Y: {}", self.window_y);
             }
             0x4b => {
                 self.window_x = value;
-                debug!("Window X: {}", self.window_x);
+                trace!("Window X: {}", self.window_x);
             }
             0x4c => {
                 // Ignore for now
             }
             0x4f if self.is_cgb => {
                 self.vram_bank_offset = VRAM_BANK_SIZE * (value as usize & 0x01);
-                debug!("VRAM Bank Offset: {}", self.vram_bank_offset);
+                trace!("VRAM Bank Offset: {}", self.vram_bank_offset);
             }
             0x68 if self.is_cgb => {
                 self.cgb_palette_bg.set_address(value);
@@ -362,7 +362,7 @@ impl Ppu {
 
     fn set_mode(&mut self, interrupt: &mut Interrupt, mode: Mode) {
         self.mode = mode;
-        debug!("Mode: {:?}", self.mode);
+        trace!("Mode: {:?}", self.mode);
 
         let lcd_stat = match self.mode {
             Mode::HBlank => self.interrupt_enable.hblank,

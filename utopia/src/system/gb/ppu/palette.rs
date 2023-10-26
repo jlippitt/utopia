@@ -1,4 +1,4 @@
-use tracing::debug;
+use tracing::trace;
 
 pub struct Palette {
     address: u8,
@@ -30,10 +30,11 @@ impl Palette {
     pub fn set_address(&mut self, value: u8) {
         self.address = value & 0x3f;
         self.auto_increment = (value & 0x80) != 0;
-        debug!("{} Palette Address: {}", self.name, self.address);
-        debug!(
+        trace!("{} Palette Address: {}", self.name, self.address);
+        trace!(
             "{} Palette Auto-Increment: {}",
-            self.name, self.auto_increment
+            self.name,
+            self.auto_increment
         );
     }
 
@@ -46,9 +47,12 @@ impl Palette {
             *color as u8
         };
 
-        debug!(
+        trace!(
             "{} Palette Read: {:02X} => {:02X} ({:04X})",
-            self.name, self.address, value, color,
+            self.name,
+            self.address,
+            value,
+            color,
         );
 
         // Note: No auto-increment after read
@@ -65,9 +69,12 @@ impl Palette {
             (*color & 0xff00) | value as u16
         };
 
-        debug!(
+        trace!(
             "{} Palette Write: {:02X} <= {:02X} ({:04X})",
-            self.name, self.address, value, color,
+            self.name,
+            self.address,
+            value,
+            color,
         );
 
         if self.auto_increment {

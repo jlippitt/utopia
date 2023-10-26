@@ -1,5 +1,5 @@
 use crate::util::facade::Value;
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 
 mod arm;
 mod condition;
@@ -106,38 +106,38 @@ impl<T: Bus> Core<T> {
 
     fn read_byte(&mut self, address: u32) -> u8 {
         let value = self.bus.read(address);
-        debug!("  [{:08X}] => {:02X}", address, value);
+        trace!("  [{:08X}] => {:02X}", address, value);
         value
     }
 
     fn read_halfword(&mut self, address: u32) -> u16 {
         assert!((address & 1) == 0);
         let value = self.bus.read(address);
-        debug!("  [{:08X}] => {:04X}", address, value);
+        trace!("  [{:08X}] => {:04X}", address, value);
         value
     }
 
     fn read_word(&mut self, address: u32) -> u32 {
         assert!((address & 3) == 0);
         let value = self.bus.read(address);
-        debug!("  [{:08X}] => {:08X}", address, value);
+        trace!("  [{:08X}] => {:08X}", address, value);
         value
     }
 
     fn write_byte(&mut self, address: u32, value: u8) {
-        debug!("  [{:08X}] <= {:02X}", address, value);
+        trace!("  [{:08X}] <= {:02X}", address, value);
         self.bus.write(address, value);
     }
 
     fn write_halfword(&mut self, address: u32, value: u16) {
         assert!((address & 1) == 0);
-        debug!("  [{:08X}] <= {:04X}", address, value);
+        trace!("  [{:08X}] <= {:04X}", address, value);
         self.bus.write(address, value);
     }
 
     fn write_word(&mut self, address: u32, value: u32) {
         assert!((address & 3) == 0);
-        debug!("  [{:08X}] <= {:08X}", address, value);
+        trace!("  [{:08X}] <= {:08X}", address, value);
         self.bus.write(address, value);
     }
 
@@ -156,7 +156,7 @@ impl<T: Bus> Core<T> {
         }
 
         self.regs[reg] = value;
-        debug!("  {}: {:08X}", REGS[reg], value);
+        trace!("  {}: {:08X}", REGS[reg], value);
     }
 
     fn cpsr_to_u32(&self) -> u32 {
@@ -195,7 +195,7 @@ impl<T: Bus> Core<T> {
             });
         }
 
-        debug!("  CPSR: {:08X}", self.cpsr_to_u32());
+        trace!("  CPSR: {:08X}", self.cpsr_to_u32());
     }
 
     fn spsr_to_u32(&self) -> u32 {
@@ -231,7 +231,7 @@ impl<T: Bus> Core<T> {
             *spsr = (value & 0xf000_0000) | (*spsr & 0x0fff_ffff);
         }
 
-        debug!("  SPSR: {:08X}", spsr);
+        trace!("  SPSR: {:08X}", spsr);
     }
 
     fn set_nz(&mut self, value: u32) {
@@ -258,8 +258,8 @@ impl<T: Bus> Core<T> {
             return;
         }
 
-        debug!("  Mode: {:?}", mode);
-        debug!("  Stored: {:X?}", &self.regs[8..=14]);
+        trace!("  Mode: {:?}", mode);
+        trace!("  Stored: {:X?}", &self.regs[8..=14]);
 
         match self.cpsr.m {
             Mode::User | Mode::System => self.bank.usr.copy_from_slice(&self.regs[8..=14]),
@@ -305,7 +305,7 @@ impl<T: Bus> Core<T> {
             }
         }
 
-        debug!("  Loaded: {:X?}", &self.regs[8..=14]);
+        trace!("  Loaded: {:X?}", &self.regs[8..=14]);
     }
 }
 

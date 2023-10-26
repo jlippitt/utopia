@@ -1,5 +1,5 @@
 use super::constants::RATE;
-use tracing::debug;
+use tracing::trace;
 
 pub struct NoiseGenerator {
     divider: Option<u32>,
@@ -23,7 +23,7 @@ impl NoiseGenerator {
     pub fn set_rate(&mut self, value: u8) {
         self.divider = RATE[value as usize];
         self.counter = self.divider;
-        debug!("Noise Divider: {:?}", self.divider);
+        trace!("Noise Divider: {:?}", self.divider);
     }
 
     pub fn step(&mut self) {
@@ -41,6 +41,6 @@ impl NoiseGenerator {
         // Sign extend 15-bit result
         self.level = (self.level << 17) >> 17;
 
-        debug!("Noise Level: {}", self.level);
+        trace!("Noise Level: {}", self.level);
     }
 }

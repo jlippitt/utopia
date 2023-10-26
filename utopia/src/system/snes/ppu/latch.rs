@@ -1,5 +1,5 @@
 use super::super::Clock;
-use tracing::debug;
+use tracing::trace;
 
 pub struct Latch {
     enabled: bool,
@@ -24,7 +24,7 @@ impl Latch {
         }
 
         self.enabled = enabled;
-        debug!("PPU Latch Enabled: {}", enabled);
+        trace!("PPU Latch Enabled: {}", enabled);
     }
 
     pub fn latch_counters(&mut self, clock: &Clock) {
@@ -35,9 +35,9 @@ impl Latch {
         self.latched = true;
         self.counter[0] = clock.dot() as u16;
         self.counter[1] = clock.line();
-        debug!("PPU Counters Latched: {}", self.latched);
-        debug!("PPU Counter X: {}", self.counter[0]);
-        debug!("PPU Counter Y: {}", self.counter[1]);
+        trace!("PPU Counters Latched: {}", self.latched);
+        trace!("PPU Counter X: {}", self.counter[0]);
+        trace!("PPU Counter Y: {}", self.counter[1]);
     }
 
     pub fn counter(&mut self, index: usize) -> u8 {
@@ -57,7 +57,7 @@ impl Latch {
 
         if self.enabled {
             self.latched = false;
-            debug!("PPU Counters Latched: {}", self.latched);
+            trace!("PPU Counters Latched: {}", self.latched);
         }
 
         self.high_byte = [false; 2];

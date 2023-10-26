@@ -1,5 +1,5 @@
 use super::{Mapper, Mappings, NameTable};
-use tracing::debug;
+use tracing::trace;
 
 const PRG_BANK_SIZE: usize = 32768;
 
@@ -18,7 +18,7 @@ impl Mapper for AxRom {
 
     fn write_register(&mut self, mappings: &mut Mappings, _address: u16, value: u8) {
         mappings.map_prg_rom(8, 8, PRG_BANK_SIZE * (value & 0x07) as usize);
-        debug!("AxROM PRG Read Mapping: {:?}", mappings.prg_read);
+        trace!("AxROM PRG Read Mapping: {:?}", mappings.prg_read);
 
         mappings.name = if (value & 0x10) != 0 {
             [NameTable::HIGH; 4]
@@ -26,6 +26,6 @@ impl Mapper for AxRom {
             [NameTable::LOW; 4]
         };
 
-        debug!("AxROM Name Mapping: {:?}", mappings.name);
+        trace!("AxROM Name Mapping: {:?}", mappings.name);
     }
 }

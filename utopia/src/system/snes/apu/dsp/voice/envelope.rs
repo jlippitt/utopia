@@ -1,5 +1,5 @@
 use super::super::constants::RATE;
-use tracing::debug;
+use tracing::trace;
 
 const RELEASE_RATE: usize = 31;
 const MAX_LEVEL: i32 = 0x07ff;
@@ -66,27 +66,31 @@ impl Envelope {
         self.adsr.enabled = (value & 0x80) != 0;
         self.adsr.attack_rate = ((value as usize & 15) << 1) + 1;
         self.adsr.decay_rate = (((value >> 4) as usize & 7) << 1) + 16;
-        debug!("Voice {} ADSR Enabled: {}", self.id, self.adsr.enabled);
-        debug!(
+        trace!("Voice {} ADSR Enabled: {}", self.id, self.adsr.enabled);
+        trace!(
             "Voice {} ADSR Attack Rate: {}",
-            self.id, self.adsr.attack_rate
+            self.id,
+            self.adsr.attack_rate
         );
-        debug!(
+        trace!(
             "Voice {} ADSR Decay Rate: {}",
-            self.id, self.adsr.decay_rate
+            self.id,
+            self.adsr.decay_rate
         );
     }
 
     pub fn set_adsr_high(&mut self, value: u8) {
         self.adsr.sustain_rate = (value & 31) as usize;
         self.adsr.sustain_level = ((((value >> 5) & 7) as i32) + 1) << 8;
-        debug!(
+        trace!(
             "Voice {} ADSR Sustain Rate: {}",
-            self.id, self.adsr.sustain_rate
+            self.id,
+            self.adsr.sustain_rate
         );
-        debug!(
+        trace!(
             "Voice {} ADSR Sustain Level: {}",
-            self.id, self.adsr.sustain_level
+            self.id,
+            self.adsr.sustain_level
         );
     }
 
@@ -105,7 +109,7 @@ impl Envelope {
             Gain::Direct((value as i32 & 127) << 4)
         };
 
-        debug!("Voice {} Gain: {:?}", self.id, self.gain);
+        trace!("Voice {} Gain: {:?}", self.id, self.gain);
     }
 
     pub fn restart(&mut self) {
@@ -125,14 +129,14 @@ impl Envelope {
 
         self.counter = self.divider;
 
-        debug!("Voice {} Mode: {:?}", self.id, self.mode);
+        trace!("Voice {} Mode: {:?}", self.id, self.mode);
     }
 
     pub fn release(&mut self) {
         self.mode = Mode::Release;
         self.divider = RATE[RELEASE_RATE];
         self.counter = self.divider;
-        debug!("Voice {} Mode: {:?}", self.id, self.mode);
+        trace!("Voice {} Mode: {:?}", self.id, self.mode);
     }
 
     pub fn mute(&mut self) {
@@ -140,7 +144,7 @@ impl Envelope {
         self.divider = None;
         self.counter = None;
         self.level = 0;
-        debug!("Voice {} Mode: {:?}", self.id, self.mode);
+        trace!("Voice {} Mode: {:?}", self.id, self.mode);
     }
 
     pub fn step(&mut self) {

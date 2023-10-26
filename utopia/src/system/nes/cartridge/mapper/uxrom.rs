@@ -1,5 +1,5 @@
 use super::{Mapper, Mappings};
-use tracing::debug;
+use tracing::trace;
 
 const PRG_BANK_SIZE: usize = 16384;
 
@@ -18,12 +18,12 @@ impl Mapper for UxRom {
         mappings.map_prg_rom(8, 4, 0);
         mappings.map_prg_rom(12, 4, self.prg_rom_size - PRG_BANK_SIZE);
         mappings.map_registers(8, 8);
-        debug!("UxROM PRG Read Mapping: {:?}", mappings.prg_read);
-        debug!("UxROM PRG Write Mapping: {:?}", mappings.prg_write);
+        trace!("UxROM PRG Read Mapping: {:?}", mappings.prg_read);
+        trace!("UxROM PRG Write Mapping: {:?}", mappings.prg_write);
     }
 
     fn write_register(&mut self, mappings: &mut Mappings, _address: u16, value: u8) {
         mappings.map_prg_rom(8, 4, PRG_BANK_SIZE * (value as usize & 0x0f));
-        debug!("UxROM PRG Read Mapping: {:?}", mappings.prg_read);
+        trace!("UxROM PRG Read Mapping: {:?}", mappings.prg_read);
     }
 }

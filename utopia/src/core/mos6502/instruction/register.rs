@@ -1,8 +1,8 @@
 use super::super::{Bus, Core};
-use tracing::debug;
+use tracing::trace;
 
 pub fn dex(core: &mut Core<impl Bus>) {
-    debug!("DEX");
+    trace!("DEX");
     core.poll();
     core.read(core.pc);
     core.x = core.x.wrapping_sub(1);
@@ -10,7 +10,7 @@ pub fn dex(core: &mut Core<impl Bus>) {
 }
 
 pub fn dey(core: &mut Core<impl Bus>) {
-    debug!("DEY");
+    trace!("DEY");
     core.poll();
     core.read(core.pc);
     core.y = core.y.wrapping_sub(1);
@@ -18,7 +18,7 @@ pub fn dey(core: &mut Core<impl Bus>) {
 }
 
 pub fn inx(core: &mut Core<impl Bus>) {
-    debug!("INX");
+    trace!("INX");
     core.poll();
     core.read(core.pc);
     core.x = core.x.wrapping_add(1);
@@ -26,7 +26,7 @@ pub fn inx(core: &mut Core<impl Bus>) {
 }
 
 pub fn iny(core: &mut Core<impl Bus>) {
-    debug!("INY");
+    trace!("INY");
     core.poll();
     core.read(core.pc);
     core.y = core.y.wrapping_add(1);
@@ -34,7 +34,7 @@ pub fn iny(core: &mut Core<impl Bus>) {
 }
 
 pub fn tax(core: &mut Core<impl Bus>) {
-    debug!("TAX");
+    trace!("TAX");
     core.poll();
     core.read(core.pc);
     core.x = core.a;
@@ -42,7 +42,7 @@ pub fn tax(core: &mut Core<impl Bus>) {
 }
 
 pub fn txa(core: &mut Core<impl Bus>) {
-    debug!("TXA");
+    trace!("TXA");
     core.poll();
     core.read(core.pc);
     core.a = core.x;
@@ -50,7 +50,7 @@ pub fn txa(core: &mut Core<impl Bus>) {
 }
 
 pub fn tay(core: &mut Core<impl Bus>) {
-    debug!("TAY");
+    trace!("TAY");
     core.poll();
     core.read(core.pc);
     core.y = core.a;
@@ -58,7 +58,7 @@ pub fn tay(core: &mut Core<impl Bus>) {
 }
 
 pub fn tya(core: &mut Core<impl Bus>) {
-    debug!("TYA");
+    trace!("TYA");
     core.poll();
     core.read(core.pc);
     core.a = core.y;
@@ -66,7 +66,7 @@ pub fn tya(core: &mut Core<impl Bus>) {
 }
 
 pub fn tsx(core: &mut Core<impl Bus>) {
-    debug!("TSX");
+    trace!("TSX");
     core.poll();
     core.read(core.pc);
     core.x = core.s;
@@ -74,7 +74,7 @@ pub fn tsx(core: &mut Core<impl Bus>) {
 }
 
 pub fn txs(core: &mut Core<impl Bus>) {
-    debug!("TXS");
+    trace!("TXS");
     core.poll();
     core.read(core.pc);
     core.s = core.x;

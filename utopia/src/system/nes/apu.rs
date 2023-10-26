@@ -6,7 +6,7 @@ use dmc::Dmc;
 use frame::FrameCounter;
 use noise::Noise;
 use pulse::Pulse;
-use tracing::debug;
+use tracing::trace;
 use tracing::warn;
 use triangle::Triangle;
 
@@ -93,7 +93,7 @@ impl Apu {
                 value
             }
             _ => {
-                debug!("Unmapped APU Read: {:04X}", address);
+                trace!("Unmapped APU Read: {:04X}", address);
                 prev_value
             }
         }

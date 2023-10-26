@@ -1,10 +1,10 @@
 use super::super::{Bus, Core, REGS};
 use super::{Flags, RoundingMode};
 use num_traits::{FromPrimitive, ToPrimitive};
-use tracing::debug;
+use tracing::trace;
 
 pub fn cfc1(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
-    debug!("{:08X} CFC1 {}, ${}", core.pc, REGS[rt], rd);
+    trace!("{:08X} CFC1 {}, ${}", core.pc, REGS[rt], rd);
 
     let result = match rd {
         31 => {
@@ -26,7 +26,7 @@ pub fn cfc1(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
 }
 
 pub fn ctc1(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
-    debug!("{:08X} CTC1 {}, ${}", core.pc, REGS[rt], rd);
+    trace!("{:08X} CTC1 {}, ${}", core.pc, REGS[rt], rd);
 
     let value = core.get(rt);
 
@@ -40,23 +40,23 @@ pub fn ctc1(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
             ctrl.cause = Flags::from((value >> 12) & 63);
             ctrl.c = (value & 0x0080_0000) != 0;
             ctrl.fs = (value & 0x0100_0000) != 0;
-            debug!("  CP1 Rounding Mode: {:?}", ctrl.rm);
-            debug!("  CP1 Flags: {}", ctrl.flags);
-            debug!("  CP1 Enable: {}", ctrl.enable);
-            debug!("  CP1 Cause: {}", ctrl.cause);
-            debug!("  CP1 Compare: {}", ctrl.c);
-            debug!("  CP1 Flash: {}", ctrl.fs);
+            trace!("  CP1 Rounding Mode: {:?}", ctrl.rm);
+            trace!("  CP1 Flags: {}", ctrl.flags);
+            trace!("  CP1 Enable: {}", ctrl.enable);
+            trace!("  CP1 Cause: {}", ctrl.cause);
+            trace!("  CP1 Compare: {}", ctrl.c);
+            trace!("  CP1 Flash: {}", ctrl.fs);
         }
         _ => todo!("CP1 Register Write: ${} <= {:08X}", rd, value),
     }
 }
 
 pub fn mfc1(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
-    debug!("{:08X} MFC1 {}, $F{}", core.pc, REGS[rt], rd);
+    trace!("{:08X} MFC1 {}, $F{}", core.pc, REGS[rt], rd);
     core.set(rt, core.cp1.w(rd) as u32);
 }
 
 pub fn mtc1(core: &mut Core<impl Bus>, rt: usize, rd: usize) {
-    debug!("{:08X} MTC1 {}, $F{}", core.pc, REGS[rt], rd);
+    trace!("{:08X} MTC1 {}, $F{}", core.pc, REGS[rt], rd);
     core.cp1.set_w(rd, core.get(rt) as i32);
 }

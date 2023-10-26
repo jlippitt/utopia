@@ -1,5 +1,5 @@
 use super::{Interrupt, InterruptType, Mapper, Mappings, MirrorMode, CHR_PAGE_SIZE};
-use tracing::debug;
+use tracing::trace;
 
 const PRG_BANK_SIZE: usize = 8192;
 
@@ -68,8 +68,8 @@ impl Mmc3 {
         mappings.map_chr(6 ^ chr_inv, 1, CHR_PAGE_SIZE * self.registers[4] as usize);
         mappings.map_chr(7 ^ chr_inv, 1, CHR_PAGE_SIZE * self.registers[5] as usize);
 
-        debug!("MMC3 PRG Read Mappings: {:?}", mappings.prg_read);
-        debug!("MMC3 CHR Mappings: {:?}", mappings.chr);
+        trace!("MMC3 PRG Read Mappings: {:?}", mappings.prg_read);
+        trace!("MMC3 CHR Mappings: {:?}", mappings.chr);
     }
 
     fn step_irq(&mut self) {
@@ -80,7 +80,7 @@ impl Mmc3 {
             self.irq_counter -= 1;
         }
 
-        debug!("MMC3 IRQ Counter: {}", self.irq_counter);
+        trace!("MMC3 IRQ Counter: {}", self.irq_counter);
 
         if self.irq_counter == 0 && self.irq_enabled {
             self.interrupt.raise(InterruptType::MapperIrq);
@@ -100,14 +100,14 @@ impl Mapper for Mmc3 {
                 self.register_select = value & 0x07;
                 self.prg_rom_mode = (value & 0x40) != 0;
                 self.chr_mode = (value & 0x80) != 0;
-                debug!("MMC3 Register Select: {}", self.register_select);
-                debug!("MMC3 PRG ROM Mode: {}", self.prg_rom_mode as u32);
-                debug!("MMC3 CHR Mode: {}", self.chr_mode as u32);
+                trace!("MMC3 Register Select: {}", self.register_select);
+                trace!("MMC3 PRG ROM Mode: {}", self.prg_rom_mode as u32);
+                trace!("MMC3 CHR Mode: {}", self.chr_mode as u32);
                 self.update_mappings(mappings);
             }
             0x8001 => {
                 self.registers[self.register_select as usize] = value;
-                debug!("MMC3 Register {}: {}", self.register_select, value);
+                trace!("MMC3 Register {}: {}", self.register_select, value);
                 self.update_mappings(mappings);
             }
             0xa000 => {
@@ -117,47 +117,47 @@ impl Mapper for Mmc3 {
                     MirrorMode::Vertical
                 };
 
-                debug!("MMC3 Mirror Mode: {:?}", mirror_mode);
+                trace!("MMC3 Mirror Mode: {:?}", mirror_mode);
                 mappings.mirror_nametables(mirror_mode);
-                debug!("MMC3 Name Mappings: {:?}", mappings.name);
+                trace!("MMC3 Name Mappings: {:?}", mappings.name);
             }
             0xa001 => {
                 match value & 0xc0 {
                     0xc0 => {
                         mappings.map_prg_ram_read_only(6, 2, 0);
-                        debug!("MMC3 PRG RAM Read-Only");
+                        trace!("MMC3 PRG RAM Read-Only");
                     }
                     0x80 => {
                         mappings.map_prg_ram(6, 2, 0);
-                        debug!("MMC3 PRG RAM Read/Write");
+                        trace!("MMC3 PRG RAM Read/Write");
                     }
                     _ => {
                         mappings.unmap_prg(6, 2);
-                        debug!("MMC3 PRG RAM Disabled");
+                        trace!("MMC3 PRG RAM Disabled");
                     }
                 }
 
-                debug!("MMC3 PRG Read Mappings: {:?}", mappings.prg_read);
-                debug!("MMC3 PRG Write Mappings: {:?}", mappings.prg_write);
+                trace!("MMC3 PRG Read Mappings: {:?}", mappings.prg_read);
+                trace!("MMC3 PRG Write Mappings: {:?}", mappings.prg_write);
             }
             0xc000 => {
                 self.irq_latch = value;
-                debug!("MMC3 IRQ Latch: {}", self.irq_latch);
+                trace!("MMC3 IRQ Latch: {}", self.irq_latch);
             }
             0xc001 => {
                 self.irq_counter = 0;
                 self.irq_reload = true;
-                debug!("MMC3 IRQ Counter: {}", self.irq_counter);
-                debug!("MMC3 IRQ Reload: {}", self.irq_reload);
+                trace!("MMC3 IRQ Counter: {}", self.irq_counter);
+                trace!("MMC3 IRQ Reload: {}", self.irq_reload);
             }
             0xe000 => {
                 self.irq_enabled = false;
-                debug!("MMC3 IRQ Enabled: {}", self.irq_enabled);
+                trace!("MMC3 IRQ Enabled: {}", self.irq_enabled);
                 self.interrupt.clear(InterruptType::MapperIrq);
             }
             0xe001 => {
                 self.irq_enabled = true;
-                debug!("MMC3 IRQ Enabled: {}", self.irq_enabled);
+                trace!("MMC3 IRQ Enabled: {}", self.irq_enabled);
             }
             _ => unreachable!(),
         }

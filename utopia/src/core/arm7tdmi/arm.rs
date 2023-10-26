@@ -5,7 +5,7 @@ use block::*;
 use control::*;
 use num_traits::FromPrimitive;
 use process::*;
-use tracing::debug;
+use tracing::trace;
 use transfer::*;
 
 mod block;
@@ -25,7 +25,7 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
     let condition = Condition::from_u32(word >> 28).unwrap();
 
     if !condition.apply(core) {
-        debug!("{:08X}: ({}: Skipped)", pc, condition);
+        trace!("{:08X}: ({}: Skipped)", pc, condition);
         return;
     }
 

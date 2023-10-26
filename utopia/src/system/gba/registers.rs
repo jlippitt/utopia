@@ -1,5 +1,5 @@
 use crate::util::facade::{DataReader, DataWriter};
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 
 pub struct Registers {
     interrupt_enable: u16,
@@ -45,19 +45,19 @@ impl DataWriter for Registers {
         match address {
             0x0200 => {
                 self.interrupt_enable = value;
-                debug!("Interrupt Enable: {:04X}", self.interrupt_enable);
+                trace!("Interrupt Enable: {:04X}", self.interrupt_enable);
             }
             0x0202 => {
                 self.interrupt_flags = value;
-                debug!("Interrupt Flags: {:04X}", self.interrupt_flags);
+                trace!("Interrupt Flags: {:04X}", self.interrupt_flags);
             }
             0x0204 => {
                 self.wait_state_control = value;
-                debug!("Wait State Control: {:04X}", self.wait_state_control);
+                trace!("Wait State Control: {:04X}", self.wait_state_control);
             }
             0x0208 => {
                 self.interrupt_master_enable = value;
-                debug!(
+                trace!(
                     "Interrupt Master Enable: {:04X}",
                     self.interrupt_master_enable
                 );
@@ -68,11 +68,11 @@ impl DataWriter for Registers {
                 }
 
                 self.post_boot_flag = value as u8;
-                debug!("Post-Boot Flag: {:02X}", self.post_boot_flag);
+                trace!("Post-Boot Flag: {:02X}", self.post_boot_flag);
             }
             0x0410 => {
                 self.unknown = value as u8;
-                debug!("Unknown Register: {:02X}", self.unknown);
+                trace!("Unknown Register: {:02X}", self.unknown);
             }
             _ => warn!(
                 "Unmapped I/O Register Write: {:08X} <= {:02X}",

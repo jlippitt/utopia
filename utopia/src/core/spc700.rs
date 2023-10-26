@@ -1,5 +1,5 @@
 use std::fmt;
-use tracing::debug;
+use tracing::trace;
 
 mod address_mode;
 mod instruction;
@@ -411,18 +411,18 @@ impl<T: Bus> Core<T> {
     }
 
     fn idle(&mut self) {
-        debug!("  IO");
+        trace!("  IO");
         self.bus.idle();
     }
 
     fn read(&mut self, address: u16) -> u8 {
         let value = self.bus.read(address);
-        debug!("  {:04X} => {:02X}", address, value);
+        trace!("  {:04X} => {:02X}", address, value);
         value
     }
 
     fn write(&mut self, address: u16, value: u8) {
-        debug!("  {:04X} <= {:02X}", address, value);
+        trace!("  {:04X} <= {:02X}", address, value);
         self.bus.write(address, value);
     }
 

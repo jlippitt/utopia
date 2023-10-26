@@ -1,5 +1,5 @@
 use crate::util::MirrorVec;
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 
 struct RingBuffer {
     base_address: u16,
@@ -35,22 +35,22 @@ impl Echo {
 
     pub fn set_volume_left(&mut self, value: u8) {
         self.volume_left = value as i8 as i32;
-        debug!("Echo Volume Left: {}", self.volume_left);
+        trace!("Echo Volume Left: {}", self.volume_left);
     }
 
     pub fn set_volume_right(&mut self, value: u8) {
         self.volume_right = value as i8 as i32;
-        debug!("Echo Volume Right: {}", self.volume_right);
+        trace!("Echo Volume Right: {}", self.volume_right);
     }
 
     pub fn set_feedback_volume(&mut self, value: u8) {
         self.feedback_volume = value as i8 as i32;
-        debug!("Echo Feedback Volume: {}", self.feedback_volume);
+        trace!("Echo Feedback Volume: {}", self.feedback_volume);
     }
 
     pub fn set_base_address(&mut self, value: u8) {
         self.ring_buffer.base_address = (value as u16) << 8;
-        debug!(
+        trace!(
             "Echo Buffer Base Address: {:04X}",
             self.ring_buffer.base_address
         );
@@ -62,18 +62,18 @@ impl Echo {
         } else {
             4
         };
-        debug!("Echo Buffer Size: {}", self.ring_buffer.size);
+        trace!("Echo Buffer Size: {}", self.ring_buffer.size);
     }
 
     pub fn set_write_enabled(&mut self, write_enabled: bool) {
         self.write_enabled = write_enabled;
-        debug!("Echo Write Enabled: {}", self.write_enabled);
+        trace!("Echo Write Enabled: {}", self.write_enabled);
     }
 
     pub fn set_fir_value(&mut self, index: usize, value: u8) {
         let value = value as i8 as i32;
         self.fir_values[index] = value;
-        debug!("Echo FIR {}: {}", index, value);
+        trace!("Echo FIR {}: {}", index, value);
     }
 
     pub fn step(&mut self, ram: &mut MirrorVec<u8>, input: (i32, i32)) -> (i32, i32) {
@@ -150,7 +150,7 @@ impl RingBuffer {
             .wrapping_add(offset);
 
         let value = ram[address as usize];
-        debug!("Echo Buffer Read: {:04X} => {:02X}", address, value);
+        trace!("Echo Buffer Read: {:04X} => {:02X}", address, value);
         value
     }
 
@@ -171,7 +171,7 @@ impl RingBuffer {
             .wrapping_add(offset);
 
         ram[address as usize] = value;
-        debug!("Echo Buffer Write: {:04X} <= {:02X}", address, value);
+        trace!("Echo Buffer Write: {:04X} <= {:02X}", address, value);
     }
 
     fn increment_address(&mut self) {
@@ -184,7 +184,7 @@ impl RingBuffer {
             self.read_index = self.read_index.wrapping_add(4);
         }
 
-        debug!("Echo Buffer Read Index: {}", self.read_index);
-        debug!("Echo Buffer Remaining: {}", self.remaining);
+        trace!("Echo Buffer Read Index: {}", self.read_index);
+        trace!("Echo Buffer Remaining: {}", self.remaining);
     }
 }

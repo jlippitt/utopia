@@ -1,8 +1,8 @@
 use super::super::{Bus, Core, IrqDisable};
-use tracing::debug;
+use tracing::trace;
 
 pub fn rep<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("REP #const");
+    trace!("REP #const");
     let value = core.next_byte();
     core.poll();
     core.idle();
@@ -10,7 +10,7 @@ pub fn rep<const E: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn sep<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("REP #const");
+    trace!("REP #const");
     let value = core.next_byte();
     core.poll();
     core.idle();
@@ -18,49 +18,49 @@ pub fn sep<const E: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn clc(core: &mut Core<impl Bus>) {
-    debug!("CLC");
+    trace!("CLC");
     core.poll();
     core.idle();
     core.flags.c = false;
 }
 
 pub fn sec(core: &mut Core<impl Bus>) {
-    debug!("SEC");
+    trace!("SEC");
     core.poll();
     core.idle();
     core.flags.c = true;
 }
 
 pub fn cli(core: &mut Core<impl Bus>) {
-    debug!("CLI");
+    trace!("CLI");
     core.poll();
     core.idle();
     core.flags.i = IrqDisable::Clear;
 }
 
 pub fn sei(core: &mut Core<impl Bus>) {
-    debug!("SEI");
+    trace!("SEI");
     core.poll();
     core.idle();
     core.flags.i = IrqDisable::Set;
 }
 
 pub fn clv(core: &mut Core<impl Bus>) {
-    debug!("CLV");
+    trace!("CLV");
     core.poll();
     core.idle();
     core.flags.v = false;
 }
 
 pub fn cld(core: &mut Core<impl Bus>) {
-    debug!("CLD");
+    trace!("CLD");
     core.poll();
     core.idle();
     core.flags.d = false;
 }
 
 pub fn sed(core: &mut Core<impl Bus>) {
-    debug!("SED");
+    trace!("SED");
     core.poll();
     core.idle();
     core.flags.d = true;

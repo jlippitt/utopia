@@ -1,10 +1,13 @@
 use super::super::{Bus, Core, REGS};
-use tracing::debug;
+use tracing::trace;
 
 pub fn sb(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} SB {}, {}({})",
-        core.pc, REGS[rt], value as i16, REGS[rs]
+        core.pc,
+        REGS[rt],
+        value as i16,
+        REGS[rs]
     );
 
     let ivalue = value as i16 as i32 as u32;
@@ -13,9 +16,12 @@ pub fn sb(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
 }
 
 pub fn sh(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} SH {}, {}({})",
-        core.pc, REGS[rt], value as i16, REGS[rs]
+        core.pc,
+        REGS[rt],
+        value as i16,
+        REGS[rs]
     );
 
     let ivalue = value as i16 as i32 as u32;
@@ -24,9 +30,12 @@ pub fn sh(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
 }
 
 pub fn sw(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} SW {}, {}({})",
-        core.pc, REGS[rt], value as i16, REGS[rs]
+        core.pc,
+        REGS[rt],
+        value as i16,
+        REGS[rs]
     );
 
     let ivalue = value as i16 as i32 as u32;
@@ -35,9 +44,12 @@ pub fn sw(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
 }
 
 pub fn swl(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} SWL {}, {}({})",
-        core.pc, REGS[rt], value as i16, REGS[rs]
+        core.pc,
+        REGS[rt],
+        value as i16,
+        REGS[rs]
     );
 
     let ivalue = value as i16 as i32 as u32;
@@ -50,9 +62,12 @@ pub fn swl(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
 }
 
 pub fn swr(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} SWR {}, {}({})",
-        core.pc, REGS[rt], value as i16, REGS[rs]
+        core.pc,
+        REGS[rt],
+        value as i16,
+        REGS[rs]
     );
 
     let ivalue = value as i16 as i32 as u32;
@@ -65,9 +80,12 @@ pub fn swr(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
 }
 
 pub fn sd(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} SD {}, {}({})",
-        core.pc, REGS[rt], value as i16, REGS[rs]
+        core.pc,
+        REGS[rt],
+        value as i16,
+        REGS[rs]
     );
 
     let ivalue = value as i16 as i32 as u32;
@@ -76,9 +94,12 @@ pub fn sd(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
 }
 
 pub fn sdl(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} SDL {}, {}({})",
-        core.pc, REGS[rt], value as i16, REGS[rs]
+        core.pc,
+        REGS[rt],
+        value as i16,
+        REGS[rs]
     );
 
     let ivalue = value as i16 as i32 as u32;
@@ -91,9 +112,12 @@ pub fn sdl(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
 }
 
 pub fn sdr(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} SDR {}, {}({})",
-        core.pc, REGS[rt], value as i16, REGS[rs]
+        core.pc,
+        REGS[rt],
+        value as i16,
+        REGS[rs]
     );
 
     let ivalue = value as i16 as i32 as u32;

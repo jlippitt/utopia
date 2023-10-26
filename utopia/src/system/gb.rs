@@ -13,7 +13,7 @@ use ppu::Ppu;
 use std::error::Error;
 use std::fmt;
 use timer::Timer;
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 use wram::Wram;
 
 mod apu;
@@ -164,7 +164,7 @@ impl<T: Mapped> crate::Instance for Instance<T> {
         core.bus_mut().ppu.start_frame();
 
         while !core.bus().ppu.ready() {
-            debug!("{}", core);
+            trace!("{}", core);
             core.step();
         }
 
@@ -243,9 +243,11 @@ impl<T: Mapped> Hardware<T> {
         let dst_address = src_address as u8;
         let value = self.read_normal(src_address);
 
-        debug!(
+        trace!(
             "DMA Transfer: FE{:02X} <= {:02X} <= {:04X}",
-            dst_address, value, src_address
+            dst_address,
+            value,
+            src_address
         );
 
         self.ppu.write_oam(dst_address, value);
@@ -371,11 +373,11 @@ impl<T: Mapped> Hardware<T> {
             0x46 => self.dma_address = Some((value as u16) << 8),
             0x4d if is_cgb => {
                 self.speed_switch = (value & 0x01) != 0;
-                debug!("Speed Switch Requested");
+                trace!("Speed Switch Requested");
             }
             0x50 => {
                 self.bios_data = None;
-                debug!("BIOS disabled");
+                trace!("BIOS disabled");
             }
             0x51..=0x55 if is_cgb => {
                 if self.dma.write(address, value) {
@@ -450,7 +452,7 @@ impl<T: Mapped> Bus for Hardware<T> {
 
         if self.speed_switch {
             self.double_speed = !self.double_speed;
-            debug!("Double Speed Mode: {}", self.double_speed);
+            trace!("Double Speed Mode: {}", self.double_speed);
         }
     }
 }

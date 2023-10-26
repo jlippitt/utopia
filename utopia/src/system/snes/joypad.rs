@@ -1,5 +1,5 @@
 use crate::JoypadState;
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 
 pub struct Joypad {
     current_state: [u16; 4],
@@ -80,7 +80,7 @@ impl Joypad {
 
         if self.latch && !latch {
             self.polled_state = self.current_state;
-            debug!("Joypad State Latched: {:04X}", self.polled_state[0]);
+            trace!("Joypad State Latched: {:04X}", self.polled_state[0]);
         }
 
         self.latch = latch;
@@ -88,7 +88,7 @@ impl Joypad {
 
     pub fn set_auto_read_enabled(&mut self, enabled: bool) {
         self.auto_read_enabled = enabled;
-        debug!("Joypad Auto-Read Enabled: {}", self.auto_read_enabled);
+        trace!("Joypad Auto-Read Enabled: {}", self.auto_read_enabled);
     }
 
     pub fn perform_auto_read(&mut self) {
@@ -100,7 +100,7 @@ impl Joypad {
         self.auto_read_state = self.current_state;
         self.polled_state = [0xffff; 4];
         self.latch = false;
-        debug!("Joypad Auto-Read Complete");
+        trace!("Joypad Auto-Read Complete");
     }
 
     fn read_bit(&mut self, index: usize) -> bool {

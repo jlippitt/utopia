@@ -11,7 +11,7 @@ use ppu::Ppu;
 use registers::Registers;
 use std::error::Error;
 use std::fmt;
-use tracing::{debug, info, warn};
+use tracing::{info, trace, warn};
 use wram::Wram;
 
 mod apu;
@@ -110,7 +110,7 @@ impl<T: Mapped> crate::Instance for Instance<T> {
 
         while !core.bus().ready {
             core.step();
-            debug!("{}", core);
+            trace!("{}", core);
         }
 
         let cpu_cycles = core.bus().clock.cycles();

@@ -1,7 +1,7 @@
 use super::buffer::Pixel;
 use super::vram::Vram;
 use super::window::MASK_NONE;
-use tracing::{debug, trace};
+use tracing::trace;
 
 const TILE_MIRROR_32: u16 = 31;
 const TILE_MIRROR_64: u16 = 63;
@@ -42,12 +42,12 @@ impl BackgroundLayer {
 
     pub fn set_tile_size(&mut self, tile_size: bool) {
         self.tile_size = tile_size;
-        debug!("{} Tile Size: {}", self.name, 8 << (self.tile_size as u32));
+        trace!("{} Tile Size: {}", self.name, 8 << (self.tile_size as u32));
     }
 
     pub fn set_mosaic(&mut self, enabled: bool, size: u8) {
         self.mosaic_size = enabled.then_some(size as u16);
-        debug!("{} Mosaic Size: {:?}", self.name, self.mosaic_size);
+        trace!("{} Mosaic Size: {:?}", self.name, self.mosaic_size);
     }
 
     pub fn set_tile_map(&mut self, value: u8) {
@@ -74,15 +74,15 @@ impl BackgroundLayer {
 
         self.tile_map = ((value & 0xfc) as u16) << 8;
 
-        debug!("{} Tile Map: {:04X}", self.name, self.tile_map);
-        debug!("{} Mirror Mask X: {}", self.name, { self.tile_mirror_x });
-        debug!("{} Mirror Mask Y: {}", self.name, { self.tile_mirror_y });
-        debug!("{} Name Shift Y: {}", self.name, { self.tile_shift_y });
+        trace!("{} Tile Map: {:04X}", self.name, self.tile_map);
+        trace!("{} Mirror Mask X: {}", self.name, { self.tile_mirror_x });
+        trace!("{} Mirror Mask Y: {}", self.name, { self.tile_mirror_y });
+        trace!("{} Name Shift Y: {}", self.name, { self.tile_shift_y });
     }
 
     pub fn set_chr_map(&mut self, value: u8) {
         self.chr_map = (value as u16) << 12;
-        debug!("{} CHR Map: {:04X}", self.name, self.chr_map);
+        trace!("{} CHR Map: {:04X}", self.name, self.chr_map);
     }
 
     pub fn set_scroll_x(&mut self, regs: &mut (u8, u8), value: u8) {
@@ -92,7 +92,7 @@ impl BackgroundLayer {
         regs.0 = value;
         regs.1 = value;
 
-        debug!("{} Scroll X: {}", self.name, self.scroll_x);
+        trace!("{} Scroll X: {}", self.name, self.scroll_x);
     }
 
     pub fn set_scroll_y(&mut self, regs: &mut (u8, u8), value: u8) {
@@ -100,7 +100,7 @@ impl BackgroundLayer {
 
         regs.0 = value;
 
-        debug!("{} Scroll Y: {}", self.name, self.scroll_y);
+        trace!("{} Scroll Y: {}", self.name, self.scroll_y);
     }
 
     pub fn reset_mosaic_counter(&mut self) {

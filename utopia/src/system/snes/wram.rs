@@ -1,6 +1,6 @@
 use crate::util::MirrorVec;
 use std::ops::{Index, IndexMut};
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 
 const WRAM_SIZE: usize = 131072;
 
@@ -21,7 +21,7 @@ impl Wram {
         match address & 0x3f {
             0x00 => {
                 let value = self.data[self.address as usize];
-                debug!("WRAM Read: {:06X} => {:02X}", self.address, value);
+                trace!("WRAM Read: {:06X} => {:02X}", self.address, value);
                 self.address = self.address.wrapping_add(1);
                 value
             }
@@ -36,20 +36,20 @@ impl Wram {
         match address & 0x3f {
             0x00 => {
                 self.data[self.address as usize] = value;
-                debug!("WRAM Write: {:06X} <= {:02X}", self.address, value);
+                trace!("WRAM Write: {:06X} <= {:02X}", self.address, value);
                 self.address = self.address.wrapping_add(1);
             }
             0x01 => {
                 self.address = (self.address & 0xffff_ff00) | (value as u32);
-                debug!("WRAM Address: {:06X}", self.address);
+                trace!("WRAM Address: {:06X}", self.address);
             }
             0x02 => {
                 self.address = (self.address & 0xffff_00ff) | ((value as u32) << 8);
-                debug!("WRAM Address: {:06X}", self.address);
+                trace!("WRAM Address: {:06X}", self.address);
             }
             0x03 => {
                 self.address = (self.address & 0xff00_ffff) | ((value as u32) << 16);
-                debug!("WRAM Address: {:06X}", self.address);
+                trace!("WRAM Address: {:06X}", self.address);
             }
             _ => warn!(
                 "Unmapped WRAM register write: {:02X} <= {:02X}",

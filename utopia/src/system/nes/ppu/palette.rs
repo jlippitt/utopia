@@ -1,4 +1,4 @@
-use tracing::debug;
+use tracing::trace;
 
 pub struct Palette {
     data: [u8; 32],
@@ -16,7 +16,7 @@ impl Palette {
     pub fn read(&self, address: u16) -> u8 {
         let mask = if (address & 0x03) == 0 { 0x0f } else { 0x1f };
         let index = address as usize & mask;
-        debug!("Palette Read: {:02X} => {:02X}", index, self.data[index]);
+        trace!("Palette Read: {:02X} => {:02X}", index, self.data[index]);
         self.data[index]
     }
 
@@ -24,6 +24,6 @@ impl Palette {
         let mask = if (address & 0x03) == 0 { 0x0f } else { 0x1f };
         let index = address as usize & mask;
         self.data[index] = value & 0x3f;
-        debug!("Palette Write: {:02X} <= {:02X}", index, self.data[index]);
+        trace!("Palette Write: {:02X} <= {:02X}", index, self.data[index]);
     }
 }

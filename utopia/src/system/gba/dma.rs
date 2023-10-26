@@ -1,5 +1,5 @@
 use crate::util::facade::{DataReader, DataWriter};
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 
 struct DmaChannel {
     source: u32,
@@ -26,27 +26,27 @@ impl DmaChannel {
 
     fn set_source_low(&mut self, value: u16) {
         self.source = (self.source & 0xffff_0000) | (value as u32);
-        debug!("DMA{} Source: {:08X}", self.id, self.source);
+        trace!("DMA{} Source: {:08X}", self.id, self.source);
     }
 
     fn set_source_high(&mut self, value: u16) {
         self.source = (self.source & 0xffff) | ((value as u32) << 16);
-        debug!("DMA{} Source: {:08X}", self.id, self.source);
+        trace!("DMA{} Source: {:08X}", self.id, self.source);
     }
 
     fn set_destination_low(&mut self, value: u16) {
         self.destination = (self.destination & 0xffff_0000) | (value as u32);
-        debug!("DMA{} Destination: {:08X}", self.id, self.destination);
+        trace!("DMA{} Destination: {:08X}", self.id, self.destination);
     }
 
     fn set_destination_high(&mut self, value: u16) {
         self.destination = (self.destination & 0xffff) | ((value as u32) << 16);
-        debug!("DMA{} Destination: {:08X}", self.id, self.destination);
+        trace!("DMA{} Destination: {:08X}", self.id, self.destination);
     }
 
     fn set_word_count(&mut self, value: u16) {
         self.word_count = value;
-        debug!("DMA{} Word Count: {}", self.id, self.word_count);
+        trace!("DMA{} Word Count: {}", self.id, self.word_count);
     }
 
     fn set_control(&mut self, value: u16) {

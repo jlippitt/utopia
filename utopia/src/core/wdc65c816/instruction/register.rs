@@ -1,8 +1,8 @@
 use super::super::{Bus, Core, EMULATION_STACK_PAGE};
-use tracing::debug;
+use tracing::trace;
 
 pub fn dex<const X: bool>(core: &mut Core<impl Bus>) {
-    debug!("DEX.{}", super::size(X));
+    trace!("DEX.{}", super::size(X));
     core.poll();
     core.idle();
     core.x = core.x.wrapping_sub(1);
@@ -16,7 +16,7 @@ pub fn dex<const X: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn dey<const X: bool>(core: &mut Core<impl Bus>) {
-    debug!("DEY.{}", super::size(X));
+    trace!("DEY.{}", super::size(X));
     core.poll();
     core.idle();
     core.y = core.y.wrapping_sub(1);
@@ -30,7 +30,7 @@ pub fn dey<const X: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn inx<const X: bool>(core: &mut Core<impl Bus>) {
-    debug!("INX.{}", super::size(X));
+    trace!("INX.{}", super::size(X));
     core.poll();
     core.idle();
     core.x = core.x.wrapping_add(1);
@@ -44,7 +44,7 @@ pub fn inx<const X: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn iny<const X: bool>(core: &mut Core<impl Bus>) {
-    debug!("INY.{}", super::size(X));
+    trace!("INY.{}", super::size(X));
     core.poll();
     core.idle();
     core.y = core.y.wrapping_add(1);
@@ -58,7 +58,7 @@ pub fn iny<const X: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn tcd(core: &mut Core<impl Bus>) {
-    debug!("TCD");
+    trace!("TCD");
     core.poll();
     core.idle();
     core.d = core.a;
@@ -66,7 +66,7 @@ pub fn tcd(core: &mut Core<impl Bus>) {
 }
 
 pub fn tdc(core: &mut Core<impl Bus>) {
-    debug!("TDC");
+    trace!("TDC");
     core.poll();
     core.idle();
     core.a = core.d;
@@ -74,7 +74,7 @@ pub fn tdc(core: &mut Core<impl Bus>) {
 }
 
 pub fn tcs<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("TCS");
+    trace!("TCS");
     core.poll();
     core.idle();
 
@@ -86,7 +86,7 @@ pub fn tcs<const E: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn tsc(core: &mut Core<impl Bus>) {
-    debug!("TSC");
+    trace!("TSC");
     core.poll();
     core.idle();
     core.a = core.s;
@@ -94,7 +94,7 @@ pub fn tsc(core: &mut Core<impl Bus>) {
 }
 
 pub fn tax<const X: bool>(core: &mut Core<impl Bus>) {
-    debug!("TAX.{}", super::size(X));
+    trace!("TAX.{}", super::size(X));
     core.poll();
     core.idle();
 
@@ -108,7 +108,7 @@ pub fn tax<const X: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn txa<const M: bool>(core: &mut Core<impl Bus>) {
-    debug!("TXA.{}", super::size(M));
+    trace!("TXA.{}", super::size(M));
     core.poll();
     core.idle();
 
@@ -122,7 +122,7 @@ pub fn txa<const M: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn tay<const X: bool>(core: &mut Core<impl Bus>) {
-    debug!("TAY.{}", super::size(X));
+    trace!("TAY.{}", super::size(X));
     core.poll();
     core.idle();
 
@@ -136,7 +136,7 @@ pub fn tay<const X: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn tya<const M: bool>(core: &mut Core<impl Bus>) {
-    debug!("TYA.{}", super::size(M));
+    trace!("TYA.{}", super::size(M));
     core.poll();
     core.idle();
 
@@ -150,7 +150,7 @@ pub fn tya<const M: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn txy<const X: bool>(core: &mut Core<impl Bus>) {
-    debug!("TXY.{}", super::size(X));
+    trace!("TXY.{}", super::size(X));
     core.poll();
     core.idle();
     core.y = core.x;
@@ -163,7 +163,7 @@ pub fn txy<const X: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn tyx<const X: bool>(core: &mut Core<impl Bus>) {
-    debug!("TYX.{}", super::size(X));
+    trace!("TYX.{}", super::size(X));
     core.poll();
     core.idle();
     core.x = core.y;
@@ -176,7 +176,7 @@ pub fn tyx<const X: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn tsx<const X: bool>(core: &mut Core<impl Bus>) {
-    debug!("TSX.{}", super::size(X));
+    trace!("TSX.{}", super::size(X));
     core.poll();
     core.idle();
 
@@ -190,7 +190,7 @@ pub fn tsx<const X: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn txs<const E: bool>(core: &mut Core<impl Bus>) {
-    debug!("TXS");
+    trace!("TXS");
     core.poll();
     core.idle();
 

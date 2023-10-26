@@ -3,7 +3,7 @@ use crate::util::MirrorVec;
 use bitflags::bitflags;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
-use tracing::debug;
+use tracing::trace;
 
 const PRG_BANK_SIZE: usize = 8192;
 const ERAM_SIZE: usize = 1024;
@@ -115,8 +115,8 @@ impl Mmc5 {
             _ => unreachable!(),
         }
 
-        debug!("MMC5 PRG Read Mappings: {:?}", mappings.prg_read);
-        debug!("MMC5 PRG Write Mappings: {:?}", mappings.prg_write);
+        trace!("MMC5 PRG Read Mappings: {:?}", mappings.prg_read);
+        trace!("MMC5 PRG Write Mappings: {:?}", mappings.prg_write);
     }
 
     fn update_chr_mappings(&mut self, mappings: &mut Mappings) {
@@ -126,7 +126,7 @@ impl Mmc5 {
                 .contains(ScanlineIrqStatus::IN_FRAME)
             || (64..80).contains(&self.ctrl.same_line_reads)
         {
-            debug!("MMC5 Lower CHR Banks Selected");
+            trace!("MMC5 Lower CHR Banks Selected");
 
             match self.chr_mode {
                 0 => {
@@ -155,7 +155,7 @@ impl Mmc5 {
                 _ => unreachable!(),
             }
         } else {
-            debug!("MMC5 Upper CHR Banks Selected");
+            trace!("MMC5 Upper CHR Banks Selected");
 
             match self.chr_mode {
                 0 | 1 => {
@@ -181,7 +181,7 @@ impl Mmc5 {
             }
         }
 
-        debug!("MMC5 CHR Mappings: {:?}", mappings.chr);
+        trace!("MMC5 CHR Mappings: {:?}", mappings.chr);
     }
 }
 
@@ -217,7 +217,7 @@ impl Mapper for Mmc5 {
             match address & 7 {
                 0 => {
                     self.ctrl.sprite_mode = (value & 0x20) != 0;
-                    debug!("MMC5 Sprite Mode: {}", self.ctrl.sprite_mode);
+                    trace!("MMC5 Sprite Mode: {}", self.ctrl.sprite_mode);
                     self.update_chr_mappings(mappings);
                 }
                 1 => {
@@ -236,12 +236,12 @@ impl Mapper for Mmc5 {
             0x5000..=0x5015 => (), // TODO: MMC5 Audio
             0x5100 => {
                 self.prg_mode = value & 0x03;
-                debug!("MMC5 PRG Mode: {}", self.prg_mode);
+                trace!("MMC5 PRG Mode: {}", self.prg_mode);
                 self.update_prg_mappings(mappings);
             }
             0x5101 => {
                 self.chr_mode = value & 0x03;
-                debug!("MMC5 CHR Mode: {}", self.chr_mode);
+                trace!("MMC5 CHR Mode: {}", self.chr_mode);
                 self.update_chr_mappings(mappings);
             }
             0x5104 => {
@@ -252,44 +252,44 @@ impl Mapper for Mmc5 {
                     3 => EramFlags::READ,
                     _ => unreachable!(),
                 };
-                debug!("MMC5 ERAM: {:?}", self.eram_flags);
+                trace!("MMC5 ERAM: {:?}", self.eram_flags);
             }
             0x5105 => {
                 self.name_bank[0] = NameTable::from_u8(value & 0x03).unwrap();
                 self.name_bank[1] = NameTable::from_u8((value >> 2) & 0x03).unwrap();
                 self.name_bank[2] = NameTable::from_u8((value >> 4) & 0x03).unwrap();
                 self.name_bank[3] = NameTable::from_u8(value >> 6).unwrap();
-                debug!("MMC5 Name Banks: {:?}", self.name_bank);
+                trace!("MMC5 Name Banks: {:?}", self.name_bank);
             }
             0x5106 => {
                 self.fill_mode_name = value;
-                debug!("MMC5 Fill Mode Name: {:02X}", self.fill_mode_name);
+                trace!("MMC5 Fill Mode Name: {:02X}", self.fill_mode_name);
             }
             0x5107 => {
                 let attr = value & 0x03;
                 self.fill_mode_attr = attr | (attr << 2) | (attr << 4) | (attr << 6);
-                debug!("MMC5 Fill Mode Attr: {:02X}", self.fill_mode_attr);
+                trace!("MMC5 Fill Mode Attr: {:02X}", self.fill_mode_attr);
             }
             0x5113..=0x5117 => {
                 let index = (address - 0x5113) as usize;
                 self.prg_bank[index] = value;
-                debug!("MMC5 PRG Bank {}: {:02X}", index, value);
+                trace!("MMC5 PRG Bank {}: {:02X}", index, value);
                 self.update_prg_mappings(mappings);
             }
             0x5120..=0x512b => {
                 let index = (address - 0x5120) as usize;
                 self.chr_bank[index] = value;
-                debug!("MMC5 CHR Bank {}: {:02X}", index, value);
+                trace!("MMC5 CHR Bank {}: {:02X}", index, value);
                 self.update_chr_mappings(mappings);
             }
             0x5200 => (), // TODO: Vertical Split
             0x5203 => {
                 self.scanline_irq_compare = value;
-                debug!("MMC5 Scanline IRQ Compare: {}", self.scanline_irq_compare);
+                trace!("MMC5 Scanline IRQ Compare: {}", self.scanline_irq_compare);
             }
             0x5204 => {
                 self.scanline_irq_enable = (value & 0x80) != 0;
-                debug!("MMC5 Scanline IRQ Enable: {}", self.scanline_irq_enable);
+                trace!("MMC5 Scanline IRQ Enable: {}", self.scanline_irq_enable);
             }
             0x5c00..=0x5fff => {
                 if self.eram_flags.contains(EramFlags::WRITE) {
@@ -321,13 +321,13 @@ impl Mapper for Mmc5 {
                         }
                     }
                 } else {
-                    debug!("MMC5 Frame Start Detected");
+                    trace!("MMC5 Frame Start Detected");
                     self.scanline_irq_status.insert(ScanlineIrqStatus::IN_FRAME);
                     self.ctrl.scanline_count = 0;
                     self.interrupt.clear(InterruptType::MapperIrq);
                 }
 
-                debug!("MMC5 New Line Detected");
+                trace!("MMC5 New Line Detected");
                 self.ctrl.same_line_reads = 1;
                 self.update_chr_mappings(mappings);
             }
@@ -397,7 +397,7 @@ impl Mapper for Mmc5 {
         self.ctrl.no_read_count += 1;
 
         if self.ctrl.no_read_count == 3 {
-            debug!("MMC5 Frame End Detected");
+            trace!("MMC5 Frame End Detected");
             self.scanline_irq_status.remove(ScanlineIrqStatus::IN_FRAME);
             self.update_chr_mappings(mappings);
         }

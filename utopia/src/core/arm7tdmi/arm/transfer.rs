@@ -1,7 +1,7 @@
 use super::super::operator::TransferOperator;
 use super::super::{Bus, Core, REGS, SIZES};
 use super::{apply_shift, SHIFT};
-use tracing::debug;
+use tracing::trace;
 
 fn format_immediate<const PUW: u8>(rn: usize, offset: u32) -> String {
     match PUW {
@@ -85,7 +85,7 @@ pub fn mem_immediate<Op: TransferOperator, const SIZE: usize, const PUW: u8>(
     let rd = ((word >> 12) & 15) as usize;
     let offset = word & 0x0000_0fff;
 
-    debug!(
+    trace!(
         "{:08X} {}{} {}, {}",
         pc,
         Op::NAME,
@@ -118,7 +118,7 @@ pub fn mem_register<Op: TransferOperator, const SIZE: usize, const PUW: u8>(
         (shift_amount, format!("#0x{:X}", shift_amount))
     };
 
-    debug!(
+    trace!(
         "{:08X} {}{} {}, {}",
         pc,
         Op::NAME,

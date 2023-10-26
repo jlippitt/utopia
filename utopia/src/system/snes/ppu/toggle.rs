@@ -1,4 +1,4 @@
-use tracing::debug;
+use tracing::trace;
 
 const BIT_NAME: [&str; 2] = ["Main Screen", "Sub-Screen"];
 
@@ -28,6 +28,6 @@ impl Toggle {
             self.enabled &= !(1 << bit);
         }
 
-        debug!("{} {} Enabled: {}", self.name, BIT_NAME[bit], enabled);
+        trace!("{} {} Enabled: {}", self.name, BIT_NAME[bit], enabled);
     }
 }

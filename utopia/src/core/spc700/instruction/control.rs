@@ -1,13 +1,13 @@
 use super::super::{Bus, Core};
-use tracing::debug;
+use tracing::trace;
 
 pub fn jmp(core: &mut Core<impl Bus>) {
-    debug!("JMP !a");
+    trace!("JMP !a");
     core.pc = core.next_word();
 }
 
 pub fn jmp_x_indirect(core: &mut Core<impl Bus>) {
-    debug!("JMP [!a+X]");
+    trace!("JMP [!a+X]");
     let low_address = core.next_word().wrapping_add(core.x as u16);
     core.idle();
     let low = core.read(low_address);
@@ -17,7 +17,7 @@ pub fn jmp_x_indirect(core: &mut Core<impl Bus>) {
 }
 
 pub fn call(core: &mut Core<impl Bus>) {
-    debug!("CALL !a");
+    trace!("CALL !a");
     let target = core.next_word();
     core.idle();
     core.push((core.pc >> 8) as u8);
@@ -28,7 +28,7 @@ pub fn call(core: &mut Core<impl Bus>) {
 }
 
 pub fn pcall(core: &mut Core<impl Bus>) {
-    debug!("PCALL u");
+    trace!("PCALL u");
     let target = core.next_byte();
     core.idle();
     core.push((core.pc >> 8) as u8);
@@ -38,7 +38,7 @@ pub fn pcall(core: &mut Core<impl Bus>) {
 }
 
 pub fn tcall(core: &mut Core<impl Bus>, id: u16) {
-    debug!("TCALL {}", id);
+    trace!("TCALL {}", id);
     core.read(core.pc);
     core.idle();
     core.push((core.pc >> 8) as u8);
@@ -51,7 +51,7 @@ pub fn tcall(core: &mut Core<impl Bus>, id: u16) {
 }
 
 pub fn brk(core: &mut Core<impl Bus>) {
-    debug!("BRK");
+    trace!("BRK");
     core.read(core.pc);
     core.push((core.pc >> 8) as u8);
     core.push(core.pc as u8);
@@ -65,7 +65,7 @@ pub fn brk(core: &mut Core<impl Bus>) {
 }
 
 pub fn ret(core: &mut Core<impl Bus>) {
-    debug!("RET");
+    trace!("RET");
     core.read(core.pc);
     core.idle();
     let low = core.pop();
@@ -74,7 +74,7 @@ pub fn ret(core: &mut Core<impl Bus>) {
 }
 
 pub fn reti(core: &mut Core<impl Bus>) {
-    debug!("RET");
+    trace!("RET");
     core.read(core.pc);
     core.idle();
     let flags = core.pop();

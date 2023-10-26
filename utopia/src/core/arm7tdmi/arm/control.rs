@@ -1,10 +1,10 @@
 use super::super::{Bus, Core, REGS};
-use tracing::debug;
+use tracing::trace;
 
 pub fn branch<const LINK: bool>(core: &mut Core<impl Bus>, pc: u32, word: u32) {
     let offset = ((word as i32) << 8) >> 6;
 
-    debug!("{:08X} B{} {:+}", pc, if LINK { "L" } else { "" }, offset);
+    trace!("{:08X} B{} {:+}", pc, if LINK { "L" } else { "" }, offset);
 
     if LINK {
         core.set(14, core.pc);
@@ -15,14 +15,14 @@ pub fn branch<const LINK: bool>(core: &mut Core<impl Bus>, pc: u32, word: u32) {
 
 pub fn bx(core: &mut Core<impl Bus>, pc: u32, word: u32) {
     let rn = (word & 15) as usize;
-    debug!("{:08X} BX {}", pc, REGS[rn]);
+    trace!("{:08X} BX {}", pc, REGS[rn]);
     let target = core.get(rn);
     core.pc = target & 0xffff_fffe;
     core.cpsr.t = (target & 0x0000_0001) != 0;
 
     if core.cpsr.t {
-        debug!("  Thumb Mode");
+        trace!("  Thumb Mode");
     } else {
-        debug!("  ARM Mode");
+        trace!("  ARM Mode");
     }
 }

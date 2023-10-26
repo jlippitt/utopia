@@ -1,7 +1,7 @@
 use super::super::interrupt::{Interrupt, InterruptType};
 use super::super::DmaRequest;
 use super::component::Timer;
-use tracing::debug;
+use tracing::trace;
 
 #[rustfmt::skip]
 const PERIODS: [u32; 16] = [
@@ -72,7 +72,7 @@ impl Dmc {
         match address & 3 {
             0 => {
                 self.irq_enabled = (value & 0x80) != 0;
-                debug!("DMC IRQ Enabled: {}", self.irq_enabled);
+                trace!("DMC IRQ Enabled: {}", self.irq_enabled);
 
                 if !self.irq_enabled {
                     self.interrupt.clear(InterruptType::DmcIrq);
@@ -155,7 +155,7 @@ impl Dmc {
         self.reader.address = self.sample_address;
         self.reader.bytes_remaining = self.sample_length;
 
-        debug!(
+        trace!(
             "DMC Restart: Address = {:04X}, Length = {}",
             self.reader.address,
             self.reader.bytes_remaining + 1

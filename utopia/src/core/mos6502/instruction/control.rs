@@ -1,8 +1,8 @@
 use super::super::{Bus, Core, STACK_PAGE};
-use tracing::debug;
+use tracing::trace;
 
 pub fn jmp(core: &mut Core<impl Bus>) {
-    debug!("JMP addr");
+    trace!("JMP addr");
     let low = core.next_byte();
     core.poll();
     let high = core.next_byte();
@@ -10,7 +10,7 @@ pub fn jmp(core: &mut Core<impl Bus>) {
 }
 
 pub fn jmp_indirect(core: &mut Core<impl Bus>) {
-    debug!("JMP (addr)");
+    trace!("JMP (addr)");
     let address = core.next_word();
     let low = core.read(address);
     core.poll();
@@ -20,7 +20,7 @@ pub fn jmp_indirect(core: &mut Core<impl Bus>) {
 }
 
 pub fn jsr(core: &mut Core<impl Bus>) {
-    debug!("JSR addr");
+    trace!("JSR addr");
     let low = core.next_byte();
     core.read(STACK_PAGE | (core.s as u16));
     core.push((core.pc >> 8) as u8);
@@ -31,7 +31,7 @@ pub fn jsr(core: &mut Core<impl Bus>) {
 }
 
 pub fn rts(core: &mut Core<impl Bus>) {
-    debug!("RTS");
+    trace!("RTS");
     core.read(core.pc);
     core.read(STACK_PAGE | (core.s as u16));
     let low = core.pull();
@@ -43,7 +43,7 @@ pub fn rts(core: &mut Core<impl Bus>) {
 }
 
 pub fn rti(core: &mut Core<impl Bus>) {
-    debug!("RTI");
+    trace!("RTI");
     core.read(core.pc);
     core.read(STACK_PAGE | (core.s as u16));
     let flags = core.pull();

@@ -1,12 +1,12 @@
 use super::super::{Bus, Core, ReadAddress, WriteAddress};
-use tracing::debug;
+use tracing::trace;
 
 fn bit_from_opcode(opcode: u8) -> u8 {
     (opcode >> 3) & 7
 }
 
 pub fn rlca(core: &mut Core<impl Bus>) {
-    debug!("RLCA");
+    trace!("RLCA");
     core.flags.c = (core.a & 0x80) != 0;
     core.a = (core.a << 1) | (core.a >> 7);
     core.flags.z = 0xff;
@@ -15,7 +15,7 @@ pub fn rlca(core: &mut Core<impl Bus>) {
 }
 
 pub fn rrca(core: &mut Core<impl Bus>) {
-    debug!("RRCA");
+    trace!("RRCA");
     core.flags.c = (core.a & 0x01) != 0;
     core.a = (core.a >> 1) | (core.a << 7);
     core.flags.z = 0xff;
@@ -24,7 +24,7 @@ pub fn rrca(core: &mut Core<impl Bus>) {
 }
 
 pub fn rla(core: &mut Core<impl Bus>) {
-    debug!("RLA");
+    trace!("RLA");
     let carry = core.flags.c as u8;
     core.flags.c = (core.a & 0x80) != 0;
     core.a = (core.a << 1) | carry;
@@ -34,7 +34,7 @@ pub fn rla(core: &mut Core<impl Bus>) {
 }
 
 pub fn rra(core: &mut Core<impl Bus>) {
-    debug!("RRA");
+    trace!("RRA");
     let carry = core.flags.c as u8;
     core.flags.c = (core.a & 0x01) != 0;
     core.a = (core.a >> 1) | (carry << 7);
@@ -44,7 +44,7 @@ pub fn rra(core: &mut Core<impl Bus>) {
 }
 
 pub fn rlc<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
-    debug!("RLC {}", Addr::NAME);
+    trace!("RLC {}", Addr::NAME);
     let value = Addr::read(core);
     core.flags.c = (value & 0x80) != 0;
     let result = (value << 1) | (value >> 7);
@@ -55,7 +55,7 @@ pub fn rlc<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
 }
 
 pub fn rrc<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
-    debug!("RRC {}", Addr::NAME);
+    trace!("RRC {}", Addr::NAME);
     let value = Addr::read(core);
     core.flags.c = (value & 0x01) != 0;
     let result = (value >> 1) | (value << 7);
@@ -66,7 +66,7 @@ pub fn rrc<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
 }
 
 pub fn rl<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
-    debug!("RL {}", Addr::NAME);
+    trace!("RL {}", Addr::NAME);
     let value = Addr::read(core);
     let carry = core.flags.c as u8;
     core.flags.c = (value & 0x80) != 0;
@@ -78,7 +78,7 @@ pub fn rl<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
 }
 
 pub fn rr<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
-    debug!("RR {}", Addr::NAME);
+    trace!("RR {}", Addr::NAME);
     let value = Addr::read(core);
     let carry = core.flags.c as u8;
     core.flags.c = (value & 0x01) != 0;
@@ -90,7 +90,7 @@ pub fn rr<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
 }
 
 pub fn sla<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
-    debug!("SLA {}", Addr::NAME);
+    trace!("SLA {}", Addr::NAME);
     let value = Addr::read(core);
     core.flags.c = (value & 0x80) != 0;
     let result = value << 1;
@@ -101,7 +101,7 @@ pub fn sla<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
 }
 
 pub fn sra<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
-    debug!("SRA {}", Addr::NAME);
+    trace!("SRA {}", Addr::NAME);
     let value = Addr::read(core);
     core.flags.c = (value & 0x01) != 0;
     let result = (value & 0x80) | (value >> 1);
@@ -112,7 +112,7 @@ pub fn sra<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
 }
 
 pub fn swap<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
-    debug!("SWAP {}", Addr::NAME);
+    trace!("SWAP {}", Addr::NAME);
     let value = Addr::read(core);
     let result = (value << 4) | (value >> 4);
     Addr::write(core, result);
@@ -123,7 +123,7 @@ pub fn swap<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
 }
 
 pub fn srl<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
-    debug!("SRL {}", Addr::NAME);
+    trace!("SRL {}", Addr::NAME);
     let value = Addr::read(core);
     core.flags.c = (value & 0x01) != 0;
     let result = value >> 1;
@@ -135,7 +135,7 @@ pub fn srl<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
 
 pub fn bit<Addr: ReadAddress<u8>>(core: &mut Core<impl Bus>, opcode: u8) {
     let bit = bit_from_opcode(opcode);
-    debug!("BIT {}, {}", bit, Addr::NAME);
+    trace!("BIT {}, {}", bit, Addr::NAME);
     core.flags.z = Addr::read(core) & (1 << bit);
     core.flags.n = false;
     core.flags.h = true;
@@ -143,14 +143,14 @@ pub fn bit<Addr: ReadAddress<u8>>(core: &mut Core<impl Bus>, opcode: u8) {
 
 pub fn res<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>, opcode: u8) {
     let bit = bit_from_opcode(opcode);
-    debug!("RES {}, {}", bit, Addr::NAME);
+    trace!("RES {}, {}", bit, Addr::NAME);
     let result = Addr::read(core) & !(1 << bit);
     Addr::write(core, result);
 }
 
 pub fn set<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>, opcode: u8) {
     let bit = bit_from_opcode(opcode);
-    debug!("SET {}, {}", bit, Addr::NAME);
+    trace!("SET {}, {}", bit, Addr::NAME);
     let result = Addr::read(core) | (1 << bit);
     Addr::write(core, result);
 }

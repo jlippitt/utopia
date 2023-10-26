@@ -1,15 +1,15 @@
 use super::super::{Bus, Core, STACK_PAGE};
-use tracing::debug;
+use tracing::trace;
 
 pub fn php(core: &mut Core<impl Bus>) {
-    debug!("PHP");
+    trace!("PHP");
     core.read(core.pc);
     core.poll();
     core.push(core.flags_to_u8(true));
 }
 
 pub fn plp(core: &mut Core<impl Bus>) {
-    debug!("PLP");
+    trace!("PLP");
     core.read(core.pc);
     core.read(STACK_PAGE | (core.s as u16));
     core.poll();
@@ -18,14 +18,14 @@ pub fn plp(core: &mut Core<impl Bus>) {
 }
 
 pub fn pha(core: &mut Core<impl Bus>) {
-    debug!("PHA");
+    trace!("PHA");
     core.read(core.pc);
     core.poll();
     core.push(core.a);
 }
 
 pub fn pla(core: &mut Core<impl Bus>) {
-    debug!("PLA");
+    trace!("PLA");
     core.read(core.pc);
     core.read(STACK_PAGE | (core.s as u16));
     core.poll();
@@ -34,6 +34,6 @@ pub fn pla(core: &mut Core<impl Bus>) {
 }
 
 pub fn nop(core: &mut Core<impl Bus>) {
-    debug!("NOP");
+    trace!("NOP");
     core.read(core.pc);
 }

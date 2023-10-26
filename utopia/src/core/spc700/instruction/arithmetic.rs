@@ -1,8 +1,8 @@
 use super::super::{Bus, Core};
-use tracing::debug;
+use tracing::trace;
 
 pub fn mul(core: &mut Core<impl Bus>) {
-    debug!("MUL YA");
+    trace!("MUL YA");
     core.read(core.pc);
 
     for _ in 0..7 {
@@ -16,7 +16,7 @@ pub fn mul(core: &mut Core<impl Bus>) {
 }
 
 pub fn div(core: &mut Core<impl Bus>) {
-    debug!("DIV YA, X");
+    trace!("DIV YA, X");
     core.read(core.pc);
 
     for _ in 0..10 {
@@ -52,7 +52,7 @@ pub fn div(core: &mut Core<impl Bus>) {
 }
 
 pub fn daa(core: &mut Core<impl Bus>) {
-    debug!("DAA A");
+    trace!("DAA A");
     core.read(core.pc);
     core.idle();
 
@@ -69,7 +69,7 @@ pub fn daa(core: &mut Core<impl Bus>) {
 }
 
 pub fn das(core: &mut Core<impl Bus>) {
-    debug!("DAS A");
+    trace!("DAS A");
     core.read(core.pc);
     core.idle();
 

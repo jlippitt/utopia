@@ -1,7 +1,7 @@
 use super::super::operator::{AluOperator, OpType};
 use super::super::{Bus, Core, REGS};
 use super::{apply_shift, SHIFT};
-use tracing::debug;
+use tracing::trace;
 
 pub fn alu_immediate<Op: AluOperator, const SET_FLAGS: bool>(
     core: &mut Core<impl Bus>,
@@ -13,7 +13,7 @@ pub fn alu_immediate<Op: AluOperator, const SET_FLAGS: bool>(
     let value = (word & 0xff).rotate_right(((word >> 8) & 15) << 1);
 
     match Op::TYPE {
-        OpType::Binary => debug!(
+        OpType::Binary => trace!(
             "{:08X} {}{} {}, {}, #0x{:08X}",
             pc,
             Op::NAME,
@@ -22,7 +22,7 @@ pub fn alu_immediate<Op: AluOperator, const SET_FLAGS: bool>(
             REGS[rn],
             value
         ),
-        OpType::Move => debug!(
+        OpType::Move => trace!(
             "{:08X} {}{} {}, #0x{:08X}",
             pc,
             Op::NAME,
@@ -30,7 +30,7 @@ pub fn alu_immediate<Op: AluOperator, const SET_FLAGS: bool>(
             REGS[rd],
             value
         ),
-        OpType::Compare => debug!("{:08X} {} {}, #0x{:08X}", pc, Op::NAME, REGS[rn], value),
+        OpType::Compare => trace!("{:08X} {} {}, #0x{:08X}", pc, Op::NAME, REGS[rn], value),
     }
 
     if SET_FLAGS && rd == 15 {
@@ -60,7 +60,7 @@ pub fn alu_register<Op: AluOperator, const SET_FLAGS: bool, const VAR_SHIFT: boo
     };
 
     match Op::TYPE {
-        OpType::Binary => debug!(
+        OpType::Binary => trace!(
             "{:08X} {}{} {}, {}, {}, {} {}",
             pc,
             Op::NAME,
@@ -71,7 +71,7 @@ pub fn alu_register<Op: AluOperator, const SET_FLAGS: bool, const VAR_SHIFT: boo
             SHIFT[shift_type],
             debug_string
         ),
-        OpType::Move => debug!(
+        OpType::Move => trace!(
             "{:08X} {}{} {}, {}, {} {}",
             pc,
             Op::NAME,
@@ -81,7 +81,7 @@ pub fn alu_register<Op: AluOperator, const SET_FLAGS: bool, const VAR_SHIFT: boo
             SHIFT[shift_type],
             debug_string
         ),
-        OpType::Compare => debug!(
+        OpType::Compare => trace!(
             "{:08X} {} {}, {}, {} {}",
             pc,
             Op::NAME,
@@ -109,7 +109,7 @@ pub fn alu_register<Op: AluOperator, const SET_FLAGS: bool, const VAR_SHIFT: boo
 pub fn mrs_register<const SPSR: bool>(core: &mut Core<impl Bus>, pc: u32, word: u32) {
     let rd = ((word >> 12) & 15) as usize;
 
-    debug!(
+    trace!(
         "{:08X} MRS {}, {}PSR",
         pc,
         REGS[rd],
@@ -129,7 +129,7 @@ pub fn msr_register<const SPSR: bool>(core: &mut Core<impl Bus>, pc: u32, word: 
     let rm = (word & 15) as usize;
     let control = (word & 0x0001_0000) != 0;
 
-    debug!(
+    trace!(
         "{:08X} MSR {}PSR_F{}, {}",
         pc,
         if SPSR { "S" } else { "C" },

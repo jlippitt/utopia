@@ -1,10 +1,13 @@
 use super::super::{Bus, Core, REGS};
-use tracing::debug;
+use tracing::trace;
 
 pub fn daddi(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} DADDI {}, {}, {}",
-        core.pc, REGS[rt], REGS[rs], value as i16
+        core.pc,
+        REGS[rt],
+        REGS[rs],
+        value as i16
     );
 
     let ivalue = value as i16 as i64;
@@ -18,9 +21,12 @@ pub fn daddi(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
 }
 
 pub fn daddiu(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} DADDIU {}, {}, {}",
-        core.pc, REGS[rt], REGS[rs], value as i16
+        core.pc,
+        REGS[rt],
+        REGS[rs],
+        value as i16
     );
 
     let ivalue = value as i16 as i64 as u64;
@@ -29,9 +35,12 @@ pub fn daddiu(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
 }
 
 pub fn andi(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} ANDI {}, {}, 0x{:04X}",
-        core.pc, REGS[rt], REGS[rs], value,
+        core.pc,
+        REGS[rt],
+        REGS[rs],
+        value,
     );
 
     let result = core.getd(rs) & (value as u64);
@@ -39,9 +48,12 @@ pub fn andi(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
 }
 
 pub fn ori(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} ORI {}, {}, 0x{:04X}",
-        core.pc, REGS[rt], REGS[rs], value,
+        core.pc,
+        REGS[rt],
+        REGS[rs],
+        value,
     );
 
     let result = core.getd(rs) | (value as u64);
@@ -49,9 +61,12 @@ pub fn ori(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
 }
 
 pub fn xori(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} XORI {}, {}, 0x{:04X}",
-        core.pc, REGS[rt], REGS[rs], value,
+        core.pc,
+        REGS[rt],
+        REGS[rs],
+        value,
     );
 
     let result = core.getd(rs) ^ (value as u64);
@@ -59,9 +74,12 @@ pub fn xori(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
 }
 
 pub fn slti(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} SLTI {}, {}, {}",
-        core.pc, REGS[rt], REGS[rs], value as i16
+        core.pc,
+        REGS[rt],
+        REGS[rs],
+        value as i16
     );
 
     let ivalue = value as i16 as i64;
@@ -70,9 +88,12 @@ pub fn slti(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
 }
 
 pub fn sltiu(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    debug!(
+    trace!(
         "{:08X} SLTIU {}, {}, {}",
-        core.pc, REGS[rt], REGS[rs], value as i16
+        core.pc,
+        REGS[rt],
+        REGS[rs],
+        value as i16
     );
 
     let ivalue = value as i16 as i64 as u64;

@@ -1,5 +1,5 @@
 use super::super::{Bus, Core};
-use tracing::debug;
+use tracing::trace;
 
 fn block_move(core: &mut Core<impl Bus>) {
     core.dbr = (core.next_byte() as u32) << 16;
@@ -17,7 +17,7 @@ fn block_move(core: &mut Core<impl Bus>) {
 }
 
 pub fn mvp<const X: bool>(core: &mut Core<impl Bus>) {
-    debug!("MVP src, dst");
+    trace!("MVP src, dst");
     block_move(core);
     core.x = core.x.wrapping_sub(1);
     core.y = core.y.wrapping_sub(1);
@@ -29,7 +29,7 @@ pub fn mvp<const X: bool>(core: &mut Core<impl Bus>) {
 }
 
 pub fn mvn<const X: bool>(core: &mut Core<impl Bus>) {
-    debug!("MVN src, dst");
+    trace!("MVN src, dst");
     block_move(core);
     core.x = core.x.wrapping_add(1);
     core.y = core.y.wrapping_add(1);

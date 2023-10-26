@@ -1,13 +1,13 @@
 use super::super::operator::{self, AluOperator, ShiftOperator};
 use super::super::{Bus, Core, REGS};
-use tracing::debug;
+use tracing::trace;
 
 pub fn move_shifted<Op: ShiftOperator>(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     let shift_amount = ((word >> 6) & 31) as u32;
     let rs = ((word >> 3) & 7) as usize;
     let rd = (word & 7) as usize;
 
-    debug!(
+    trace!(
         "{:08X} {} {}, {}, #0x{:X}",
         pc,
         Op::NAME,
@@ -25,7 +25,7 @@ pub fn alu_register_3op<Op: AluOperator>(core: &mut Core<impl Bus>, pc: u32, wor
     let rs = ((word >> 3) & 7) as usize;
     let rd = (word & 7) as usize;
 
-    debug!(
+    trace!(
         "{:08X} {} {}, {}, {}",
         pc,
         Op::NAME,
@@ -42,7 +42,7 @@ pub fn alu_immediate_3op<Op: AluOperator>(core: &mut Core<impl Bus>, pc: u32, wo
     let rs = ((word >> 3) & 7) as usize;
     let rd = (word & 7) as usize;
 
-    debug!(
+    trace!(
         "{:08X} {} {}, {}, #{}",
         pc,
         Op::NAME,
@@ -58,7 +58,7 @@ pub fn alu_immediate_2op<Op: AluOperator>(core: &mut Core<impl Bus>, pc: u32, wo
     let rd = ((word >> 8) & 7) as usize;
     let value = word & 0xff;
 
-    debug!("{:08X} {} {}, #0x{:02X}", pc, Op::NAME, REGS[rd], value);
+    trace!("{:08X} {} {}, #0x{:02X}", pc, Op::NAME, REGS[rd], value);
 
     Op::apply::<true>(core, rd, core.get(rd), value as u32);
 }
@@ -67,7 +67,7 @@ pub fn add_sp_immediate(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     let sign = (word & 0x80) != 0;
     let offset = (word & 0x7f) << 2;
 
-    debug!(
+    trace!(
         "{:08X} {} {}, #0x{:X}",
         pc,
         if sign { "SUB" } else { "ADD " },
@@ -86,7 +86,7 @@ pub fn alu_register_high<Op: AluOperator>(core: &mut Core<impl Bus>, pc: u32, wo
     let rs = ((word >> 3) & 15) as usize;
     let rd = (((word >> 4) & 8) | (word & 7)) as usize;
 
-    debug!("{:08X} {} {}, {}", pc, Op::NAME, REGS[rd], REGS[rs]);
+    trace!("{:08X} {} {}, {}", pc, Op::NAME, REGS[rd], REGS[rs]);
     Op::apply::<false>(core, rd, core.get(rd), core.get(rs));
 }
 
@@ -119,12 +119,12 @@ pub fn alu_register_2op(core: &mut Core<impl Bus>, pc: u32, word: u16) {
 }
 
 fn alu_op<Op: AluOperator>(core: &mut Core<impl Bus>, pc: u32, rs: usize, rd: usize) {
-    debug!("{:08X} {} {}, {}", pc, Op::NAME, REGS[rd], REGS[rs]);
+    trace!("{:08X} {} {}, {}", pc, Op::NAME, REGS[rd], REGS[rs]);
     Op::apply::<true>(core, rd, core.get(rd), core.get(rs));
 }
 
 fn shift_op<Op: ShiftOperator>(core: &mut Core<impl Bus>, pc: u32, rs: usize, rd: usize) {
-    debug!("{:08X} {} {}, {}", pc, Op::NAME, REGS[rd], REGS[rs]);
+    trace!("{:08X} {} {}, {}", pc, Op::NAME, REGS[rd], REGS[rs]);
     let result = Op::apply::<true, true, true>(core, core.get(rd), core.get(rs));
     core.set(rd, result);
 }

@@ -2,7 +2,7 @@ use super::{
     Interrupt, InterruptType, Mapper, Mappings, NameTable, CHR_PAGE_SIZE, MIRROR_HORIZONTAL,
     MIRROR_VERTICAL,
 };
-use tracing::debug;
+use tracing::trace;
 
 const PRG_BANK_SIZE: usize = 8192;
 
@@ -32,8 +32,8 @@ impl Mapper for Fme7 {
     fn init_mappings(&mut self, mappings: &mut Mappings) {
         mappings.map_prg_rom(14, 2, self.prg_rom_size - PRG_BANK_SIZE);
         mappings.map_registers(8, 4);
-        debug!("FME7 PRG Read Mappings: {:?}", mappings.prg_read);
-        debug!("FME7 PRG Write Mappings: {:?}", mappings.prg_write);
+        trace!("FME7 PRG Read Mappings: {:?}", mappings.prg_read);
+        trace!("FME7 PRG Write Mappings: {:?}", mappings.prg_write);
     }
 
     fn write_register(&mut self, mappings: &mut Mappings, address: u16, value: u8) {
@@ -45,7 +45,7 @@ impl Mapper for Fme7 {
         match self.command {
             0..=7 => {
                 mappings.map_chr(self.command as usize, 1, CHR_PAGE_SIZE * value as usize);
-                debug!("FME7 CHR Mappings: {:?}", mappings.chr);
+                trace!("FME7 CHR Mappings: {:?}", mappings.chr);
             }
             8 => {
                 if (value & 0x40) == 0 {
@@ -55,8 +55,8 @@ impl Mapper for Fme7 {
                 } else {
                     mappings.unmap_prg(6, 2);
                 }
-                debug!("FME7 PRG Read Mappings: {:?}", mappings.prg_read);
-                debug!("FME7 PRG Write Mappings: {:?}", mappings.prg_write);
+                trace!("FME7 PRG Read Mappings: {:?}", mappings.prg_read);
+                trace!("FME7 PRG Write Mappings: {:?}", mappings.prg_write);
             }
             9..=11 => {
                 mappings.map_prg_rom(
@@ -64,7 +64,7 @@ impl Mapper for Fme7 {
                     2,
                     PRG_BANK_SIZE * (value as usize & 0x3f),
                 );
-                debug!("FME7 PRG Read Mappings: {:?}", mappings.prg_read);
+                trace!("FME7 PRG Read Mappings: {:?}", mappings.prg_read);
             }
             12 => {
                 mappings.name = match value & 3 {
@@ -74,22 +74,22 @@ impl Mapper for Fme7 {
                     3 => [NameTable::HIGH; 4],
                     _ => unreachable!(),
                 };
-                debug!("FME7 Name Mappings: {:?}", mappings.name);
+                trace!("FME7 Name Mappings: {:?}", mappings.name);
             }
             13 => {
                 self.irq_enable = (value & 0x01) != 0;
                 self.irq_counter_enable = (value & 0x80) != 0;
-                debug!("FME7 IRQ Enable: {}", self.irq_enable);
-                debug!("FME7 IRQ Counter Enable: {}", self.irq_counter_enable);
+                trace!("FME7 IRQ Enable: {}", self.irq_enable);
+                trace!("FME7 IRQ Counter Enable: {}", self.irq_counter_enable);
                 self.interrupt.clear(InterruptType::MapperIrq);
             }
             14 => {
                 self.irq_counter = (self.irq_counter & 0xff00) | value as u16;
-                debug!("FME7 IRQ Counter: {}", self.irq_counter);
+                trace!("FME7 IRQ Counter: {}", self.irq_counter);
             }
             15 => {
                 self.irq_counter = (self.irq_counter & 0xff) | ((value as u16) << 8);
-                debug!("FME7 IRQ Counter: {}", self.irq_counter);
+                trace!("FME7 IRQ Counter: {}", self.irq_counter);
             }
             _ => unreachable!(),
         }

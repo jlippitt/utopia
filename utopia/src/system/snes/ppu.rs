@@ -16,7 +16,7 @@ use object::ObjectLayer;
 use screen::Screen;
 use std::ops::RangeInclusive;
 use toggle::Toggle;
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 use vram::Vram;
 use window::{Window, WindowMask};
 
@@ -178,7 +178,7 @@ impl Ppu {
         match address {
             0x00 => {
                 self.force_blank = (value & 0x80) != 0;
-                debug!("Force Blank: {}", self.force_blank);
+                trace!("Force Blank: {}", self.force_blank);
                 self.screen.set_brightness(value & 0x0f);
             }
             0x01 => self.obj.set_control(value),
@@ -197,9 +197,9 @@ impl Ppu {
                 self.hi_res
                     .set(HiRes::BG_MODE, self.bg_mode == 5 || self.bg_mode == 6);
 
-                debug!("BG Mode: {}", self.bg_mode);
-                debug!("BG3 Priority: {:?}", self.bg3_priority);
-                debug!("Hi Res: {:?}", self.hi_res);
+                trace!("BG Mode: {}", self.bg_mode);
+                trace!("BG3 Priority: {:?}", self.bg3_priority);
+                trace!("Hi Res: {:?}", self.hi_res);
 
                 self.bg[0].set_tile_size((value & 0x10) != 0);
                 self.bg[1].set_tile_size((value & 0x20) != 0);
@@ -319,10 +319,10 @@ impl Ppu {
                 self.obj.set_interlace((value & 0x02) != 0);
 
                 self.overscan = (value & 0x04) != 0;
-                debug!("Overscan: {}", self.overscan);
+                trace!("Overscan: {}", self.overscan);
 
                 self.hi_res.set(HiRes::PSEUDO_HI_RES, (value & 0x08) != 0);
-                debug!("Hi Res: {:?}", self.hi_res);
+                trace!("Hi Res: {:?}", self.hi_res);
 
                 if (value & 0x40) != 0 {
                     todo!("Mode 7 EXTBG");
@@ -353,8 +353,8 @@ impl Ppu {
             (VBLANK_LINE_NORMAL, VISIBLE_RANGE_NORMAL)
         };
 
-        debug!("VBlank Line: {}", self.vblank_line);
-        debug!("Visible Range: {:?}", self.visible_range);
+        trace!("VBlank Line: {}", self.vblank_line);
+        trace!("Visible Range: {:?}", self.visible_range);
     }
 
     pub fn on_vblank_start(&mut self) {

@@ -1,6 +1,6 @@
 use super::super::{Bus, Core, REGS};
 use arrayvec::ArrayVec;
-use tracing::debug;
+use tracing::trace;
 
 fn reg_list(word: u16, extra: Option<usize>) -> String {
     let mut reg_list: ArrayVec<&str, 9> = ArrayVec::new();
@@ -21,7 +21,7 @@ fn reg_list(word: u16, extra: Option<usize>) -> String {
 }
 
 pub fn pop<const PC: bool>(core: &mut Core<impl Bus>, pc: u32, word: u16) {
-    debug!(
+    trace!(
         "{:08X} POP {{ {} }}",
         pc,
         reg_list(word, if PC { Some(15) } else { None })
@@ -43,11 +43,11 @@ pub fn pop<const PC: bool>(core: &mut Core<impl Bus>, pc: u32, word: u16) {
         core.regs[13] = core.regs[13].wrapping_add(4);
     }
 
-    debug!("  {}: {:08X}", REGS[13], core.regs[13]);
+    trace!("  {}: {:08X}", REGS[13], core.regs[13]);
 }
 
 pub fn push<const LR: bool>(core: &mut Core<impl Bus>, pc: u32, word: u16) {
-    debug!(
+    trace!(
         "{:08X} PUSH {{ {} }}",
         pc,
         reg_list(word, if LR { Some(14) } else { None })
@@ -67,14 +67,14 @@ pub fn push<const LR: bool>(core: &mut Core<impl Bus>, pc: u32, word: u16) {
         }
     }
 
-    debug!("  {}: {:08X}", REGS[13], core.regs[13]);
+    trace!("  {}: {:08X}", REGS[13], core.regs[13]);
 }
 
 pub fn ldmia(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     let rb = ((word >> 8) & 7) as usize;
     let mut base = core.get(rb);
 
-    debug!(
+    trace!(
         "{:08X} LDMIA {}!, {{ {} }}",
         pc,
         REGS[rb],
@@ -98,7 +98,7 @@ pub fn stmia(core: &mut Core<impl Bus>, pc: u32, word: u16) {
     let rb = ((word >> 8) & 7) as usize;
     let mut base = core.get(rb);
 
-    debug!(
+    trace!(
         "{:08X} STMIA {}!, {{ {} }}",
         pc,
         REGS[rb],

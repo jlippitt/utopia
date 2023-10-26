@@ -3,7 +3,7 @@ use crate::AudioQueue;
 use directory::Directory;
 use echo::Echo;
 use noise::NoiseGenerator;
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 use voice::Voice;
 
 mod constants;
@@ -62,7 +62,7 @@ impl Dsp {
 
     pub fn set_address(&mut self, value: u8) {
         self.address = value;
-        debug!("DSP Address: {:02X}", self.address);
+        trace!("DSP Address: {:02X}", self.address);
     }
 
     pub fn read(&self) -> u8 {
@@ -81,7 +81,7 @@ impl Dsp {
             }
         };
 
-        debug!("DSP Read: {:02X} >= {:02X}", address, value);
+        trace!("DSP Read: {:02X} >= {:02X}", address, value);
 
         value
     }
@@ -92,7 +92,7 @@ impl Dsp {
         }
 
         self.data[self.address as usize] = value;
-        debug!("DSP Write: {:02X} <= {:02X}", self.address, value);
+        trace!("DSP Write: {:02X} <= {:02X}", self.address, value);
 
         match self.address & 0x0f {
             0x00 => self.voice_mut(self.address).set_volume_left(value),
@@ -108,11 +108,11 @@ impl Dsp {
             0x0c => match self.address {
                 0x0c => {
                     self.volume_left = value as i8 as i32;
-                    debug!("DSP Volume Left: {}", self.volume_left);
+                    trace!("DSP Volume Left: {}", self.volume_left);
                 }
                 0x1c => {
                     self.volume_right = value as i8 as i32;
-                    debug!("DSP Volume Right: {}", self.volume_right);
+                    trace!("DSP Volume Right: {}", self.volume_right);
                 }
                 0x2c => self.echo.set_volume_left(value),
                 0x3c => self.echo.set_volume_right(value),
@@ -152,7 +152,7 @@ impl Dsp {
     }
 
     pub fn step(&mut self, ram: &mut MirrorVec<u8>) {
-        debug!("DSP Step Begin");
+        trace!("DSP Step Begin");
 
         self.noise.step();
 
@@ -185,7 +185,7 @@ impl Dsp {
 
         self.poll_key_state = !self.poll_key_state;
 
-        debug!("DSP Step End");
+        trace!("DSP Step End");
     }
 
     fn voice(&self, address: u8) -> &Voice {
