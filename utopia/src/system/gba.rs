@@ -1,7 +1,9 @@
 use crate::core::arm7tdmi::{Bus, Core, Mode, State};
 use crate::util::facade::{ReadFacade, Value, WriteFacade};
 use crate::util::MirrorVec;
-use crate::{BiosLoader, InstanceOptions, JoypadState, MemoryMapper, SystemOptions, WgpuContext};
+use crate::{
+    BiosLoader, InstanceOptions, JoypadState, MemoryMapper, Size, SystemOptions, WgpuContext,
+};
 use audio::Audio;
 use cartridge::Cartridge;
 use dma::Dma;
@@ -19,7 +21,6 @@ mod registers;
 
 const WIDTH: usize = 240;
 const HEIGHT: usize = 160;
-const PIXELS: [u8; WIDTH * HEIGHT * 4] = [0; WIDTH * HEIGHT * 4];
 
 const IWRAM_SIZE: usize = 32768;
 const EWRAM_SIZE: usize = 262144;
@@ -41,8 +42,8 @@ impl<'a, T: MemoryMapper> System<'a, T> {
 }
 
 impl<'a, T: MemoryMapper> crate::System<T> for System<'a, T> {
-    fn default_resolution(&self) -> (u32, u32) {
-        (WIDTH as u32, HEIGHT as u32)
+    fn default_output_resolution(&self) -> Size {
+        (WIDTH as u32, HEIGHT as u32).into()
     }
 
     fn default_sample_rate(&self) -> Option<u64> {
@@ -95,14 +96,6 @@ impl Instance {
 }
 
 impl crate::Instance for Instance {
-    fn resolution(&self) -> (u32, u32) {
-        (WIDTH as u32, HEIGHT as u32)
-    }
-
-    fn pixels(&self) -> &[u8] {
-        &PIXELS
-    }
-
     fn run_frame(&mut self, _joypad_state: &JoypadState) {
         let core = &mut self.core;
 

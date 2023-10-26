@@ -1,7 +1,7 @@
 use crate::core::wdc65c816::{Bus, Core, Interrupt, INT_NMI};
 use crate::util::mirror::{Mirror, MirrorVec};
 use crate::util::upscaler::Upscaler;
-use crate::{BiosLoader, InstanceOptions, JoypadState, Mapped, MemoryMapper, SystemOptions};
+use crate::{BiosLoader, InstanceOptions, JoypadState, Mapped, MemoryMapper, Size, SystemOptions};
 use apu::Apu;
 use clock::{Clock, Event, FAST_CYCLES, TIMER_IRQ};
 use dma::Dma;
@@ -41,8 +41,8 @@ impl<'a, T: MemoryMapper> System<'a, T> {
 }
 
 impl<'a, T: MemoryMapper> crate::System<T> for System<'a, T> {
-    fn default_resolution(&self) -> (u32, u32) {
-        (ppu::WIDTH as u32, ppu::HEIGHT as u32)
+    fn default_output_resolution(&self) -> Size {
+        (ppu::WIDTH as u32, ppu::HEIGHT as u32).into()
     }
 
     fn default_sample_rate(&self) -> Option<u64> {
@@ -87,14 +87,6 @@ impl<T: Mapped> Instance<T> {
 }
 
 impl<T: Mapped> crate::Instance for Instance<T> {
-    fn resolution(&self) -> (u32, u32) {
-        (ppu::WIDTH as u32, ppu::HEIGHT as u32)
-    }
-
-    fn pixels(&self) -> &[u8] {
-        self.core.bus().ppu.pixels()
-    }
-
     fn sample_rate(&self) -> u64 {
         SAMPLE_RATE
     }

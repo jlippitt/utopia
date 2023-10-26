@@ -12,6 +12,8 @@ pub use system::{
     create, AudioQueue, Instance, InstanceOptions, JoypadState, System, SystemOptions, SystemType,
 };
 
+pub use util::Size;
+
 use std::error;
 use std::fmt;
 use std::sync::Arc;

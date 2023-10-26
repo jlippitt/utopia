@@ -2,7 +2,7 @@ use crate::core::sm83::{Bus, Core, State};
 use crate::util::mirror::MirrorVec;
 use crate::util::upscaler::Upscaler;
 use crate::{
-    AudioQueue, BiosLoader, InstanceOptions, JoypadState, Mapped, MemoryMapper, SystemOptions,
+    AudioQueue, BiosLoader, InstanceOptions, JoypadState, Mapped, MemoryMapper, Size, SystemOptions,
 };
 use apu::Apu;
 use cartridge::Cartridge;
@@ -46,8 +46,8 @@ impl<'a, T: MemoryMapper> System<'a, T> {
 }
 
 impl<'a, T: MemoryMapper> crate::System<T> for System<'a, T> {
-    fn default_resolution(&self) -> (u32, u32) {
-        (ppu::WIDTH as u32, ppu::HEIGHT as u32)
+    fn default_output_resolution(&self) -> Size {
+        (ppu::WIDTH as u32, ppu::HEIGHT as u32).into()
     }
 
     fn default_sample_rate(&self) -> Option<u64> {
@@ -141,14 +141,6 @@ impl<T: Mapped> Instance<T> {
 }
 
 impl<T: Mapped> crate::Instance for Instance<T> {
-    fn resolution(&self) -> (u32, u32) {
-        (ppu::WIDTH as u32, ppu::HEIGHT as u32)
-    }
-
-    fn pixels(&self) -> &[u8] {
-        self.core.bus().ppu.pixels()
-    }
-
     fn sample_rate(&self) -> u64 {
         Apu::SAMPLE_RATE
     }

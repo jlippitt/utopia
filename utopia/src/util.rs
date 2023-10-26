@@ -1,5 +1,6 @@
 pub use color::Rgb;
 pub use mirror::MirrorVec;
+pub use size::Size;
 
 pub mod audio;
 pub mod facade;

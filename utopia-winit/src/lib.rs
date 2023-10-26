@@ -68,7 +68,8 @@ impl ResetState {
             skip_boot: options.skip_boot,
         })?;
 
-        let source_size: PhysicalSize<u32> = system.default_resolution().into();
+        let source_size: PhysicalSize<u32> =
+            <(u32, u32)>::from(system.default_output_resolution()).into();
 
         let sync = options.sync.unwrap_or_else(|| {
             if system.default_sample_rate().is_some() {
@@ -213,12 +214,6 @@ fn start_event_loop<T: MemoryMapper>(
 
                     if let Some(queue) = state.instance.audio_queue() {
                         state.audio.queue_samples(queue);
-                    }
-
-                    let source_size: PhysicalSize<u32> = state.instance.resolution().into();
-
-                    if source_size != state.video.source_size() {
-                        state.video.set_source_size(elwt, source_size);
                     }
                 }
 

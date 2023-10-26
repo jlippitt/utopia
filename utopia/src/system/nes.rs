@@ -1,7 +1,9 @@
 use crate::core::mos6502::{self, Bus, Core};
 use crate::util::upscaler::Upscaler;
 use crate::util::MirrorVec;
-use crate::{AudioQueue, Error, InstanceOptions, JoypadState, Mapped, MemoryMapper, SystemOptions};
+use crate::{
+    AudioQueue, Error, InstanceOptions, JoypadState, Mapped, MemoryMapper, Size, SystemOptions,
+};
 use apu::Apu;
 use bitflags::bitflags;
 use cartridge::Cartridge;
@@ -35,8 +37,8 @@ impl<'a, T: MemoryMapper> System<'a, T> {
 }
 
 impl<'a, T: MemoryMapper> crate::System<T> for System<'a, T> {
-    fn default_resolution(&self) -> (u32, u32) {
-        (WIDTH, HEIGHT)
+    fn default_output_resolution(&self) -> Size {
+        (WIDTH, HEIGHT).into()
     }
 
     fn default_sample_rate(&self) -> Option<u64> {
@@ -73,17 +75,6 @@ impl<T: Mapped> Instance<T> {
 }
 
 impl<T: Mapped> crate::Instance for Instance<T> {
-    fn resolution(&self) -> (u32, u32) {
-        (WIDTH, HEIGHT)
-    }
-
-    fn pixels(&self) -> &[u8] {
-        let pixels = self.core.bus().ppu.pixels();
-        let start = CLIP_LINES * ppu::WIDTH * 4;
-        let end = pixels.len() - start;
-        &pixels[start..end]
-    }
-
     fn sample_rate(&self) -> u64 {
         Apu::SAMPLE_RATE
     }
@@ -103,7 +94,10 @@ impl<T: Mapped> crate::Instance for Instance<T> {
             trace!("{}", core);
         }
 
-        self.upscaler.update(self.core.bus().ppu.pixels());
+        let pixels = self.core.bus().ppu.pixels();
+        let start = CLIP_LINES * ppu::WIDTH * 4;
+        let end = pixels.len() - start;
+        self.upscaler.update(&pixels[start..end]);
     }
 
     fn present(&self, canvas: &wgpu::Texture) {

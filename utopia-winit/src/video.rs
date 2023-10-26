@@ -141,19 +141,6 @@ impl VideoController {
         &self.ctx
     }
 
-    pub fn source_size(&self) -> PhysicalSize<u32> {
-        self.source_size
-    }
-
-    pub fn set_source_size(
-        &mut self,
-        window_target: &EventLoopWindowTarget<AppEvent<impl MemoryMapper>>,
-        source_size: PhysicalSize<u32>,
-    ) {
-        self.source_size = source_size;
-        self.update_viewport(window_target);
-    }
-
     pub fn toggle_full_screen(
         &mut self,
         window_target: &EventLoopWindowTarget<AppEvent<impl MemoryMapper>>,

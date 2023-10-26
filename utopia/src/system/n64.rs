@@ -1,6 +1,6 @@
 use crate::core::mips::{self, Core, InitialState, NullCp2};
 use crate::util::memory::{Memory, Value};
-use crate::{InstanceOptions, JoypadState, MemoryMapper, SystemOptions, WgpuContext};
+use crate::{InstanceOptions, JoypadState, MemoryMapper, Size, SystemOptions, WgpuContext};
 use audio::AudioInterface;
 use interrupt::{CpuInterrupt, RcpInterrupt};
 use mips_interface::MipsInterface;
@@ -45,9 +45,9 @@ impl<T: MemoryMapper> System<T> {
 }
 
 impl<T: MemoryMapper> crate::System<T> for System<T> {
-    fn default_resolution(&self) -> (u32, u32) {
+    fn default_output_resolution(&self) -> Size {
         // This determines the initial size of the output window
-        VideoInterface::DEFAULT_TARGET_SIZE.into()
+        VideoInterface::DEFAULT_TARGET_SIZE
     }
 
     fn default_sample_rate(&self) -> Option<u64> {
@@ -95,16 +95,6 @@ impl Instance {
 }
 
 impl crate::Instance for Instance {
-    fn resolution(&self) -> (u32, u32) {
-        // TODO: Remove this method from interface
-        VideoInterface::DEFAULT_TARGET_SIZE.into()
-    }
-
-    fn pixels(&self) -> &[u8] {
-        // TODO: Remove this method from interface
-        &[]
-    }
-
     fn run_frame(&mut self, joypad_state: &JoypadState) {
         self.core.bus_mut().si.pif_mut().update_joypad(joypad_state);
         self.core.bus_mut().vi.reset_frame_complete();

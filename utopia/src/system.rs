@@ -56,7 +56,7 @@ pub struct SystemOptions<'a, T: MemoryMapper> {
 
 pub trait System<T: MemoryMapper> {
     fn create_instance(&self, options: InstanceOptions) -> Result<Box<dyn Instance>, Error>;
-    fn default_resolution(&self) -> (u32, u32);
+    fn default_output_resolution(&self) -> Size;
 
     fn default_sample_rate(&self) -> Option<u64> {
         None
@@ -74,19 +74,12 @@ pub trait Instance {
     fn run_frame(&mut self, joypad_state: &JoypadState);
     fn present(&self, canvas: &wgpu::Texture);
 
-    fn resolution(&self) -> (u32, u32);
-    fn pixels(&self) -> &[u8];
-
     fn sample_rate(&self) -> u64 {
         44100
     }
 
     fn audio_queue(&mut self) -> Option<&mut AudioQueue> {
         None
-    }
-
-    fn pitch(&self) -> usize {
-        self.resolution().0 as usize * 4
     }
 }
 
