@@ -90,10 +90,16 @@ fn single_lane(
     };
 
     let cp2 = core.cp2_mut();
+
+    let acc_words = cp2.acc_le();
+    let input_words = cp2.broadcast_le(op.vt(), op.vt_elem());
+    cp2.set_acc_le(std::array::from_fn(|index| {
+        (acc_words[index] & !0xffff) | (input_words[index] as u64)
+    }));
+
     let input = cp2.lane(op.vt(), vt_elem);
     let result = cb(cp2, input);
     cp2.set_lane(op.vd(), vd_elem, result);
-    cp2.set_acc_le(cp2.get_le(op.vt()).map(u64::from));
 }
 
 fn calc_reciprocal(
