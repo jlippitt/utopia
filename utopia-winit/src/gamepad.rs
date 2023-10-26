@@ -30,7 +30,7 @@ fn update_button(joypad_state: &mut JoypadState, button: Button, pressed: bool) 
     match button {
         Button::South => buttons[0] = pressed,
         Button::East => buttons[1] = pressed,
-        // West + North appear swapped, at least for me?
+        // North and west appear swapped for me, though this may just be an Xbox controller issue?
         Button::North => buttons[2] = pressed,
         Button::West => buttons[3] = pressed,
         Button::LeftTrigger => buttons[4] = pressed,
@@ -46,13 +46,15 @@ fn update_button(joypad_state: &mut JoypadState, button: Button, pressed: bool) 
 }
 
 fn update_axis(joypad_state: &mut JoypadState, axis: Axis, value: f32) {
-    let JoypadState { axes, .. } = joypad_state;
+    let JoypadState { axes, buttons } = joypad_state;
 
     match axis {
         Axis::LeftStickX => axes[0] = (value * i32::MAX as f32) as i32,
         Axis::LeftStickY => axes[1] = (value * i32::MAX as f32) as i32,
         Axis::RightStickX => axes[2] = (value * i32::MAX as f32) as i32,
         Axis::RightStickY => axes[3] = (value * i32::MAX as f32) as i32,
+        Axis::LeftZ => buttons[6] = value >= -0.75,
+        Axis::RightZ => buttons[7] = value >= -0.75,
         _ => (),
     }
 }
