@@ -61,7 +61,7 @@ impl Cp0 {
 
         // Set by IPL1
         regs[Cpr::Status as usize] = 0x3400_0000; // Status
-        regs[Cpr::Config as usize] = 0x0006_e463; // Config
+        regs[Cpr::Config as usize] = 0x7006_e463; // Config
 
         Self {
             regs,
