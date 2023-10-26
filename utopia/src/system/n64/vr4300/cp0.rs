@@ -71,19 +71,7 @@ impl Cp0 {
     }
 
     fn getw(&self, cpr: Cpr) -> u32 {
-        match cpr {
-            Cpr::Index
-            | Cpr::Count
-            | Cpr::EntryLo0
-            | Cpr::EntryLo1
-            | Cpr::EntryHi
-            | Cpr::PageMask
-            | Cpr::Compare
-            | Cpr::Status
-            | Cpr::Cause
-            | Cpr::Epc => self.regs[cpr as usize],
-            _ => todo!("R4300 CPR Read: {} ({:?})", cpr as usize, cpr),
-        }
+        self.regs[cpr as usize]
     }
 
     fn setw(&mut self, cpr: Cpr, value: u32) {
