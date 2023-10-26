@@ -11,7 +11,7 @@ use rsp::{DmaType, Rsp};
 use serial::SerialInterface;
 use std::error::Error;
 use std::marker::PhantomData;
-use tracing::warn;
+use tracing::{debug, warn};
 use video::VideoInterface;
 use vr4300::{Cp0, Cp1};
 
@@ -185,7 +185,7 @@ impl mips::Bus for Bus {
                 if let Some(value) = self.rom.try_read(address as usize & 0x0fff_ffff) {
                     value
                 } else {
-                    warn!("Unmapped ROM read: {:08X}", address);
+                    debug!("Unmapped ROM read: {:08X}", address);
                     T::zero()
                 }
             }
