@@ -117,9 +117,7 @@ impl BackgroundLayer {
             + ((tile_y & 0x1f) << TILE_SHIFT_32)
             + (tile_x & 0x1f);
 
-        let value = vram.data(address as usize);
-        trace!("Tile Load: {:04X} => {:04X}", address, value);
-        value
+        vram.data(address as usize)
     }
 }
 
@@ -267,24 +265,18 @@ impl super::Ppu {
                 0 => {
                     let chr_index = bg.chr_map.wrapping_add(chr_name << 3) | fine_y;
                     let chr_data = self.vram.chr4(chr_index as usize);
-                    trace!("CHR Load: {:04X} => {:04X}", chr_index, chr_data);
-
                     tile.chr_data = chr_data;
                     tile.palette = palette_offset + ((tile_data & 0x1c00) >> 8);
                 }
                 1 => {
                     let chr_index = bg.chr_map.wrapping_add(chr_name << 4) | fine_y;
                     let chr_data = self.vram.chr16(chr_index as usize);
-                    trace!("CHR Load: {:04X} => {:08X}", chr_index, chr_data);
-
                     tile.chr_data = chr_data;
                     tile.palette = (tile_data & 0x1c00) >> 6;
                 }
                 2 => {
                     let chr_index = bg.chr_map.wrapping_add(chr_name << 5) | fine_y;
                     let chr_data = self.vram.chr256(chr_index as usize);
-                    trace!("CHR Load: {:04X} => {:016X}", chr_index, chr_data);
-
                     tile.chr_data = chr_data;
                     tile.palette = 0;
                 }
@@ -307,8 +299,6 @@ impl super::Ppu {
                 }
             }
         }
-
-        trace!("{} Tiles: {:?}", bg.name, self.tiles);
     }
 
     fn draw_bg_pixels_lo_res<const COLOR_DEPTH: u8>(

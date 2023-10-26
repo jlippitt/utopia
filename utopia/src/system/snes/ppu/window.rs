@@ -111,7 +111,6 @@ impl WindowMask {
             }
 
             trace!("{} Updated", self.name);
-            trace!("{:?}", self.mask);
         }
 
         &self.mask
