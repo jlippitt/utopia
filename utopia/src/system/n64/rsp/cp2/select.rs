@@ -4,27 +4,25 @@ use crate::core::mips::{Bus, Core};
 
 pub fn vlt(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     select("VLT", core, word, |cp2, index, lhs, rhs| {
-        (lhs as i16) < (rhs as i16)
-            || (lhs == rhs && cp2.carry[index] && !cp2.compare_extension[index])
+        (lhs as i16) < (rhs as i16) || (lhs == rhs && cp2.carry[index] && cp2.not_equal[index])
     });
 }
 
 pub fn veq(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     select("VEQ", core, word, |cp2, index, lhs, rhs| {
-        lhs == rhs && (!cp2.carry[index] || cp2.compare_extension[index])
+        lhs == rhs && !cp2.not_equal[index]
     });
 }
 
 pub fn vne(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     select("VNE", core, word, |cp2, index, lhs, rhs| {
-        lhs != rhs || (cp2.carry[index] && !cp2.compare_extension[index])
+        lhs != rhs || cp2.not_equal[index]
     });
 }
 
 pub fn vge(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     select("VGE", core, word, |cp2, index, lhs, rhs| {
-        (lhs as i16) > (rhs as i16)
-            || (lhs == rhs && (!cp2.carry[index] || cp2.compare_extension[index]))
+        (lhs as i16) > (rhs as i16) || (lhs == rhs && (!cp2.carry[index] || !cp2.not_equal[index]))
     });
 }
 
@@ -167,11 +165,11 @@ fn select(
         let condition = cb(cp2, index ^ 7, lhs, rhs);
         cp2.compare.set(index, condition);
         let result = if condition { lhs } else { rhs };
-        *acc = result as u64;
+        *acc = (*acc & !0xffff) | result as u64;
         result
     });
 
     core.cp2_mut().not_equal.fill(false);
     core.cp2_mut().carry.fill(false);
-    core.cp2_mut().compare_extension.fill(false);
+    core.cp2_mut().clip_compare.fill(false);
 }
