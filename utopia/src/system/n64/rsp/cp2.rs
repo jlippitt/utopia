@@ -1,7 +1,7 @@
 use crate::core::mips::{self, Bus, Core, GPR};
 use bitfield_struct::bitfield;
 use bitvec::array::BitArray;
-use tracing::trace;
+use tracing::{trace, warn};
 use vector::Vector;
 
 mod compute;
@@ -210,7 +210,10 @@ impl mips::Cp2 for Cp2 {
                 cp2.clip_compare.into_inner()[0],
             ]),
             2 => u16::from_le_bytes([cp2.compare_extension.into_inner()[0], 0]),
-            reg => unimplemented!("RSP CP2 Control Register {}", CTRL_REGS[reg]),
+            reg => {
+                warn!("RSP CP2 Control Register Read: {}", CTRL_REGS[reg]);
+                0
+            }
         };
 
         core.setw(op.rt(), value as u32);
@@ -239,7 +242,7 @@ impl mips::Cp2 for Cp2 {
                 cp2.clip_compare = [(value >> 8) as u8].into();
             }
             2 => cp2.compare_extension = [value as u8].into(),
-            reg => unimplemented!("RSP CP2 Control Register {}", CTRL_REGS[reg]),
+            reg => warn!("RSP CP2 Control Register Write: {}", CTRL_REGS[reg]),
         };
 
         let index = op.element();
