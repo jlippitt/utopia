@@ -324,10 +324,11 @@ fn create_bind_group(
 }
 
 fn create_clip_rect(source: Size, target: Size) -> [Vertex; 4] {
-    let scale_factor = (target.width / source.width).min(target.height / source.height);
+    let scale_factor = (target.width as f32 / source.width as f32)
+        .min(target.height as f32 / source.height as f32);
 
-    let scaled_width = source.width * scale_factor;
-    let scaled_height = source.height * scale_factor;
+    let scaled_width = (source.width as f32 * scale_factor) as u32;
+    let scaled_height = (source.height as f32 * scale_factor) as u32;
 
     let offset_x = (target.width - scaled_width) / 2;
     let offset_y = (target.height - scaled_height) / 2;
