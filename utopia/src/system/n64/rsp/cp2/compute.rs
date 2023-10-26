@@ -119,7 +119,7 @@ pub fn vmadh(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
 pub fn vadd(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VADD", core, word, |cp2, index, acc, lhs, rhs| {
         let result = lhs as i16 as i32 + rhs as i16 as i32 + cp2.carry[index] as i16 as i32;
-        *acc = result as u16 as u64;
+        *acc = (*acc & !0xffff) | (result as u16 as u64);
         clamp_signed(result) as u16
     });
 
@@ -130,7 +130,7 @@ pub fn vadd(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
 pub fn vaddc(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VADDC", core, word, |cp2, index, acc, lhs, rhs| {
         let result = lhs as u32 + rhs as u32;
-        *acc = result as u16 as u64;
+        *acc = (*acc & !0xffff) | (result as u16 as u64);
         cp2.carry.set(index, (result & 0x0001_0000) != 0);
         result as u16
     });
@@ -141,7 +141,7 @@ pub fn vaddc(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
 pub fn vsub(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VSUB", core, word, |cp2, index, acc, lhs, rhs| {
         let result = lhs as i16 as i32 - rhs as i16 as i32 - cp2.carry[index] as i16 as i32;
-        *acc = result as u16 as u64;
+        *acc = (*acc & !0xffff) | (result as u16 as u64);
         clamp_signed(result) as u16
     });
 
@@ -152,7 +152,7 @@ pub fn vsub(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
 pub fn vsubc(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VSUBC", core, word, |cp2, index, acc, lhs, rhs| {
         let result = lhs as i32 - rhs as i32;
-        *acc = result as u16 as u64;
+        *acc = (*acc & !0xffff) | (result as u16 as u64);
         cp2.carry.set(index, result < 0);
         cp2.not_equal.set(index, result != 0);
         result as u16
@@ -166,7 +166,7 @@ pub fn vabs(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
             Ordering::Equal => 0,
             Ordering::Greater => rhs,
         };
-        *acc = result as u64;
+        *acc = (*acc & !0xffff) | (result as u64);
         result
     });
 }
@@ -188,7 +188,7 @@ pub fn vsar(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
 pub fn vand(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VAND", core, word, |_cp2, _index, acc, lhs, rhs| {
         let result = lhs & rhs;
-        *acc = result as u64;
+        *acc = (*acc & !0xffff) | (result as u64);
         result
     });
 }
@@ -196,7 +196,7 @@ pub fn vand(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
 pub fn vnand(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VNAND", core, word, |_cp2, _index, acc, lhs, rhs| {
         let result = !(lhs & rhs);
-        *acc = result as u64;
+        *acc = (*acc & !0xffff) | (result as u64);
         result
     });
 }
@@ -204,7 +204,7 @@ pub fn vnand(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
 pub fn vor(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VOR", core, word, |_cp2, _index, acc, lhs, rhs| {
         let result = lhs | rhs;
-        *acc = result as u64;
+        *acc = (*acc & !0xffff) | (result as u64);
         result
     });
 }
@@ -212,7 +212,7 @@ pub fn vor(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
 pub fn vnor(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VNOR", core, word, |_cp2, _index, acc, lhs, rhs| {
         let result = !(lhs | rhs);
-        *acc = result as u64;
+        *acc = (*acc & !0xffff) | (result as u64);
         result
     });
 }
@@ -220,7 +220,7 @@ pub fn vnor(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
 pub fn vxor(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VXOR", core, word, |_cp2, _index, acc, lhs, rhs| {
         let result = lhs ^ rhs;
-        *acc = result as u64;
+        *acc = (*acc & !0xffff) | (result as u64);
         result
     });
 }
@@ -228,7 +228,7 @@ pub fn vxor(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
 pub fn vnxor(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VNXOR", core, word, |_cp2, _index, acc, lhs, rhs| {
         let result = !(lhs ^ rhs);
-        *acc = result as u64;
+        *acc = (*acc & !0xffff) | (result as u64);
         result
     });
 }
