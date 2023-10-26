@@ -125,6 +125,7 @@ struct Bus {
     ai: AudioInterface,
     pi: PeripheralInterface,
     si: SerialInterface,
+    systest_buffer: Memory,
 }
 
 impl Bus {
@@ -145,6 +146,7 @@ impl Bus {
             ai: AudioInterface::new(rcp_int.clone()),
             pi: PeripheralInterface::new(rcp_int.clone()),
             si: SerialInterface::new(rcp_int),
+            systest_buffer: Memory::new(512),
         }
     }
 }
@@ -233,6 +235,15 @@ impl mips::Bus for Bus {
                 }
             }
             0x1fc => self.si.pif_mut().write(address & 0x000f_ffff, value),
+            // N64 SystemTest Output
+            0x13f => match address {
+                0x13ff_0020..=0x13ff_0220 => {
+                    self.systest_buffer
+                        .write(address as usize - 0x13ff_0020, value);
+                }
+                0x13ff_0014 => println!("{}", String::from_utf8_lossy(&self.systest_buffer)),
+                _ => (),
+            },
             _ => panic!("Unmapped Write: {:08X} <= {:08X}", address, value),
         }
     }
