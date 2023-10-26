@@ -64,7 +64,7 @@ pub fn div(core: &mut Core<impl Bus>, word: u32) {
         core.setw_lo(lhs.wrapping_div(rhs) as u32);
     } else {
         core.setw_hi(lhs as u32);
-        core.setw_lo(-lhs.signum() as u32);
+        core.setw_lo(if lhs < 0 { 1 } else { u32::MAX });
     }
 }
 
@@ -98,7 +98,7 @@ pub fn ddiv(core: &mut Core<impl Bus>, word: u32) {
         core.setd_lo(lhs.wrapping_div(rhs) as u64);
     } else {
         core.setd_hi(lhs as u64);
-        core.setd_lo(-lhs.signum() as u64);
+        core.setd_lo(if lhs < 0 { 1 } else { u64::MAX });
     }
 }
 
