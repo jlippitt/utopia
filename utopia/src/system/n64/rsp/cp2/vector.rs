@@ -37,11 +37,16 @@ impl Vector {
     {
         let src_bytes = bytemuck::bytes_of(&self.0);
         let len = std::mem::size_of::<T>();
-        let end = 16_usize.saturating_sub(index);
-        let start = end.saturating_sub(len);
+        let end = 15usize.wrapping_sub(index) & 15;
+
         let mut dst_bytes = T::Bytes::default();
-        dst_bytes.as_mut()[len - (end - start)..].copy_from_slice(&src_bytes[start..end]);
-        T::from_le_bytes(&dst_bytes)
+
+        for byte in 0..len {
+            let element = end.wrapping_sub(byte) & 15;
+            dst_bytes.as_mut()[byte] = src_bytes[element];
+        }
+
+        T::from_be_bytes(&dst_bytes)
     }
 
     pub fn write<T: ToBytes>(&mut self, index: usize, value: T)
