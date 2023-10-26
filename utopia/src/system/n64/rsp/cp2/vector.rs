@@ -37,7 +37,7 @@ impl Vector {
     {
         let src_bytes = bytemuck::bytes_of(&self.0);
         let len = std::mem::size_of::<T>();
-        let end = 16 - index;
+        let end = 16_usize.saturating_sub(index);
         let start = end.saturating_sub(len);
         let mut dst_bytes = T::Bytes::default();
         dst_bytes.as_mut()[len - (end - start)..].copy_from_slice(&src_bytes[start..end]);
@@ -50,7 +50,7 @@ impl Vector {
     {
         let bytes = bytemuck::bytes_of_mut(&mut self.0);
         let len = std::mem::size_of::<T>();
-        let end = 16 - index;
+        let end = 16_usize.saturating_sub(index);
         let start = end.saturating_sub(len);
         bytes[start..end].copy_from_slice(&value.to_le_bytes().as_ref()[len - (end - start)..])
     }
