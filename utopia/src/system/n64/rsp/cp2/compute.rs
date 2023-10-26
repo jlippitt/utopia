@@ -161,12 +161,19 @@ pub fn vsubc(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
 
 pub fn vabs(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VABS", core, word, |_cp2, _index, acc, lhs, rhs| {
-        let result = match (lhs as i16).cmp(&0) {
-            Ordering::Less => rhs.wrapping_neg(),
-            Ordering::Equal => 0,
-            Ordering::Greater => rhs,
+        let (result, acc_result) = match (lhs as i16).cmp(&0) {
+            Ordering::Less => {
+                if rhs == 0x8000 {
+                    (0x7fff, 0x8000)
+                } else {
+                    let negated = -(rhs as i16) as u16;
+                    (negated, negated)
+                }
+            }
+            Ordering::Equal => (0, 0),
+            Ordering::Greater => (rhs, rhs),
         };
-        *acc = (*acc & !0xffff) | (result as u64);
+        *acc = (*acc & !0xffff) | (acc_result as u64);
         result
     });
 }
