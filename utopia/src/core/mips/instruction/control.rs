@@ -81,11 +81,12 @@ pub fn bltz<const LINK: bool, const LIKELY: bool>(core: &mut Core<impl Bus>, wor
         offset
     );
 
+    let condition = (core.getd(op.rs()) as i64) < 0;
+
     if LINK {
         core.setw(31, core.next[1]);
     }
 
-    let condition = (core.getd(op.rs()) as i64) < 0;
     core.branch_if::<LIKELY>(condition, offset);
 }
 
@@ -102,11 +103,12 @@ pub fn bgez<const LINK: bool, const LIKELY: bool>(core: &mut Core<impl Bus>, wor
         offset
     );
 
+    let condition = (core.getd(op.rs()) as i64) >= 0;
+
     if LINK {
         core.setw(31, core.next[1]);
     }
 
-    let condition = (core.getd(op.rs()) as i64) >= 0;
     core.branch_if::<LIKELY>(condition, offset);
 }
 
