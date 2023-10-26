@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::Debug;
 use std::fs::File;
-use std::io::{self, BufWriter, Write};
+use std::io::{self, BufWriter, Stderr, Write};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use tracing::field::{Field, Visit};
@@ -16,17 +16,17 @@ const DEFAULT_KEY: &str = "main";
 const DEFAULT_LEVEL: Level = Level::DEBUG;
 const LOG_BUFFER_SIZE: usize = 262144;
 
-struct FieldVisitor<'a> {
-    writer: &'a mut BufWriter<File>,
+struct FieldVisitor<'a, T: Write> {
+    writer: &'a mut T,
 }
 
-impl<'a> FieldVisitor<'a> {
-    pub fn new(writer: &'a mut BufWriter<File>) -> Self {
+impl<'a, T: Write> FieldVisitor<'a, T> {
+    pub fn new(writer: &'a mut T) -> Self {
         Self { writer }
     }
 }
 
-impl<'a> Visit for FieldVisitor<'a> {
+impl<'a, T: Write> Visit for FieldVisitor<'a, T> {
     fn record_debug(&mut self, field: &Field, value: &dyn Debug) {
         if field.name() == "message" {
             writeln!(self.writer, "{:?}", value).unwrap();
@@ -41,6 +41,7 @@ struct LogRouter {
     writers: Vec<BufWriter<File>>,
     levels: Vec<Level>,
     stack: Vec<usize>,
+    stderr: Stderr,
 }
 
 impl LogRouter {
@@ -67,6 +68,7 @@ impl LogRouter {
             writers: vec![default_writer],
             levels: vec![default_level],
             stack: vec![0],
+            stderr: std::io::stderr(),
         })
     }
 
@@ -104,6 +106,11 @@ impl LogRouter {
         let span_id = self.stack[self.stack.len() - 1];
         let writer = &mut self.writers[span_id];
         event.record(&mut FieldVisitor::new(writer));
+
+        // If level if WARN or higher, additionally write to stderr
+        if *event.metadata().level() <= Level::WARN {
+            event.record(&mut FieldVisitor::new(&mut self.stderr));
+        }
     }
 
     pub fn enter(&mut self, span: &Id) {
