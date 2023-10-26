@@ -137,3 +137,35 @@ pub fn sdr(core: &mut Core<impl Bus>, word: u32) {
         core.write_u8(address.wrapping_sub(index), bytes[(index ^ 7) as usize]);
     }
 }
+
+pub fn sc(core: &mut Core<impl Bus>, word: u32) {
+    // TODO: Proper implementation if this instruction
+    let op = IType::from(word);
+
+    trace!(
+        "{:08X} SC {}, {}({})",
+        core.pc(),
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
+    );
+
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    core.write_u32(address, core.getw(op.rt()));
+}
+
+pub fn scd(core: &mut Core<impl Bus>, word: u32) {
+    // TODO: Proper implementation if this instruction
+    let op = IType::from(word);
+
+    trace!(
+        "{:08X} SCD {}, {}({})",
+        core.pc(),
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
+    );
+
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    core.write_u64(address, core.getd(op.rt()));
+}

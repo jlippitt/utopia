@@ -55,12 +55,16 @@ pub fn dispatch<T: Bus>(core: &mut Core<T>, word: u32) {
         0o55 => store::sdr(core, word),
         0o56 => store::swr(core, word),
         0o57 => misc::cache(core, word),
+        0o60 => load::ll(core, word),
         0o61 => T::Cp1::lwc1(core, word),
         0o62 => T::Cp2::lwc2(core, word),
+        0o64 => load::lld(core, word),
         0o65 => T::Cp1::ldc1(core, word),
         0o67 => load::ld(core, word),
+        0o70 => store::sc(core, word),
         0o71 => T::Cp1::swc1(core, word),
         0o72 => T::Cp2::swc2(core, word),
+        0o74 => store::scd(core, word),
         0o75 => T::Cp1::sdc1(core, word),
         0o77 => store::sd(core, word),
         opcode => unimplemented!("{} Opcode {:02o} [PC:{:08X}]", T::NAME, opcode, core.pc()),
@@ -148,7 +152,9 @@ fn regimm<T: Bus>(core: &mut Core<T>, word: u32) {
 fn cop0<T: Bus>(core: &mut Core<T>, word: u32) {
     match (word >> 21) & 0o37 {
         0o00 => T::Cp0::mfc0(core, word),
+        0o01 => T::Cp0::dmfc0(core, word),
         0o04 => T::Cp0::mtc0(core, word),
+        0o05 => T::Cp0::dmtc0(core, word),
         0o20..=0o37 => T::Cp0::cop0(core, word),
         opcode => unimplemented!(
             "{} COP0 Opcode {:02o} [PC:{:08X}]",

@@ -4,6 +4,8 @@ pub trait Cp0 {
     fn translate(&self, address: u32) -> u32;
     fn mfc0(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32);
     fn mtc0(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32);
+    fn dmfc0(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32);
+    fn dmtc0(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32);
     fn cop0(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32);
     fn syscall(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32);
     fn break_(core: &mut Core<impl Bus<Cp0 = Self>>, word: u32);

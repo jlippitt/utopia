@@ -56,6 +56,14 @@ impl mips::Cp0 for Cp0 {
         core.cp0_mut().regs.set(op.rd(), value.into());
     }
 
+    fn dmfc0(_core: &mut Core<impl Bus<Cp0 = Self>>, _word: u32) {
+        unimplemented!("RSP CP0 DMFC0");
+    }
+
+    fn dmtc0(_core: &mut Core<impl Bus<Cp0 = Self>>, _word: u32) {
+        unimplemented!("RSP CP0 DMTC0");
+    }
+
     fn cop0(_core: &mut Core<impl Bus<Cp0 = Self>>, _word: u32) {
         unimplemented!("RSP CP0 COP0");
     }

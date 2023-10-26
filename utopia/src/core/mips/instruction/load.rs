@@ -204,3 +204,35 @@ pub fn ldr(core: &mut Core<impl Bus>, word: u32) {
 
     core.setd(op.rt(), result);
 }
+
+pub fn ll(core: &mut Core<impl Bus>, word: u32) {
+    // TODO: Proper implementation if this instruction
+    let op = IType::from(word);
+
+    trace!(
+        "{:08X} LL {}, {}({})",
+        core.pc(),
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
+    );
+
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    core.setw(op.rt(), core.read_u32(address));
+}
+
+pub fn lld(core: &mut Core<impl Bus>, word: u32) {
+    // TODO: Proper implementation if this instruction
+    let op = IType::from(word);
+
+    trace!(
+        "{:08X} LLD {}, {}({})",
+        core.pc(),
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
+    );
+
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    core.setd(op.rt(), core.read_u64(address));
+}

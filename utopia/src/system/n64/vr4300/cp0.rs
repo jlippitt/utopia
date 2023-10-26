@@ -147,6 +147,28 @@ impl mips::Cp0 for Cp0 {
         }
     }
 
+    fn dmfc0(core: &mut Core<impl Bus<Cp0 = Cp0>>, word: u32) {
+        // TODO: Proper implementation if this instruction
+        let op = RType::from(word);
+        let cpr = Cpr::from_usize(op.rd()).unwrap();
+        trace!("{:08X} DMFC0 {}, {:?}", core.pc(), GPR[op.rt()], cpr);
+        let value = core.cp0().getw(cpr);
+        core.setw(op.rt(), value);
+    }
+
+    fn dmtc0(core: &mut Core<impl Bus<Cp0 = Cp0>>, word: u32) {
+        // TODO: Proper implementation if this instruction
+        let op = RType::from(word);
+        let cpr = Cpr::from_usize(op.rd()).unwrap();
+        trace!("{:08X} DMTC0 {}, {:?}", core.pc(), GPR[op.rt()], cpr);
+        let value = core.getw(op.rt());
+        core.cp0_mut().setw(cpr, value);
+
+        if cpr == Cpr::Status {
+            core.cp1_mut().set_fr(Status::from(value).fr());
+        }
+    }
+
     fn cop0(core: &mut Core<impl Bus<Cp0 = Cp0>>, word: u32) {
         match word & 0o77 {
             0o02 => tlb::tlbwi(core, word),
