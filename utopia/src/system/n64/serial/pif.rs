@@ -150,8 +150,8 @@ impl Pif {
             if let Some(recv_data) = query_joybus(&self.joypads, channel, &send_data) {
                 let len = recv_data.len();
 
-                if len == recv_bytes {
-                    warn!("Received data does not match expected length. Expected {} bytes but got {} bytes.", recv_bytes, recv_data.len());
+                if len != recv_bytes {
+                    warn!("Received data does not match expected length. Expected {} bytes but got {} bytes.", recv_bytes, len);
                 }
 
                 ram[index..(index + len)].copy_from_slice(&recv_data);
