@@ -63,7 +63,7 @@ impl<T: Mapped> Instance<T> {
 
         let upscaler = Upscaler::new(
             options.wgpu_context,
-            (ppu::WIDTH as u32, ppu::HEIGHT as u32).into(),
+            (WIDTH, HEIGHT).into(),
             options.output_resolution,
             false,
         );
