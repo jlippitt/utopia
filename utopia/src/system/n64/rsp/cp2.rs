@@ -216,7 +216,7 @@ impl mips::Cp2 for Cp2 {
             }
         };
 
-        core.setw(op.rt(), value as u32);
+        core.setw(op.rt(), value as i16 as u32);
     }
 
     fn ctc2(core: &mut Core<impl Bus<Cp2 = Self>>, word: u32) {
