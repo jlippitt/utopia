@@ -1,5 +1,5 @@
-use super::super::mips::opcode::{IType, RType};
-use super::super::mips::{self, Bus, Core, GPR};
+use crate::core::mips::opcode::{IType, RType};
+use crate::core::mips::{self, Bus, Core, GPR};
 use bitfield_struct::bitfield;
 use tracing::trace;
 

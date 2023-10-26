@@ -1,6 +1,6 @@
 use crate::system::n64::dma::DmaRequest;
 use crate::system::n64::interrupt::{RcpIntType, RcpInterrupt};
-use crate::system::n64::memory::Masked;
+use crate::util::memory::Masked;
 use bitfield_struct::bitfield;
 use std::cell::Cell;
 use tracing::trace;

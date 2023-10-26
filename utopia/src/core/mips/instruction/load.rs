@@ -1,200 +1,206 @@
-use super::super::{Bus, Core, REGS};
+use super::super::opcode::IType;
+use super::super::{Bus, Core, GPR};
 use tracing::trace;
 
-pub fn lui(core: &mut Core<impl Bus>, _rs: usize, rt: usize, value: u32) {
-    trace!("{:08X} LUI {}, 0x{:04X}", core.pc, REGS[rt], value);
-    core.set(rt, value << 16);
+pub fn lui(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+    trace!("{:08X} LUI {}, {:#04X}", core.pc(), GPR[op.rt()], op.imm());
+    core.setw(op.rt(), op.imm() << 16);
 }
 
-pub fn lb(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    trace!(
-        "{:08X} LB {}, {}({})",
-        core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
-    );
+pub fn lb(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
 
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    let result = core.read_byte(address) as i8;
-    core.set(rt, result as u32);
-}
-
-pub fn lbu(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     trace!(
         "{:08X} LBU {}, {}({})",
-        core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
+        core.pc(),
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
     );
 
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    let result = core.read_byte(address);
-    core.set(rt, result as u32);
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    core.setd(op.rt(), core.read_u8(address) as i8 as u64);
 }
 
-pub fn lh(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+pub fn lbu(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+
+    trace!(
+        "{:08X} LBU {}, {}({})",
+        core.pc(),
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
+    );
+
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    core.setd(op.rt(), core.read_u8(address) as u64);
+}
+
+pub fn lh(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+
     trace!(
         "{:08X} LH {}, {}({})",
-        core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
+        core.pc(),
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
     );
 
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    let result = core.read_halfword(address) as i16;
-    core.set(rt, result as u32);
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    core.setd(op.rt(), core.read_u16(address) as i16 as u64);
 }
 
-pub fn lhu(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+pub fn lhu(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+
     trace!(
         "{:08X} LHU {}, {}({})",
-        core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
+        core.pc(),
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
     );
 
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    let result = core.read_halfword(address);
-    core.set(rt, result as u32);
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    core.setd(op.rt(), core.read_u16(address) as u64);
 }
 
-pub fn lw(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+pub fn lw(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+
     trace!(
         "{:08X} LW {}, {}({})",
-        core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
+        core.pc(),
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
     );
 
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    let result = core.read_word(address);
-    core.set(rt, result);
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    core.setw(op.rt(), core.read_u32(address));
 }
 
-pub fn lwl(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+pub fn lwu(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+
+    trace!(
+        "{:08X} LWU {}, {}({})",
+        core.pc(),
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
+    );
+
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    core.setd(op.rt(), core.read_u32(address) as u64);
+}
+
+pub fn ld(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+
+    trace!(
+        "{:08X} LD {}, {}({})",
+        core.pc(),
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
+    );
+
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    core.setd(op.rt(), core.read_u64(address));
+}
+
+pub fn lwl(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+
     trace!(
         "{:08X} LWL {}, {}({})",
         core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
     );
 
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    let mut result = core.get(rt);
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    let mut result = core.getw(op.rt());
 
     for index in 0..=(address & 3 ^ 3) {
         let shift = (index ^ 3) << 3;
         result &= !0xffu32.rotate_left(shift);
-        result |= (core.read_byte(address.wrapping_add(index)) as u32) << shift;
+        result |= (core.read_u8(address.wrapping_add(index)) as u32) << shift;
     }
 
-    core.set(rt, result);
+    core.setw(op.rt(), result);
 }
 
-pub fn lwr(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+pub fn lwr(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+
     trace!(
         "{:08X} LWR {}, {}({})",
         core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
     );
 
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    let mut result = core.get(rt);
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    let mut result = core.getw(op.rt());
 
     for index in 0..=(address & 3) {
         let shift = index << 3;
         result &= !0xffu32.rotate_left(shift);
-        result |= (core.read_byte(address.wrapping_sub(index)) as u32) << shift;
+        result |= (core.read_u8(address.wrapping_sub(index)) as u32) << shift;
     }
 
-    core.set(rt, result);
+    core.setw(op.rt(), result);
 }
 
-pub fn lwu(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    trace!(
-        "{:08X} LWU {}, {}({})",
-        core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
-    );
+pub fn ldl(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
 
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    let result = core.read_word(address);
-    core.setd(rt, result as u64);
-}
-
-pub fn ld(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    trace!(
-        "{:08X} LD {}, {}({})",
-        core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
-    );
-
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    let result = core.read_doubleword(address);
-    core.setd(rt, result);
-}
-
-pub fn ldl(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     trace!(
         "{:08X} LDL {}, {}({})",
         core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
     );
 
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    let mut result = core.getd(rt);
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    let mut result = core.getd(op.rt());
 
     for index in 0..=(address & 7 ^ 7) {
         let shift = (index ^ 7) << 3;
         result &= !0xffu64.rotate_left(shift);
-        result |= (core.read_byte(address.wrapping_add(index)) as u64) << shift;
+        result |= (core.read_u8(address.wrapping_add(index)) as u64) << shift;
     }
 
-    core.setd(rt, result);
+    core.setd(op.rt(), result);
 }
 
-pub fn ldr(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+pub fn ldr(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+
     trace!(
         "{:08X} LDR {}, {}({})",
         core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
     );
 
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    let mut result = core.getd(rt);
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    let mut result = core.getd(op.rt());
 
     for index in 0..=(address & 7) {
         let shift = index << 3;
         result &= !0xffu64.rotate_left(shift);
-        result |= (core.read_byte(address.wrapping_sub(index)) as u64) << shift;
+        result |= (core.read_u8(address.wrapping_sub(index)) as u64) << shift;
     }
 
-    core.setd(rt, result);
+    core.setd(op.rt(), result);
 }

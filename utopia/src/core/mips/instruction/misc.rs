@@ -1,20 +1,24 @@
-use super::super::{Bus, Core, REGS};
+use super::super::opcode::IType;
+use super::super::{Bus, Core, GPR};
 use tracing::trace;
 
-pub fn cache(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+pub fn cache(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+    let offset = op.imm() as i16;
+
     trace!(
-        "{:08X} CACHE 0x{:X}, {}({})",
-        core.pc,
-        rt,
-        value as i16,
-        REGS[rs],
+        "{:08X} CACHE {:#0X}, {}({})",
+        core.pc(),
+        op.rt(),
+        offset,
+        GPR[op.rs()]
     );
 
-    // TODO: Caching
+    // Ignore for now
 }
 
-pub fn sync(core: &mut Core<impl Bus>, _rs: usize, _rt: usize, _rd: usize, _sa: u32) {
-    trace!("{:08X} SYNC", core.pc);
+pub fn sync(core: &mut Core<impl Bus>, _word: u32) {
+    trace!("{:08X} SYNC", core.pc(),);
 
-    // This is a NOP on the VR4300
+    // This is a NOP on the VR4300 (and presumably on the RSP as well?)
 }

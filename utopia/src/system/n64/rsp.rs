@@ -2,8 +2,8 @@ pub use cp0::{DmaType, Registers};
 
 use super::dma::DmaRequest;
 use super::interrupt::RcpInterrupt;
-use super::memory::{Masked, Memory, Reader, Value, Writer};
-use super::mips::{self, Core, NullCp1};
+use crate::core::mips::{self, Core, NullCp1};
+use crate::util::memory::{Masked, Memory, Reader, Value, Writer};
 use cp0::Cp0;
 use cp2::Cp2;
 use tracing::{debug_span, trace};

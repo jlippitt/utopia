@@ -1,75 +1,144 @@
-use super::super::operator::BranchOperator;
-use super::super::{Bus, Core, REGS};
+use super::super::opcode::{IType, JType, RType};
+use super::super::{Bus, Core, GPR};
 use tracing::trace;
 
-pub fn j(core: &mut Core<impl Bus>, value: u32) {
-    let target = (core.next[0] & 0xfc00_0000) | (value << 2);
-    trace!("{:08X} J 0x{:08X}", core.pc, target);
-    core.jump_delayed(target);
+pub fn beq<const LIKELY: bool>(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+    let offset = (op.imm() as i16 as i32) << 2;
+
+    trace!(
+        "{:08X} BEQ{} {}, {}, {:+}",
+        core.pc(),
+        if LIKELY { "L" } else { "" },
+        GPR[op.rs()],
+        GPR[op.rt()],
+        offset
+    );
+
+    let condition = core.getd(op.rs()) == core.getd(op.rt());
+    core.branch_if::<LIKELY>(condition, offset);
 }
 
-pub fn jal(core: &mut Core<impl Bus>, value: u32) {
-    let target = (core.next[0] & 0xfc00_0000) | (value << 2);
-    trace!("{:08X} JAL 0x{:08X}", core.pc, target);
-    core.setd(31, core.next[1] as u64);
-    core.jump_delayed(target);
+pub fn bne<const LIKELY: bool>(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+    let offset = (op.imm() as i16 as i32) << 2;
+
+    trace!(
+        "{:08X} BNE{} {}, {}, {:+}",
+        core.pc(),
+        if LIKELY { "L" } else { "" },
+        GPR[op.rs()],
+        GPR[op.rt()],
+        offset
+    );
+
+    let condition = core.getd(op.rs()) != core.getd(op.rt());
+    core.branch_if::<LIKELY>(condition, offset);
 }
 
-pub fn jr(core: &mut Core<impl Bus>, rs: usize, _rt: usize, _rd: usize, _sa: u32) {
-    trace!("{:08X} JR {}", core.pc, REGS[rs]);
-    core.jump_delayed(core.get(rs));
+pub fn blez<const LIKELY: bool>(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+    let offset = (op.imm() as i16 as i32) << 2;
+
+    trace!(
+        "{:08X} BLEZ{} {}, {:+}",
+        core.pc(),
+        if LIKELY { "L" } else { "" },
+        GPR[op.rs()],
+        offset
+    );
+
+    let condition = (core.getd(op.rs()) as i64) <= 0;
+    core.branch_if::<LIKELY>(condition, offset);
 }
 
-pub fn jalr(core: &mut Core<impl Bus>, rs: usize, _rt: usize, _rd: usize, _sa: u32) {
-    trace!("{:08X} JALR {}", core.pc, REGS[rs]);
-    core.setd(31, core.next[1] as u64);
-    core.jump_delayed(core.get(rs));
+pub fn bgtz<const LIKELY: bool>(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+    let offset = (op.imm() as i16 as i32) << 2;
+
+    trace!(
+        "{:08X} BGTZ{} {}, {:+}",
+        core.pc(),
+        if LIKELY { "L" } else { "" },
+        GPR[op.rs()],
+        offset
+    );
+
+    let condition = (core.getd(op.rs()) as i64) > 0;
+    core.branch_if::<LIKELY>(condition, offset);
 }
 
-pub fn branch<Op: BranchOperator, const LINK: bool, const LIKELY: bool>(
-    core: &mut Core<impl Bus>,
-    rs: usize,
-    rt: usize,
-    value: u32,
-) {
-    let offset = (value as i16 as i32) << 2;
+pub fn bltz<const LINK: bool, const LIKELY: bool>(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+    let offset = (op.imm() as i16 as i32) << 2;
 
-    if Op::UNARY {
-        trace!(
-            "{:08X} {}{}{} {}, {:+}",
-            core.pc,
-            Op::NAME,
-            if LINK { "AL" } else { "" },
-            if LIKELY { "L" } else { "" },
-            REGS[rs],
-            offset
-        );
-    } else {
-        trace!(
-            "{:08X} {}{}{} {}, {}, {:+}",
-            core.pc,
-            Op::NAME,
-            if LINK { "AL" } else { "" },
-            if LIKELY { "L" } else { "" },
-            REGS[rs],
-            REGS[rt],
-            offset
-        );
-    }
+    trace!(
+        "{:08X} BLTZ{}{} {}, {:+}",
+        core.pc(),
+        if LINK { "AL" } else { "" },
+        if LIKELY { "L" } else { "" },
+        GPR[op.rs()],
+        offset
+    );
 
     if LINK {
-        core.setd(31, core.next[1] as u64);
+        core.setw(31, core.next[1]);
     }
 
-    if Op::apply(core.getd(rs), core.getd(rt)) {
-        trace!("  Branch taken");
-        core.jump_delayed(core.next[0].wrapping_add(offset as u32));
-    } else {
-        trace!("  Branch not taken");
+    let condition = (core.getd(op.rs()) as i64) < 0;
+    core.branch_if::<LIKELY>(condition, offset);
+}
 
-        if LIKELY {
-            // Skip the delay slot
-            core.jump_now(core.next[1]);
-        }
+pub fn bgez<const LINK: bool, const LIKELY: bool>(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+    let offset = (op.imm() as i16 as i32) << 2;
+
+    trace!(
+        "{:08X} BGEZ{}{} {}, {:+}",
+        core.pc(),
+        if LINK { "AL" } else { "" },
+        if LIKELY { "L" } else { "" },
+        GPR[op.rs()],
+        offset
+    );
+
+    if LINK {
+        core.setw(31, core.next[1]);
     }
+
+    let condition = (core.getd(op.rs()) as i64) >= 0;
+    core.branch_if::<LIKELY>(condition, offset);
+}
+
+pub fn j<const LINK: bool>(core: &mut Core<impl Bus>, word: u32) {
+    let op = JType::from(word);
+    let address = (core.next[0] & 0xf000_0000) | (op.imm() << 2);
+
+    trace!(
+        "{:08X} J{} {:#08X}",
+        core.pc(),
+        if LINK { "AL" } else { "" },
+        address
+    );
+
+    if LINK {
+        core.setw(31, core.next[1]);
+    }
+
+    core.jump_delayed(address);
+}
+
+pub fn jr(core: &mut Core<impl Bus>, word: u32) {
+    let op = RType::from(word);
+    trace!("{:08X} JR {}", core.pc(), GPR[op.rs()]);
+    let address = core.getw(op.rs());
+    core.jump_delayed(address);
+}
+
+pub fn jalr(core: &mut Core<impl Bus>, word: u32) {
+    let op = RType::from(word);
+    trace!("{:08X} JALR {}, {}", core.pc(), GPR[op.rd()], GPR[op.rs()]);
+    let address = core.getw(op.rs());
+    core.setw(op.rd(), core.next[1]);
+    core.jump_delayed(address);
 }

@@ -1,4 +1,4 @@
-use super::memory::{Masked, Memory, Reader, Writer};
+use crate::util::memory::{Masked, Memory, Reader, Writer};
 use tracing::{trace, warn};
 
 const RDRAM_SIZE: usize = 8 * 1024 * 1024;

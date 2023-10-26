@@ -1,5 +1,5 @@
-use super::super::mips::opcode::RType;
-use super::super::mips::{self, Bus, Core, Cp1, GPR};
+use crate::core::mips::opcode::RType;
+use crate::core::mips::{self, Bus, Core, Cp1, GPR};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use registers::{Cause, Index, Status};

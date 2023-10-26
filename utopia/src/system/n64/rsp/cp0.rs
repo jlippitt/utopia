@@ -1,8 +1,8 @@
 pub use registers::{DmaType, Registers};
 
 use super::super::interrupt::RcpInterrupt;
-use super::super::mips::opcode::RType;
-use super::super::mips::{self, Bus, Core, GPR};
+use crate::core::mips::opcode::RType;
+use crate::core::mips::{self, Bus, Core, GPR};
 use tracing::trace;
 
 mod registers;

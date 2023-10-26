@@ -2,7 +2,7 @@ pub use pif::Pif;
 
 use super::dma::DmaRequest;
 use super::interrupt::{RcpIntType, RcpInterrupt};
-use super::memory::{Masked, Reader, Writer};
+use crate::util::memory::{Masked, Reader, Writer};
 use bitfield_struct::bitfield;
 
 mod pif;

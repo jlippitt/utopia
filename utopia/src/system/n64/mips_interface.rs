@@ -1,5 +1,5 @@
 use super::interrupt::{RcpIntType, RcpInterrupt};
-use super::memory::{Masked, Reader, Writer};
+use crate::util::memory::{Masked, Reader, Writer};
 use bitfield_struct::bitfield;
 use tracing::{trace, warn};
 

@@ -1,6 +1,6 @@
 use super::interrupt::{RcpIntType, RcpInterrupt};
-use super::memory::{Masked, Reader, Writer};
 use super::WgpuContext;
+use crate::util::memory::{Masked, Reader, Writer};
 use crate::util::size::Size;
 use crate::util::upscaler::Upscaler;
 use registers::{AntiAliasMode, ColorDepth, HSync, HalfLine, Registers, VSync};

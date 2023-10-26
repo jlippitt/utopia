@@ -1,6 +1,6 @@
 use super::compute::compute;
 use super::Cp2;
-use crate::system::n64::mips::{Bus, Core};
+use crate::core::mips::{Bus, Core};
 
 pub fn vlt(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     select("VLT", core, word, |cp2, index, lhs, rhs| {

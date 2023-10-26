@@ -1,130 +1,139 @@
-use super::super::{Bus, Core, REGS};
+use super::super::opcode::IType;
+use super::super::{Bus, Core, GPR};
 use tracing::trace;
 
-pub fn sb(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+pub fn sb(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+
     trace!(
         "{:08X} SB {}, {}({})",
-        core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
+        core.pc(),
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
     );
 
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    core.write_byte(address, core.get(rt) as u8);
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    core.write_u8(address, core.getd(op.rt()) as u8);
 }
 
-pub fn sh(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+pub fn sh(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+
     trace!(
         "{:08X} SH {}, {}({})",
-        core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
+        core.pc(),
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
     );
 
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    core.write_halfword(address, core.get(rt) as u16);
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    core.write_u16(address, core.getd(op.rt()) as u16);
 }
 
-pub fn sw(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+pub fn sw(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+
     trace!(
         "{:08X} SW {}, {}({})",
-        core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
+        core.pc(),
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
     );
 
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    core.write_word(address, core.get(rt));
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    core.write_u32(address, core.getw(op.rt()));
 }
 
-pub fn swl(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+pub fn sd(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+
+    trace!(
+        "{:08X} SD {}, {}({})",
+        core.pc(),
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
+    );
+
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    core.write_u64(address, core.getd(op.rt()));
+}
+
+pub fn swl(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+
     trace!(
         "{:08X} SWL {}, {}({})",
         core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
     );
 
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    let bytes = core.get(rt).to_be_bytes();
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    let bytes = core.getw(op.rt()).to_be_bytes();
 
     for index in 0..=(address & 3 ^ 3) {
-        core.write_byte(address.wrapping_add(index), bytes[index as usize]);
+        core.write_u8(address.wrapping_add(index), bytes[index as usize]);
     }
 }
 
-pub fn swr(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+pub fn swr(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+
     trace!(
         "{:08X} SWR {}, {}({})",
         core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
     );
 
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    let bytes = core.get(rt).to_be_bytes();
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    let bytes = core.getw(op.rt()).to_be_bytes();
 
     for index in 0..=(address & 3) {
-        core.write_byte(address.wrapping_sub(index), bytes[(index ^ 3) as usize]);
+        core.write_u8(address.wrapping_sub(index), bytes[(index ^ 3) as usize]);
     }
 }
 
-pub fn sd(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
-    trace!(
-        "{:08X} SD {}, {}({})",
-        core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
-    );
+pub fn sdl(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
 
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    core.write_doubleword(address, core.getd(rt));
-}
-
-pub fn sdl(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
     trace!(
         "{:08X} SDL {}, {}({})",
         core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
     );
 
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    let bytes = core.getd(rt).to_be_bytes();
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    let bytes = core.getd(op.rt()).to_be_bytes();
 
     for index in 0..=(address & 7 ^ 7) {
-        core.write_byte(address.wrapping_add(index), bytes[index as usize]);
+        core.write_u8(address.wrapping_add(index), bytes[index as usize]);
     }
 }
 
-pub fn sdr(core: &mut Core<impl Bus>, rs: usize, rt: usize, value: u32) {
+pub fn sdr(core: &mut Core<impl Bus>, word: u32) {
+    let op = IType::from(word);
+
     trace!(
         "{:08X} SDR {}, {}({})",
         core.pc,
-        REGS[rt],
-        value as i16,
-        REGS[rs]
+        GPR[op.rt()],
+        op.imm() as i16,
+        GPR[op.rs()]
     );
 
-    let ivalue = value as i16 as i32 as u32;
-    let address = core.get(rs).wrapping_add(ivalue);
-    let bytes = core.getd(rt).to_be_bytes();
+    let address = core.getw(op.rs()).wrapping_add(op.imm() as i16 as u32);
+    let bytes = core.getd(op.rt()).to_be_bytes();
 
     for index in 0..=(address & 7) {
-        core.write_byte(address.wrapping_sub(index), bytes[(index ^ 7) as usize]);
+        core.write_u8(address.wrapping_sub(index), bytes[(index ^ 7) as usize]);
     }
 }

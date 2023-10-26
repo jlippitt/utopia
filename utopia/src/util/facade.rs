@@ -3,6 +3,8 @@ use std::fmt;
 use std::mem;
 use std::ops::{Deref, DerefMut};
 
+// WARNING: This module is deprecated. Use utopia::util::memory instead.
+
 pub trait Address:
     Copy
     + Clone

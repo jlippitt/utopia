@@ -1,8 +1,8 @@
 use super::dma::DmaRequest;
 use super::interrupt::{RcpIntType, RcpInterrupt};
-use super::memory::{Masked, Reader, Writer};
 use super::rsp::{DmaType, Registers as RspRegisters};
 use super::WgpuContext;
+use crate::util::memory::{Masked, Reader, Writer};
 use core::Core;
 use std::ops::{Deref, DerefMut};
 use tracing::{debug_span, trace};

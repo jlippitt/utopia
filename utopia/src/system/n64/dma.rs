@@ -1,5 +1,5 @@
-use super::mips::Bus;
 use super::rsp::Rsp;
+use crate::core::mips::Bus;
 use tracing::debug;
 
 #[derive(Debug)]

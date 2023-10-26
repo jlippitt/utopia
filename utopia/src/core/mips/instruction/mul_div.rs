@@ -1,124 +1,144 @@
-use super::super::{Bus, Core, REGS};
+use super::super::opcode::RType;
+use super::super::{Bus, Core, GPR};
 use tracing::trace;
 
-pub fn mult(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u32) {
-    trace!("{:08X} MULT {}, {}", core.pc, REGS[rs], REGS[rt]);
-    let lhs = core.get(rs) as i32 as i64;
-    let rhs = core.get(rt) as i32 as i64;
-    let result = lhs * rhs;
-    trace!("  {} * {} = {}", lhs, rhs, result);
-    core.set_hi((result >> 32) as u32);
-    core.set_lo(result as u32);
+pub fn mult(core: &mut Core<impl Bus>, word: u32) {
+    let op = RType::from(word);
+
+    trace!("{:08X} MULT {}, {}", core.pc(), GPR[op.rs()], GPR[op.rt()]);
+
+    let result = (core.getw(op.rs()) as i32 as i64) * (core.getw(op.rt()) as i32 as i64);
+
+    core.setw_hi((result >> 32) as u32);
+    core.setw_lo(result as u32);
 }
 
-pub fn dmult(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u32) {
-    trace!("{:08X} DMULT {}, {}", core.pc, REGS[rs], REGS[rt]);
-    let lhs = core.getd(rs) as i64 as i128;
-    let rhs = core.getd(rt) as i64 as i128;
-    let result = lhs * rhs;
+pub fn multu(core: &mut Core<impl Bus>, word: u32) {
+    let op = RType::from(word);
+
+    trace!("{:08X} MULTU {}, {}", core.pc(), GPR[op.rs()], GPR[op.rt()]);
+
+    let result = (core.getw(op.rs()) as u64) * (core.getw(op.rt()) as u64);
+
+    core.setw_hi((result >> 32) as u32);
+    core.setw_lo(result as u32);
+}
+
+pub fn dmult(core: &mut Core<impl Bus>, word: u32) {
+    let op = RType::from(word);
+
+    trace!("{:08X} DMULT {}, {}", core.pc(), GPR[op.rs()], GPR[op.rt()]);
+
+    let result = (core.getd(op.rs()) as i64 as i128) * (core.getd(op.rt()) as i64 as i128);
+
     core.setd_hi((result >> 64) as u64);
     core.setd_lo(result as u64);
 }
 
-pub fn multu(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u32) {
-    trace!("{:08X} MULTU {}, {}", core.pc, REGS[rs], REGS[rt]);
-    let lhs = core.get(rs) as u64;
-    let rhs = core.get(rt) as u64;
-    let result = lhs * rhs;
-    trace!("  {} * {} = {}", lhs, rhs, result);
-    core.set_hi((result >> 32) as u32);
-    core.set_lo(result as u32);
-}
+pub fn dmultu(core: &mut Core<impl Bus>, word: u32) {
+    let op = RType::from(word);
 
-pub fn dmultu(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u32) {
-    trace!("{:08X} DMULTU {}, {}", core.pc, REGS[rs], REGS[rt]);
-    let lhs = core.getd(rs) as u128;
-    let rhs = core.getd(rt) as u128;
-    let result = lhs * rhs;
+    trace!(
+        "{:08X} DMULTU {}, {}",
+        core.pc(),
+        GPR[op.rs()],
+        GPR[op.rt()]
+    );
+
+    let result = (core.getd(op.rs()) as u128) * (core.getd(op.rt()) as u128);
+
     core.setd_hi((result >> 64) as u64);
     core.setd_lo(result as u64);
 }
 
-pub fn div(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u32) {
-    trace!("{:08X} DIV {}, {}", core.pc, REGS[rs], REGS[rt]);
-    let lhs = core.get(rs) as i32;
-    let rhs = core.get(rt) as i32;
+pub fn div(core: &mut Core<impl Bus>, word: u32) {
+    let op = RType::from(word);
 
-    let (quotient, remainder) = if rhs != 0 {
-        (lhs.wrapping_div(rhs), lhs.wrapping_rem(rhs))
+    trace!("{:08X} DIV {}, {}", core.pc(), GPR[op.rs()], GPR[op.rt()]);
+
+    let lhs = core.getw(op.rs()) as i32;
+    let rhs = core.getw(op.rt()) as i32;
+
+    if rhs != 0 {
+        core.setw_hi(lhs.wrapping_rem(rhs) as u32);
+        core.setw_lo(lhs.wrapping_div(rhs) as u32);
     } else {
-        (-lhs.signum(), lhs)
-    };
-
-    trace!("  {} * {} = {} ({})", lhs, rhs, quotient, remainder);
-    core.set_hi(remainder as u32);
-    core.set_lo(quotient as u32);
+        core.setw_hi(lhs as u32);
+        core.setw_lo(-lhs.signum() as u32);
+    }
 }
 
-pub fn ddiv(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u32) {
-    trace!("{:08X} DDIV {}, {}", core.pc, REGS[rs], REGS[rt]);
-    let lhs = core.getd(rs) as i64;
-    let rhs = core.getd(rt) as i64;
+pub fn divu(core: &mut Core<impl Bus>, word: u32) {
+    let op = RType::from(word);
 
-    let (quotient, remainder) = if rhs != 0 {
-        (lhs.wrapping_div(rhs), lhs.wrapping_rem(rhs))
+    trace!("{:08X} DIVU {}, {}", core.pc(), GPR[op.rs()], GPR[op.rt()]);
+
+    let lhs = core.getw(op.rs());
+    let rhs = core.getw(op.rt());
+
+    if rhs != 0 {
+        core.setw_hi(lhs % rhs);
+        core.setw_lo(lhs / rhs);
     } else {
-        (-lhs.signum(), lhs)
-    };
-
-    trace!("  {} * {} = {} ({})", lhs, rhs, quotient, remainder);
-    core.setd_hi(remainder as u64);
-    core.setd_lo(quotient as u64);
+        core.setw_hi(lhs);
+        core.setw_lo(u32::MAX);
+    }
 }
 
-pub fn divu(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u32) {
-    trace!("{:08X} DIVU {}, {}", core.pc, REGS[rs], REGS[rt]);
-    let lhs = core.get(rs);
-    let rhs = core.get(rt);
+pub fn ddiv(core: &mut Core<impl Bus>, word: u32) {
+    let op = RType::from(word);
 
-    let (quotient, remainder) = if rhs != 0 {
-        (lhs / rhs, lhs % rhs)
+    trace!("{:08X} DDIV {}, {}", core.pc(), GPR[op.rs()], GPR[op.rt()]);
+
+    let lhs = core.getd(op.rs()) as i64;
+    let rhs = core.getd(op.rt()) as i64;
+
+    if rhs != 0 {
+        core.setd_hi(lhs.wrapping_rem(rhs) as u64);
+        core.setd_lo(lhs.wrapping_div(rhs) as u64);
     } else {
-        (u32::MAX, lhs)
-    };
-
-    trace!("  {} * {} = {} ({})", lhs, rhs, quotient, remainder);
-    core.set_hi(remainder);
-    core.set_lo(quotient);
+        core.setd_hi(lhs as u64);
+        core.setd_lo(-lhs.signum() as u64);
+    }
 }
 
-pub fn ddivu(core: &mut Core<impl Bus>, rs: usize, rt: usize, _rd: usize, _sa: u32) {
-    trace!("{:08X} DDIVU {}, {}", core.pc, REGS[rs], REGS[rt]);
-    let lhs = core.getd(rs);
-    let rhs = core.getd(rt);
+pub fn ddivu(core: &mut Core<impl Bus>, word: u32) {
+    let op = RType::from(word);
 
-    let (quotient, remainder) = if rhs != 0 {
-        (lhs / rhs, lhs % rhs)
+    trace!("{:08X} DDIVU {}, {}", core.pc(), GPR[op.rs()], GPR[op.rt()]);
+
+    let lhs = core.getd(op.rs());
+    let rhs = core.getd(op.rt());
+
+    if rhs != 0 {
+        core.setd_hi(lhs % rhs);
+        core.setd_lo(lhs / rhs);
     } else {
-        (u64::MAX, lhs)
-    };
-
-    trace!("  {} * {} = {} ({})", lhs, rhs, quotient, remainder);
-    core.setd_hi(remainder);
-    core.setd_lo(quotient);
+        core.setd_hi(lhs);
+        core.setd_lo(u64::MAX);
+    }
 }
 
-pub fn mflo(core: &mut Core<impl Bus>, _rs: usize, _rt: usize, rd: usize, _sa: u32) {
-    trace!("{:08X} MFLO {}", core.pc, REGS[rd]);
-    core.setd(rd, core.lo);
+pub fn mfhi(core: &mut Core<impl Bus>, word: u32) {
+    let op = RType::from(word);
+    trace!("{:08X}: MFHI {}", core.pc(), GPR[op.rd()]);
+    core.setd(op.rd(), core.hi());
 }
 
-pub fn mfhi(core: &mut Core<impl Bus>, _rs: usize, _rt: usize, rd: usize, _sa: u32) {
-    trace!("{:08X} MFHI {}", core.pc, REGS[rd]);
-    core.setd(rd, core.hi);
+pub fn mthi(core: &mut Core<impl Bus>, word: u32) {
+    let op = RType::from(word);
+    trace!("{:08X}: MTHI {}", core.pc(), GPR[op.rd()]);
+    core.setd_hi(core.getd(op.rd()));
 }
 
-pub fn mtlo(core: &mut Core<impl Bus>, _rs: usize, _rt: usize, rd: usize, _sa: u32) {
-    trace!("{:08X} MTLO {}", core.pc, REGS[rd]);
-    core.setd_lo(core.getd(rd));
+pub fn mflo(core: &mut Core<impl Bus>, word: u32) {
+    let op = RType::from(word);
+    trace!("{:08X}: MFLO {}", core.pc(), GPR[op.rd()]);
+    core.setd(op.rd(), core.lo());
 }
 
-pub fn mthi(core: &mut Core<impl Bus>, _rs: usize, _rt: usize, rd: usize, _sa: u32) {
-    trace!("{:08X} MTHI {}", core.pc, REGS[rd]);
-    core.setd_hi(core.getd(rd));
+pub fn mtlo(core: &mut Core<impl Bus>, word: u32) {
+    let op = RType::from(word);
+    trace!("{:08X}: MTLO {}", core.pc(), GPR[op.rd()]);
+    core.setd_lo(core.getd(op.rd()));
 }

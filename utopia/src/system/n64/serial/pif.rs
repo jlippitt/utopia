@@ -1,4 +1,4 @@
-use super::super::memory::{Memory, Value};
+use crate::util::memory::{Memory, Value};
 use crate::JoypadState;
 use arrayvec::ArrayVec;
 use tracing::{debug, warn};

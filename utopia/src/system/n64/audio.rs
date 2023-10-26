@@ -1,5 +1,5 @@
 use super::interrupt::{RcpIntType, RcpInterrupt};
-use super::memory::{Masked, Reader, Writer};
+use crate::util::memory::{Masked, Reader, Writer};
 use tracing::trace;
 
 const DAC_FREQUENCY: i64 = 48681812;

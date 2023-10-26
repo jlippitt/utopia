@@ -1,6 +1,6 @@
 use super::dma::DmaRequest;
 use super::interrupt::{RcpIntType, RcpInterrupt};
-use super::memory::{Masked, Reader, Writer};
+use crate::util::memory::{Masked, Reader, Writer};
 use tracing::trace;
 
 const PI_DRAM_ADDR: usize = 0;
