@@ -172,7 +172,7 @@ impl mips::Cp2 for Cp2 {
 
         let index = op.element();
         let value = core.cp2().get_u16(op.vs(), index);
-        core.setw(op.rt(), value as u32);
+        core.setw(op.rt(), value as i16 as u32);
     }
 
     fn mtc2(core: &mut Core<impl Bus<Cp2 = Self>>, word: u32) {
