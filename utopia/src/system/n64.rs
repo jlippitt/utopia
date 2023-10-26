@@ -241,7 +241,10 @@ impl mips::Bus for Bus {
                     self.systest_buffer
                         .write(address as usize - 0x13ff_0020, value);
                 }
-                0x13ff_0014 => println!("{}", String::from_utf8_lossy(&self.systest_buffer)),
+                0x13ff_0014 => println!(
+                    "{}",
+                    String::from_utf8_lossy(&self.systest_buffer[0..value.to_usize().unwrap()])
+                ),
                 _ => (),
             },
             _ => panic!("Unmapped Write: {:08X} <= {:08X}", address, value),
