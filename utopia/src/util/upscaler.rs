@@ -33,11 +33,11 @@ pub struct Upscaler {
     ctx: WgpuContext,
     texture: wgpu::Texture,
     bind_group: wgpu::BindGroup,
-    _bind_group_layout: wgpu::BindGroupLayout,
+    bind_group_layout: wgpu::BindGroupLayout,
     target_size: Cell<Size>,
-    _resample: bool,
-    _sampler_nearest: wgpu::Sampler,
-    _sampler_linear: wgpu::Sampler,
+    resample: bool,
+    sampler_nearest: wgpu::Sampler,
+    sampler_linear: wgpu::Sampler,
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
@@ -154,56 +154,54 @@ impl Upscaler {
             ctx,
             texture,
             bind_group,
-            _bind_group_layout: bind_group_layout,
+            bind_group_layout,
             target_size: Cell::new(target_size),
-            _resample: resample,
-            _sampler_linear: sampler_nearest,
-            _sampler_nearest: sampler_linear,
+            resample,
+            sampler_linear,
+            sampler_nearest,
             render_pipeline,
             vertex_buffer,
             index_buffer,
         }
     }
 
-    // pub fn set_resample(&mut self, resample: bool) {
-    //     if resample == self.resample {
-    //         return;
-    //     }
+    pub fn set_resample(&mut self, resample: bool) {
+        if resample == self.resample {
+            return;
+        }
 
-    //     if let Some(texture) = &self.texture {
-    //         self.bind_group = Some(create_bind_group(
-    //             &self.ctx.device,
-    //             &self.bind_group_layout,
-    //             texture,
-    //             if resample {
-    //                 &self.sampler_linear
-    //             } else {
-    //                 &self.sampler_nearest
-    //             },
-    //         ));
-    //     }
+        self.bind_group = create_bind_group(
+            &self.ctx.device,
+            &self.bind_group_layout,
+            &self.texture,
+            if resample {
+                &self.sampler_linear
+            } else {
+                &self.sampler_nearest
+            },
+        );
 
-    //     self.resample = resample;
-    // }
+        self.resample = resample;
+    }
 
-    // pub fn set_source_size(&mut self, size: Size) {
-    //     let WgpuContext { device, .. } = &self.ctx;
+    pub fn set_source_size(&mut self, size: Size) {
+        let WgpuContext { device, .. } = &self.ctx;
 
-    //     if size != self.texture.size().into() {
-    //         self.texture = create_texture(device, size);
+        if size != self.texture.size().into() {
+            self.texture = create_texture(device, size);
 
-    //         self.bind_group = create_bind_group(
-    //             device,
-    //             &self.bind_group_layout,
-    //             &self.texture,
-    //             if self.resample {
-    //                 &self.sampler_linear
-    //             } else {
-    //                 &self.sampler_nearest
-    //             },
-    //         );
-    //     }
-    // }
+            self.bind_group = create_bind_group(
+                device,
+                &self.bind_group_layout,
+                &self.texture,
+                if self.resample {
+                    &self.sampler_linear
+                } else {
+                    &self.sampler_nearest
+                },
+            );
+        }
+    }
 
     pub fn update(&self, pixels: &[u8]) {
         self.ctx.queue.write_texture(

@@ -1,6 +1,4 @@
-pub use serial::JoypadState;
-
-use crate::{InstanceOptions, MemoryMapper, SystemOptions, WgpuContext};
+use crate::{InstanceOptions, JoypadState, MemoryMapper, SystemOptions, WgpuContext};
 use audio::AudioInterface;
 use interrupt::{CpuInterrupt, RcpInterrupt};
 use memory::{Memory, Value};
@@ -36,22 +34,22 @@ const IPL3_START_ADDRESS: u32 = 0xA4000040;
 // TODO: Actual CPU timing
 const CYCLES_PER_STEP: u64 = 2;
 
-pub struct System<'a, T: MemoryMapper + 'static> {
+pub struct System<T: MemoryMapper + 'static> {
     _phantom: PhantomData<T>,
 }
 
-impl<'a, T: MemoryMapper> System<'a, T> {
-    pub fn new(options: SystemOptions<'a, T>) -> Self {
+impl<T: MemoryMapper> System<T> {
+    pub fn new(_options: SystemOptions<'_, T>) -> Self {
         Self {
             _phantom: PhantomData,
         }
     }
 }
 
-impl<'a, T: MemoryMapper> crate::System<T> for System<'a, T> {
+impl<T: MemoryMapper> crate::System<T> for System<T> {
     fn default_resolution(&self) -> (u32, u32) {
         // This determines the initial size of the output window
-        (800, 600)
+        VideoInterface::DEFAULT_TARGET_SIZE.into()
     }
 
     fn default_sample_rate(&self) -> Option<u64> {
@@ -96,8 +94,20 @@ impl Instance {
             ),
         })
     }
+}
 
-    pub fn run_frame(&mut self, joypad_state: &JoypadState) {
+impl crate::Instance for Instance {
+    fn resolution(&self) -> (u32, u32) {
+        // TODO: Remove this method from interface
+        VideoInterface::DEFAULT_TARGET_SIZE.into()
+    }
+
+    fn pixels(&self) -> &[u8] {
+        // TODO: Remove this method from interface
+        &[]
+    }
+
+    fn run_frame(&mut self, joypad_state: &JoypadState) {
         self.core.bus_mut().si.pif_mut().update_joypad(joypad_state);
         self.core.bus_mut().vi.reset_frame_complete();
 
@@ -108,11 +118,11 @@ impl Instance {
         let bus = self.core.bus_mut();
         let rdram = bus.rdram.data_mut();
         bus.rdp.sync(rdram);
+        bus.vi.update(rdram).unwrap();
     }
 
-    pub fn present(&self, canvas: wgpu::Texture) {
-        let bus = self.core.bus();
-        bus.vi.render(bus.rdram.data())?;
+    fn present(&self, canvas: &wgpu::Texture) {
+        self.core.bus().vi.render(canvas);
     }
 }
 

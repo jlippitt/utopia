@@ -1,12 +1,12 @@
 use super::interrupt::{RcpIntType, RcpInterrupt};
 use super::memory::{Masked, Reader, Writer};
 use super::WgpuContext;
+use crate::util::size::Size;
+use crate::util::upscaler::Upscaler;
 use registers::{AntiAliasMode, ColorDepth, HSync, HalfLine, Registers, VSync};
 use tracing::trace;
-use upscaler::Upscaler;
 
 mod registers;
-mod upscaler;
 
 pub fn decode_rgba16(chunk: &[u8]) -> [u8; 4] {
     let value = u16::from_be_bytes([chunk[0], chunk[1]]);
@@ -29,6 +29,10 @@ pub struct VideoInterface {
 }
 
 impl VideoInterface {
+    pub const DEFAULT_TARGET_SIZE: Size = Size::new(800, 600);
+
+    const MIN_SOURCE_SIZE: Size = Size::new(256, 192);
+
     pub fn new(ctx: WgpuContext, rcp_int: RcpInterrupt) -> Self {
         Self {
             h_counter: 0,
@@ -43,7 +47,7 @@ impl VideoInterface {
             },
             rcp_int,
             pixels: Vec::new(),
-            upscaler: Upscaler::new(ctx),
+            upscaler: Upscaler::new(ctx, Self::MIN_SOURCE_SIZE, Self::DEFAULT_TARGET_SIZE, true),
         }
     }
 
@@ -85,7 +89,7 @@ impl VideoInterface {
         }
     }
 
-    pub fn render(&mut self, rdram: &[u8]) -> Result<(), wgpu::SurfaceError> {
+    pub fn update(&mut self, rdram: &[u8]) -> Result<(), wgpu::SurfaceError> {
         let resample = self.regs.ctrl.aa_mode() != AntiAliasMode::Disabled;
 
         self.upscaler.set_resample(resample);
@@ -100,15 +104,24 @@ impl VideoInterface {
             * self.regs.y_scale.scale()
             / 1024;
 
-        self.pixels
-            .resize(screen_width as usize * screen_height as usize * 4, 0);
-
         // Don't try to copy pixels if the screen width is zero
         let color_depth = if buffer_width != 0 && screen_width != 0 && screen_height != 0 {
             self.regs.ctrl.color_depth()
         } else {
             ColorDepth::Blank
         };
+
+        let source_size = Size::new(
+            screen_width.max(Self::MIN_SOURCE_SIZE.width),
+            screen_height.max(Self::MIN_SOURCE_SIZE.height),
+        );
+
+        self.upscaler.set_source_size(source_size);
+
+        self.pixels.resize(
+            source_size.width as usize * source_size.height as usize * 4,
+            0,
+        );
 
         match color_depth {
             ColorDepth::Blank => self.pixels.fill(0),
@@ -153,10 +166,13 @@ impl VideoInterface {
             }
         }
 
-        self.upscaler.update_texture(&self.pixels, screen_width * 4);
-        self.upscaler.render()?;
+        self.upscaler.update(&self.pixels);
 
         Ok(())
+    }
+
+    pub fn render(&self, canvas: &wgpu::Texture) {
+        self.upscaler.render(canvas);
     }
 }
 

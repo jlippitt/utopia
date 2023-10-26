@@ -1,4 +1,4 @@
-pub use pif::{JoypadState, Pif};
+pub use pif::Pif;
 
 use super::dma::DmaRequest;
 use super::interrupt::{RcpIntType, RcpInterrupt};

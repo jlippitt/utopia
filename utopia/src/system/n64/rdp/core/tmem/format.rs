@@ -1,5 +1,5 @@
 use super::super::primitive::TextureLayout;
-use crate::n64::video::decode_rgba16;
+use crate::system::n64::video::decode_rgba16;
 use std::fmt;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

@@ -1,5 +1,5 @@
 use super::primitive::{Color, Rectangle};
-use crate::n64::WgpuContext;
+use crate::WgpuContext;
 use tracing::trace;
 
 #[repr(C)]

@@ -1,15 +1,10 @@
 use super::super::memory::{Memory, Value};
+use crate::JoypadState;
 use arrayvec::ArrayVec;
 use tracing::{debug, warn};
 
 const PIF_SIZE: usize = 0x800;
 const PIF_RAM_START: usize = 0x7c0;
-
-#[derive(Clone, Default, Debug, Eq, PartialEq)]
-pub struct JoypadState {
-    pub buttons: [bool; 17],
-    pub axes: [i32; 4],
-}
 
 pub struct Pif {
     data: Memory,

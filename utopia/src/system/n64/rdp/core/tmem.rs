@@ -1,5 +1,5 @@
 use super::primitive::Rectangle;
-use crate::n64::WgpuContext;
+use crate::WgpuContext;
 use format::TextureFormat;
 use texture::{Texture, TextureParams};
 use tracing::trace;

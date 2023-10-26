@@ -1,4 +1,4 @@
-use crate::n64::WgpuContext;
+use crate::WgpuContext;
 use wgpu::util::DeviceExt;
 
 pub struct TextureParams<'a> {

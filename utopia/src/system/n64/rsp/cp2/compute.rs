@@ -1,5 +1,5 @@
 use super::Cp2;
-use crate::n64::mips::{Bus, Core};
+use crate::system::n64::mips::{Bus, Core};
 use bitfield_struct::bitfield;
 use std::cmp::Ordering;
 use tracing::trace;

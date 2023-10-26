@@ -10,10 +10,13 @@ cpu-tests = []
 arrayvec = "0.7.4"
 bitfield-struct = "0.5.3"
 bitflags = "2.3.3"
+bitvec = "1.0.1"
 bytemuck = "1.13.1"
 enum_dispatch = "0.3.11"
+futures-intrusive = "0.5.0"
 num-derive = "0.4.0"
 num-traits = "0.2.16"
+pollster = "0.3.0"
 subslice = "0.2.3"
 tracing = { version = "0.1.37", features = ["release_max_level_info"] }
 wgpu = { version = "0.17.1", features = ["webgl"] }
