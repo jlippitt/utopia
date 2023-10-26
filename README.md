@@ -2,13 +2,13 @@
 
 ## Current Status
 
-| System           | Status |
-| ---------------- | ------ |
-| NES              | Playable. Not all mapper (cartridge) types supported. |
-| Game Boy         | Playable. Not all MBC (cartridge) types supported. Not Game Boy Color support yet. |
+| System           | Status                                                                                                                                             |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| NES              | Playable. Most major mapper (cartridge) types supported.                                                                                           |
+| Game Boy         | Playable. Not all MBC (cartridge) types supported. Now has Game Boy Color support!                                                                 |
 | SNES             | Mostly playable. A few graphical features are missing and sound is glitchy. No on-cartridge enhancement chips (DSP1, SuperFX, etc.) supported yet. |
-| Game Boy Advance | Very early stages. |
-| Nintendo 64      | Very early stages. |
+| Game Boy Advance | Very early stages.                                                                                                                                 |
+| Nintendo 64      | Very early stages.                                                                                                                                 |
 
 ## Building
 
@@ -28,9 +28,9 @@ Once that is done, run:
 
     utopia [OPTIONS] <ROM_PATH>
 
-| Option                       | Description |
-| ---------------------------- | ----------- |
-| -f, --full-screen            | Enables full-screen mode. This can also be toggled while in-game using F11. |
+| Option            | Description                                                                 |
+| ----------------- | --------------------------------------------------------------------------- |
+| -f, --full-screen | Enables full-screen mode. This can also be toggled while in-game using F11. |
 
 ## Important Note
 
