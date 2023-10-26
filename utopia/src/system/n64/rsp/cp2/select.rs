@@ -147,7 +147,7 @@ pub fn vcr(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
 pub fn vmrg(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VMRG", core, word, |cp2, index, acc, lhs, rhs| {
         let result = if cp2.compare[index] { lhs } else { rhs };
-        *acc = result as u64;
+        *acc = (*acc & !0xffff) | result as u64;
         result
     });
 
