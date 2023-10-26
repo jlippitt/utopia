@@ -286,7 +286,8 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn step(&mut self) {
-        debug_assert!((self.pc & 3) == 0);
+        debug_assert!(!T::FORCE_MEMORY_ALIGNMENT || (self.pc & 3) == 0);
+
         let word = self.bus.read_opcode(self.cp0.translate(self.pc));
 
         instruction::dispatch(self, word);
