@@ -176,10 +176,12 @@ impl Registers {
             }
             8 => {
                 value.write_reg_hex("DP_START", &mut self.dp_start);
+                self.dp_start &= !7;
                 self.dp_status.set_start_pending(true);
             }
             9 => {
                 value.write_reg_hex("DP_END", &mut self.dp_end);
+                self.dp_end &= !7;
                 self.dp_status.set_buffer_busy(true);
 
                 debug_assert!(matches!(self.dma_type, DmaType::None));

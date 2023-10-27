@@ -147,15 +147,19 @@ impl super::Bus {
     pub fn rdp_dma_transfer(&mut self, request: DmaRequest) {
         let DmaRequest { src, len, mode, .. } = request;
 
-        let commands = if mode {
-            let dmem = &self.rsp.mem()[0..Rsp::DMEM_SIZE];
-            &dmem[src as usize..(src as usize + len as usize)]
+        let mem = if mode {
+            &self.rsp.mem()[0..Rsp::DMEM_SIZE]
         } else {
-            let rdram = self.rdram.data();
-            &rdram[src as usize..(src as usize + len as usize)]
+            self.rdram.data()
         };
 
-        self.rdp.upload(commands);
+        let iter = mem.iter().cloned().skip(src as usize).take(len as usize);
+
+        let mut commands = Vec::with_capacity(len as usize);
+        commands.extend(iter);
+        commands.resize(len as usize, 0);
+
+        self.rdp.upload(&commands);
 
         debug!(
             "RDP DMA: {} bytes uploaded from {}:{:08X}",
