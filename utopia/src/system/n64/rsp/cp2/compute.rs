@@ -30,9 +30,15 @@ pub fn vmulf(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
 
 pub fn vmulu(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VMULU", core, word, |_cp2, _index, acc, lhs, rhs| {
-        let result = lhs as i16 as i32 * rhs as i16 as i32;
-        *acc = ((result << 1).wrapping_add(0x8000)) as i64 as u64;
-        clamp_unsigned((*acc >> 16) as i32)
+        let result = ((lhs as i16 as i64 * rhs as i16 as i64) << 1).wrapping_add(0x8000);
+        *acc = result as u64;
+        if ((result >> 32) as i16) < 0 {
+            0
+        } else if ((result >> 32) as i16) ^ ((result >> 16) as i16) < 0 {
+            u16::MAX
+        } else {
+            (result >> 16) as u16
+        }
     });
 }
 
