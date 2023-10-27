@@ -91,35 +91,26 @@ impl super::Bus {
         } = request;
 
         let imem = (src & 0x1000) != 0;
-        let src = src & 0xff8;
-        let dst = dst & 0x00ff_fff8;
         let rdlen = ((len & 0xff8) + 8) as usize;
         let count = ((len >> 12) & 0xff) + 1;
         let skip = ((len >> 20) & 0xff8) as usize;
 
         debug!("RSP DMA: RDLEN={}, COUNT={}, SKIP={}", rdlen, count, skip);
 
-        let mut rsp_start = src as usize;
-        let mut rdram_start = dst as usize;
-
-        let rsp_mem = {
-            let mem = self.rsp.mem_mut();
-
-            if imem {
-                &mut mem[Rsp::DMEM_SIZE..Rsp::MEM_SIZE]
-            } else {
-                &mut mem[0..Rsp::DMEM_SIZE]
-            }
-        };
-
+        let rsp_mem = self.rsp.mem_mut();
         let rdram = self.rdram.data_mut();
+
+        let mut rsp_start = src as usize & 0x1ff8;
+        let mut rdram_start = dst as usize & 0x00ff_fff8;
 
         if mode {
             for _ in 0..count {
-                rsp_mem[rsp_start..(rsp_start + rdlen)]
-                    .copy_from_slice(&rdram[rdram_start..(rdram_start + rdlen)]);
+                for offset in 0..rdlen {
+                    rsp_mem[(rsp_start & 0x1000) | ((rsp_start + offset) & 0xfff)] =
+                        rdram[(rdram_start + offset) & 0x00ff_ffff];
+                }
+                rsp_start = (rsp_start & 0x1000) | ((rsp_start + rdlen) & 0xfff);
                 rdram_start += rdlen + skip;
-                rsp_start += rdlen;
             }
 
             debug!(
@@ -131,10 +122,12 @@ impl super::Bus {
             );
         } else {
             for _ in 0..count {
-                rdram[rdram_start..(rdram_start + rdlen)]
-                    .copy_from_slice(&rsp_mem[rsp_start..(rsp_start + rdlen)]);
+                for offset in 0..rdlen {
+                    rdram[(rdram_start + offset) & 0x00ff_ffff] =
+                        rsp_mem[(rsp_start & 0x1000) | ((rsp_start + offset) & 0xfff)];
+                }
+                rsp_start = (rsp_start & 0x1000) | ((rsp_start + rdlen) & 0xfff);
                 rdram_start += rdlen + skip;
-                rsp_start += rdlen;
             }
 
             debug!(
