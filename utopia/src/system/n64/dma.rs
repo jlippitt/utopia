@@ -147,10 +147,6 @@ impl super::Bus {
     pub fn rdp_dma_transfer(&mut self, request: DmaRequest) {
         let DmaRequest { src, len, mode, .. } = request;
 
-        if len == 0 {
-            return;
-        }
-
         let mem = if mode {
             &self.rsp.mem()[0..Rsp::DMEM_SIZE]
         } else {

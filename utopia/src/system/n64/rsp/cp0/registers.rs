@@ -175,35 +175,38 @@ impl Registers {
                 trace!("SP_SEMAPHORE: {}", self.sp_semaphore.get());
             }
             8 => {
-                value.write_reg_hex("DP_START", &mut self.dp_start);
-                self.dp_start &= !7;
-                self.dp_status.set_start_pending(true);
+                if !self.dp_status.start_pending() {
+                    value.write_reg_hex("DP_START", &mut self.dp_start);
+                    self.dp_start &= 0x00ff_fff8;
+                    self.dp_status.set_start_pending(true);
+                }
             }
             9 => {
                 value.write_reg_hex("DP_END", &mut self.dp_end);
-                self.dp_end &= !7;
+                self.dp_end &= 0x00ff_fff8;
                 self.dp_status.set_buffer_busy(true);
 
                 debug_assert!(matches!(self.dma_type, DmaType::None));
 
                 let start = if self.dp_status.start_pending() {
                     self.dp_status.set_start_pending(false);
-                    self.dp_start & 0x00ff_ffff
+                    self.dp_start
                 } else {
                     self.dp_current
                 };
 
-                let end = self.dp_end & 0x00ff_ffff;
+                if self.dp_end > start {
+                    self.dma_type = DmaType::Rdp(DmaRequest {
+                        src: start,
+                        dst: 0,
+                        len: self.dp_end - start,
+                        mode: self.dp_status.xbus(),
+                    });
 
-                self.dma_type = DmaType::Rdp(DmaRequest {
-                    src: start,
-                    dst: 0,
-                    len: end - start,
-                    mode: self.dp_status.xbus(),
-                });
+                    self.running = false;
+                }
 
-                self.running = false;
-                self.dp_current = end;
+                self.dp_current = self.dp_end;
             }
             11 => {
                 let input = value.get();
