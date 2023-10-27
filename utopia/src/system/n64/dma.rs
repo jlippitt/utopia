@@ -153,10 +153,14 @@ impl super::Bus {
             self.rdram.data()
         };
 
-        let iter = mem.iter().cloned().skip(src as usize).take(len as usize);
+        let start = src as usize;
 
         let mut commands = Vec::with_capacity(len as usize);
-        commands.extend(iter);
+
+        if start < mem.len() {
+            commands.extend_from_slice(&mem[start..(start + len as usize).min(mem.len())]);
+        }
+
         commands.resize(len as usize, 0);
 
         self.rdp.upload(&commands);
