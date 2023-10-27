@@ -50,6 +50,8 @@ impl Rdp {
             self.core.run(rdram, self.commands.drain(..));
         }
 
+        rsp_regs.set_dp_ready(true);
+
         if self.core.interrupt() {
             rsp_regs.clear_buffer_busy();
             self.core.set_interrupt(false);

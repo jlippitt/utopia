@@ -203,6 +203,7 @@ impl Registers {
                         mode: self.dp_status.xbus(),
                     });
 
+                    self.set_dp_ready(false);
                     self.running = false;
                 }
 
@@ -293,6 +294,10 @@ impl Registers {
         if self.sp_status.intbreak() {
             self.rcp_int.raise(RcpIntType::SP);
         }
+    }
+
+    pub fn set_dp_ready(&mut self, ready: bool) {
+        self.dp_status.set_ready(ready);
     }
 
     pub fn clear_buffer_busy(&mut self) {
