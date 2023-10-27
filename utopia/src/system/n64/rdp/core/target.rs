@@ -29,6 +29,7 @@ pub struct Target {
     texture_height: u32,
     sync_dram_addr: u32,
     sync_width: u32,
+    padded_width: u32,
     fill16: Color,
     fill32: Color,
 }
@@ -43,6 +44,7 @@ impl Target {
             texture_height: 0,
             sync_dram_addr: 0,
             sync_width: 0,
+            padded_width: 0,
             fill16: Default::default(),
             fill32: Default::default(),
         }
@@ -75,9 +77,11 @@ impl Target {
     pub fn set_color_image(&mut self, dram_addr: u32, width: u32, format: OutputFormat) {
         self.sync_dram_addr = dram_addr;
         self.sync_width = width;
+        self.padded_width = (width + 63) & !63;
         self.output_format = format;
         trace!("  Target Sync Destination: {:08X}", self.sync_dram_addr);
         trace!("  Target Sync Width: {}", self.sync_width);
+        trace!("  Target Padded Width: {}", self.padded_width);
         trace!("  Target Output Format: {:?}", self.output_format);
     }
 
@@ -117,7 +121,7 @@ impl Target {
 
             if should_update {
                 let size = wgpu::Extent3d {
-                    width: self.sync_width,
+                    width: self.padded_width,
                     height: self.texture_height,
                     depth_or_array_layers: 1,
                 };
@@ -150,7 +154,7 @@ impl Target {
 
                 let sync_buffer = ctx.device.create_buffer(&wgpu::BufferDescriptor {
                     label: Some("RDP Target Sync Buffer"),
-                    size: self.sync_width as u64 * self.texture_height as u64 * 4,
+                    size: self.padded_width as u64 * self.texture_height as u64 * 4,
                     usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
                     mapped_at_creation: false,
                 });
@@ -175,27 +179,39 @@ impl Target {
     pub fn copy_to_rdram(&self, rdram: &mut [u8], pixel_data: &[u8]) {
         // TODO: What happens when sync width is not the same as texture width?
 
+        let mut buf_addr = 0;
+        let mut ram_addr = self.sync_dram_addr as usize;
+
         match self.output_format {
             OutputFormat::Index8 => todo!("Index8 output format"),
             OutputFormat::Rgba16 => {
-                let start = self.sync_dram_addr as usize;
-                let end = start + pixel_data.len() / 2;
+                for _ in 0..self.texture_height {
+                    let mut iter = pixel_data[buf_addr..(buf_addr + self.sync_width as usize * 4)]
+                        .chunks_exact(4)
+                        .flat_map(|chunk| {
+                            let color = ((chunk[0] as u16 >> 3) << 11)
+                                | ((chunk[1] as u16 >> 3) << 6)
+                                | ((chunk[2] as u16 >> 3) << 1)
+                                | (chunk[3] as u16 >> 7);
 
-                let mut iter = pixel_data.chunks_exact(4).flat_map(|chunk| {
-                    let color = ((chunk[0] as u16 >> 3) << 11)
-                        | ((chunk[1] as u16 >> 3) << 6)
-                        | ((chunk[2] as u16 >> 3) << 1)
-                        | (chunk[3] as u16 >> 7);
+                            color.to_be_bytes()
+                        });
 
-                    color.to_be_bytes()
-                });
+                    rdram[ram_addr..(ram_addr + self.sync_width as usize * 2)]
+                        .fill_with(|| iter.next().unwrap());
 
-                rdram[start..end].fill_with(|| iter.next().unwrap());
+                    buf_addr += self.padded_width as usize * 4;
+                    ram_addr += self.sync_width as usize * 2;
+                }
             }
             OutputFormat::Rgba32 => {
-                let start = self.sync_dram_addr as usize;
-                let end = start + pixel_data.len();
-                rdram[start..end].copy_from_slice(pixel_data);
+                for _ in 0..self.texture_height {
+                    rdram[ram_addr..(ram_addr + self.sync_width as usize * 4)].copy_from_slice(
+                        &pixel_data[buf_addr..(buf_addr + self.sync_width as usize * 4)],
+                    );
+                    buf_addr += self.padded_width as usize * 4;
+                    ram_addr += self.sync_width as usize * 4;
+                }
             }
         }
     }
