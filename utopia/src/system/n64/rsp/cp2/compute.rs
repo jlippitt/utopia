@@ -22,9 +22,9 @@ pub struct Compute {
 
 pub fn vmulf(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VMULF", core, word, |_cp2, _index, acc, lhs, rhs| {
-        let result = lhs as i16 as i32 * rhs as i16 as i32;
-        *acc = ((result << 1).wrapping_add(0x8000)) as i64 as u64;
-        clamp_signed((*acc >> 16) as i32) as u16
+        let result = ((lhs as i16 as i64 * rhs as i16 as i64) << 1).wrapping_add(0x8000);
+        *acc = result as u64;
+        clamp_signed(result)
     });
 }
 
@@ -32,29 +32,23 @@ pub fn vmulu(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VMULU", core, word, |_cp2, _index, acc, lhs, rhs| {
         let result = ((lhs as i16 as i64 * rhs as i16 as i64) << 1).wrapping_add(0x8000);
         *acc = result as u64;
-        if ((result >> 32) as i16) < 0 {
-            0
-        } else if ((result >> 32) as i16) ^ ((result >> 16) as i16) < 0 {
-            u16::MAX
-        } else {
-            (result >> 16) as u16
-        }
+        clamp_unsigned(result)
     });
 }
 
 pub fn vmacf(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VMACF", core, word, |_cp2, _index, acc, lhs, rhs| {
-        let result = lhs as i16 as i32 * rhs as i16 as i32;
-        *acc = (*acc as i64 + (result << 1) as i64) as u64;
-        clamp_signed((*acc >> 16) as i32) as u16
+        let result = (lhs as i16 as i64 * rhs as i16 as i64) << 1;
+        *acc = (*acc as i64 + result) as u64;
+        clamp_signed(result)
     });
 }
 
 pub fn vmacu(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VMACU", core, word, |_cp2, _index, acc, lhs, rhs| {
-        let result = lhs as i16 as i32 * rhs as i16 as i32;
-        *acc = (*acc as i64 + (result << 1) as i64) as u64;
-        clamp_unsigned((*acc >> 16) as i32)
+        let result = (lhs as i16 as i64 * rhs as i16 as i64) << 1;
+        *acc = (*acc as i64 + result) as u64;
+        clamp_unsigned(result)
     });
 }
 
@@ -70,7 +64,7 @@ pub fn vmudm(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VMUDM", core, word, |_cp2, _index, acc, lhs, rhs| {
         let result = (lhs as i16 as u32).wrapping_mul(rhs as u32);
         *acc = result as i32 as i64 as u64;
-        clamp_signed((*acc >> 16) as i32) as u16
+        clamp_signed_old((*acc >> 16) as i32) as u16
     });
 }
 
@@ -86,7 +80,7 @@ pub fn vmudh(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VMUDH", core, word, |_cp2, _index, acc, lhs, rhs| {
         let result = (lhs as i16 as u32).wrapping_mul(rhs as i16 as u32);
         *acc = ((result as i32 as i64) << 16) as u64;
-        clamp_signed((*acc >> 16) as i32) as u16
+        clamp_signed_old((*acc >> 16) as i32) as u16
     });
 }
 
@@ -102,7 +96,7 @@ pub fn vmadm(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VMADM", core, word, |_cp2, _index, acc, lhs, rhs| {
         let result = (lhs as i16 as u32).wrapping_mul(rhs as u32);
         *acc = (*acc as i64 + result as i32 as i64) as u64;
-        clamp_signed((*acc >> 16) as i32) as u16
+        clamp_signed_old((*acc >> 16) as i32) as u16
     });
 }
 
@@ -118,7 +112,7 @@ pub fn vmadh(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VMADH", core, word, |_cp2, _index, acc, lhs, rhs| {
         let result = (lhs as i16 as u32).wrapping_mul(rhs as i16 as u32);
         *acc = (*acc as i64 + ((result as i32 as i64) << 16)) as u64;
-        clamp_signed((*acc >> 16) as i32) as u16
+        clamp_signed_old((*acc >> 16) as i32) as u16
     });
 }
 
@@ -126,7 +120,7 @@ pub fn vadd(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VADD", core, word, |cp2, index, acc, lhs, rhs| {
         let result = lhs as i16 as i32 + rhs as i16 as i32 + cp2.carry[index] as i16 as i32;
         *acc = (*acc & !0xffff) | (result as u16 as u64);
-        clamp_signed(result) as u16
+        clamp_signed_old(result) as u16
     });
 
     core.cp2_mut().not_equal.fill(false);
@@ -148,7 +142,7 @@ pub fn vsub(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VSUB", core, word, |cp2, index, acc, lhs, rhs| {
         let result = lhs as i16 as i32 - rhs as i16 as i32 - cp2.carry[index] as i16 as i32;
         *acc = (*acc & !0xffff) | (result as u16 as u64);
-        clamp_signed(result) as u16
+        clamp_signed_old(result) as u16
     });
 
     core.cp2_mut().not_equal.fill(false);
@@ -279,16 +273,30 @@ pub fn compute(
     cp2.set_acc_le(acc);
 }
 
-fn clamp_signed(value: i32) -> i16 {
+fn clamp_signed(value: i64) -> u16 {
+    if ((value >> 32) as i16) < 0 {
+        if (value >> 32) as u16 != 0xffff || (value >> 16) >= 0 {
+            return 0x8000;
+        }
+    } else if (((value >> 32) as u16) != 0) || ((value >> 16) as i16) < 0 {
+        return 0x7fff;
+    }
+
+    (value >> 16) as u16
+}
+
+fn clamp_signed_old(value: i32) -> i16 {
     value.clamp(i16::MIN as i32, i16::MAX as i32) as i16
 }
 
-fn clamp_unsigned(value: i32) -> u16 {
-    if value >= i16::MAX as i32 {
-        u16::MAX
-    } else if value >= 0 {
-        value as u16
-    } else {
-        0
+fn clamp_unsigned(value: i64) -> u16 {
+    if ((value >> 32) as i16) < 0 {
+        return 0;
     }
+
+    if ((value >> 32) as i16) ^ ((value >> 16) as i16) < 0 {
+        return u16::MAX;
+    }
+
+    (value >> 16) as u16
 }
