@@ -22,33 +22,45 @@ pub struct Compute {
 
 pub fn vmulf(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VMULF", core, word, |_cp2, _index, acc, lhs, rhs| {
-        let result = ((lhs as i16 as i64 * rhs as i16 as i64) << 1).wrapping_add(0x8000);
-        *acc = result as u64;
-        clamp_signed(result)
+        let result = (lhs as i16 as i64 * rhs as i16 as i64) << 1;
+        *acc = (0x8000 + result) as u64 & 0xffff_ffff_ffff;
+        clamp_signed(*acc)
     });
 }
 
 pub fn vmulu(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VMULU", core, word, |_cp2, _index, acc, lhs, rhs| {
-        let result = ((lhs as i16 as i64 * rhs as i16 as i64) << 1).wrapping_add(0x8000);
-        *acc = result as u64;
-        clamp_unsigned(result)
+        let result = (lhs as i16 as i64 * rhs as i16 as i64) << 1;
+        *acc = (0x8000 + result) as u64 & 0xffff_ffff_ffff;
+        if ((*acc >> 32) as i16) < 0 {
+            return 0;
+        }
+        if ((*acc >> 32) as i16) ^ ((*acc >> 16) as i16) < 0 {
+            return u16::MAX;
+        }
+        (*acc >> 16) as u16
     });
 }
 
 pub fn vmacf(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VMACF", core, word, |_cp2, _index, acc, lhs, rhs| {
         let result = (lhs as i16 as i64 * rhs as i16 as i64) << 1;
-        *acc = (*acc as i64 + result) as u64;
-        clamp_signed(result)
+        *acc = (*acc as i64 + result) as u64 & 0xffff_ffff_ffff;
+        clamp_signed(*acc)
     });
 }
 
 pub fn vmacu(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VMACU", core, word, |_cp2, _index, acc, lhs, rhs| {
         let result = (lhs as i16 as i64 * rhs as i16 as i64) << 1;
-        *acc = (*acc as i64 + result) as u64;
-        clamp_unsigned(result)
+        *acc = (*acc as i64 + result) as u64 & 0xffff_ffff_ffff;
+        if ((*acc >> 32) as i16) < 0 {
+            return 0;
+        }
+        if ((*acc >> 32) as u16) != 0 || ((*acc >> 16) as i16) < 0 {
+            return u16::MAX;
+        }
+        (*acc >> 16) as u16
     });
 }
 
@@ -273,9 +285,9 @@ pub fn compute(
     cp2.set_acc_le(acc);
 }
 
-fn clamp_signed(value: i64) -> u16 {
+fn clamp_signed(value: u64) -> u16 {
     if ((value >> 32) as i16) < 0 {
-        if (value >> 32) as u16 != 0xffff || (value >> 16) >= 0 {
+        if (value >> 32) as u16 != 0xffff || ((value >> 16) as i16) >= 0 {
             return 0x8000;
         }
     } else if (((value >> 32) as u16) != 0) || ((value >> 16) as i16) < 0 {
@@ -287,16 +299,4 @@ fn clamp_signed(value: i64) -> u16 {
 
 fn clamp_signed_old(value: i32) -> i16 {
     value.clamp(i16::MIN as i32, i16::MAX as i32) as i16
-}
-
-fn clamp_unsigned(value: i64) -> u16 {
-    if ((value >> 32) as i16) < 0 {
-        return 0;
-    }
-
-    if ((value >> 32) as i16) ^ ((value >> 16) as i16) < 0 {
-        return u16::MAX;
-    }
-
-    (value >> 16) as u16
 }
