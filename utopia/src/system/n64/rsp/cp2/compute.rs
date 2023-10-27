@@ -98,9 +98,9 @@ pub fn vmudh(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
 
 pub fn vmadl(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VMADL", core, word, |_cp2, _index, acc, lhs, rhs| {
-        let result = (lhs as u32).wrapping_mul(rhs as u32);
-        *acc = (*acc as i64 + ((result >> 16) as i64)) as u64;
-        *acc as i64 as i16 as u16
+        let result = ((lhs as u32).wrapping_mul(rhs as u32) >> 16) as i64;
+        *acc = (*acc as i64 + result) as u64 & 0xffff_ffff_ffff;
+        clamp_signed_low(*acc)
     });
 }
 
@@ -114,9 +114,9 @@ pub fn vmadm(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
 
 pub fn vmadn(core: &mut Core<impl Bus<Cp2 = Cp2>>, word: u32) {
     compute("VMADN", core, word, |_cp2, _index, acc, lhs, rhs| {
-        let result = (lhs as u32).wrapping_mul(rhs as i16 as u32);
-        *acc = (*acc as i64 + result as i32 as i64) as u64;
-        *acc as i64 as i16 as u16
+        let result = lhs as u64 as i64 * rhs as i16 as i64;
+        *acc = (*acc as i64 + result) as u64 & 0xffff_ffff_ffff;
+        clamp_signed_low(*acc)
     });
 }
 
@@ -295,6 +295,18 @@ fn clamp_signed(value: u64) -> u16 {
     }
 
     (value >> 16) as u16
+}
+
+fn clamp_signed_low(value: u64) -> u16 {
+    if ((value >> 32) as i16) < 0 {
+        if (value >> 32) as u16 != 0xffff || ((value >> 16) as i16) >= 0 {
+            return 0;
+        }
+    } else if (((value >> 32) as u16) != 0) || ((value >> 16) as i16) < 0 {
+        return 0xffff;
+    }
+
+    value as u16
 }
 
 fn clamp_signed_old(value: i32) -> i16 {
