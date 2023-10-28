@@ -8,6 +8,7 @@ pub mod gb;
 pub mod gba;
 pub mod n64;
 pub mod nes;
+pub mod sms;
 pub mod snes;
 
 #[derive(Clone, Default, Debug, Eq, PartialEq)]
@@ -24,6 +25,7 @@ pub enum SystemType {
     GameBoyAdvance,
     Nes,
     Nintendo64,
+    SegaMasterSystem,
     Snes,
 }
 
@@ -42,6 +44,7 @@ impl TryFrom<&Path> for SystemType {
             "n64" | "z64" => Ok(Self::Nintendo64),
             "nes" => Ok(Self::Nes),
             "sfc" | "smc" => Ok(Self::Snes),
+            "sms" => Ok(Self::SegaMasterSystem),
             _ => Err(format!("No system found for file extension '.{}'", extension).into()),
         }
     }
@@ -91,6 +94,7 @@ pub fn create<'a, T: MemoryMapper + 'static>(
         SystemType::GameBoyAdvance => Box::new(gba::System::new(options)),
         SystemType::Nintendo64 => Box::new(n64::System::new(options)),
         SystemType::Nes => Box::new(nes::System::new(options)),
+        SystemType::SegaMasterSystem => Box::new(sms::System::new(options)),
         SystemType::Snes => Box::new(snes::System::new(options)),
     })
 }
