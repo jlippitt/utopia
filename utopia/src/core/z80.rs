@@ -1,6 +1,8 @@
 use std::fmt;
 use tracing::trace;
 
+mod instruction;
+
 pub trait Bus {
     fn fetch(&mut self, address: u16) -> u8;
 }
@@ -73,9 +75,7 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn step(&mut self) {
-        match self.fetch() {
-            opcode => unimplemented!("Z80 Opcode: {:02X}", opcode),
-        }
+        instruction::dispatch(self);
     }
 
     fn fetch(&mut self) -> u8 {
