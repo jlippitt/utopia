@@ -68,6 +68,7 @@ impl crate::Instance for Instance {
 
 pub struct Bus {
     cycles: u64,
+    page_offset: [usize; 3],
     rom: Mirror<Box<[u8]>>,
     ram: Mirror<Box<[u8]>>,
 }
@@ -78,6 +79,7 @@ impl Bus {
     pub fn new(rom_data: Vec<u8>) -> Self {
         Self {
             cycles: 0,
+            page_offset: [0, 16384, 32768],
             rom: rom_data.into_boxed_slice().into(),
             ram: vec![0; Self::RAM_SIZE].into_boxed_slice().into(),
         }
@@ -85,7 +87,15 @@ impl Bus {
 
     fn read_memory(&mut self, address: u16) -> u8 {
         match address >> 14 {
-            0..=2 => self.rom[address as usize],
+            0 => {
+                if address < 0x0400 {
+                    self.rom[address as usize]
+                } else {
+                    self.rom[self.page_offset[0] + (address as usize & 0x3fff)]
+                }
+            }
+            1 => self.rom[self.page_offset[1] + (address as usize & 0x3fff)],
+            2 => self.rom[self.page_offset[2] + (address as usize & 0x3fff)],
             _ => self.ram[address as usize],
         }
     }
@@ -94,11 +104,22 @@ impl Bus {
         match address >> 14 {
             0..=2 => panic!("Write to ROM area"),
             _ => {
-                if address >= 0xfffc {
-                    todo!("Mapping registers");
-                }
-
                 self.ram[address as usize] = value;
+
+                match address {
+                    0xfffc => todo!("Save RAM"),
+                    0xfffd..=0xffff => {
+                        let index = address as usize - 0xfffd;
+                        self.page_offset[index] = ((value as usize) << 14) & (self.rom.len() - 1);
+                        trace!(
+                            "Mapper Page {}: {} ({})",
+                            index,
+                            value,
+                            self.page_offset[index]
+                        );
+                    }
+                    _ => (),
+                }
             }
         }
     }

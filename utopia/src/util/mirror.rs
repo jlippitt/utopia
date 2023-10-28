@@ -23,13 +23,9 @@ pub struct Mirror<T: Mirrorable> {
 
 pub type MirrorVec<T> = Mirror<Vec<T>>;
 
-fn mask_for(len: usize) -> usize {
-    if len.is_power_of_two() {
-        len - 1
-    } else if len == 0 {
-        0
-    } else {
-        panic!("Mirrored size must be a power of two");
+impl<T: Mirrorable> Mirror<T> {
+    pub fn len(&self) -> usize {
+        self.inner.len()
     }
 }
 
@@ -123,5 +119,15 @@ impl<T: Clone + Default> Resizable for Vec<T> {
     fn resize(mut self, new_len: usize) -> Self {
         Vec::<T>::resize(&mut self, new_len, T::default());
         self
+    }
+}
+
+fn mask_for(len: usize) -> usize {
+    if len.is_power_of_two() {
+        len - 1
+    } else if len == 0 {
+        0
+    } else {
+        panic!("Mirrored size must be a power of two");
     }
 }
