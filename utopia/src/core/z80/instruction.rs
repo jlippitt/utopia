@@ -273,7 +273,7 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0xc1 => load::pop::<addr::BC>(core),
         0xc9 => control::ret(core),
         0xd1 => load::pop::<addr::DE>(core),
-        //0xd9 => instr::reti(core),
+        0xd9 => misc::exx(core),
         0xe1 => load::pop::<addr::HL>(core),
         0xe9 => control::jp_hl(core),
         0xf1 => load::pop::<addr::AF>(core),

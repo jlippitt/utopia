@@ -25,6 +25,13 @@ pub fn im(_core: &mut Core<impl Bus>, mode: u8) {
     // TODO: Interrupt handling
 }
 
+pub fn exx(core: &mut Core<impl Bus>) {
+    trace!("EXX");
+    std::mem::swap(&mut core.bc, &mut core.bc_banked);
+    std::mem::swap(&mut core.de, &mut core.de_banked);
+    std::mem::swap(&mut core.hl, &mut core.hl_banked);
+}
+
 pub fn scf(core: &mut Core<impl Bus>) {
     trace!("SCF");
     core.flags.n = false;
