@@ -1,5 +1,6 @@
 use super::{InstanceOptions, JoypadState, MemoryMapper, Size, SystemOptions, WgpuContext};
 use crate::core::z80::{self, Core};
+use crate::util::mirror::Mirror;
 use std::fmt;
 use std::marker::PhantomData;
 use tracing::trace;
@@ -66,23 +67,41 @@ impl crate::Instance for Instance {
 }
 
 pub struct Bus {
-    _rom: Box<[u8]>,
+    cycles: u64,
+    rom: Mirror<Box<[u8]>>,
+    ram: Mirror<Box<[u8]>>,
 }
 
 impl Bus {
+    const RAM_SIZE: usize = 8192;
+
     pub fn new(rom_data: Vec<u8>) -> Self {
         Self {
-            _rom: rom_data.into_boxed_slice(),
+            cycles: 0,
+            rom: rom_data.into_boxed_slice().into(),
+            ram: vec![0; Self::RAM_SIZE].into_boxed_slice().into(),
+        }
+    }
+
+    fn read_memory(&mut self, address: u16) -> u8 {
+        match address >> 14 {
+            0..=2 => self.rom[address as usize],
+            _ => self.ram[address as usize],
         }
     }
 }
 
 impl z80::Bus for Bus {
-    //
+    fn fetch(&mut self, address: u16) -> u8 {
+        self.cycles += 2;
+        let value = self.read_memory(address);
+        self.cycles += 2;
+        value
+    }
 }
 
 impl fmt::Display for Bus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "")
+        write!(f, "T={}", self.cycles)
     }
 }

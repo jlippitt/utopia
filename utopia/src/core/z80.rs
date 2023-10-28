@@ -1,6 +1,9 @@
 use std::fmt;
+use tracing::trace;
 
-pub trait Bus {}
+pub trait Bus {
+    fn fetch(&mut self, address: u16) -> u8;
+}
 
 struct Flags {
     s: u8,
@@ -70,7 +73,16 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn step(&mut self) {
-        unimplemented!();
+        match self.fetch() {
+            opcode => unimplemented!("Z80 Opcode: {:02X}", opcode),
+        }
+    }
+
+    fn fetch(&mut self) -> u8 {
+        let value = self.bus.fetch(self.pc);
+        trace!("  {:04X} => {:02X}", self.pc, value);
+        self.pc = self.pc.wrapping_add(1);
+        value
     }
 }
 
