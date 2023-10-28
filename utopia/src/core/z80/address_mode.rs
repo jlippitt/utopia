@@ -157,6 +157,14 @@ impl ReadAddress<u8> for Immediate {
     }
 }
 
+impl ReadAddress<u16> for Immediate {
+    const NAME: &'static str = "u16";
+
+    fn read(core: &mut Core<impl Bus>) -> u16 {
+        core.next_word()
+    }
+}
+
 pub struct Absolute;
 
 impl ReadAddress<u8> for Absolute {
@@ -172,5 +180,24 @@ impl WriteAddress<u8> for Absolute {
     fn write(core: &mut Core<impl Bus>, value: u8) {
         let address = core.next_word();
         core.write(address, value);
+    }
+}
+
+impl ReadAddress<u16> for Absolute {
+    const NAME: &'static str = "(u16)";
+
+    fn read(core: &mut Core<impl Bus>) -> u16 {
+        let address = core.next_word();
+        let low = core.read(address);
+        let high = core.read(address.wrapping_add(1));
+        u16::from_le_bytes([low, high])
+    }
+}
+
+impl WriteAddress<u16> for Absolute {
+    fn write(core: &mut Core<impl Bus>, value: u16) {
+        let address = core.next_word();
+        core.write(address, value as u8);
+        core.write(address.wrapping_add(1), (value >> 8) as u8);
     }
 }
