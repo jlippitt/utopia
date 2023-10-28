@@ -5,7 +5,7 @@ use tracing::trace;
 pub fn jp(core: &mut Core<impl Bus>) {
     trace!("JP u16");
     core.pc = core.next_word();
-    core.idle();
+    core.idle(1);
 }
 
 pub fn jp_hl(core: &mut Core<impl Bus>) {
@@ -19,7 +19,7 @@ pub fn jp_conditional<Cond: Condition>(core: &mut Core<impl Bus>) {
 
     if Cond::test(&core.flags) {
         trace!("Branch taken");
-        core.idle();
+        core.idle(1);
         core.pc = target;
     } else {
         trace!("Branch not taken");
@@ -29,7 +29,7 @@ pub fn jp_conditional<Cond: Condition>(core: &mut Core<impl Bus>) {
 pub fn jr(core: &mut Core<impl Bus>) {
     trace!("JR PC+i8");
     let offset = core.next_byte() as i8;
-    core.idle();
+    core.idle(1);
     core.pc = (core.pc as i16).wrapping_add(offset as i16) as u16;
 }
 
@@ -39,7 +39,7 @@ pub fn jr_conditional<Cond: Condition>(core: &mut Core<impl Bus>) {
 
     if Cond::test(&core.flags) {
         trace!("Branch taken");
-        core.idle();
+        core.idle(1);
         core.pc = (core.pc as i16).wrapping_add(offset as i16) as u16;
     } else {
         trace!("Branch not taken");
@@ -49,7 +49,7 @@ pub fn jr_conditional<Cond: Condition>(core: &mut Core<impl Bus>) {
 pub fn call(core: &mut Core<impl Bus>) {
     trace!("CALL u16");
     let target = core.next_word();
-    core.idle();
+    core.idle(1);
     core.push(core.pc);
     core.pc = target;
 }
@@ -60,7 +60,7 @@ pub fn call_conditional<Cond: Condition>(core: &mut Core<impl Bus>) {
 
     if Cond::test(&core.flags) {
         trace!("Branch taken");
-        core.idle();
+        core.idle(1);
         core.push(core.pc);
         core.pc = target;
     } else {
@@ -71,17 +71,17 @@ pub fn call_conditional<Cond: Condition>(core: &mut Core<impl Bus>) {
 pub fn ret(core: &mut Core<impl Bus>) {
     trace!("RET");
     core.pc = core.pop();
-    core.idle();
+    core.idle(1);
 }
 
 pub fn ret_conditional<Cond: Condition>(core: &mut Core<impl Bus>) {
     trace!("RET {}", Cond::NAME);
-    core.idle();
+    core.idle(1);
 
     if Cond::test(&core.flags) {
         trace!("Branch taken");
         core.pc = core.pop();
-        core.idle();
+        core.idle(1);
     } else {
         trace!("Branch not taken");
     }
@@ -89,7 +89,7 @@ pub fn ret_conditional<Cond: Condition>(core: &mut Core<impl Bus>) {
 
 pub fn rst(core: &mut Core<impl Bus>, target: u8) {
     trace!("RST ${:02X}", target);
-    core.idle();
+    core.idle(1);
     core.push(core.pc);
     core.pc = target as u16;
 }

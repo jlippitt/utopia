@@ -101,7 +101,7 @@ pub fn dec<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
 
 pub fn add16<Rhs: ReadAddress<u16>>(core: &mut Core<impl Bus>) {
     trace!("ADD HL, {}", Rhs::NAME);
-    core.idle();
+    core.idle(1);
     let value = Rhs::read(core);
     let result = core.hl.wrapping_add(value);
     let carries = core.hl ^ value ^ result;
@@ -114,14 +114,14 @@ pub fn add16<Rhs: ReadAddress<u16>>(core: &mut Core<impl Bus>) {
 
 pub fn inc16<Addr: WriteAddress<u16>>(core: &mut Core<impl Bus>) {
     trace!("INC {}", Addr::NAME);
-    core.idle();
+    core.idle(1);
     let result = Addr::read(core).wrapping_add(1);
     Addr::write(core, result);
 }
 
 pub fn dec16<Addr: WriteAddress<u16>>(core: &mut Core<impl Bus>) {
     trace!("DEC {}", Addr::NAME);
-    core.idle();
+    core.idle(1);
     let result = Addr::read(core).wrapping_sub(1);
     Addr::write(core, result);
 }

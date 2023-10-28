@@ -99,8 +99,30 @@ impl Bus {
             _ => self.ram[address as usize],
         }
     }
+}
 
-    fn write_memory(&mut self, address: u16, value: u8) {
+impl z80::Bus for Bus {
+    fn idle(&mut self, cycles: u64) {
+        self.cycles += cycles;
+    }
+
+    fn fetch(&mut self, address: u16) -> u8 {
+        self.cycles += 2;
+        let value = self.read_memory(address);
+        self.cycles += 2;
+        value
+    }
+
+    fn read(&mut self, address: u16) -> u8 {
+        self.cycles += 2;
+        let value = self.read_memory(address);
+        self.cycles += 1;
+        value
+    }
+
+    fn write(&mut self, address: u16, value: u8) {
+        self.cycles += 3;
+
         match address >> 14 {
             0..=2 => panic!("Write to ROM area"),
             _ => {
@@ -123,30 +145,25 @@ impl Bus {
             }
         }
     }
-}
 
-impl z80::Bus for Bus {
-    fn idle(&mut self) {
-        self.cycles += 1;
-    }
-
-    fn fetch(&mut self, address: u16) -> u8 {
-        self.cycles += 2;
-        let value = self.read_memory(address);
-        self.cycles += 2;
-        value
-    }
-
-    fn read(&mut self, address: u16) -> u8 {
-        self.cycles += 2;
-        let value = self.read_memory(address);
-        self.cycles += 1;
-        value
-    }
-
-    fn write(&mut self, address: u16, value: u8) {
+    fn read_port(&mut self, address: u16) -> u8 {
         self.cycles += 3;
-        self.write_memory(address, value);
+
+        let value = match address as u8 {
+            port => unimplemented!("Port Read: {:02X}", port),
+        };
+
+        self.cycles += 1;
+        value
+    }
+
+    fn write_port(&mut self, address: u16, value: u8) {
+        self.cycles += 4;
+
+        match address as u8 {
+            0x7e | 0x7f => (), // TODO: PSG
+            port => unimplemented!("Port Write: {:02X} <= {:02X}", port, value),
+        }
     }
 }
 

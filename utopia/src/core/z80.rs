@@ -6,10 +6,12 @@ mod condition;
 mod instruction;
 
 pub trait Bus {
-    fn idle(&mut self);
+    fn idle(&mut self, cycles: u64);
     fn fetch(&mut self, address: u16) -> u8;
     fn read(&mut self, address: u16) -> u8;
     fn write(&mut self, address: u16, value: u8);
+    fn read_port(&mut self, address: u16) -> u8;
+    fn write_port(&mut self, address: u16, value: u8);
 }
 
 pub struct Flags {
@@ -83,9 +85,9 @@ impl<T: Bus> Core<T> {
         instruction::dispatch(self);
     }
 
-    fn idle(&mut self) {
-        trace!("  IO");
-        self.bus.idle();
+    fn idle(&mut self, cycles: u64) {
+        trace!("  Idle ({})", cycles);
+        self.bus.idle(cycles);
     }
 
     fn fetch(&mut self) -> u8 {
@@ -104,6 +106,17 @@ impl<T: Bus> Core<T> {
     fn write(&mut self, address: u16, value: u8) {
         trace!("  {:04X} <= {:02X}", address, value);
         self.bus.write(address, value);
+    }
+
+    fn read_port(&mut self, address: u16) -> u8 {
+        let value = self.bus.read_port(address);
+        trace!("  [Port:{:04X}] => {:02X}", address, value);
+        value
+    }
+
+    fn write_port(&mut self, address: u16, value: u8) {
+        trace!("  [Port:{:04X}] <= {:02X}", address, value);
+        self.bus.write_port(address, value);
     }
 
     fn next_byte(&mut self) -> u8 {
