@@ -1,13 +1,18 @@
 use std::fmt;
 use tracing::trace;
 
+mod address_mode;
+mod condition;
 mod instruction;
 
 pub trait Bus {
+    fn idle(&mut self);
     fn fetch(&mut self, address: u16) -> u8;
+    fn read(&mut self, address: u16) -> u8;
+    fn write(&mut self, address: u16, value: u8);
 }
 
-struct Flags {
+pub struct Flags {
     s: u8,
     z: u8,
     y: u8,
@@ -78,11 +83,54 @@ impl<T: Bus> Core<T> {
         instruction::dispatch(self);
     }
 
+    fn idle(&mut self) {
+        trace!("  IO");
+        self.bus.idle();
+    }
+
     fn fetch(&mut self) -> u8 {
         let value = self.bus.fetch(self.pc);
         trace!("  {:04X} => {:02X}", self.pc, value);
         self.pc = self.pc.wrapping_add(1);
         value
+    }
+
+    fn read(&mut self, address: u16) -> u8 {
+        let value = self.bus.read(address);
+        trace!("  {:04X} => {:02X}", address, value);
+        value
+    }
+
+    fn write(&mut self, address: u16, value: u8) {
+        trace!("  {:04X} <= {:02X}", address, value);
+        self.bus.write(address, value);
+    }
+
+    fn next_byte(&mut self) -> u8 {
+        let value = self.read(self.pc);
+        self.pc = self.pc.wrapping_add(1);
+        value
+    }
+
+    fn next_word(&mut self) -> u16 {
+        let low = self.next_byte();
+        let high = self.next_byte();
+        u16::from_le_bytes([low, high])
+    }
+
+    fn pop(&mut self) -> u16 {
+        let low = self.read(self.sp);
+        self.sp = self.sp.wrapping_add(1);
+        let high = self.read(self.sp);
+        self.sp = self.sp.wrapping_add(1);
+        u16::from_le_bytes([low, high])
+    }
+
+    fn push(&mut self, value: u16) {
+        self.sp = self.sp.wrapping_sub(1);
+        self.write(self.sp, (value >> 8) as u8);
+        self.sp = self.sp.wrapping_sub(1);
+        self.write(self.sp, value as u8);
     }
 }
 

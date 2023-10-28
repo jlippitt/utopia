@@ -89,14 +89,43 @@ impl Bus {
             _ => self.ram[address as usize],
         }
     }
+
+    fn write_memory(&mut self, address: u16, value: u8) {
+        match address >> 14 {
+            0..=2 => panic!("Write to ROM area"),
+            _ => {
+                if address >= 0xfffc {
+                    todo!("Mapping registers");
+                }
+
+                self.ram[address as usize] = value;
+            }
+        }
+    }
 }
 
 impl z80::Bus for Bus {
+    fn idle(&mut self) {
+        self.cycles += 1;
+    }
+
     fn fetch(&mut self, address: u16) -> u8 {
         self.cycles += 2;
         let value = self.read_memory(address);
         self.cycles += 2;
         value
+    }
+
+    fn read(&mut self, address: u16) -> u8 {
+        self.cycles += 2;
+        let value = self.read_memory(address);
+        self.cycles += 1;
+        value
+    }
+
+    fn write(&mut self, address: u16, value: u8) {
+        self.cycles += 3;
+        self.write_memory(address, value);
     }
 }
 
