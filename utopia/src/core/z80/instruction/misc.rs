@@ -71,6 +71,6 @@ pub fn daa(core: &mut Core<impl Bus>) {
         }
     }
 
-    core.flags.z = core.a;
+    core.set_sz(core.a);
     core.flags.h = false;
 }

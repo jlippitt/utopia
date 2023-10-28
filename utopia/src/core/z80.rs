@@ -132,6 +132,13 @@ impl<T: Bus> Core<T> {
         self.sp = self.sp.wrapping_sub(1);
         self.write(self.sp, value as u8);
     }
+
+    fn set_sz(&mut self, value: u8) {
+        self.flags.s = value;
+        self.flags.z = value;
+        self.flags.y = value;
+        self.flags.x = value;
+    }
 }
 
 impl<T: Bus + fmt::Display> fmt::Display for Core<T> {
