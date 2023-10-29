@@ -1,11 +1,13 @@
 use super::{InstanceOptions, JoypadState, MemoryMapper, Size, SystemOptions, WgpuContext};
 use crate::core::z80::{self, Core};
 use crate::util::mirror::Mirror;
+use interrupt::Interrupt;
 use std::fmt;
 use std::marker::PhantomData;
 use tracing::{trace, warn};
 use vdp::Vdp;
 
+mod interrupt;
 mod vdp;
 
 pub struct System<T: MemoryMapper + 'static> {
@@ -72,6 +74,7 @@ impl crate::Instance for Instance {
 pub struct Bus {
     cycles: u64,
     mdr: u8,
+    interrupt: Interrupt,
     page_offset: [usize; 3],
     rom: Mirror<Box<[u8]>>,
     ram: Mirror<Box<[u8]>>,
@@ -82,13 +85,16 @@ impl Bus {
     const RAM_SIZE: usize = 8192;
 
     pub fn new(rom_data: Vec<u8>) -> Self {
+        let interrupt = Interrupt::new();
+
         Self {
             cycles: 0,
             mdr: 0,
             page_offset: [0, 16384, 32768],
             rom: rom_data.into_boxed_slice().into(),
             ram: vec![0; Self::RAM_SIZE].into_boxed_slice().into(),
-            vdp: Vdp::new(),
+            vdp: Vdp::new(interrupt.clone()),
+            interrupt,
         }
     }
 
@@ -163,10 +169,10 @@ impl z80::Bus for Bus {
         self.step(18);
 
         self.mdr = match address & 0xc1 {
-            // 0x40 => self.vdp.v_counter(),
-            // 0x41 => self.vdp.h_counter(),
+            0x40 => self.vdp.v_counter() as u8,
+            // 0x41 => (self.vdp.h_counter() >> 1) as u8,
             // 0x80 => self.vdp.read_data(),
-            // 0x81 => self.vdp.status(),
+            // 0x81 => self.vdp.read_control(),
             0xc0 | 0xc1 => 0, // TODO: Joypad/Country Code
             _ => {
                 warn!("Unmapped Port Read: {:02X}", address as u8);
@@ -187,9 +193,13 @@ impl z80::Bus for Bus {
             0x01 => warn!("TODO: I/O Control"),
             0x40 | 0x41 => (), // TODO: PSG
             0x80 => self.vdp.write_data(value),
-            0x81 => self.vdp.write_command(value),
+            0x81 => self.vdp.write_control(value),
             _ => (),
         }
+    }
+
+    fn poll(&self) -> u8 {
+        self.interrupt.poll()
     }
 }
 

@@ -1,4 +1,4 @@
-use super::super::{Bus, Core};
+use super::super::{Bus, Core, IRQ_DISABLE, IRQ_ENABLE};
 use tracing::trace;
 
 pub fn nop(_core: &mut Core<impl Bus>) {
@@ -10,19 +10,20 @@ pub fn halt(_core: &mut Core<impl Bus>) {
     // TODO: Interrupt handling
 }
 
-pub fn di(_core: &mut Core<impl Bus>) {
+pub fn di(core: &mut Core<impl Bus>) {
     trace!("DI");
-    // TODO: Interrupt handling
+    core.iff = [IRQ_DISABLE; 2];
+    core.iff_delayed = [IRQ_DISABLE; 2];
 }
 
-pub fn ei(_core: &mut Core<impl Bus>) {
+pub fn ei(core: &mut Core<impl Bus>) {
     trace!("EI");
-    // TODO: Interrupt handling
+    core.iff_delayed = [IRQ_ENABLE; 2];
 }
 
-pub fn im(_core: &mut Core<impl Bus>, mode: u8) {
+pub fn im(core: &mut Core<impl Bus>, mode: u8) {
     trace!("IM {}", mode);
-    // TODO: Interrupt handling
+    core.im = mode;
 }
 
 pub fn exx(core: &mut Core<impl Bus>) {

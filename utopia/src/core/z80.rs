@@ -5,6 +5,9 @@ mod address_mode;
 mod condition;
 mod instruction;
 
+const IRQ_DISABLE: u8 = 0x03;
+const IRQ_ENABLE: u8 = 0xff;
+
 pub trait Bus {
     fn idle(&mut self, cycles: u64);
     fn fetch(&mut self, address: u16) -> u8;
@@ -12,6 +15,7 @@ pub trait Bus {
     fn write(&mut self, address: u16, value: u8);
     fn read_port(&mut self, address: u16) -> u8;
     fn write_port(&mut self, address: u16, value: u8);
+    fn poll(&self) -> u8;
 }
 
 pub struct Flags {
@@ -41,9 +45,9 @@ pub struct Core<T: Bus> {
     hl_banked: u16,
     // i: u8,
     // r: u8,
-    // im: u8,
-    // iff1: bool,
-    // iff2: bool,
+    im: u8,
+    iff: [u8; 2],
+    iff_delayed: [u8; 2],
     bus: T,
 }
 
@@ -74,14 +78,30 @@ impl<T: Bus> Core<T> {
             hl_banked: 0,
             // i: 0,
             // r: 0,
-            // im: 0,
-            // iff1: false,
-            // iff2: false,
+            im: 0,
+            iff: [IRQ_DISABLE; 2],
+            iff_delayed: [IRQ_DISABLE; 2],
             bus,
         }
     }
 
     pub fn step(&mut self) {
+        if (self.iff[0] & self.bus.poll()) != 0 {
+            // TODO: RESET/NMI handling
+            trace!("Interrupt: IRQ");
+            self.iff = [IRQ_DISABLE; 2];
+            self.iff_delayed = [IRQ_DISABLE; 2];
+
+            match self.im {
+                1 => instruction::rst(self, 0x38),
+                _ => unimplemented!("Interrupt Mode {}", self.im),
+            }
+
+            return;
+        }
+
+        self.iff = self.iff_delayed;
+
         instruction::dispatch(self);
     }
 

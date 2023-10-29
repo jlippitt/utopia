@@ -1,3 +1,4 @@
+use super::interrupt::{Interrupt, InterruptType};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use tracing::{trace, warn};
@@ -18,13 +19,14 @@ pub struct Vdp {
     address: u16,
     mode_select: u8,
     write_buffer: Option<u8>,
+    interrupt: Interrupt,
 }
 
 impl Vdp {
     const TOTAL_LINES: u16 = 262;
     const CYCLES_PER_LINE: u64 = 1368;
 
-    pub fn new() -> Self {
+    pub fn new(interrupt: Interrupt) -> Self {
         Self {
             line_cycles: 0,
             line_counter: 0,
@@ -33,6 +35,7 @@ impl Vdp {
             address: 0,
             mode_select: 0,
             write_buffer: None,
+            interrupt,
         }
     }
 
@@ -44,7 +47,7 @@ impl Vdp {
         (self.line_cycles >> 2) as u16
     }
 
-    pub fn write_command(&mut self, value: u8) {
+    pub fn write_control(&mut self, value: u8) {
         if let Some(low) = self.write_buffer.take() {
             self.command = Command::from_u8(value >> 6).unwrap();
             self.address = u16::from_le_bytes([low, value & 0x3f]);
@@ -71,7 +74,7 @@ impl Vdp {
             if self.line_counter == Self::TOTAL_LINES {
                 self.line_counter = 0;
             } else if self.line_counter == self.vblank_line {
-                trace!("VBlank Reached: {}", self.line_counter);
+                self.interrupt.raise(InterruptType::FrameIrq);
             }
         }
     }

@@ -1,3 +1,5 @@
+pub use control::rst;
+
 use super::{Bus, Core};
 
 mod alu;
