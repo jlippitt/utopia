@@ -150,6 +150,7 @@ impl z80::Bus for Bus {
         self.cycles += 3;
 
         let value = match address as u8 {
+            0xc0..=0xff => 0, // TODO: Joypad, Country Codes
             port => unimplemented!("Port Read: {:02X}", port),
         };
 
