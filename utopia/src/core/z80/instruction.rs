@@ -18,7 +18,7 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
 
         // +0x00 / +0x08
         0x00 => misc::nop(core),
-        //0x08 => instr::ld_u16_sp(core),
+        0x08 => misc::ex_af_af(core),
         0x10 => control::djnz(core),
         0x18 => control::jr(core),
         0x20 => control::jr_conditional::<cond::NZ>(core),

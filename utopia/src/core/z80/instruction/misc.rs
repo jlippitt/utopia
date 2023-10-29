@@ -1,3 +1,4 @@
+use super::super::address_mode::{ReadAddress, WriteAddress, AF};
 use super::super::{Bus, Core, IRQ_DISABLE, IRQ_ENABLE};
 use tracing::trace;
 
@@ -24,6 +25,13 @@ pub fn ei(core: &mut Core<impl Bus>) {
 pub fn im(core: &mut Core<impl Bus>, mode: u8) {
     trace!("IM {}", mode);
     core.im = mode;
+}
+
+pub fn ex_af_af(core: &mut Core<impl Bus>) {
+    trace!("EX AF, AF'");
+    let tmp = AF::read(core);
+    AF::write(core, core.af_banked);
+    core.af_banked = tmp;
 }
 
 pub fn exx(core: &mut Core<impl Bus>) {
