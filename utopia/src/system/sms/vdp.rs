@@ -13,6 +13,7 @@ enum Command {
 pub struct Vdp {
     command: Command,
     address: u16,
+    mode_select: u8,
     write_buffer: Option<u8>,
 }
 
@@ -21,6 +22,7 @@ impl Vdp {
         Self {
             command: Command::ReadVram,
             address: 0,
+            mode_select: 0,
             write_buffer: None,
         }
     }
@@ -43,8 +45,23 @@ impl Vdp {
     }
 
     fn write_register(&mut self, reg: u8, value: u8) {
+        warn!("VDP Register Write: {:02X} <= {:02X}", reg, value);
+
         match reg {
-            _ => warn!("Unmapped VDP Register Write: {:02X} <= {:02X}", reg, value),
+            0x00 => {
+                self.mode_select =
+                    (self.mode_select & 0b0101) | (value & 0b0010) | ((value & 0b0100) << 1);
+
+                warn!("Mode Select: {:04b}", self.mode_select);
+            }
+            0x01 => {
+                self.mode_select = (self.mode_select & 0b1010)
+                    | ((value & 0b1_0000) >> 4)
+                    | ((value & 0b1000) >> 1);
+
+                warn!("Mode Select: {:04b}", self.mode_select);
+            }
+            _ => (),
         }
     }
 }
