@@ -99,14 +99,15 @@ pub fn dec<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
     core.flags.h = (result & 0x0f) == 0x0f;
 }
 
-pub fn add16<Rhs: ReadAddress<u16>>(core: &mut Core<impl Bus>) {
-    trace!("ADD HL, {}", Rhs::NAME);
+pub fn add16<Lhs: WriteAddress<u16>, Rhs: ReadAddress<u16>>(core: &mut Core<impl Bus>) {
+    trace!("ADD {}, {}", Lhs::NAME, Rhs::NAME);
     core.idle(1);
-    let value = Rhs::read(core);
-    let result = core.hl.wrapping_add(value);
-    let carries = core.hl ^ value ^ result;
-    let overflow = (core.hl ^ result) & (value ^ result);
-    core.hl = result;
+    let rhs = Rhs::read(core);
+    let lhs = Lhs::read(core);
+    let result = lhs.wrapping_add(rhs);
+    let carries = lhs ^ rhs ^ result;
+    let overflow = (lhs ^ result) & (rhs ^ result);
+    Lhs::write(core, result);
     core.flags.n = false;
     core.flags.c = ((carries ^ overflow) & 0x8000) != 0;
     core.flags.h = (carries & 0x1000) != 0;

@@ -9,11 +9,6 @@ pub fn jp(core: &mut Core<impl Bus>) {
     core.idle(1);
 }
 
-pub fn jp_hl(core: &mut Core<impl Bus>) {
-    trace!("JP HL");
-    core.pc = core.hl;
-}
-
 pub fn jp_conditional<Cond: Condition>(core: &mut Core<impl Bus>) {
     trace!("JP {}, u16", Cond::NAME);
     let target = core.next_word();
@@ -25,6 +20,11 @@ pub fn jp_conditional<Cond: Condition>(core: &mut Core<impl Bus>) {
     } else {
         trace!("Branch not taken");
     }
+}
+
+pub fn jp_indirect<Addr: ReadAddress<u16>>(core: &mut Core<impl Bus>) {
+    trace!("JP {}", Addr::NAME);
+    core.pc = Addr::read(core);
 }
 
 pub fn jr(core: &mut Core<impl Bus>) {

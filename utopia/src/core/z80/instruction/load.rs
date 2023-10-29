@@ -8,10 +8,10 @@ pub fn ld<T, Lhs: WriteAddress<T>, Rhs: ReadAddress<T>>(core: &mut Core<impl Bus
     Lhs::write(core, value);
 }
 
-pub fn ld_sp_hl(core: &mut Core<impl Bus>) {
-    trace!("LD SP, HL");
+pub fn ld_sp<Rhs: ReadAddress<u16>>(core: &mut Core<impl Bus>) {
+    trace!("LD SP, {}", Rhs::NAME);
     core.idle(2);
-    core.sp = core.hl;
+    core.sp = Rhs::read(core);
 }
 
 pub fn pop<Addr: WriteAddress<u16>>(core: &mut Core<impl Bus>) {

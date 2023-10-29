@@ -1,9 +1,11 @@
+use register_set::RegisterSetDefault;
 use std::fmt;
 use tracing::trace;
 
 mod address_mode;
 mod condition;
 mod instruction;
+mod register_set;
 
 const IRQ_DISABLE: u8 = 0x03;
 const IRQ_ENABLE: u8 = 0xff;
@@ -102,7 +104,7 @@ impl<T: Bus> Core<T> {
 
         self.iff = self.iff_delayed;
 
-        instruction::dispatch(self);
+        instruction::dispatch::<RegisterSetDefault>(self);
     }
 
     fn idle(&mut self, cycles: u64) {

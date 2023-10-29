@@ -1,5 +1,6 @@
 pub use control::rst;
 
+use super::register_set::{RegisterSet, RegisterSetIX, RegisterSetIY};
 use super::{Bus, Core};
 
 mod alu;
@@ -9,7 +10,7 @@ mod control;
 mod load;
 mod misc;
 
-pub fn dispatch(core: &mut Core<impl Bus>) {
+pub fn dispatch<T: RegisterSet>(core: &mut Core<impl Bus>) {
     use super::address_mode as addr;
     use super::condition as cond;
 
@@ -28,21 +29,21 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
 
         // +0x01 / +0x09
         0x01 => load::ld::<u16, addr::BC, addr::Immediate>(core),
-        0x09 => alu::add16::<addr::BC>(core),
+        0x09 => alu::add16::<T::HL, addr::BC>(core),
         0x11 => load::ld::<u16, addr::DE, addr::Immediate>(core),
-        0x19 => alu::add16::<addr::DE>(core),
-        0x21 => load::ld::<u16, addr::HL, addr::Immediate>(core),
-        0x29 => alu::add16::<addr::HL>(core),
+        0x19 => alu::add16::<T::HL, addr::DE>(core),
+        0x21 => load::ld::<u16, T::HL, addr::Immediate>(core),
+        0x29 => alu::add16::<T::HL, T::HL>(core),
         0x31 => load::ld::<u16, addr::SP, addr::Immediate>(core),
-        0x39 => alu::add16::<addr::SP>(core),
+        0x39 => alu::add16::<T::HL, addr::SP>(core),
 
         // +0x02 / +0x0a
         0x02 => load::ld::<u8, addr::BCIndirect, addr::A>(core),
         0x0a => load::ld::<u8, addr::A, addr::BCIndirect>(core),
         0x12 => load::ld::<u8, addr::DEIndirect, addr::A>(core),
         0x1a => load::ld::<u8, addr::A, addr::DEIndirect>(core),
-        0x22 => load::ld::<u16, addr::Absolute, addr::HL>(core),
-        0x2a => load::ld::<u16, addr::HL, addr::Absolute>(core),
+        0x22 => load::ld::<u16, addr::Absolute, T::HL>(core),
+        0x2a => load::ld::<u16, T::HL, addr::Absolute>(core),
         0x32 => load::ld::<u8, addr::Absolute, addr::A>(core),
         0x3a => load::ld::<u8, addr::A, addr::Absolute>(core),
 
@@ -51,8 +52,8 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x0b => alu::dec16::<addr::BC>(core),
         0x13 => alu::inc16::<addr::DE>(core),
         0x1b => alu::dec16::<addr::DE>(core),
-        0x23 => alu::inc16::<addr::HL>(core),
-        0x2b => alu::dec16::<addr::HL>(core),
+        0x23 => alu::inc16::<T::HL>(core),
+        0x2b => alu::dec16::<T::HL>(core),
         0x33 => alu::inc16::<addr::SP>(core),
         0x3b => alu::dec16::<addr::SP>(core),
 
@@ -61,9 +62,9 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x0c => alu::inc::<addr::C>(core),
         0x14 => alu::inc::<addr::D>(core),
         0x1c => alu::inc::<addr::E>(core),
-        0x24 => alu::inc::<addr::H>(core),
-        0x2c => alu::inc::<addr::L>(core),
-        0x34 => alu::inc::<addr::HLIndirect>(core),
+        0x24 => alu::inc::<T::H>(core),
+        0x2c => alu::inc::<T::L>(core),
+        0x34 => alu::inc::<T::HLIndirect>(core),
         0x3c => alu::inc::<addr::A>(core),
 
         // +0x05 / +0x0d
@@ -71,9 +72,9 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x0d => alu::dec::<addr::C>(core),
         0x15 => alu::dec::<addr::D>(core),
         0x1d => alu::dec::<addr::E>(core),
-        0x25 => alu::dec::<addr::H>(core),
-        0x2d => alu::dec::<addr::L>(core),
-        0x35 => alu::dec::<addr::HLIndirect>(core),
+        0x25 => alu::dec::<T::H>(core),
+        0x2d => alu::dec::<T::L>(core),
+        0x35 => alu::dec::<T::HLIndirect>(core),
         0x3d => alu::dec::<addr::A>(core),
 
         // +0x06 / +0x0e
@@ -81,9 +82,9 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x0e => load::ld::<u8, addr::C, addr::Immediate>(core),
         0x16 => load::ld::<u8, addr::D, addr::Immediate>(core),
         0x1e => load::ld::<u8, addr::E, addr::Immediate>(core),
-        0x26 => load::ld::<u8, addr::H, addr::Immediate>(core),
-        0x2e => load::ld::<u8, addr::L, addr::Immediate>(core),
-        0x36 => load::ld::<u8, addr::HLIndirect, addr::Immediate>(core),
+        0x26 => load::ld::<u8, T::H, addr::Immediate>(core),
+        0x2e => load::ld::<u8, T::L, addr::Immediate>(core),
+        0x36 => load::ld::<u8, T::HLIndirect, addr::Immediate>(core),
         0x3e => load::ld::<u8, addr::A, addr::Immediate>(core),
 
         // +0x07 / 0x0f
@@ -103,9 +104,9 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x41 => load::ld::<u8, addr::B, addr::C>(core),
         0x42 => load::ld::<u8, addr::B, addr::D>(core),
         0x43 => load::ld::<u8, addr::B, addr::E>(core),
-        0x44 => load::ld::<u8, addr::B, addr::H>(core),
-        0x45 => load::ld::<u8, addr::B, addr::L>(core),
-        0x46 => load::ld::<u8, addr::B, addr::HLIndirect>(core),
+        0x44 => load::ld::<u8, addr::B, T::H>(core),
+        0x45 => load::ld::<u8, addr::B, T::L>(core),
+        0x46 => load::ld::<u8, addr::B, T::HLIndirect>(core),
         0x47 => load::ld::<u8, addr::B, addr::A>(core),
 
         // 0x48
@@ -113,9 +114,9 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x49 => load::ld::<u8, addr::C, addr::C>(core),
         0x4a => load::ld::<u8, addr::C, addr::D>(core),
         0x4b => load::ld::<u8, addr::C, addr::E>(core),
-        0x4c => load::ld::<u8, addr::C, addr::H>(core),
-        0x4d => load::ld::<u8, addr::C, addr::L>(core),
-        0x4e => load::ld::<u8, addr::C, addr::HLIndirect>(core),
+        0x4c => load::ld::<u8, addr::C, T::H>(core),
+        0x4d => load::ld::<u8, addr::C, T::L>(core),
+        0x4e => load::ld::<u8, addr::C, T::HLIndirect>(core),
         0x4f => load::ld::<u8, addr::C, addr::A>(core),
 
         // 0x50
@@ -123,9 +124,9 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x51 => load::ld::<u8, addr::D, addr::C>(core),
         0x52 => load::ld::<u8, addr::D, addr::D>(core),
         0x53 => load::ld::<u8, addr::D, addr::E>(core),
-        0x54 => load::ld::<u8, addr::D, addr::H>(core),
-        0x55 => load::ld::<u8, addr::D, addr::L>(core),
-        0x56 => load::ld::<u8, addr::D, addr::HLIndirect>(core),
+        0x54 => load::ld::<u8, addr::D, T::H>(core),
+        0x55 => load::ld::<u8, addr::D, T::L>(core),
+        0x56 => load::ld::<u8, addr::D, T::HLIndirect>(core),
         0x57 => load::ld::<u8, addr::D, addr::A>(core),
 
         // 0x58
@@ -133,49 +134,49 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x59 => load::ld::<u8, addr::E, addr::C>(core),
         0x5a => load::ld::<u8, addr::E, addr::D>(core),
         0x5b => load::ld::<u8, addr::E, addr::E>(core),
-        0x5c => load::ld::<u8, addr::E, addr::H>(core),
-        0x5d => load::ld::<u8, addr::E, addr::L>(core),
-        0x5e => load::ld::<u8, addr::E, addr::HLIndirect>(core),
+        0x5c => load::ld::<u8, addr::E, T::H>(core),
+        0x5d => load::ld::<u8, addr::E, T::L>(core),
+        0x5e => load::ld::<u8, addr::E, T::HLIndirect>(core),
         0x5f => load::ld::<u8, addr::E, addr::A>(core),
 
         // 0x60
-        0x60 => load::ld::<u8, addr::H, addr::B>(core),
-        0x61 => load::ld::<u8, addr::H, addr::C>(core),
-        0x62 => load::ld::<u8, addr::H, addr::D>(core),
-        0x63 => load::ld::<u8, addr::H, addr::E>(core),
-        0x64 => load::ld::<u8, addr::H, addr::H>(core),
-        0x65 => load::ld::<u8, addr::H, addr::L>(core),
-        0x66 => load::ld::<u8, addr::H, addr::HLIndirect>(core),
-        0x67 => load::ld::<u8, addr::H, addr::A>(core),
+        0x60 => load::ld::<u8, T::H, addr::B>(core),
+        0x61 => load::ld::<u8, T::H, addr::C>(core),
+        0x62 => load::ld::<u8, T::H, addr::D>(core),
+        0x63 => load::ld::<u8, T::H, addr::E>(core),
+        0x64 => load::ld::<u8, T::H, T::H>(core),
+        0x65 => load::ld::<u8, T::H, T::L>(core),
+        0x66 => load::ld::<u8, addr::H, T::HLIndirect>(core),
+        0x67 => load::ld::<u8, T::H, addr::A>(core),
 
         // 0x68
-        0x68 => load::ld::<u8, addr::L, addr::B>(core),
-        0x69 => load::ld::<u8, addr::L, addr::C>(core),
-        0x6a => load::ld::<u8, addr::L, addr::D>(core),
-        0x6b => load::ld::<u8, addr::L, addr::E>(core),
-        0x6c => load::ld::<u8, addr::L, addr::H>(core),
-        0x6d => load::ld::<u8, addr::L, addr::L>(core),
-        0x6e => load::ld::<u8, addr::L, addr::HLIndirect>(core),
-        0x6f => load::ld::<u8, addr::L, addr::A>(core),
+        0x68 => load::ld::<u8, T::L, addr::B>(core),
+        0x69 => load::ld::<u8, T::L, addr::C>(core),
+        0x6a => load::ld::<u8, T::L, addr::D>(core),
+        0x6b => load::ld::<u8, T::L, addr::E>(core),
+        0x6c => load::ld::<u8, T::L, T::H>(core),
+        0x6d => load::ld::<u8, T::L, T::L>(core),
+        0x6e => load::ld::<u8, addr::L, T::HLIndirect>(core),
+        0x6f => load::ld::<u8, T::L, addr::A>(core),
 
         // 0x70
-        0x70 => load::ld::<u8, addr::HLIndirect, addr::B>(core),
-        0x71 => load::ld::<u8, addr::HLIndirect, addr::C>(core),
-        0x72 => load::ld::<u8, addr::HLIndirect, addr::D>(core),
-        0x73 => load::ld::<u8, addr::HLIndirect, addr::E>(core),
-        0x74 => load::ld::<u8, addr::HLIndirect, addr::H>(core),
-        0x75 => load::ld::<u8, addr::HLIndirect, addr::L>(core),
+        0x70 => load::ld::<u8, T::HLIndirect, addr::B>(core),
+        0x71 => load::ld::<u8, T::HLIndirect, addr::C>(core),
+        0x72 => load::ld::<u8, T::HLIndirect, addr::D>(core),
+        0x73 => load::ld::<u8, T::HLIndirect, addr::E>(core),
+        0x74 => load::ld::<u8, T::HLIndirect, addr::H>(core),
+        0x75 => load::ld::<u8, T::HLIndirect, addr::L>(core),
         0x76 => misc::halt(core),
-        0x77 => load::ld::<u8, addr::HLIndirect, addr::A>(core),
+        0x77 => load::ld::<u8, T::HLIndirect, addr::A>(core),
 
         // 0x78
         0x78 => load::ld::<u8, addr::A, addr::B>(core),
         0x79 => load::ld::<u8, addr::A, addr::C>(core),
         0x7a => load::ld::<u8, addr::A, addr::D>(core),
         0x7b => load::ld::<u8, addr::A, addr::E>(core),
-        0x7c => load::ld::<u8, addr::A, addr::H>(core),
-        0x7d => load::ld::<u8, addr::A, addr::L>(core),
-        0x7e => load::ld::<u8, addr::A, addr::HLIndirect>(core),
+        0x7c => load::ld::<u8, addr::A, T::H>(core),
+        0x7d => load::ld::<u8, addr::A, T::L>(core),
+        0x7e => load::ld::<u8, addr::A, T::HLIndirect>(core),
         0x7f => load::ld::<u8, addr::A, addr::A>(core),
 
         // Page 2: 8-bit Arithmetic & Logic
@@ -185,9 +186,9 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x81 => alu::add::<addr::C>(core),
         0x82 => alu::add::<addr::D>(core),
         0x83 => alu::add::<addr::E>(core),
-        0x84 => alu::add::<addr::H>(core),
-        0x85 => alu::add::<addr::L>(core),
-        0x86 => alu::add::<addr::HLIndirect>(core),
+        0x84 => alu::add::<T::H>(core),
+        0x85 => alu::add::<T::L>(core),
+        0x86 => alu::add::<T::HLIndirect>(core),
         0x87 => alu::add::<addr::A>(core),
 
         // 0x88
@@ -195,9 +196,9 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x89 => alu::adc::<addr::C>(core),
         0x8a => alu::adc::<addr::D>(core),
         0x8b => alu::adc::<addr::E>(core),
-        0x8c => alu::adc::<addr::H>(core),
-        0x8d => alu::adc::<addr::L>(core),
-        0x8e => alu::adc::<addr::HLIndirect>(core),
+        0x8c => alu::adc::<T::H>(core),
+        0x8d => alu::adc::<T::L>(core),
+        0x8e => alu::adc::<T::HLIndirect>(core),
         0x8f => alu::adc::<addr::A>(core),
 
         // 0x90
@@ -205,9 +206,9 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x91 => alu::sub::<addr::C>(core),
         0x92 => alu::sub::<addr::D>(core),
         0x93 => alu::sub::<addr::E>(core),
-        0x94 => alu::sub::<addr::H>(core),
-        0x95 => alu::sub::<addr::L>(core),
-        0x96 => alu::sub::<addr::HLIndirect>(core),
+        0x94 => alu::sub::<T::H>(core),
+        0x95 => alu::sub::<T::L>(core),
+        0x96 => alu::sub::<T::HLIndirect>(core),
         0x97 => alu::sub::<addr::A>(core),
 
         // 0x98
@@ -215,9 +216,9 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0x99 => alu::sbc::<addr::C>(core),
         0x9a => alu::sbc::<addr::D>(core),
         0x9b => alu::sbc::<addr::E>(core),
-        0x9c => alu::sbc::<addr::H>(core),
-        0x9d => alu::sbc::<addr::L>(core),
-        0x9e => alu::sbc::<addr::HLIndirect>(core),
+        0x9c => alu::sbc::<T::H>(core),
+        0x9d => alu::sbc::<T::L>(core),
+        0x9e => alu::sbc::<T::HLIndirect>(core),
         0x9f => alu::sbc::<addr::A>(core),
 
         // 0xA0
@@ -225,9 +226,9 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0xa1 => alu::and::<addr::C>(core),
         0xa2 => alu::and::<addr::D>(core),
         0xa3 => alu::and::<addr::E>(core),
-        0xa4 => alu::and::<addr::H>(core),
-        0xa5 => alu::and::<addr::L>(core),
-        0xa6 => alu::and::<addr::HLIndirect>(core),
+        0xa4 => alu::and::<T::H>(core),
+        0xa5 => alu::and::<T::L>(core),
+        0xa6 => alu::and::<T::HLIndirect>(core),
         0xa7 => alu::and::<addr::A>(core),
 
         // 0xA8
@@ -235,9 +236,9 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0xa9 => alu::xor::<addr::C>(core),
         0xaa => alu::xor::<addr::D>(core),
         0xab => alu::xor::<addr::E>(core),
-        0xac => alu::xor::<addr::H>(core),
-        0xad => alu::xor::<addr::L>(core),
-        0xae => alu::xor::<addr::HLIndirect>(core),
+        0xac => alu::xor::<T::H>(core),
+        0xad => alu::xor::<T::L>(core),
+        0xae => alu::xor::<T::HLIndirect>(core),
         0xaf => alu::xor::<addr::A>(core),
 
         // 0xB0
@@ -245,9 +246,9 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0xb1 => alu::or::<addr::C>(core),
         0xb2 => alu::or::<addr::D>(core),
         0xb3 => alu::or::<addr::E>(core),
-        0xb4 => alu::or::<addr::H>(core),
-        0xb5 => alu::or::<addr::L>(core),
-        0xb6 => alu::or::<addr::HLIndirect>(core),
+        0xb4 => alu::or::<T::H>(core),
+        0xb5 => alu::or::<T::L>(core),
+        0xb6 => alu::or::<T::HLIndirect>(core),
         0xb7 => alu::or::<addr::A>(core),
 
         // 0xB8
@@ -255,9 +256,9 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0xb9 => alu::cp::<addr::C>(core),
         0xba => alu::cp::<addr::D>(core),
         0xbb => alu::cp::<addr::E>(core),
-        0xbc => alu::cp::<addr::H>(core),
-        0xbd => alu::cp::<addr::L>(core),
-        0xbe => alu::cp::<addr::HLIndirect>(core),
+        0xbc => alu::cp::<T::H>(core),
+        0xbd => alu::cp::<T::L>(core),
+        0xbe => alu::cp::<T::HLIndirect>(core),
         0xbf => alu::cp::<addr::A>(core),
 
         // Page 3: Misc Ops 2
@@ -277,10 +278,10 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0xc9 => control::ret(core),
         0xd1 => load::pop::<addr::DE>(core),
         0xd9 => misc::exx(core),
-        0xe1 => load::pop::<addr::HL>(core),
-        0xe9 => control::jp_hl(core),
+        0xe1 => load::pop::<T::HL>(core),
+        0xe9 => control::jp_indirect::<T::HL>(core),
         0xf1 => load::pop::<addr::AF>(core),
-        0xf9 => load::ld_sp_hl(core),
+        0xf9 => load::ld_sp::<T::HL>(core),
 
         // +0x02 / 0x0a
         0xc2 => control::jp_conditional::<cond::NZ>(core),
@@ -294,7 +295,13 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
 
         // +0x03 / 0x0b
         0xc3 => control::jp(core),
-        0xcb => prefix_cb(core),
+        0xcb => {
+            if T::INDEXED {
+                todo!("Indexed CB prefix instructions");
+            }
+
+            prefix_cb(core);
+        }
         0xd3 => load::out_n(core),
         0xdb => load::in_n(core),
         0xf3 => misc::di(core),
@@ -310,9 +317,17 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0xc5 => load::push::<addr::BC>(core),
         0xcd => control::call(core),
         0xd5 => load::push::<addr::DE>(core),
-        0xe5 => load::push::<addr::HL>(core),
+        0xdd => {
+            // TODO: 'De-bounce' instructions with multiple prefixes to prevent stack overflows
+            dispatch::<RegisterSetIX>(core);
+        }
+        0xe5 => load::push::<T::HL>(core),
         0xed => prefix_ed(core),
         0xf5 => load::push::<addr::AF>(core),
+        0xfd => {
+            // TODO: 'De-bounce' instructions with multiple prefixes to prevent stack overflows
+            dispatch::<RegisterSetIY>(core);
+        }
 
         // +0x06 / 0x0e
         0xc6 => alu::add::<addr::Immediate>(core),

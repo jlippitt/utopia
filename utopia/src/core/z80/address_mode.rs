@@ -48,6 +48,8 @@ macro_rules! reg8_high {
 reg8_high!(B, bc);
 reg8_high!(D, de);
 reg8_high!(H, hl);
+reg8_high!(IXH, ix);
+reg8_high!(IYH, iy);
 
 macro_rules! reg8_low {
     ($name:ident, $field:ident) => {
@@ -72,6 +74,8 @@ macro_rules! reg8_low {
 reg8_low!(C, bc);
 reg8_low!(E, de);
 reg8_low!(L, hl);
+reg8_low!(IXL, ix);
+reg8_low!(IYL, iy);
 
 pub struct AF;
 
@@ -130,6 +134,8 @@ reg16!(BC, bc);
 reg16!(DE, de);
 reg16!(HL, hl);
 reg16!(SP, sp);
+reg16!(IX, ix);
+reg16!(IY, iy);
 
 macro_rules! reg16_indirect {
     ($name:ident, $display_name:expr, $field:ident) => {
@@ -209,3 +215,33 @@ impl WriteAddress<u16> for Absolute {
         core.write(address.wrapping_add(1), (value >> 8) as u8);
     }
 }
+
+macro_rules! reg16_indexed {
+    ($name:ident, $display_name:expr, $field:ident) => {
+        pub struct $name;
+
+        impl ReadAddress<u8> for $name {
+            const NAME: &'static str = $display_name;
+
+            fn read(core: &mut Core<impl Bus>) -> u8 {
+                let offset = core.next_byte() as i8 as i16 as u16;
+                let value = core.read(core.$field.wrapping_add(offset));
+                // TODO: Sometimes this will be less than 5 (e.g. if there is a simultaneous memory access)
+                core.idle(5);
+                value
+            }
+        }
+
+        impl WriteAddress<u8> for $name {
+            fn write(core: &mut Core<impl Bus>, value: u8) {
+                let offset = core.next_byte() as i8 as i16 as u16;
+                core.write(core.$field.wrapping_add(offset), value);
+                // TODO: Sometimes this will be less than 5 (e.g. if there is a simultaneous memory access)
+                core.idle(5);
+            }
+        }
+    };
+}
+
+reg16_indexed!(IXIndexed, "(IX+i8)", ix);
+reg16_indexed!(IYIndexed, "(IY+i8)", iy);
