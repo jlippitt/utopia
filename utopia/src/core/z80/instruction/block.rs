@@ -1,3 +1,4 @@
+use super::super::address_mode::{ReadAddress, WriteAddress, B};
 use super::super::{Bus, Core};
 use tracing::trace;
 
@@ -74,8 +75,8 @@ fn ld<const INC: bool>(core: &mut Core<impl Bus>) -> bool {
 fn out<const INC: bool>(core: &mut Core<impl Bus>) -> bool {
     core.idle(1);
 
-    let counter = ((core.bc >> 8) as u8).wrapping_sub(1);
-    core.bc = (core.bc & 0xff) | ((counter as u16) << 8);
+    let counter = B::read(core).wrapping_sub(1);
+    B::write(core, counter);
 
     let value = core.read(core.hl);
     core.write_port(core.bc, value);

@@ -1,3 +1,4 @@
+use super::super::address_mode::{ReadAddress, WriteAddress, B};
 use super::super::condition::Condition;
 use super::super::{Bus, Core};
 use tracing::trace;
@@ -29,7 +30,7 @@ pub fn jp_conditional<Cond: Condition>(core: &mut Core<impl Bus>) {
 pub fn jr(core: &mut Core<impl Bus>) {
     trace!("JR PC+i8");
     let offset = core.next_byte() as i8;
-    core.idle(1);
+    core.idle(5);
     core.pc = (core.pc as i16).wrapping_add(offset as i16) as u16;
 }
 
@@ -39,7 +40,25 @@ pub fn jr_conditional<Cond: Condition>(core: &mut Core<impl Bus>) {
 
     if Cond::test(&core.flags) {
         trace!("Branch taken");
-        core.idle(1);
+        core.idle(5);
+        core.pc = (core.pc as i16).wrapping_add(offset as i16) as u16;
+    } else {
+        trace!("Branch not taken");
+    }
+}
+
+pub fn djnz(core: &mut Core<impl Bus>) {
+    trace!("DJNZ PC+i8");
+
+    core.idle(1);
+    let counter = B::read(core).wrapping_sub(1);
+    B::write(core, counter);
+
+    let offset = core.next_byte() as i8;
+
+    if counter != 0 {
+        trace!("Branch taken");
+        core.idle(5);
         core.pc = (core.pc as i16).wrapping_add(offset as i16) as u16;
     } else {
         trace!("Branch not taken");
