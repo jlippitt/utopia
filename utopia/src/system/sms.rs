@@ -4,6 +4,9 @@ use crate::util::mirror::Mirror;
 use std::fmt;
 use std::marker::PhantomData;
 use tracing::{trace, warn};
+use vdp::Vdp;
+
+mod vdp;
 
 pub struct System<T: MemoryMapper + 'static> {
     _phantom: PhantomData<T>,
@@ -68,9 +71,11 @@ impl crate::Instance for Instance {
 
 pub struct Bus {
     cycles: u64,
+    mdr: u8,
     page_offset: [usize; 3],
     rom: Mirror<Box<[u8]>>,
     ram: Mirror<Box<[u8]>>,
+    vdp: Vdp,
 }
 
 impl Bus {
@@ -79,9 +84,11 @@ impl Bus {
     pub fn new(rom_data: Vec<u8>) -> Self {
         Self {
             cycles: 0,
+            mdr: 0,
             page_offset: [0, 16384, 32768],
             rom: rom_data.into_boxed_slice().into(),
             ram: vec![0; Self::RAM_SIZE].into_boxed_slice().into(),
+            vdp: Vdp::new(),
         }
     }
 
@@ -108,20 +115,21 @@ impl z80::Bus for Bus {
 
     fn fetch(&mut self, address: u16) -> u8 {
         self.cycles += 2;
-        let value = self.read_memory(address);
+        self.mdr = self.read_memory(address);
         self.cycles += 2;
-        value
+        self.mdr
     }
 
     fn read(&mut self, address: u16) -> u8 {
         self.cycles += 2;
-        let value = self.read_memory(address);
+        self.mdr = self.read_memory(address);
         self.cycles += 1;
-        value
+        self.mdr
     }
 
     fn write(&mut self, address: u16, value: u8) {
         self.cycles += 3;
+        self.mdr = value;
 
         match address >> 14 {
             0..=2 => panic!("Write to ROM area"),
@@ -149,21 +157,33 @@ impl z80::Bus for Bus {
     fn read_port(&mut self, address: u16) -> u8 {
         self.cycles += 3;
 
-        let value = match address as u8 {
-            0xc0..=0xff => 0, // TODO: Joypad, Country Codes
-            port => unimplemented!("Port Read: {:02X}", port),
+        self.mdr = match address & 0xc1 {
+            // 0x40 => self.vdp.v_counter(),
+            // 0x41 => self.vdp.h_counter(),
+            // 0x80 => self.vdp.read_data(),
+            // 0x81 => self.vdp.status(),
+            0xc0 | 0xc1 => 0, // TODO: Joypad/Country Code
+            _ => {
+                warn!("Unmapped Port Read: {:02X}", address as u8);
+                self.mdr
+            }
         };
 
         self.cycles += 1;
-        value
+        self.mdr
     }
 
     fn write_port(&mut self, address: u16, value: u8) {
         self.cycles += 4;
+        self.mdr = value;
 
-        match address as u8 {
-            0x7e | 0x7f => (), // TODO: PSG
-            port => warn!("Port Write: {:02X} <= {:02X}", port, value),
+        match address & 0xc1 {
+            0x00 => warn!("TODO: Memory control"),
+            0x01 => warn!("TODO: I/O Control"),
+            0x40 | 0x41 => (), // TODO: PSG
+            0x80 => self.vdp.write_data(value),
+            0x81 => self.vdp.write_command(value),
+            _ => (),
         }
     }
 }
