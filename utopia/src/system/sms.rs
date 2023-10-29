@@ -106,29 +106,34 @@ impl Bus {
             _ => self.ram[address as usize],
         }
     }
+
+    fn step(&mut self, cycles: u64) {
+        self.cycles += cycles;
+        self.vdp.step(cycles);
+    }
 }
 
 impl z80::Bus for Bus {
     fn idle(&mut self, cycles: u64) {
-        self.cycles += cycles;
+        self.step(6 * cycles);
     }
 
     fn fetch(&mut self, address: u16) -> u8 {
-        self.cycles += 2;
+        self.step(12);
         self.mdr = self.read_memory(address);
-        self.cycles += 2;
+        self.step(12);
         self.mdr
     }
 
     fn read(&mut self, address: u16) -> u8 {
-        self.cycles += 2;
+        self.step(12);
         self.mdr = self.read_memory(address);
-        self.cycles += 1;
+        self.step(6);
         self.mdr
     }
 
     fn write(&mut self, address: u16, value: u8) {
-        self.cycles += 3;
+        self.step(18);
         self.mdr = value;
 
         match address >> 14 {
@@ -155,7 +160,7 @@ impl z80::Bus for Bus {
     }
 
     fn read_port(&mut self, address: u16) -> u8 {
-        self.cycles += 3;
+        self.step(18);
 
         self.mdr = match address & 0xc1 {
             // 0x40 => self.vdp.v_counter(),
@@ -169,12 +174,12 @@ impl z80::Bus for Bus {
             }
         };
 
-        self.cycles += 1;
+        self.step(6);
         self.mdr
     }
 
     fn write_port(&mut self, address: u16, value: u8) {
-        self.cycles += 4;
+        self.step(24);
         self.mdr = value;
 
         match address & 0xc1 {
@@ -190,6 +195,12 @@ impl z80::Bus for Bus {
 
 impl fmt::Display for Bus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "T={}", self.cycles)
+        write!(
+            f,
+            "T={} V={} H={}",
+            self.cycles,
+            self.vdp.v_counter(),
+            self.vdp.h_counter()
+        )
     }
 }

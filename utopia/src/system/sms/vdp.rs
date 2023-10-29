@@ -11,22 +11,37 @@ enum Command {
 }
 
 pub struct Vdp {
+    line_cycles: u64,
+    line_counter: u16,
+    vblank_line: u16,
     command: Command,
     address: u16,
     mode_select: u8,
-    vblank_line: u16,
     write_buffer: Option<u8>,
 }
 
 impl Vdp {
+    const TOTAL_LINES: u16 = 262;
+    const CYCLES_PER_LINE: u64 = 1368;
+
     pub fn new() -> Self {
         Self {
+            line_cycles: 0,
+            line_counter: 0,
+            vblank_line: 193,
             command: Command::ReadVram,
             address: 0,
             mode_select: 0,
-            vblank_line: 192,
             write_buffer: None,
         }
+    }
+
+    pub fn v_counter(&self) -> u16 {
+        self.line_counter
+    }
+
+    pub fn h_counter(&self) -> u16 {
+        (self.line_cycles >> 2) as u16
     }
 
     pub fn write_command(&mut self, value: u8) {
@@ -44,6 +59,21 @@ impl Vdp {
 
     pub fn write_data(&mut self, value: u8) {
         trace!("VDP Data: {:02X}", value);
+    }
+
+    pub fn step(&mut self, cycles: u64) {
+        self.line_cycles += cycles;
+
+        while self.line_cycles >= Self::CYCLES_PER_LINE {
+            self.line_cycles -= Self::CYCLES_PER_LINE;
+            self.line_counter += 1;
+
+            if self.line_counter == Self::TOTAL_LINES {
+                self.line_counter = 0;
+            } else if self.line_counter == self.vblank_line {
+                trace!("VBlank Reached: {}", self.line_counter);
+            }
+        }
     }
 
     fn write_register(&mut self, reg: u8, value: u8) {
@@ -76,9 +106,9 @@ impl Vdp {
 
         self.vblank_line = match mode_select & 0b111 {
             0b1001 | 0b1101 => panic!("Invalid video mode: {:04b}", mode_select),
-            0b1110 => 240,
-            0b1011 => 224,
-            _ => 192,
+            0b1110 => 241,
+            0b1011 => 225,
+            _ => 193,
         };
 
         trace!("VBlank Line: {}", self.vblank_line);
