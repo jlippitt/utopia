@@ -80,10 +80,14 @@ impl ReadAddress<u16> for AF {
 
     fn read(core: &mut Core<impl Bus>) -> u16 {
         let mut value = (core.a as u16) << 8;
-        value |= if core.flags.z == 0 { 0x80 } else { 0 };
-        value |= if core.flags.n { 0x40 } else { 0 };
-        value |= if core.flags.h { 0x20 } else { 0 };
-        value |= if core.flags.c { 0x10 } else { 0 };
+        value |= core.flags.s as u16 & 0x80;
+        value |= if core.flags.z == 0 { 0x40 } else { 0 };
+        value |= core.flags.y as u16 & 0x20;
+        value |= if core.flags.h { 0x10 } else { 0 };
+        value |= core.flags.x as u16 & 0x08;
+        value |= if core.flags.pv { 0x04 } else { 0 };
+        value |= if core.flags.n { 0x02 } else { 0 };
+        value |= if core.flags.c { 0x01 } else { 0 };
         value
     }
 }
@@ -91,10 +95,14 @@ impl ReadAddress<u16> for AF {
 impl WriteAddress<u16> for AF {
     fn write(core: &mut Core<impl Bus>, value: u16) {
         core.a = (value >> 8) as u8;
-        core.flags.z = !(value as u8) & 0x80;
-        core.flags.n = (value & 0x40) != 0;
-        core.flags.h = (value & 0x20) != 0;
-        core.flags.c = (value & 0x10) != 0;
+        core.flags.s = value as u8;
+        core.flags.z = !(value as u8) & 0x40;
+        core.flags.y = value as u8;
+        core.flags.h = (value & 0x10) != 0;
+        core.flags.x = value as u8;
+        core.flags.pv = (value & 0x04) != 0;
+        core.flags.n = (value & 0x02) != 0;
+        core.flags.c = (value & 0x01) != 0;
     }
 }
 
