@@ -293,6 +293,8 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         // +0x03 / 0x0b
         0xc3 => control::jp(core),
         0xcb => prefix_cb(core),
+        0xd3 => load::out_n(core),
+        0xdb => load::in_n(core),
         0xf3 => misc::di(core),
         0xfb => misc::ei(core),
 

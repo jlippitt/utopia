@@ -26,3 +26,15 @@ pub fn push<Addr: ReadAddress<u16>>(core: &mut Core<impl Bus>) {
     let value = Addr::read(core);
     core.push(value);
 }
+
+pub fn in_n(core: &mut Core<impl Bus>) {
+    trace!("IN (n), A");
+    let address = u16::from_le_bytes([core.next_byte(), core.a]);
+    core.a = core.read_port(address);
+}
+
+pub fn out_n(core: &mut Core<impl Bus>) {
+    trace!("OUT (n), A");
+    let address = u16::from_le_bytes([core.next_byte(), core.a]);
+    core.write_port(address, core.a);
+}
