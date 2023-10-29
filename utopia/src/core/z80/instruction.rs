@@ -466,9 +466,13 @@ pub fn prefix_ed(core: &mut Core<impl Bus>) {
         0x46 => misc::im(core, 0),
         0x56 => misc::im(core, 1),
         0x5e => misc::im(core, 2),
+        0xa0 => block::ldi(core),
         0xa3 => block::outi(core),
+        0xa8 => block::ldd(core),
         0xab => block::outd(core),
+        0xb0 => block::ldir(core),
         0xb3 => block::otir(core),
+        0xb8 => block::lddr(core),
         0xbb => block::otdr(core),
         opcode => unimplemented!("Z80 Opcode: ED{:02X}", opcode),
     }
