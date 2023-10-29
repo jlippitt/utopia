@@ -3,7 +3,7 @@ use crate::core::z80::{self, Core};
 use crate::util::mirror::Mirror;
 use std::fmt;
 use std::marker::PhantomData;
-use tracing::trace;
+use tracing::{trace, warn};
 
 pub struct System<T: MemoryMapper + 'static> {
     _phantom: PhantomData<T>,
@@ -162,7 +162,7 @@ impl z80::Bus for Bus {
 
         match address as u8 {
             0x7e | 0x7f => (), // TODO: PSG
-            port => unimplemented!("Port Write: {:02X} <= {:02X}", port, value),
+            port => warn!("Port Write: {:02X} <= {:02X}", port, value),
         }
     }
 }
