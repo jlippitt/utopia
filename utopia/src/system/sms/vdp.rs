@@ -11,14 +11,19 @@ enum Command {
     WriteCram = 3,
 }
 
+struct Control {
+    mode_select: u8,
+    frame_irq_enable: bool,
+}
+
 pub struct Vdp {
     line_cycles: u64,
     line_counter: u16,
     vblank_line: u16,
     command: Command,
     address: u16,
-    mode_select: u8,
     write_buffer: Option<u8>,
+    ctrl: Control,
     interrupt: Interrupt,
 }
 
@@ -33,7 +38,10 @@ impl Vdp {
             vblank_line: 193,
             command: Command::ReadVram,
             address: 0,
-            mode_select: 0,
+            ctrl: Control {
+                mode_select: 0,
+                frame_irq_enable: false,
+            },
             write_buffer: None,
             interrupt,
         }
@@ -84,7 +92,7 @@ impl Vdp {
 
             if self.line_counter == Self::TOTAL_LINES {
                 self.line_counter = 0;
-            } else if self.line_counter == self.vblank_line {
+            } else if self.line_counter == self.vblank_line && self.ctrl.frame_irq_enable {
                 self.interrupt.raise(InterruptType::FrameIrq);
             }
         }
@@ -96,12 +104,15 @@ impl Vdp {
         match reg {
             0x00 => {
                 self.update_mode(
-                    (self.mode_select & 0b0101) | (value & 0b0010) | ((value & 0b0100) << 1),
+                    (self.ctrl.mode_select & 0b0101) | (value & 0b0010) | ((value & 0b0100) << 1),
                 );
             }
             0x01 => {
+                self.ctrl.frame_irq_enable = (value & 0x20) != 0;
+                trace!("Frame IRQ Enable: {}", self.ctrl.frame_irq_enable);
+
                 self.update_mode(
-                    (self.mode_select & 0b1010)
+                    (self.ctrl.mode_select & 0b1010)
                         | ((value & 0b1_0000) >> 4)
                         | ((value & 0b1000) >> 1),
                 );
@@ -111,8 +122,8 @@ impl Vdp {
     }
 
     fn update_mode(&mut self, mode_select: u8) {
-        self.mode_select = mode_select;
-        trace!("Mode Select: {:04b}", self.mode_select);
+        self.ctrl.mode_select = mode_select;
+        trace!("Mode Select: {:04b}", self.ctrl.mode_select);
 
         if (mode_select & 0b1000) == 0 {
             unimplemented!("TMS9918 Modes");
