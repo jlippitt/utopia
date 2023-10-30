@@ -27,6 +27,7 @@ impl WriteAddress<u8> for A {
 
 macro_rules! reg8_high {
     ($name:ident, $field:ident) => {
+        #[allow(clippy::upper_case_acronyms)]
         pub struct $name;
 
         impl ReadAddress<u8> for $name {
@@ -53,6 +54,7 @@ reg8_high!(IYH, iy);
 
 macro_rules! reg8_low {
     ($name:ident, $field:ident) => {
+        #[allow(clippy::upper_case_acronyms)]
         pub struct $name;
 
         impl ReadAddress<u8> for $name {
