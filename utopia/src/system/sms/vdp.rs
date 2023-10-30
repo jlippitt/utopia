@@ -126,7 +126,9 @@ impl Vdp {
         trace!("Mode Select: {:04b}", self.ctrl.mode_select);
 
         if (mode_select & 0b1000) == 0 {
-            unimplemented!("TMS9918 Modes");
+            warn!("TMS9918 Modes not yet implemented");
+            self.vblank_line = 193;
+            return;
         }
 
         self.vblank_line = match mode_select & 0b111 {
