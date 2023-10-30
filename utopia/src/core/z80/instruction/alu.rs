@@ -101,16 +101,50 @@ pub fn dec<Addr: WriteAddress<u8>>(core: &mut Core<impl Bus>) {
 
 pub fn add16<Lhs: WriteAddress<u16>, Rhs: ReadAddress<u16>>(core: &mut Core<impl Bus>) {
     trace!("ADD {}, {}", Lhs::NAME, Rhs::NAME);
-    core.idle(1);
-    let rhs = Rhs::read(core);
+    core.idle(7);
     let lhs = Lhs::read(core);
+    let rhs = Rhs::read(core);
     let result = lhs.wrapping_add(rhs);
     let carries = lhs ^ rhs ^ result;
     let overflow = (lhs ^ result) & (rhs ^ result);
     Lhs::write(core, result);
+    core.flags.h = (carries & 0x1000) != 0;
     core.flags.n = false;
     core.flags.c = ((carries ^ overflow) & 0x8000) != 0;
+}
+
+pub fn adc16<Rhs: ReadAddress<u16>>(core: &mut Core<impl Bus>) {
+    trace!("ADC HL, {}", Rhs::NAME);
+    core.idle(7);
+    let lhs = core.hl;
+    let rhs = Rhs::read(core);
+    let result = lhs.wrapping_add(rhs).wrapping_add(core.flags.c as u16);
+    let carries = lhs ^ rhs ^ result;
+    let overflow = (lhs ^ result) & (rhs ^ result);
+    core.hl = result;
+    core.flags.s = (result >> 8) as u8;
+    core.flags.z = ((result >> 8) as u8) | result as u8;
     core.flags.h = (carries & 0x1000) != 0;
+    core.flags.pv = (overflow & 0x8000) != 0;
+    core.flags.n = false;
+    core.flags.c = ((carries ^ overflow) & 0x8000) != 0;
+}
+
+pub fn sbc16<Rhs: ReadAddress<u16>>(core: &mut Core<impl Bus>) {
+    trace!("SBC HL, {}", Rhs::NAME);
+    core.idle(7);
+    let lhs = core.hl;
+    let rhs = Rhs::read(core);
+    let result = lhs.wrapping_sub(rhs).wrapping_sub(core.flags.c as u16);
+    let carries = lhs ^ rhs ^ result;
+    let overflow = (lhs ^ result) & (lhs ^ rhs);
+    core.hl = result;
+    core.flags.s = (result >> 8) as u8;
+    core.flags.z = ((result >> 8) as u8) | result as u8;
+    core.flags.h = (carries & 0x1000) != 0;
+    core.flags.pv = (overflow & 0x8000) != 0;
+    core.flags.n = false;
+    core.flags.c = ((carries ^ overflow) & 0x8000) != 0;
 }
 
 pub fn inc16<Addr: WriteAddress<u16>>(core: &mut Core<impl Bus>) {

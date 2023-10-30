@@ -481,18 +481,40 @@ fn prefix_cb(core: &mut Core<impl Bus>) {
 }
 
 pub fn prefix_ed(core: &mut Core<impl Bus>) {
+    use super::address_mode as addr;
+
     match core.fetch() {
+        // Page 1
+
+        // +0x02 / +0x0a
+        0x42 => alu::sbc16::<addr::BC>(core),
+        0x4a => alu::adc16::<addr::BC>(core),
+        0x52 => alu::sbc16::<addr::DE>(core),
+        0x5a => alu::adc16::<addr::DE>(core),
+        0x62 => alu::sbc16::<addr::HL>(core),
+        0x6a => alu::adc16::<addr::HL>(core),
+        0x72 => alu::sbc16::<addr::SP>(core),
+        0x7a => alu::adc16::<addr::SP>(core),
+
+        // +0x06 / +0x0e
         0x46 => misc::im(core, 0),
         0x56 => misc::im(core, 1),
         0x5e => misc::im(core, 2),
+
+        // Page 2
+
+        // +0x00 / +0x08
         0xa0 => block::ldi(core),
-        0xa3 => block::outi(core),
         0xa8 => block::ldd(core),
-        0xab => block::outd(core),
         0xb0 => block::ldir(core),
-        0xb3 => block::otir(core),
         0xb8 => block::lddr(core),
+
+        // +0x03 / +0x0b
+        0xa3 => block::outi(core),
+        0xab => block::outd(core),
+        0xb3 => block::otir(core),
         0xbb => block::otdr(core),
+
         opcode => unimplemented!("Z80 Opcode: ED{:02X}", opcode),
     }
 }
