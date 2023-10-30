@@ -41,6 +41,11 @@ pub fn exx(core: &mut Core<impl Bus>) {
     std::mem::swap(&mut core.hl, &mut core.hl_banked);
 }
 
+pub fn ex_de_hl(core: &mut Core<impl Bus>) {
+    trace!("EX DE, HL");
+    std::mem::swap(&mut core.de, &mut core.hl);
+}
+
 pub fn scf(core: &mut Core<impl Bus>) {
     trace!("SCF");
     core.flags.n = false;

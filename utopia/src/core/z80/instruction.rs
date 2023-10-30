@@ -304,6 +304,7 @@ pub fn dispatch<T: RegisterSet>(core: &mut Core<impl Bus>) {
         }
         0xd3 => load::out_n(core),
         0xdb => load::in_n(core),
+        0xeb => misc::ex_de_hl(core),
         0xf3 => misc::di(core),
         0xfb => misc::ei(core),
 
