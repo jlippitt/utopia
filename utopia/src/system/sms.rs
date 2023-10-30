@@ -172,11 +172,11 @@ impl z80::Bus for Bus {
             0x40 => self.vdp.v_counter() as u8,
             // 0x41 => (self.vdp.h_counter() >> 1) as u8,
             // 0x80 => self.vdp.read_data(),
-            // 0x81 => self.vdp.read_control(),
+            0x81 => self.vdp.read_control(),
             0xc0 | 0xc1 => 0, // TODO: Joypad/Country Code
             _ => {
-                warn!("Unmapped Port Read: {:02X}", address as u8);
-                self.mdr
+                panic!("Unmapped Port Read: {:02X}", address as u8);
+                //self.mdr
             }
         };
 

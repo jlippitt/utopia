@@ -28,16 +28,16 @@ impl Interrupt {
         self.inner.get()
     }
 
-    // pub fn has(&self, int_type: InterruptType) -> bool {
-    //     self.inner.get() & (int_type as u8) != 0
-    // }
+    pub fn has(&self, int_type: InterruptType) -> bool {
+        self.inner.get() & (int_type as u8) != 0
+    }
 
-    // pub fn clear(&mut self, int_type: InterruptType) {
-    //     let mut value = self.inner.get();
-    //     value &= !(int_type as u8);
-    //     self.inner.set(value);
-    //     trace!("Interrupt Cleared: {:?}", int_type);
-    // }
+    pub fn clear(&mut self, int_type: InterruptType) {
+        let mut value = self.inner.get();
+        value &= !(int_type as u8);
+        self.inner.set(value);
+        trace!("Interrupt Cleared: {:?}", int_type);
+    }
 
     pub fn raise(&mut self, int_type: InterruptType) {
         let mut value = self.inner.get();

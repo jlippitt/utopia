@@ -47,6 +47,17 @@ impl Vdp {
         (self.line_cycles >> 2) as u16
     }
 
+    pub fn read_control(&mut self) -> u8 {
+        let mut value = 0;
+
+        if self.interrupt.has(InterruptType::FrameIrq) {
+            value |= 0x80;
+            self.interrupt.clear(InterruptType::FrameIrq);
+        }
+
+        value
+    }
+
     pub fn write_control(&mut self, value: u8) {
         if let Some(low) = self.write_buffer.take() {
             self.command = Command::from_u8(value >> 6).unwrap();
