@@ -268,10 +268,10 @@ pub fn dispatch<T: RegisterSet>(core: &mut Core<impl Bus>) {
         0xc8 => control::ret_conditional::<cond::Z>(core),
         0xd0 => control::ret_conditional::<cond::NC>(core),
         0xd8 => control::ret_conditional::<cond::C>(core),
-        //0xe0 => instr::ld::<u8, addr::High, addr::A>(core),
-        //0xe8 => instr::add_sp_i8(core),
-        //0xf0 => instr::ld::<u8, addr::A, addr::High>(core),
-        //0xf8 => instr::ld_hl_sp_i8(core),
+        0xe0 => control::ret_conditional::<cond::PO>(core),
+        0xe8 => control::ret_conditional::<cond::PE>(core),
+        0xf0 => control::ret_conditional::<cond::P>(core),
+        0xf8 => control::ret_conditional::<cond::M>(core),
 
         // +0x01 / 0x09
         0xc1 => load::pop::<addr::BC>(core),
@@ -288,10 +288,10 @@ pub fn dispatch<T: RegisterSet>(core: &mut Core<impl Bus>) {
         0xca => control::jp_conditional::<cond::Z>(core),
         0xd2 => control::jp_conditional::<cond::NC>(core),
         0xda => control::jp_conditional::<cond::C>(core),
-        // 0xe2 => instr::ld::<u8, addr::CIndirect, addr::A>(core),
-        // 0xea => instr::ld::<u8, addr::Absolute, addr::A>(core),
-        // 0xf2 => instr::ld::<u8, addr::A, addr::CIndirect>(core),
-        // 0xfa => instr::ld::<u8, addr::A, addr::Absolute>(core),
+        0xe2 => control::jp_conditional::<cond::PO>(core),
+        0xea => control::jp_conditional::<cond::PE>(core),
+        0xf2 => control::jp_conditional::<cond::P>(core),
+        0xfa => control::jp_conditional::<cond::M>(core),
 
         // +0x03 / 0x0b
         0xc3 => control::jp(core),
@@ -313,6 +313,10 @@ pub fn dispatch<T: RegisterSet>(core: &mut Core<impl Bus>) {
         0xcc => control::call_conditional::<cond::Z>(core),
         0xd4 => control::call_conditional::<cond::NC>(core),
         0xdc => control::call_conditional::<cond::C>(core),
+        0xe4 => control::call_conditional::<cond::PO>(core),
+        0xec => control::call_conditional::<cond::PE>(core),
+        0xf4 => control::call_conditional::<cond::P>(core),
+        0xfc => control::call_conditional::<cond::M>(core),
 
         // +0x05 / 0x0d
         0xc5 => load::push::<addr::BC>(core),

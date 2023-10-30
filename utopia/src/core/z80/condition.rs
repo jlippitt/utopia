@@ -44,3 +44,43 @@ impl Condition for C {
         flags.c
     }
 }
+
+pub struct PO;
+
+impl Condition for PO {
+    const NAME: &'static str = "PO";
+
+    fn test(_flags: &Flags) -> bool {
+        todo!("Parity");
+    }
+}
+
+pub struct PE;
+
+impl Condition for PE {
+    const NAME: &'static str = "PE";
+
+    fn test(_flags: &Flags) -> bool {
+        todo!("Parity");
+    }
+}
+
+pub struct P;
+
+impl Condition for P {
+    const NAME: &'static str = "P";
+
+    fn test(flags: &Flags) -> bool {
+        (flags.s & 0x80) == 0
+    }
+}
+
+pub struct M;
+
+impl Condition for M {
+    const NAME: &'static str = "M";
+
+    fn test(flags: &Flags) -> bool {
+        (flags.s & 0x80) != 0
+    }
+}
