@@ -143,10 +143,15 @@ pub trait Reader {
     fn read_be<T: Value>(&self, address: u32) -> T {
         let self_size = mem::size_of::<Self::Value>();
         let other_size = mem::size_of::<T>();
-        debug_assert!((self_size % other_size) == 0);
-        let flip_mask = self_size - other_size;
-        let shift = (address as usize & flip_mask ^ flip_mask) << 3;
-        T::from_truncate(self.read_register(address & !(self_size as u32 - 1)) >> shift)
+
+        T::from_truncate(if self_size == other_size {
+            self.read_register(address)
+        } else {
+            debug_assert!((self_size % other_size) == 0);
+            let flip_mask = self_size - other_size;
+            let shift = (address as usize & flip_mask ^ flip_mask) << 3;
+            self.read_register(address & !(self_size as u32 - 1)) >> shift
+        })
     }
 }
 
@@ -162,15 +167,19 @@ pub trait Writer: Reader {
     ) -> Self::SideEffect {
         let self_size = mem::size_of::<Self::Value>();
         let other_size = mem::size_of::<T>();
-        debug_assert!((self_size % other_size) == 0);
-        let flip_mask = self_size - other_size;
-        let shift = (address as usize & flip_mask ^ flip_mask) << 3;
-        let shifted_value = <T as AsPrimitive<Self::Value>>::as_(value) << shift;
-        let value_mask = T::max_value() << shift;
-        self.write_register(
-            address & !(self_size as u32 - 1),
-            Masked::new(shifted_value, value_mask.as_()),
-        )
+
+        let masked = if self_size == other_size {
+            Masked::new(value.as_(), Self::Value::max_value())
+        } else {
+            debug_assert!((self_size % other_size) == 0);
+            let flip_mask = self_size - other_size;
+            let shift = (address as usize & flip_mask ^ flip_mask) << 3;
+            let shifted_value = <T as AsPrimitive<Self::Value>>::as_(value) << shift;
+            let value_mask = T::max_value() << shift;
+            Masked::new(shifted_value, value_mask.as_())
+        };
+
+        self.write_register(address & !(self_size as u32 - 1), masked)
     }
 }
 
