@@ -20,7 +20,9 @@ impl MipsInterface {
 }
 
 impl Reader for MipsInterface {
-    fn read_u32(&self, address: u32) -> u32 {
+    type Value = u32;
+
+    fn read_register(&self, address: u32) -> u32 {
         match (address >> 2) & 3 {
             0 => self.mode.into(),
             1 => MI_VERSION,
@@ -34,7 +36,7 @@ impl Reader for MipsInterface {
 impl Writer for MipsInterface {
     type SideEffect = ();
 
-    fn write_u32(&mut self, address: u32, value: Masked<u32>) {
+    fn write_register(&mut self, address: u32, value: Masked<u32>) {
         match (address >> 2) & 3 {
             0 => {
                 let input = value.apply(self.mode.init_length());

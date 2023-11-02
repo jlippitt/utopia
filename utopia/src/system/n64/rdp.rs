@@ -80,7 +80,9 @@ impl<T: Deref<Target = RspRegisters>> CommandRegisters<T> {
 }
 
 impl<T: Deref<Target = RspRegisters>> Reader for CommandRegisters<T> {
-    fn read_u32(&self, address: u32) -> u32 {
+    type Value = u32;
+
+    fn read_register(&self, address: u32) -> u32 {
         self.regs.get(8 + (address as usize >> 2))
     }
 }
@@ -90,7 +92,7 @@ impl<T: Deref<Target = RspRegisters> + DerefMut<Target = RspRegisters>> Writer
 {
     type SideEffect = Option<DmaRequest>;
 
-    fn write_u32(&mut self, address: u32, value: Masked<u32>) -> Option<DmaRequest> {
+    fn write_register(&mut self, address: u32, value: Masked<u32>) -> Option<DmaRequest> {
         self.regs.set(8 + (address as usize >> 2), value);
 
         match self.regs.take_dma_type() {

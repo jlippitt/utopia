@@ -1,5 +1,6 @@
 use bytemuck::Pod;
-use num_traits::{AsPrimitive, PrimInt};
+use num_traits::{AsPrimitive, Bounded, PrimInt};
+use std::mem;
 use std::ops::{Deref, DerefMut};
 use tracing::trace;
 
@@ -135,56 +136,65 @@ impl From<&[u8]> for Memory {
 }
 
 pub trait Reader {
-    fn read_u32(&self, address: u32) -> u32;
+    type Value: Value;
+
+    fn read_register(&self, address: u32) -> Self::Value;
+
+    fn read_be<T: Value>(&self, address: u32) -> T {
+        let self_size = mem::size_of::<Self::Value>();
+        let other_size = mem::size_of::<T>();
+        debug_assert!((self_size % other_size) == 0);
+        let flip_mask = self_size - other_size;
+        let shift = (address as usize & flip_mask ^ flip_mask) << 3;
+        T::from_truncate(self.read_register(address & !(self_size as u32 - 1)) >> shift)
+    }
 }
 
 pub trait Writer: Reader {
     type SideEffect;
-    fn write_u32(&mut self, address: u32, value: Masked<u32>) -> Self::SideEffect;
-}
 
-pub trait Value: PrimInt + AsPrimitive<u8> + Pod + std::fmt::UpperHex {
-    fn read_register_be(page: &impl Reader, address: u32) -> Self;
-    fn write_register_be<T: Writer>(page: &mut T, address: u32, value: Self) -> T::SideEffect;
-}
+    fn write_register(&mut self, address: u32, value: Masked<Self::Value>) -> Self::SideEffect;
 
-impl Value for u8 {
-    fn read_register_be(page: &impl Reader, address: u32) -> Self {
-        let shift = (address & 3 ^ 3) << 3;
-        (page.read_u32(address & !3) >> shift) as u8
-    }
-
-    fn write_register_be<T: Writer>(page: &mut T, address: u32, value: Self) -> T::SideEffect {
-        let shift = (address & 3 ^ 3) << 3;
-        let shifted_value = (value as u32) << shift;
-        let mask = 0xff << shift;
-        page.write_u32(address & !3, Masked::new(shifted_value, mask))
-    }
-}
-
-impl Value for u16 {
-    fn read_register_be(page: &impl Reader, address: u32) -> Self {
-        let shift = (address & 1 ^ 1) << 4;
-        (page.read_u32(address & !1) >> shift) as u16
-    }
-
-    fn write_register_be<T: Writer>(page: &mut T, address: u32, value: Self) -> T::SideEffect {
-        let shift = (address & 1 ^ 1) << 4;
-        let shifted_value = (value as u32) << shift;
-        let mask = 0xffff << shift;
-        page.write_u32(address & !1, Masked::new(shifted_value, mask))
+    fn write_be<T: Value + AsPrimitive<Self::Value>>(
+        &mut self,
+        address: u32,
+        value: T,
+    ) -> Self::SideEffect {
+        let self_size = mem::size_of::<Self::Value>();
+        let other_size = mem::size_of::<T>();
+        debug_assert!((self_size % other_size) == 0);
+        let flip_mask = self_size - other_size;
+        let shift = (address as usize & flip_mask ^ flip_mask) << 3;
+        let shifted_value = <T as AsPrimitive<Self::Value>>::as_(value) << shift;
+        let value_mask = T::max_value() << shift;
+        self.write_register(
+            address & !(self_size as u32 - 1),
+            Masked::new(shifted_value, value_mask.as_()),
+        )
     }
 }
 
-impl Value for u32 {
-    fn read_register_be(page: &impl Reader, address: u32) -> Self {
-        page.read_u32(address)
-    }
-
-    fn write_register_be<T: Writer>(page: &mut T, address: u32, value: Self) -> T::SideEffect {
-        page.write_u32(address, Masked::new(value, 0xffff_ffff))
+pub trait Value:
+    PrimInt
+    + Bounded
+    + AsPrimitive<u8>
+    + AsPrimitive<u16>
+    + AsPrimitive<u32>
+    + Pod
+    + std::fmt::UpperHex
+    + std::fmt::Display
+    + std::fmt::Debug
+{
+    fn from_truncate<T: Value>(other: T) -> Self {
+        unsafe { mem::transmute_copy(&other) }
     }
 }
+
+impl Value for u8 {}
+
+impl Value for u16 {}
+
+impl Value for u32 {}
 
 pub struct Masked<T: Value> {
     value: T,
@@ -236,6 +246,39 @@ mod tests {
     use super::*;
 
     static DATA: &[u8] = &[0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77];
+
+    struct Reg<T: Value> {
+        data: Box<[T]>,
+    }
+
+    impl<T: Value> Reg<T> {
+        fn new(value: &[T]) -> Self {
+            Self {
+                data: Vec::from(value).into_boxed_slice(),
+            }
+        }
+    }
+
+    impl<T: Value> Reader for Reg<T> {
+        type Value = T;
+
+        fn read_register(&self, address: u32) -> T {
+            let shift = mem::size_of::<T>().ilog2();
+            let index = (address >> shift) as usize;
+            println!("{:?} {}", self.data, index);
+            self.data[index]
+        }
+    }
+
+    impl<T: Value> Writer for Reg<T> {
+        type SideEffect = ();
+
+        fn write_register(&mut self, address: u32, value: Masked<T>) {
+            let shift = mem::size_of::<T>().ilog2();
+            let index = (address >> shift) as usize;
+            self.data[index] = value.apply(self.data[index])
+        }
+    }
 
     #[test]
     fn memory_read_write_le_aligned() {
@@ -303,5 +346,41 @@ mod tests {
             memory.deref(),
             &[0xbb, 0x11, 0x22, 0x33, 0x44, 0x88, 0x99, 0xaa]
         );
+    }
+
+    #[test]
+    fn read_register_u32_be() {
+        let reg = Reg::<u32>::new(&[0x00112233, 0x44556677]);
+
+        assert_eq!(reg.read_be::<u32>(0), 0x00112233);
+        assert_eq!(reg.read_be::<u32>(4), 0x44556677);
+
+        assert_eq!(reg.read_be::<u16>(0), 0x0011);
+        assert_eq!(reg.read_be::<u16>(2), 0x2233);
+        assert_eq!(reg.read_be::<u16>(4), 0x4455);
+        assert_eq!(reg.read_be::<u16>(6), 0x6677);
+
+        assert_eq!(reg.read_be::<u8>(0), 0x00);
+        assert_eq!(reg.read_be::<u8>(1), 0x11);
+        assert_eq!(reg.read_be::<u8>(2), 0x22);
+        assert_eq!(reg.read_be::<u8>(3), 0x33);
+        assert_eq!(reg.read_be::<u8>(4), 0x44);
+        assert_eq!(reg.read_be::<u8>(5), 0x55);
+        assert_eq!(reg.read_be::<u8>(6), 0x66);
+        assert_eq!(reg.read_be::<u8>(7), 0x77);
+    }
+
+    #[test]
+    fn write_register_u32_be() {
+        let mut reg = Reg::<u32>::new(&[0x00112233, 0x44556677]);
+
+        reg.write_be::<u32>(4, 0x8899aabb);
+        assert_eq!(reg.read_be::<u32>(4), 0x8899aabb);
+
+        reg.write_be::<u16>(6, 0xccdd);
+        assert_eq!(reg.read_be::<u32>(4), 0x8899ccdd);
+
+        reg.write_be::<u8>(7, 0xee);
+        assert_eq!(reg.read_be::<u32>(4), 0x8899ccee);
     }
 }

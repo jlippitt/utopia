@@ -82,7 +82,9 @@ impl Registers {
 }
 
 impl Reader for Registers {
-    fn read_u32(&self, address: u32) -> u32 {
+    type Value = u32;
+
+    fn read_register(&self, address: u32) -> u32 {
         if address >= 0x0008_0000 {
             // Broadcast area is read-only
             return 0;
@@ -110,7 +112,7 @@ impl Reader for Registers {
 impl Writer for Registers {
     type SideEffect = ();
 
-    fn write_u32(&mut self, address: u32, value: Masked<u32>) {
+    fn write_register(&mut self, address: u32, value: Masked<u32>) {
         let address = address & 0x0000_03ff;
         let index = (address as usize) >> 2;
 
@@ -134,7 +136,9 @@ impl Interface {
 }
 
 impl Reader for Interface {
-    fn read_u32(&self, address: u32) -> u32 {
+    type Value = u32;
+
+    fn read_register(&self, address: u32) -> u32 {
         self.regs[(address as usize) >> 2]
     }
 }
@@ -142,7 +146,7 @@ impl Reader for Interface {
 impl Writer for Interface {
     type SideEffect = ();
 
-    fn write_u32(&mut self, address: u32, value: Masked<u32>) {
+    fn write_register(&mut self, address: u32, value: Masked<u32>) {
         let index = (address as usize) >> 2;
         self.regs[index] = value.apply(self.regs[index]);
         trace!("{}: {:08X}", RI_REGS[index], self.regs[index]);

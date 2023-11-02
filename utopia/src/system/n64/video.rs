@@ -177,7 +177,9 @@ impl VideoInterface {
 }
 
 impl Reader for VideoInterface {
-    fn read_u32(&self, address: u32) -> u32 {
+    type Value = u32;
+
+    fn read_register(&self, address: u32) -> u32 {
         match address {
             0x00 => self.regs.ctrl.into(),
             0x04 => self.regs.origin.into(),
@@ -203,7 +205,7 @@ impl Reader for VideoInterface {
 impl Writer for VideoInterface {
     type SideEffect = ();
 
-    fn write_u32(&mut self, address: u32, value: Masked<u32>) {
+    fn write_register(&mut self, address: u32, value: Masked<u32>) {
         match address {
             0x00 => value.write_reg("VI_CTRL", &mut self.regs.ctrl),
             0x04 => value.write_reg_hex("VI_ORIGIN", &mut self.regs.origin),

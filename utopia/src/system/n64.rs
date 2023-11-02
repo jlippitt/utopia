@@ -1,5 +1,5 @@
 use crate::core::mips::{self, Core, InitialState, NullCp2};
-use crate::util::memory::{Memory, Value};
+use crate::util::memory::{Memory, Reader, Value, Writer};
 use crate::{InstanceOptions, JoypadState, MemoryMapper, Size, SystemOptions, WgpuContext};
 use audio::AudioInterface;
 use interrupt::{CpuInterrupt, RcpInterrupt};
@@ -172,15 +172,18 @@ impl mips::Bus for Bus {
                     T::zero()
                 }
             }
-            0x03f => T::read_register_be(self.rdram.registers(), address & 0x000f_ffff),
+            0x03f => self.rdram.registers().read_be(address & 0x000f_ffff),
             0x040 => self.rsp.read(address & 0x000f_ffff),
-            0x041 => T::read_register_be(&self.rdp.command(self.rsp.regs()), address & 0x000f_ffff),
-            0x043 => T::read_register_be(&self.mi, address & 0x000f_ffff),
-            0x044 => T::read_register_be(&self.vi, address & 0x000f_ffff),
-            0x045 => T::read_register_be(&self.ai, address & 0x000f_ffff),
-            0x046 => T::read_register_be(&self.pi, address & 0x000f_ffff),
-            0x047 => T::read_register_be(self.rdram.interface(), address & 0x000f_ffff),
-            0x048 => T::read_register_be(&self.si, address & 0x000f_ffff),
+            0x041 => self
+                .rdp
+                .command(self.rsp.regs())
+                .read_be(address & 0x000f_ffff),
+            0x043 => self.mi.read_be(address & 0x000f_ffff),
+            0x044 => self.vi.read_be(address & 0x000f_ffff),
+            0x045 => self.ai.read_be(address & 0x000f_ffff),
+            0x046 => self.pi.read_be(address & 0x000f_ffff),
+            0x047 => self.rdram.interface().read_be(address & 0x000f_ffff),
+            0x048 => self.si.read_be(address & 0x000f_ffff),
             0x100..=0x1fb => {
                 if let Some(value) = self.rom.try_read_be(address as usize & 0x0fff_ffff) {
                     value
@@ -201,36 +204,38 @@ impl mips::Bus for Bus {
                     warn!("Unmapped RDRAM write: {:08X} <= {:08X}", address, value);
                 }
             }
-            0x03f => T::write_register_be(self.rdram.registers_mut(), address & 0x000f_ffff, value),
+            0x03f => self
+                .rdram
+                .registers_mut()
+                .write_be(address & 0x000f_ffff, value),
             0x040 => {
                 if let Some(dma_request) = self.rsp.write(address & 0x000f_ffff, value) {
                     self.rsp_dma_transfer(dma_request);
                 }
             }
             0x041 => {
-                if let Some(dma_request) = T::write_register_be(
-                    &mut self.rdp.command_mut(self.rsp.regs_mut()),
-                    address & 0x000f_ffff,
-                    value,
-                ) {
+                if let Some(dma_request) = self
+                    .rdp
+                    .command_mut(self.rsp.regs_mut())
+                    .write_be(address & 0x000f_ffff, value)
+                {
                     self.rdp_dma_transfer(dma_request);
                 }
             }
-            0x043 => T::write_register_be(&mut self.mi, address & 0x000f_ffff, value),
-            0x044 => T::write_register_be(&mut self.vi, address & 0x000f_ffff, value),
-            0x045 => T::write_register_be(&mut self.ai, address & 0x000f_ffff, value),
+            0x043 => self.mi.write_be(address & 0x000f_ffff, value),
+            0x044 => self.vi.write_be(address & 0x000f_ffff, value),
+            0x045 => self.ai.write_be(address & 0x000f_ffff, value),
             0x046 => {
-                if let Some(dma_request) =
-                    T::write_register_be(&mut self.pi, address & 0x000f_ffff, value)
-                {
+                if let Some(dma_request) = self.pi.write_be(address & 0x000f_ffff, value) {
                     self.pi_dma_transfer(dma_request);
                 }
             }
-            0x047 => T::write_register_be(self.rdram.interface_mut(), address & 0x000f_ffff, value),
+            0x047 => self
+                .rdram
+                .interface_mut()
+                .write_be(address & 0x000f_ffff, value),
             0x048 => {
-                if let Some(dma_request) =
-                    T::write_register_be(&mut self.si, address & 0x000f_ffff, value)
-                {
+                if let Some(dma_request) = self.si.write_be(address & 0x000f_ffff, value) {
                     self.si_dma_transfer(dma_request);
                 }
             }

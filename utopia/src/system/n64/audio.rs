@@ -54,7 +54,9 @@ impl AudioInterface {
 }
 
 impl Reader for AudioInterface {
-    fn read_u32(&self, address: u32) -> u32 {
+    type Value = u32;
+
+    fn read_register(&self, address: u32) -> u32 {
         match address {
             0x04 => {
                 // AI_LENGTH
@@ -91,7 +93,7 @@ impl Reader for AudioInterface {
 impl Writer for AudioInterface {
     type SideEffect = ();
 
-    fn write_u32(&mut self, address: u32, value: Masked<u32>) {
+    fn write_register(&mut self, address: u32, value: Masked<u32>) {
         match address {
             0x00 => {
                 self.dram_addr = value.apply(self.dram_addr) & 0x00ff_fff8;

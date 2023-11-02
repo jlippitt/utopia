@@ -57,7 +57,7 @@ impl Rsp {
             // Mirrored every MEM_SIZE bytes
             mem.read_be(address as usize & (mem.len() - 1))
         } else {
-            T::read_register_be(self, address)
+            self.read_be(address)
         }
     }
 
@@ -68,7 +68,7 @@ impl Rsp {
             mem.write_be(address as usize & (mem.len() - 1), value);
             None
         } else {
-            T::write_register_be(self, address, value)
+            self.write_be(address, value)
         }
     }
 
@@ -95,7 +95,9 @@ impl Rsp {
 }
 
 impl Reader for Rsp {
-    fn read_u32(&self, address: u32) -> u32 {
+    type Value = u32;
+
+    fn read_register(&self, address: u32) -> u32 {
         if address < 0x0004_0020 {
             self.core.cp0().regs().get((address & 0x1f) as usize >> 2)
         } else if address == 0x0008_0000 {
@@ -109,7 +111,7 @@ impl Reader for Rsp {
 impl Writer for Rsp {
     type SideEffect = Option<DmaRequest>;
 
-    fn write_u32(&mut self, address: u32, value: Masked<u32>) -> Option<DmaRequest> {
+    fn write_register(&mut self, address: u32, value: Masked<u32>) -> Option<DmaRequest> {
         if address < 0x0004_0020 {
             let regs = self.core.cp0_mut().regs_mut();
 

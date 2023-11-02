@@ -57,7 +57,9 @@ impl PeripheralInterface {
 }
 
 impl Reader for PeripheralInterface {
-    fn read_u32(&self, address: u32) -> u32 {
+    type Value = u32;
+
+    fn read_register(&self, address: u32) -> u32 {
         let index = (address as usize) >> 2;
 
         match index {
@@ -76,7 +78,7 @@ impl Reader for PeripheralInterface {
 impl Writer for PeripheralInterface {
     type SideEffect = Option<DmaRequest>;
 
-    fn write_u32(&mut self, address: u32, value: Masked<u32>) -> Option<DmaRequest> {
+    fn write_register(&mut self, address: u32, value: Masked<u32>) -> Option<DmaRequest> {
         let index = (address as usize) >> 2;
 
         match index {

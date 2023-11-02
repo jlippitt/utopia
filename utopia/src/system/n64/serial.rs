@@ -38,7 +38,9 @@ impl SerialInterface {
 }
 
 impl Reader for SerialInterface {
-    fn read_u32(&self, address: u32) -> u32 {
+    type Value = u32;
+
+    fn read_register(&self, address: u32) -> u32 {
         match address {
             0x00 => self.dram_addr,
             0x18 => {
@@ -54,7 +56,7 @@ impl Reader for SerialInterface {
 impl Writer for SerialInterface {
     type SideEffect = Option<DmaRequest>;
 
-    fn write_u32(&mut self, address: u32, value: Masked<u32>) -> Option<DmaRequest> {
+    fn write_register(&mut self, address: u32, value: Masked<u32>) -> Option<DmaRequest> {
         match address {
             0x00 => value.write_reg_hex("SI_DRAM_ADDR", &mut self.dram_addr),
             0x04 => {
