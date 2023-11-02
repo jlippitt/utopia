@@ -14,24 +14,33 @@ impl Memory {
         }
     }
 
-    pub fn read<T: Value>(&self, address: usize) -> T {
+    pub fn read_le<T: Value>(&self, address: usize) -> T {
         let index = address >> std::mem::size_of::<T>().ilog2();
         let slice = bytemuck::cast_slice::<u8, T>(&self.data);
-        slice[index].swap_bytes()
+        slice[index]
     }
 
-    pub fn try_read<T: Value>(&self, address: usize) -> Option<T> {
+    pub fn read_be<T: Value>(&self, address: usize) -> T {
+        self.read_le::<T>(address).swap_bytes()
+    }
+
+    pub fn try_read_le<T: Value>(&self, address: usize) -> Option<T> {
         let index = address >> std::mem::size_of::<T>().ilog2();
         let slice = bytemuck::cast_slice::<u8, T>(&self.data);
-        slice.get(index).map(|value| value.swap_bytes())
+        slice.get(index).cloned()
     }
 
-    pub fn read_unaligned<T: Value>(&self, address: usize, mirror: Option<usize>) -> T {
+    pub fn try_read_be<T: Value>(&self, address: usize) -> Option<T> {
+        self.try_read_le::<T>(address)
+            .map(|value| value.swap_bytes())
+    }
+
+    pub fn read_be_unaligned<T: Value>(&self, address: usize, mirror: Option<usize>) -> T {
         let size = std::mem::size_of::<T>();
         let align_mask = size - 1;
 
         if (address & align_mask) == 0 {
-            return self.read(address);
+            return self.read_be(address);
         }
 
         let mirror_mask = mirror.unwrap_or(usize::MAX);
@@ -47,28 +56,41 @@ impl Memory {
         value
     }
 
-    pub fn write<T: Value>(&mut self, address: usize, value: T) {
+    pub fn write_le<T: Value>(&mut self, address: usize, value: T) {
         let index = address >> std::mem::size_of::<T>().ilog2();
         let slice = bytemuck::cast_slice_mut::<u8, T>(&mut self.data);
-        slice[index] = value.swap_bytes();
+        slice[index] = value
     }
 
-    pub fn try_write<T: Value>(&mut self, address: usize, value: T) -> bool {
+    pub fn write_be<T: Value>(&mut self, address: usize, value: T) {
+        self.write_le(address, value.swap_bytes())
+    }
+
+    pub fn try_write_le<T: Value>(&mut self, address: usize, value: T) -> bool {
         let index = address >> std::mem::size_of::<T>().ilog2();
         let slice = bytemuck::cast_slice_mut::<u8, T>(&mut self.data);
 
         slice.get_mut(index).is_some_and(|element| {
-            *element = value.swap_bytes();
+            *element = value;
             true
         })
     }
 
-    pub fn write_unaligned<T: Value>(&mut self, address: usize, value: T, mirror: Option<usize>) {
+    pub fn try_write_be<T: Value>(&mut self, address: usize, value: T) -> bool {
+        self.try_write_le(address, value.swap_bytes())
+    }
+
+    pub fn write_be_unaligned<T: Value>(
+        &mut self,
+        address: usize,
+        value: T,
+        mirror: Option<usize>,
+    ) {
         let size = std::mem::size_of::<T>();
         let align_mask = size - 1;
 
         if (address & align_mask) == 0 {
-            return self.write(address, value);
+            return self.write_be(address, value);
         }
 
         let mirror_mask = mirror.unwrap_or(usize::MAX);
@@ -122,17 +144,17 @@ pub trait Writer: Reader {
 }
 
 pub trait Value: PrimInt + AsPrimitive<u8> + Pod + std::fmt::UpperHex {
-    fn read_register(page: &impl Reader, address: u32) -> Self;
-    fn write_register<T: Writer>(page: &mut T, address: u32, value: Self) -> T::SideEffect;
+    fn read_register_be(page: &impl Reader, address: u32) -> Self;
+    fn write_register_be<T: Writer>(page: &mut T, address: u32, value: Self) -> T::SideEffect;
 }
 
 impl Value for u8 {
-    fn read_register(page: &impl Reader, address: u32) -> Self {
+    fn read_register_be(page: &impl Reader, address: u32) -> Self {
         let shift = (address & 3 ^ 3) << 3;
         (page.read_u32(address & !3) >> shift) as u8
     }
 
-    fn write_register<T: Writer>(page: &mut T, address: u32, value: Self) -> T::SideEffect {
+    fn write_register_be<T: Writer>(page: &mut T, address: u32, value: Self) -> T::SideEffect {
         let shift = (address & 3 ^ 3) << 3;
         let shifted_value = (value as u32) << shift;
         let mask = 0xff << shift;
@@ -141,12 +163,12 @@ impl Value for u8 {
 }
 
 impl Value for u16 {
-    fn read_register(page: &impl Reader, address: u32) -> Self {
+    fn read_register_be(page: &impl Reader, address: u32) -> Self {
         let shift = (address & 1 ^ 1) << 4;
         (page.read_u32(address & !1) >> shift) as u16
     }
 
-    fn write_register<T: Writer>(page: &mut T, address: u32, value: Self) -> T::SideEffect {
+    fn write_register_be<T: Writer>(page: &mut T, address: u32, value: Self) -> T::SideEffect {
         let shift = (address & 1 ^ 1) << 4;
         let shifted_value = (value as u32) << shift;
         let mask = 0xffff << shift;
@@ -155,11 +177,11 @@ impl Value for u16 {
 }
 
 impl Value for u32 {
-    fn read_register(page: &impl Reader, address: u32) -> Self {
+    fn read_register_be(page: &impl Reader, address: u32) -> Self {
         page.read_u32(address)
     }
 
-    fn write_register<T: Writer>(page: &mut T, address: u32, value: Self) -> T::SideEffect {
+    fn write_register_be<T: Writer>(page: &mut T, address: u32, value: Self) -> T::SideEffect {
         page.write_u32(address, Masked::new(value, 0xffff_ffff))
     }
 }
@@ -216,16 +238,16 @@ mod tests {
     static DATA: &[u8] = &[0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77];
 
     #[test]
-    fn memory_read_write_aligned() {
+    fn memory_read_write_le_aligned() {
         let mut memory = Memory::from(DATA);
 
-        assert_eq!(memory.read::<u32>(0), 0x00112233);
-        assert_eq!(memory.read::<u16>(4), 0x4455);
-        assert_eq!(memory.read::<u8>(6), 0x66);
+        assert_eq!(memory.read_le::<u32>(0), 0x33221100);
+        assert_eq!(memory.read_le::<u16>(4), 0x5544);
+        assert_eq!(memory.read_le::<u8>(6), 0x66);
 
-        memory.write::<u32>(4, 0x8899aabb);
-        memory.write::<u16>(2, 0xccdd);
-        memory.write::<u8>(1, 0xee);
+        memory.write_le::<u32>(4, 0xbbaa9988);
+        memory.write_le::<u16>(2, 0xddcc);
+        memory.write_le::<u8>(1, 0xee);
 
         assert_eq!(
             memory.deref(),
@@ -234,16 +256,34 @@ mod tests {
     }
 
     #[test]
-    fn memory_read_write_unaligned() {
+    fn memory_read_write_be_aligned() {
         let mut memory = Memory::from(DATA);
 
-        assert_eq!(memory.read_unaligned::<u32>(1, None), 0x11223344);
-        assert_eq!(memory.read_unaligned::<u16>(5, None), 0x5566);
-        assert_eq!(memory.read_unaligned::<u8>(7, None), 0x77);
+        assert_eq!(memory.read_be::<u32>(0), 0x00112233);
+        assert_eq!(memory.read_be::<u16>(4), 0x4455);
+        assert_eq!(memory.read_be::<u8>(6), 0x66);
 
-        memory.write_unaligned::<u32>(3, 0x8899aabb, None);
-        memory.write_unaligned::<u16>(1, 0xccdd, None);
-        memory.write_unaligned::<u8>(0, 0xee, None);
+        memory.write_be::<u32>(4, 0x8899aabb);
+        memory.write_be::<u16>(2, 0xccdd);
+        memory.write_be::<u8>(1, 0xee);
+
+        assert_eq!(
+            memory.deref(),
+            &[0x00, 0xee, 0xcc, 0xdd, 0x88, 0x99, 0xaa, 0xbb]
+        );
+    }
+
+    #[test]
+    fn memory_read_write_be_unaligned() {
+        let mut memory = Memory::from(DATA);
+
+        assert_eq!(memory.read_be_unaligned::<u32>(1, None), 0x11223344);
+        assert_eq!(memory.read_be_unaligned::<u16>(5, None), 0x5566);
+        assert_eq!(memory.read_be_unaligned::<u8>(7, None), 0x77);
+
+        memory.write_be_unaligned::<u32>(3, 0x8899aabb, None);
+        memory.write_be_unaligned::<u16>(1, 0xccdd, None);
+        memory.write_be_unaligned::<u8>(0, 0xee, None);
 
         assert_eq!(
             memory.deref(),
@@ -252,12 +292,12 @@ mod tests {
     }
 
     #[test]
-    fn memory_read_write_unaligned_mirror() {
+    fn memory_read_write_be_unaligned_mirror() {
         let mut memory = Memory::from(DATA);
 
-        assert_eq!(memory.read_unaligned::<u32>(1, Some(3)), 0x11223300);
+        assert_eq!(memory.read_be_unaligned::<u32>(1, Some(3)), 0x11223300);
 
-        memory.write_unaligned::<u32>(5, 0x8899aabb, Some(7));
+        memory.write_be_unaligned::<u32>(5, 0x8899aabb, Some(7));
 
         assert_eq!(
             memory.deref(),

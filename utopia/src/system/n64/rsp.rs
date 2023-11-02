@@ -55,9 +55,9 @@ impl Rsp {
         if address < 0x0004_0000 {
             let mem = &self.core.bus().mem;
             // Mirrored every MEM_SIZE bytes
-            mem.read(address as usize & (mem.len() - 1))
+            mem.read_be(address as usize & (mem.len() - 1))
         } else {
-            T::read_register(self, address)
+            T::read_register_be(self, address)
         }
     }
 
@@ -65,10 +65,10 @@ impl Rsp {
         if address < 0x0004_0000 {
             // Mirrored every MEM_SIZE bytes
             let mem = &mut self.core.bus_mut().mem;
-            mem.write(address as usize & (mem.len() - 1), value);
+            mem.write_be(address as usize & (mem.len() - 1), value);
             None
         } else {
-            T::write_register(self, address, value)
+            T::write_register_be(self, address, value)
         }
     }
 
@@ -154,16 +154,16 @@ impl mips::Bus for Bus {
     type Cp2 = Cp2;
 
     fn read_opcode(&self, address: u32) -> u32 {
-        self.mem.read(Rsp::DMEM_SIZE + address as usize)
+        self.mem.read_be(Rsp::DMEM_SIZE + address as usize)
     }
 
     fn read_data<T: Value>(&self, address: u32) -> T {
-        self.mem.read_unaligned(address as usize, Some(0xfff))
+        self.mem.read_be_unaligned(address as usize, Some(0xfff))
     }
 
     fn write_data<T: Value>(&mut self, address: u32, value: T) {
         self.mem
-            .write_unaligned(address as usize, value, Some(0xfff))
+            .write_be_unaligned(address as usize, value, Some(0xfff))
     }
 
     fn poll(&self) -> u8 {

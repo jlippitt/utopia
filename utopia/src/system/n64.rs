@@ -165,24 +165,24 @@ impl mips::Bus for Bus {
     fn read_data<T: Value>(&self, address: u32) -> T {
         match address >> 20 {
             0x000..=0x03e => {
-                if let Some(value) = self.rdram.data().try_read(address as usize) {
+                if let Some(value) = self.rdram.data().try_read_be(address as usize) {
                     value
                 } else {
                     warn!("Unmapped RDRAM read: {:08X}", address);
                     T::zero()
                 }
             }
-            0x03f => T::read_register(self.rdram.registers(), address & 0x000f_ffff),
+            0x03f => T::read_register_be(self.rdram.registers(), address & 0x000f_ffff),
             0x040 => self.rsp.read(address & 0x000f_ffff),
-            0x041 => T::read_register(&self.rdp.command(self.rsp.regs()), address & 0x000f_ffff),
-            0x043 => T::read_register(&self.mi, address & 0x000f_ffff),
-            0x044 => T::read_register(&self.vi, address & 0x000f_ffff),
-            0x045 => T::read_register(&self.ai, address & 0x000f_ffff),
-            0x046 => T::read_register(&self.pi, address & 0x000f_ffff),
-            0x047 => T::read_register(self.rdram.interface(), address & 0x000f_ffff),
-            0x048 => T::read_register(&self.si, address & 0x000f_ffff),
+            0x041 => T::read_register_be(&self.rdp.command(self.rsp.regs()), address & 0x000f_ffff),
+            0x043 => T::read_register_be(&self.mi, address & 0x000f_ffff),
+            0x044 => T::read_register_be(&self.vi, address & 0x000f_ffff),
+            0x045 => T::read_register_be(&self.ai, address & 0x000f_ffff),
+            0x046 => T::read_register_be(&self.pi, address & 0x000f_ffff),
+            0x047 => T::read_register_be(self.rdram.interface(), address & 0x000f_ffff),
+            0x048 => T::read_register_be(&self.si, address & 0x000f_ffff),
             0x100..=0x1fb => {
-                if let Some(value) = self.rom.try_read(address as usize & 0x0fff_ffff) {
+                if let Some(value) = self.rom.try_read_be(address as usize & 0x0fff_ffff) {
                     value
                 } else {
                     debug!("Unmapped ROM read: {:08X}", address);
@@ -197,18 +197,18 @@ impl mips::Bus for Bus {
     fn write_data<T: Value>(&mut self, address: u32, value: T) {
         match address >> 20 {
             0x000..=0x03e => {
-                if !self.rdram.data_mut().try_write(address as usize, value) {
+                if !self.rdram.data_mut().try_write_be(address as usize, value) {
                     warn!("Unmapped RDRAM write: {:08X} <= {:08X}", address, value);
                 }
             }
-            0x03f => T::write_register(self.rdram.registers_mut(), address & 0x000f_ffff, value),
+            0x03f => T::write_register_be(self.rdram.registers_mut(), address & 0x000f_ffff, value),
             0x040 => {
                 if let Some(dma_request) = self.rsp.write(address & 0x000f_ffff, value) {
                     self.rsp_dma_transfer(dma_request);
                 }
             }
             0x041 => {
-                if let Some(dma_request) = T::write_register(
+                if let Some(dma_request) = T::write_register_be(
                     &mut self.rdp.command_mut(self.rsp.regs_mut()),
                     address & 0x000f_ffff,
                     value,
@@ -216,20 +216,20 @@ impl mips::Bus for Bus {
                     self.rdp_dma_transfer(dma_request);
                 }
             }
-            0x043 => T::write_register(&mut self.mi, address & 0x000f_ffff, value),
-            0x044 => T::write_register(&mut self.vi, address & 0x000f_ffff, value),
-            0x045 => T::write_register(&mut self.ai, address & 0x000f_ffff, value),
+            0x043 => T::write_register_be(&mut self.mi, address & 0x000f_ffff, value),
+            0x044 => T::write_register_be(&mut self.vi, address & 0x000f_ffff, value),
+            0x045 => T::write_register_be(&mut self.ai, address & 0x000f_ffff, value),
             0x046 => {
                 if let Some(dma_request) =
-                    T::write_register(&mut self.pi, address & 0x000f_ffff, value)
+                    T::write_register_be(&mut self.pi, address & 0x000f_ffff, value)
                 {
                     self.pi_dma_transfer(dma_request);
                 }
             }
-            0x047 => T::write_register(self.rdram.interface_mut(), address & 0x000f_ffff, value),
+            0x047 => T::write_register_be(self.rdram.interface_mut(), address & 0x000f_ffff, value),
             0x048 => {
                 if let Some(dma_request) =
-                    T::write_register(&mut self.si, address & 0x000f_ffff, value)
+                    T::write_register_be(&mut self.si, address & 0x000f_ffff, value)
                 {
                     self.si_dma_transfer(dma_request);
                 }
@@ -239,7 +239,7 @@ impl mips::Bus for Bus {
             0x13f => match address {
                 0x13ff_0020..=0x13ff_0220 => {
                     self.systest_buffer
-                        .write(address as usize - 0x13ff_0020, value);
+                        .write_be(address as usize - 0x13ff_0020, value);
                 }
                 0x13ff_0014 => println!(
                     "{}",

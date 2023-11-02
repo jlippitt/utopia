@@ -37,7 +37,7 @@ impl Rdram {
     pub fn new() -> Self {
         let mut data = Memory::new(RDRAM_SIZE);
 
-        data.write(0x318, 0x0080_0000u32);
+        data.write_be(0x318, 0x0080_0000u32);
 
         Self {
             data,

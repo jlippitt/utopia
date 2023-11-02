@@ -22,14 +22,14 @@ impl Pif {
     }
 
     pub fn read<T: Value>(&self, address: u32) -> T {
-        self.data.read(address as usize)
+        self.data.read_be(address as usize)
     }
 
     pub fn write(&mut self, address: u32, value: impl Value) {
         let address = address as usize;
 
         if address >= PIF_RAM_START {
-            self.data.write(address, value);
+            self.data.write_be(address, value);
         } else {
             warn!("PIF ROM cannot be written");
         }

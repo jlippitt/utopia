@@ -61,13 +61,13 @@ impl super::Bus {
 
                 self.rdram
                     .data_mut()
-                    .write(src.wrapping_add(index) as usize, value);
+                    .write_be(src.wrapping_add(index) as usize, value);
             }
 
             debug!("SI DMA: {} bytes read from {:08X} to {:08X}", len, dst, src,);
         } else {
             for index in 0..len {
-                let value: u8 = self.rdram.data().read(src.wrapping_add(index) as usize);
+                let value: u8 = self.rdram.data().read_be(src.wrapping_add(index) as usize);
                 self.si.pif_mut().write(dst.wrapping_add(index), value);
             }
 
