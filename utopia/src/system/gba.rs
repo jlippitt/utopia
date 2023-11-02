@@ -1,6 +1,5 @@
 use crate::core::arm7tdmi::{Bus, Core, Mode, State};
-use crate::util::facade::{ReadFacade, Value, WriteFacade};
-use crate::util::MirrorVec;
+use crate::util::memory::{Memory, Reader, Value, Writer};
 use crate::{
     BiosLoader, InstanceOptions, JoypadState, MemoryMapper, Size, SystemOptions, WgpuContext,
 };
@@ -111,9 +110,9 @@ impl crate::Instance for Instance {
 
 struct Hardware {
     cartridge: Cartridge,
-    iwram: MirrorVec<u8>,
-    ewram: MirrorVec<u8>,
-    bios: Vec<u8>,
+    iwram: Memory,
+    ewram: Memory,
+    bios: Memory,
     regs: Registers,
     ppu: Ppu,
     audio: Audio,
@@ -124,9 +123,9 @@ impl Hardware {
     pub fn new(rom: Vec<u8>, bios: Vec<u8>) -> Self {
         Self {
             cartridge: Cartridge::new(rom),
-            iwram: MirrorVec::new(IWRAM_SIZE),
-            ewram: MirrorVec::new(EWRAM_SIZE),
-            bios,
+            iwram: Memory::new(IWRAM_SIZE),
+            ewram: Memory::new(EWRAM_SIZE),
+            bios: bios.into(),
             regs: Registers::new(),
             ppu: Ppu::new(),
             audio: Audio::new(),
@@ -139,8 +138,8 @@ impl Bus for Hardware {
     fn read<T: Value>(&mut self, address: u32) -> T {
         match address >> 24 {
             0x00 => self.bios.read_le(address as usize),
-            0x02 => self.ewram.read_le(address as usize),
-            0x03 => self.iwram.read_le(address as usize),
+            0x02 => self.ewram.read_le(address as usize & (EWRAM_SIZE - 1)),
+            0x03 => self.iwram.read_le(address as usize & (IWRAM_SIZE - 1)),
             0x04 => match address & 0x00ff_ffff {
                 0x0000..=0x005f => todo!("LCD Register Reads"),
                 0x0060..=0x00af => self.audio.read_le(address),
@@ -152,7 +151,7 @@ impl Bus for Hardware {
             0x05 => todo!("Palette RAM Reads"),
             0x06 => self.ppu.vram().read_le(address as usize & 0x00ff_ffff),
             0x07 => todo!("OAM Reads"),
-            0x08..=0x0d => self.cartridge.read_le(address),
+            0x08..=0x0d => self.cartridge.read(address),
             0xe0 => todo!("SRAM Reads"),
             _ => panic!("Unmapped Read: {:08X}", address),
         }
@@ -161,8 +160,12 @@ impl Bus for Hardware {
     fn write<T: Value>(&mut self, address: u32, value: T) {
         match address >> 24 {
             0x00 => panic!("Write to BIOS area: {:08X} <= {:08X}", address, value),
-            0x02 => self.ewram.write_le(address as usize, value),
-            0x03 => self.iwram.write_le(address as usize, value),
+            0x02 => self
+                .ewram
+                .write_le(address as usize & (EWRAM_SIZE - 1), value),
+            0x03 => self
+                .iwram
+                .write_le(address as usize & (IWRAM_SIZE - 1), value),
             0x04 => match address & 0x00ff_ffff {
                 0x0000..=0x005f => warn!("LCD Register Writes not yet implemented"),
                 0x0060..=0x00af => self.audio.write_le(address, value),

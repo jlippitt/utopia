@@ -1,21 +1,23 @@
+use crate::util::memory::Memory;
+
 const VRAM_SIZE: usize = 98304;
 
 pub struct Ppu {
-    vram: Vec<u8>,
+    vram: Memory,
 }
 
 impl Ppu {
     pub fn new() -> Self {
         Self {
-            vram: vec![0; VRAM_SIZE],
+            vram: Memory::new(VRAM_SIZE),
         }
     }
 
-    pub fn vram(&self) -> &[u8] {
+    pub fn vram(&self) -> &Memory {
         &self.vram
     }
 
-    pub fn vram_mut(&mut self) -> &mut [u8] {
+    pub fn vram_mut(&mut self) -> &mut Memory {
         &mut self.vram
     }
 }

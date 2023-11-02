@@ -1,4 +1,4 @@
-use crate::util::facade::{DataReader, ReadFacade};
+use crate::util::memory::{Memory, Value};
 use std::fmt;
 use subslice::SubsliceExt;
 use tracing::{info, warn};
@@ -20,7 +20,7 @@ const BACKUP_TYPES: [(&str, BackupType); 5] = [
 ];
 
 pub struct Cartridge {
-    rom: Vec<u8>,
+    rom: Memory,
     backup_type: BackupType,
 }
 
@@ -48,15 +48,13 @@ impl Cartridge {
         info!("ROM Size: {}", rom.len());
         info!("Backup Type: {}", backup_type);
 
-        Self { rom, backup_type }
+        Self {
+            rom: rom.into(),
+            backup_type,
+        }
     }
-}
 
-impl DataReader for Cartridge {
-    type Address = u32;
-    type Value = u8;
-
-    fn read(&self, address: u32) -> u8 {
+    pub fn read<T: Value>(&self, address: u32) -> T {
         let index = address as usize & 0x01ff_ffff;
 
         // TODO: ROM sizes >32MB
@@ -65,7 +63,7 @@ impl DataReader for Cartridge {
         } else if index >= 0x0100_0000 && self.backup_type == BackupType::Eeprom {
             todo!("EEPROM reads");
         } else {
-            0
+            T::zero()
         }
     }
 }
