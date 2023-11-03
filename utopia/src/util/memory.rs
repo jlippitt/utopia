@@ -1,5 +1,6 @@
 use bytemuck::Pod;
-use num_traits::{AsPrimitive, Bounded, PrimInt};
+use num_traits::{AsPrimitive, Bounded, NumCast, PrimInt};
+use std::cmp::Ordering;
 use std::mem;
 use std::ops::{Deref, DerefMut};
 use tracing::trace;
@@ -153,14 +154,30 @@ fn read<const BE: bool, T: Reader + ?Sized, U: Value>(this: &T, address: u32) ->
     let self_size = mem::size_of::<T::Value>();
     let other_size = mem::size_of::<U>();
 
-    U::from_truncate(if self_size == other_size {
-        this.read_register(address)
-    } else {
-        debug_assert!((self_size % other_size) == 0);
-        let flip_mask = self_size - other_size;
-        let shift = (address as usize & flip_mask ^ if BE { flip_mask } else { 0 }) << 3;
-        this.read_register(address & !(self_size as u32 - 1)) >> shift
-    })
+    match self_size.cmp(&other_size) {
+        Ordering::Equal => U::from_truncate(this.read_register(address)),
+        Ordering::Greater => {
+            debug_assert!((self_size % other_size) == 0);
+            let flip_mask = self_size - other_size;
+            let shift = (address as usize & flip_mask ^ if BE { flip_mask } else { 0 }) << 3;
+            let value = this.read_register(address & !(self_size as u32 - 1)) >> shift;
+            U::from_truncate(value)
+        }
+        Ordering::Less => {
+            debug_assert!((other_size % self_size) == 0);
+            let ratio = other_size / self_size;
+            let flip_mask = if BE { ratio - 1 } else { 0 };
+            let mut result = U::zero();
+
+            for chunk_index in 0..ratio {
+                let chunk_address = address.wrapping_add((chunk_index as u32) << (self_size >> 1));
+                let chunk_value = U::from(this.read_register(chunk_address)).unwrap();
+                result = result | chunk_value << ((8 * self_size) * (chunk_index ^ flip_mask));
+            }
+
+            result
+        }
+    }
 }
 
 pub trait Writer: Reader {
@@ -193,15 +210,17 @@ fn write<const BE: bool, T: Writer + ?Sized, U: Value + AsPrimitive<T::Value>>(
     let self_size = mem::size_of::<T::Value>();
     let other_size = mem::size_of::<U>();
 
-    let masked = if self_size == other_size {
-        Masked::new(value.as_(), T::Value::max_value())
-    } else {
-        debug_assert!((self_size % other_size) == 0);
-        let flip_mask = self_size - other_size;
-        let shift = (address as usize & flip_mask ^ if BE { flip_mask } else { 0 }) << 3;
-        let shifted_value = <U as AsPrimitive<T::Value>>::as_(value) << shift;
-        let value_mask = <U as AsPrimitive<T::Value>>::as_(U::max_value()) << shift;
-        Masked::new(shifted_value, value_mask)
+    let masked = match self_size.cmp(&other_size) {
+        Ordering::Equal => Masked::new(value.as_(), T::Value::max_value()),
+        Ordering::Greater => {
+            debug_assert!((self_size % other_size) == 0);
+            let flip_mask = self_size - other_size;
+            let shift = (address as usize & flip_mask ^ if BE { flip_mask } else { 0 }) << 3;
+            let shifted_value = <U as AsPrimitive<T::Value>>::as_(value) << shift;
+            let value_mask = <U as AsPrimitive<T::Value>>::as_(U::max_value()) << shift;
+            Masked::new(shifted_value, value_mask)
+        }
+        Ordering::Less => todo!(),
     };
 
     this.write_register(address & !(self_size as u32 - 1), masked)
@@ -213,6 +232,7 @@ pub trait Value:
     + AsPrimitive<u8>
     + AsPrimitive<u16>
     + AsPrimitive<u32>
+    + NumCast
     + Pod
     + std::fmt::UpperHex
     + std::fmt::Display
@@ -298,7 +318,6 @@ mod tests {
         fn read_register(&self, address: u32) -> T {
             let shift = mem::size_of::<T>().ilog2();
             let index = (address >> shift) as usize;
-            println!("{:?} {}", self.data, index);
             self.data[index]
         }
     }
@@ -451,5 +470,27 @@ mod tests {
 
         reg.write_le::<u8>(7, 0xee);
         assert_eq!(reg.read_le::<u32>(4), 0xeeddaabb);
+    }
+
+    #[test]
+    fn read_register_u16_le() {
+        let reg = Reg::<u16>::new(&[0x0011, 0x2233, 0x4455, 0x6677]);
+
+        assert_eq!(reg.read_le::<u32>(0), 0x22330011);
+        assert_eq!(reg.read_le::<u32>(4), 0x66774455);
+
+        assert_eq!(reg.read_le::<u16>(0), 0x0011);
+        assert_eq!(reg.read_le::<u16>(2), 0x2233);
+        assert_eq!(reg.read_le::<u16>(4), 0x4455);
+        assert_eq!(reg.read_le::<u16>(6), 0x6677);
+
+        assert_eq!(reg.read_le::<u8>(0), 0x11);
+        assert_eq!(reg.read_le::<u8>(1), 0x00);
+        assert_eq!(reg.read_le::<u8>(2), 0x33);
+        assert_eq!(reg.read_le::<u8>(3), 0x22);
+        assert_eq!(reg.read_le::<u8>(4), 0x55);
+        assert_eq!(reg.read_le::<u8>(5), 0x44);
+        assert_eq!(reg.read_le::<u8>(6), 0x77);
+        assert_eq!(reg.read_le::<u8>(7), 0x66);
     }
 }
