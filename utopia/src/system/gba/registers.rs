@@ -40,8 +40,6 @@ impl Reader for Registers {
 }
 
 impl Writer for Registers {
-    type SideEffect = ();
-
     fn write_register(&mut self, address: u32, value: Masked<u16>) {
         match address {
             0x0200 => {

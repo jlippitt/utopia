@@ -13,6 +13,7 @@ mod cp2;
 
 pub struct Rsp {
     core: Core<Bus>,
+    dma: Option<DmaRequest>,
 }
 
 impl Rsp {
@@ -32,6 +33,7 @@ impl Rsp {
                 Cp2::new(),
                 Default::default(),
             ),
+            dma: None,
         }
     }
 
@@ -61,15 +63,18 @@ impl Rsp {
         }
     }
 
-    pub fn write<T: Value>(&mut self, address: u32, value: T) -> Option<DmaRequest> {
+    pub fn write<T: Value>(&mut self, address: u32, value: T) {
         if address < 0x0004_0000 {
             // Mirrored every MEM_SIZE bytes
             let mem = &mut self.core.bus_mut().mem;
             mem.write_be(address as usize & (mem.len() - 1), value);
-            None
         } else {
             self.write_be(address, value)
         }
+    }
+
+    pub fn poll_dma(&mut self) -> Option<DmaRequest> {
+        self.dma.take()
     }
 
     pub fn step(&mut self) -> DmaType {
@@ -109,15 +114,13 @@ impl Reader for Rsp {
 }
 
 impl Writer for Rsp {
-    type SideEffect = Option<DmaRequest>;
-
-    fn write_register(&mut self, address: u32, value: Masked<u32>) -> Option<DmaRequest> {
+    fn write_register(&mut self, address: u32, value: Masked<u32>) {
         if address < 0x0004_0020 {
             let regs = self.core.cp0_mut().regs_mut();
 
             regs.set((address & 0x1f) as usize >> 2, value);
 
-            return match regs.take_dma_type() {
+            self.dma = match regs.take_dma_type() {
                 DmaType::Rsp(request) => Some(request),
                 DmaType::Rdp(..) => unreachable!(),
                 DmaType::None => None,
@@ -128,8 +131,6 @@ impl Writer for Rsp {
         } else {
             panic!("Unmapped RSP Register Write: {:08X}", address);
         }
-
-        None
     }
 }
 

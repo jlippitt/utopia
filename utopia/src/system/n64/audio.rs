@@ -91,8 +91,6 @@ impl Reader for AudioInterface {
 }
 
 impl Writer for AudioInterface {
-    type SideEffect = ();
-
     fn write_register(&mut self, address: u32, value: Masked<u32>) {
         match address {
             0x00 => {

@@ -11,6 +11,7 @@ pub struct SerialInterface {
     dram_addr: u32,
     status: Status,
     rcp_int: RcpInterrupt,
+    dma: Option<DmaRequest>,
     pif: Pif,
 }
 
@@ -20,6 +21,7 @@ impl SerialInterface {
             dram_addr: 0,
             status: Status::new(),
             rcp_int,
+            dma: None,
             pif: Pif::new(),
         }
     }
@@ -30,6 +32,10 @@ impl SerialInterface {
 
     pub fn pif_mut(&mut self) -> &mut Pif {
         &mut self.pif
+    }
+
+    pub fn poll_dma(&mut self) -> Option<DmaRequest> {
+        self.dma.take()
     }
 
     pub fn finish_dma(&mut self) {
@@ -54,15 +60,13 @@ impl Reader for SerialInterface {
 }
 
 impl Writer for SerialInterface {
-    type SideEffect = Option<DmaRequest>;
-
-    fn write_register(&mut self, address: u32, value: Masked<u32>) -> Option<DmaRequest> {
+    fn write_register(&mut self, address: u32, value: Masked<u32>) {
         match address {
             0x00 => value.write_reg_hex("SI_DRAM_ADDR", &mut self.dram_addr),
             0x04 => {
                 self.pif.process();
 
-                return Some(DmaRequest {
+                self.dma = Some(DmaRequest {
                     src: self.dram_addr & 0x00ff_ffff,
                     dst: value.get() & 0x07fc,
                     len: 64,
@@ -70,7 +74,7 @@ impl Writer for SerialInterface {
                 });
             }
             0x10 => {
-                return Some(DmaRequest {
+                self.dma = Some(DmaRequest {
                     src: self.dram_addr & 0x00ff_ffff,
                     dst: value.get() & 0x07fc,
                     len: 64,
@@ -80,8 +84,6 @@ impl Writer for SerialInterface {
             0x18 => self.rcp_int.clear(RcpIntType::SI),
             _ => unimplemented!("Serial Interface Register Write: {:08X}", address),
         }
-
-        None
     }
 }
 

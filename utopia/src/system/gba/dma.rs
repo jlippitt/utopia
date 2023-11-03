@@ -80,8 +80,6 @@ impl Reader for Dma {
 }
 
 impl Writer for Dma {
-    type SideEffect = ();
-
     fn write_register(&mut self, address: u32, value: Masked<u32>) {
         match address & 0xff {
             0xb0 => self.channels[0].set_source(value),

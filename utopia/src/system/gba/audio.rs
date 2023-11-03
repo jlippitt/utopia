@@ -23,8 +23,6 @@ impl Reader for Audio {
 }
 
 impl Writer for Audio {
-    type SideEffect = ();
-
     fn write_register(&mut self, address: u32, value: Masked<u16>) {
         match address & 0xff {
             0x88 => {

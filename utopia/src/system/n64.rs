@@ -209,16 +209,18 @@ impl mips::Bus for Bus {
                 .registers_mut()
                 .write_be(address & 0x000f_ffff, value),
             0x040 => {
-                if let Some(dma_request) = self.rsp.write(address & 0x000f_ffff, value) {
+                self.rsp.write(address & 0x000f_ffff, value);
+
+                if let Some(dma_request) = self.rsp.poll_dma() {
                     self.rsp_dma_transfer(dma_request);
                 }
             }
             0x041 => {
-                if let Some(dma_request) = self
-                    .rdp
+                self.rdp
                     .command_mut(self.rsp.regs_mut())
-                    .write_be(address & 0x000f_ffff, value)
-                {
+                    .write_be(address & 0x000f_ffff, value);
+
+                if let Some(dma_request) = self.rdp.poll_dma() {
                     self.rdp_dma_transfer(dma_request);
                 }
             }
@@ -226,7 +228,9 @@ impl mips::Bus for Bus {
             0x044 => self.vi.write_be(address & 0x000f_ffff, value),
             0x045 => self.ai.write_be(address & 0x000f_ffff, value),
             0x046 => {
-                if let Some(dma_request) = self.pi.write_be(address & 0x000f_ffff, value) {
+                self.pi.write_be(address & 0x000f_ffff, value);
+
+                if let Some(dma_request) = self.pi.poll_dma() {
                     self.pi_dma_transfer(dma_request);
                 }
             }
@@ -235,7 +239,9 @@ impl mips::Bus for Bus {
                 .interface_mut()
                 .write_be(address & 0x000f_ffff, value),
             0x048 => {
-                if let Some(dma_request) = self.si.write_be(address & 0x000f_ffff, value) {
+                self.si.write_be(address & 0x000f_ffff, value);
+
+                if let Some(dma_request) = self.si.poll_dma() {
                     self.si_dma_transfer(dma_request);
                 }
             }

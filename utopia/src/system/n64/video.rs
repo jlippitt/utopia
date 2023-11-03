@@ -203,8 +203,6 @@ impl Reader for VideoInterface {
 }
 
 impl Writer for VideoInterface {
-    type SideEffect = ();
-
     fn write_register(&mut self, address: u32, value: Masked<u32>) {
         match address {
             0x00 => value.write_reg("VI_CTRL", &mut self.regs.ctrl),

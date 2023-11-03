@@ -110,8 +110,6 @@ impl Reader for Registers {
 }
 
 impl Writer for Registers {
-    type SideEffect = ();
-
     fn write_register(&mut self, address: u32, value: Masked<u32>) {
         let address = address & 0x0000_03ff;
         let index = (address as usize) >> 2;
@@ -144,8 +142,6 @@ impl Reader for Interface {
 }
 
 impl Writer for Interface {
-    type SideEffect = ();
-
     fn write_register(&mut self, address: u32, value: Masked<u32>) {
         let index = (address as usize) >> 2;
         self.regs[index] = value.apply(self.regs[index]);

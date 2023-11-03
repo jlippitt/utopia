@@ -34,8 +34,6 @@ impl Reader for MipsInterface {
 }
 
 impl Writer for MipsInterface {
-    type SideEffect = ();
-
     fn write_register(&mut self, address: u32, value: Masked<u32>) {
         match (address >> 2) & 3 {
             0 => {

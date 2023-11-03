@@ -181,23 +181,13 @@ fn read<const BE: bool, T: Reader + ?Sized, U: Value>(this: &T, address: u32) ->
 }
 
 pub trait Writer: Reader {
-    type SideEffect;
+    fn write_register(&mut self, address: u32, value: Masked<Self::Value>);
 
-    fn write_register(&mut self, address: u32, value: Masked<Self::Value>) -> Self::SideEffect;
-
-    fn write_le<T: Value + AsPrimitive<Self::Value>>(
-        &mut self,
-        address: u32,
-        value: T,
-    ) -> Self::SideEffect {
+    fn write_le<T: Value + AsPrimitive<Self::Value>>(&mut self, address: u32, value: T) {
         write::<false, Self, T>(self, address, value)
     }
 
-    fn write_be<T: Value + AsPrimitive<Self::Value>>(
-        &mut self,
-        address: u32,
-        value: T,
-    ) -> Self::SideEffect {
+    fn write_be<T: Value + AsPrimitive<Self::Value>>(&mut self, address: u32, value: T) {
         write::<true, Self, T>(self, address, value)
     }
 }
@@ -206,24 +196,39 @@ fn write<const BE: bool, T: Writer + ?Sized, U: Value + AsPrimitive<T::Value>>(
     this: &mut T,
     address: u32,
     value: U,
-) -> T::SideEffect {
+) {
     let self_size = mem::size_of::<T::Value>();
     let other_size = mem::size_of::<U>();
 
-    let masked = match self_size.cmp(&other_size) {
-        Ordering::Equal => Masked::new(value.as_(), T::Value::max_value()),
+    match self_size.cmp(&other_size) {
+        Ordering::Equal => {
+            let masked = Masked::new(value.as_(), T::Value::max_value());
+            this.write_register(address & !(self_size as u32 - 1), masked)
+        }
         Ordering::Greater => {
             debug_assert!((self_size % other_size) == 0);
             let flip_mask = self_size - other_size;
             let shift = (address as usize & flip_mask ^ if BE { flip_mask } else { 0 }) << 3;
             let shifted_value = <U as AsPrimitive<T::Value>>::as_(value) << shift;
             let value_mask = <U as AsPrimitive<T::Value>>::as_(U::max_value()) << shift;
-            Masked::new(shifted_value, value_mask)
+            let masked = Masked::new(shifted_value, value_mask);
+            this.write_register(address & !(self_size as u32 - 1), masked)
         }
-        Ordering::Less => todo!(),
-    };
+        Ordering::Less => {
+            debug_assert!((other_size % self_size) == 0);
+            let ratio = other_size / self_size;
+            let flip_mask = if BE { ratio - 1 } else { 0 };
 
-    this.write_register(address & !(self_size as u32 - 1), masked)
+            for chunk_index in 0..ratio {
+                let chunk_address = address.wrapping_add((chunk_index as u32) << (self_size >> 1));
+                let chunk_value = <U as AsPrimitive<T::Value>>::as_(
+                    value >> ((8 * self_size) * (chunk_index ^ flip_mask)),
+                );
+                let masked = Masked::new(chunk_value, T::Value::max_value());
+                this.write_register(chunk_address, masked)
+            }
+        }
+    }
 }
 
 pub trait Value:
@@ -323,8 +328,6 @@ mod tests {
     }
 
     impl<T: Value> Writer for Reg<T> {
-        type SideEffect = ();
-
         fn write_register(&mut self, address: u32, value: Masked<T>) {
             let shift = mem::size_of::<T>().ilog2();
             let index = (address >> shift) as usize;
@@ -492,5 +495,19 @@ mod tests {
         assert_eq!(reg.read_le::<u8>(5), 0x44);
         assert_eq!(reg.read_le::<u8>(6), 0x77);
         assert_eq!(reg.read_le::<u8>(7), 0x66);
+    }
+
+    #[test]
+    fn write_register_u16() {
+        let mut reg = Reg::<u16>::new(&[0x0011, 0x2233, 0x4455, 0x6677]);
+
+        reg.write_le::<u32>(4, 0x8899aabb);
+        assert_eq!(reg.read_le::<u32>(4), 0x8899aabb);
+
+        reg.write_le::<u16>(6, 0xccdd);
+        assert_eq!(reg.read_le::<u32>(4), 0xccddaabb);
+
+        reg.write_le::<u8>(7, 0xee);
+        assert_eq!(reg.read_le::<u32>(4), 0xeeddaabb);
     }
 }

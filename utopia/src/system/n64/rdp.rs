@@ -4,7 +4,6 @@ use super::rsp::{DmaType, Registers as RspRegisters};
 use super::WgpuContext;
 use crate::util::memory::{Masked, Reader, Writer};
 use core::Core;
-use std::ops::{Deref, DerefMut};
 use tracing::{debug_span, trace};
 
 mod core;
@@ -13,6 +12,7 @@ pub struct Rdp {
     rcp_int: RcpInterrupt,
     commands: Vec<u64>,
     core: Core,
+    dma: Option<DmaRequest>,
 }
 
 impl Rdp {
@@ -21,18 +21,23 @@ impl Rdp {
             rcp_int,
             commands: Vec::new(),
             core: Core::new(ctx),
+            dma: None,
         }
     }
 
-    pub fn command<T: Deref<Target = RspRegisters>>(&self, rsp_regs: T) -> CommandRegisters<T> {
+    pub fn command<'a>(&'a self, rsp_regs: &'a RspRegisters) -> CommandRegisters<'a> {
         CommandRegisters::new(rsp_regs)
     }
 
-    pub fn command_mut<T: Deref<Target = RspRegisters> + DerefMut<Target = RspRegisters>>(
-        &self,
-        rsp_regs: T,
-    ) -> CommandRegisters<T> {
-        CommandRegisters::new(rsp_regs)
+    pub fn command_mut<'a>(
+        &'a mut self,
+        rsp_regs: &'a mut RspRegisters,
+    ) -> CommandRegistersMut<'a> {
+        CommandRegistersMut::new(rsp_regs, &mut self.dma)
+    }
+
+    pub fn poll_dma(&mut self) -> Option<DmaRequest> {
+        self.dma.take()
     }
 
     pub fn upload(&mut self, command_data: &[u8]) {
@@ -69,17 +74,17 @@ impl Rdp {
     }
 }
 
-pub struct CommandRegisters<T: Deref<Target = RspRegisters>> {
-    regs: T,
+pub struct CommandRegisters<'a> {
+    regs: &'a RspRegisters,
 }
 
-impl<T: Deref<Target = RspRegisters>> CommandRegisters<T> {
-    fn new(regs: T) -> Self {
+impl<'a> CommandRegisters<'a> {
+    fn new(regs: &'a RspRegisters) -> Self {
         Self { regs }
     }
 }
 
-impl<T: Deref<Target = RspRegisters>> Reader for CommandRegisters<T> {
+impl<'a> Reader for CommandRegisters<'a> {
     type Value = u32;
 
     fn read_register(&self, address: u32) -> u32 {
@@ -87,18 +92,33 @@ impl<T: Deref<Target = RspRegisters>> Reader for CommandRegisters<T> {
     }
 }
 
-impl<T: Deref<Target = RspRegisters> + DerefMut<Target = RspRegisters>> Writer
-    for CommandRegisters<T>
-{
-    type SideEffect = Option<DmaRequest>;
+pub struct CommandRegistersMut<'a> {
+    regs: &'a mut RspRegisters,
+    dma: &'a mut Option<DmaRequest>,
+}
 
-    fn write_register(&mut self, address: u32, value: Masked<u32>) -> Option<DmaRequest> {
+impl<'a> CommandRegistersMut<'a> {
+    fn new(regs: &'a mut RspRegisters, dma: &'a mut Option<DmaRequest>) -> Self {
+        Self { regs, dma }
+    }
+}
+
+impl<'a> Reader for CommandRegistersMut<'a> {
+    type Value = u32;
+
+    fn read_register(&self, address: u32) -> u32 {
+        self.regs.get(8 + (address as usize >> 2))
+    }
+}
+
+impl<'a> Writer for CommandRegistersMut<'a> {
+    fn write_register(&mut self, address: u32, value: Masked<u32>) {
         self.regs.set(8 + (address as usize >> 2), value);
 
-        match self.regs.take_dma_type() {
+        *self.dma = match self.regs.take_dma_type() {
             DmaType::Rsp(..) => unreachable!(),
             DmaType::Rdp(request) => Some(request),
             DmaType::None => None,
-        }
+        };
     }
 }

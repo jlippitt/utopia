@@ -31,6 +31,7 @@ const REGS: [&str; 13] = [
 
 pub struct PeripheralInterface {
     regs: [u32; 13],
+    dma: Option<DmaRequest>,
     rcp_int: RcpInterrupt,
 }
 
@@ -48,7 +49,15 @@ impl PeripheralInterface {
         regs[PI_BSD_DOM1_PGS] = 7;
         regs[PI_BSD_DOM1_RLS] = 3;
 
-        Self { regs, rcp_int }
+        Self {
+            regs,
+            dma: None,
+            rcp_int,
+        }
+    }
+
+    pub fn poll_dma(&mut self) -> Option<DmaRequest> {
+        self.dma.take()
     }
 
     pub fn finish_dma(&mut self) {
@@ -76,14 +85,12 @@ impl Reader for PeripheralInterface {
 }
 
 impl Writer for PeripheralInterface {
-    type SideEffect = Option<DmaRequest>;
-
-    fn write_register(&mut self, address: u32, value: Masked<u32>) -> Option<DmaRequest> {
+    fn write_register(&mut self, address: u32, value: Masked<u32>) {
         let index = (address as usize) >> 2;
 
         match index {
             PI_RD_LEN => {
-                return Some(DmaRequest {
+                self.dma = Some(DmaRequest {
                     src: self.regs[PI_CART_ADDR] & 0xffff_fffe,
                     dst: self.regs[PI_DRAM_ADDR] & 0x00ff_fffe,
                     len: value.get() & 0x00ff_ffff,
@@ -91,7 +98,7 @@ impl Writer for PeripheralInterface {
                 })
             }
             PI_WR_LEN => {
-                return Some(DmaRequest {
+                self.dma = Some(DmaRequest {
                     src: self.regs[PI_CART_ADDR] & 0xffff_fffe,
                     dst: self.regs[PI_DRAM_ADDR] & 0x00ff_fffe,
                     len: value.get() & 0x00ff_ffff,
@@ -114,7 +121,5 @@ impl Writer for PeripheralInterface {
                 trace!("{}: {:08X}", REGS[index], self.regs[index]);
             }
         }
-
-        None
     }
 }
