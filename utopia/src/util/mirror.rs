@@ -1,4 +1,3 @@
-use super::facade::{DataReader, DataWriter, Value};
 use std::ops::{Deref, DerefMut, Index, IndexMut};
 
 pub trait Mirrorable {
@@ -69,27 +68,6 @@ impl<T: Mirrorable> Index<usize> for Mirror<T> {
 impl<T: MirrorableMut> IndexMut<usize> for Mirror<T> {
     fn index_mut(&mut self, index: usize) -> &mut T::Output {
         unsafe { self.inner.get_unchecked_mut(index & self.mask) }
-    }
-}
-
-impl<T: Mirrorable> DataReader for Mirror<T>
-where
-    T::Output: Value,
-{
-    type Address = usize;
-    type Value = T::Output;
-
-    fn read(&self, address: usize) -> Self::Value {
-        self[address]
-    }
-}
-
-impl<T: MirrorableMut> DataWriter for Mirror<T>
-where
-    T::Output: Value,
-{
-    fn write(&mut self, address: usize, value: Self::Value) {
-        self[address] = value;
     }
 }
 

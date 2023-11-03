@@ -3,7 +3,6 @@ pub use mirror::MirrorVec;
 pub use size::Size;
 
 pub mod audio;
-pub mod facade;
 pub mod memory;
 pub mod mirror;
 pub mod size;
