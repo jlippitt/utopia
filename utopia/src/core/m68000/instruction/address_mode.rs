@@ -159,7 +159,7 @@ impl fmt::Display for AddressMode {
                 0b001 => write!(f, "u32"),
                 0b010 => write!(f, "u16(PC)"),
                 0b011 => write!(f, "u8(PC, Xn)"),
-                0b100 => write!(f, "#const"),
+                0b100 => write!(f, "#imm"),
                 _ => panic!("[invalid]"),
             },
             _ => unreachable!(),

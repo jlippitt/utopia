@@ -8,7 +8,7 @@ pub fn immediate<T: Operator, U: Size>(core: &mut Core<impl Bus>, word: u16) {
         todo!("Bitwise CCR operations");
     }
 
-    trace!("{}I.{} #const, {}", T::NAME, U::NAME, dst);
+    trace!("{}I.{} #imm, {}", T::NAME, U::NAME, dst);
     let src = core.next();
     dst.modify(core, |core, value| T::apply::<U>(core, value, src))
 }
