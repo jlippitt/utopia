@@ -5,19 +5,29 @@ use std::fmt;
 pub struct AddressMode(u8);
 
 impl AddressMode {
+    pub fn address(self, core: &mut Core<impl Bus>) -> u32 {
+        match self.0 {
+            0b111000 => self.absolute16(core),
+            0b111001 => self.absolute32(core),
+            0b111010 => self.pc_displacement(core),
+            _ => unimplemented!("Address mode lookup: {:06b}", self.0),
+        }
+    }
+
     pub fn read<T: Size>(self, core: &mut Core<impl Bus>) -> T {
-        match (self.0 >> 3) & 7 {
-            0b111 => match self.0 & 7 {
-                0b000 => {
-                    let address = self.absolute16(core);
-                    core.read(address)
-                }
-                0b001 => {
-                    let address = self.absolute32(core);
-                    core.read(address)
-                }
-                _ => unimplemented!("Address mode read: {:06b}", self.0),
-            },
+        match self.0 {
+            0b111000 => {
+                let address = self.absolute16(core);
+                core.read(address)
+            }
+            0b111001 => {
+                let address = self.absolute32(core);
+                core.read(address)
+            }
+            0b111010 => {
+                let address = self.pc_displacement(core);
+                core.read(address)
+            }
             _ => unimplemented!("Address mode read: {:06b}", self.0),
         }
     }
@@ -28,6 +38,12 @@ impl AddressMode {
 
     fn absolute32(self, core: &mut Core<impl Bus>) -> u32 {
         core.next()
+    }
+
+    fn pc_displacement(self, core: &mut Core<impl Bus>) -> u32 {
+        let pc = core.pc;
+        let displacement: u16 = core.next();
+        pc.wrapping_add(displacement as u32)
     }
 }
 

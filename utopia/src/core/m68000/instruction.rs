@@ -21,10 +21,12 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
 
     #[allow(clippy::unusual_byte_groupings)]
     match word >> 6 {
+        // 0b0100 (Unary/Misc)
         0b0100_1010_00 => tst::<u8>(core, word),
         0b0100_1010_01 => tst::<u16>(core, word),
         0b0100_1010_10 => tst::<u32>(core, word),
 
+        // 0b0110 (Branches)
         0b0110_0000_00..=0b0110_0000_11 => control::bra(core, word),
         //0b0110_0001_00..=0b0110_0001_11 => control::bsr(core, word),
         0b0110_0010_00..=0b0110_0010_11 => control::bcc::<cond::HI>(core, word),
@@ -41,6 +43,10 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
         0b0110_1101_00..=0b0110_1101_11 => control::bcc::<cond::LT>(core, word),
         0b0110_1110_00..=0b0110_1110_11 => control::bcc::<cond::GT>(core, word),
         0b0110_1111_00..=0b0110_1111_11 => control::bcc::<cond::LE>(core, word),
+
+        // Special encodings
+        0b0100_0001_11 | 0b0100_0010_11 | 0b0100_0101_11 | 0b0100_0111_11 | 0b0100_1001_11
+        | 0b0100_1011_11 | 0b0100_1101_11 | 0b0100_1111_11 => lea(core, word),
 
         _ => unimplemented!(
             "M68000 Opcode: {:04b}_{:04b}_{:02b}",
@@ -60,4 +66,12 @@ fn tst<T: Size>(core: &mut Core<impl Bus>, word: u16) {
         flags.v = 0;
         flags.c = false;
     });
+}
+
+fn lea(core: &mut Core<impl Bus>, word: u16) {
+    let src = AddressMode::from(word);
+    let dst = (word >> 9) & 7;
+    trace!("LEA {}, A{}", src, dst);
+    let value = src.address(core);
+    core.set_areg(dst as usize, value);
 }
