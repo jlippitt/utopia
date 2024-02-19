@@ -106,7 +106,7 @@ impl<T: Bus> Core<T> {
     fn set_ccr(&mut self, cb: impl Fn(&mut Flags)) {
         cb(&mut self.flags);
         trace!(
-            "  CCR: ---{}{}{}{}{}",
+            "  CCR: {}{}{}{}{}",
             if self.flags.x { 'X' } else { '-' },
             if (self.flags.n & 0x80) != 0 { 'N' } else { '-' },
             if self.flags.z == 0 { 'Z' } else { '-' },
