@@ -133,6 +133,12 @@ impl<T: Bus> Core<T> {
         U::write(self, address, value);
     }
 
+    fn modify<U: Size>(&mut self, address: u32, cb: impl Fn(&mut Core<T>, U) -> U) {
+        let value = self.read(address);
+        let result = cb(self, value);
+        self.write(address, result);
+    }
+
     fn next<U: Size>(&mut self) -> U {
         let value = U::read(self, self.pc);
         self.pc = self.pc.wrapping_add(mem::size_of::<U>() as u32);

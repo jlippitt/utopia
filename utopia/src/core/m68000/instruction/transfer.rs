@@ -23,12 +23,12 @@ pub fn move_<T: Size>(core: &mut Core<impl Bus>, word: u16) {
     let dst = AddressMode::from(((word >> 6) & 56) | ((word >> 9) & 7));
     trace!("MOVE.{} {}, {}", T::NAME, src, dst);
     let value: T = src.read(core);
-    dst.write(core, value);
     core.set_ccr(|flags| {
         flags.set_nz(value);
         flags.v = 0;
         flags.c = false;
-    })
+    });
+    dst.write(core, value);
 }
 
 pub fn movem_read<T: Size>(core: &mut Core<impl Bus>, word: u16) {

@@ -67,6 +67,43 @@ impl AddressMode {
         }
     }
 
+    pub fn modify<T: Bus, U: Size>(self, core: &mut Core<T>, cb: impl Fn(&mut Core<T>, U) -> U) {
+        #[allow(clippy::unusual_byte_groupings)]
+        match self.0 {
+            0b000_000..=0b000_111 => {
+                let index = self.reg();
+                let result = cb(core, core.dreg(index));
+                core.set_dreg(index, result);
+            }
+            0b001_000..=0b001_111 => {
+                let index = self.reg();
+                let result = cb(core, core.areg(index));
+                core.set_areg(index, result);
+            }
+            0b101_000..=0b101_111 => {
+                let address = self.areg_displacement(core);
+                core.modify(address, cb);
+            }
+            0b111_000 => {
+                let address = self.absolute16(core);
+                core.modify(address, cb);
+            }
+            0b111_001 => {
+                let address = self.absolute32(core);
+                core.modify(address, cb);
+            }
+            0b111_010 => {
+                let address = self.displacement(core, core.pc);
+                core.modify(address, cb);
+            }
+            _ => unimplemented!("Address mode write: {:06b}", self.0),
+        }
+    }
+
+    pub fn reg(self) -> usize {
+        self.0 as usize & 7
+    }
+
     #[allow(clippy::unusual_byte_groupings)]
     pub fn is_post_increment(self) -> bool {
         (self.0 & 0b111_000) == 0b011_000
@@ -77,8 +114,9 @@ impl AddressMode {
         (self.0 & 0b111_000) == 0b100_000
     }
 
-    pub fn reg(self) -> usize {
-        self.0 as usize & 7
+    #[allow(clippy::unusual_byte_groupings)]
+    pub fn is_immediate(self) -> bool {
+        self.0 == 0b111_100
     }
 
     fn absolute16(self, core: &mut Core<impl Bus>) -> u32 {

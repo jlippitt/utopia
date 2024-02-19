@@ -1,10 +1,13 @@
 use super::{Bus, Core, Mode, Size};
 use address_mode::AddressMode;
+use operator::Operator;
 use tracing::trace;
 
 mod address_mode;
 mod condition;
 mod control;
+mod meta;
+mod operator;
 mod transfer;
 
 pub fn reset(core: &mut Core<impl Bus>) {
@@ -17,11 +20,29 @@ pub fn reset(core: &mut Core<impl Bus>) {
 
 pub fn dispatch(core: &mut Core<impl Bus>) {
     use condition as cond;
+    use operator as op;
 
     let word: u16 = core.next();
 
     #[allow(clippy::unusual_byte_groupings)]
     match word >> 6 {
+        // Immediate Value Operations
+        // 0b0000_0000_00 => meta::immediate::<op::Or, u8>(core, word),
+        // 0b0000_0000_01 => meta::immediate::<op::Or, u16>(core, word),
+        // 0b0000_0000_10 => meta::immediate::<op::Or, u32>(core, word),
+        0b0000_0010_00 => meta::immediate::<op::And, u8>(core, word),
+        0b0000_0010_01 => meta::immediate::<op::And, u16>(core, word),
+        0b0000_0010_10 => meta::immediate::<op::And, u32>(core, word),
+        // 0b0000_0100_00 => meta::immediate::<op::Add, u8>(core, word),
+        // 0b0000_0100_01 => meta::immediate::<op::Add, u16>(core, word),
+        // 0b0000_0100_10 => meta::immediate::<op::Add, u32>(core, word),
+        // 0b0000_0110_00 => meta::immediate::<op::Sub, u8>(core, word),
+        // 0b0000_0110_01 => meta::immediate::<op::Sub, u16>(core, word),
+        // 0b0000_0110_10 => meta::immediate::<op::Sub, u32>(core, word),
+        // 0b0000_1010_00 => meta::immediate::<op::Eor, u8>(core, word),
+        // 0b0000_1010_01 => meta::immediate::<op::Eor, u16>(core, word),
+        // 0b0000_1010_10 => meta::immediate::<op::Eor, u32>(core, word),
+
         // MOVEA
         0b0001_0000_01 | 0b0001_0010_01 | 0b0001_0100_01 | 0b0001_0110_01 | 0b0001_1000_01
         | 0b0001_1010_01 | 0b0001_1100_01 | 0b0001_1110_01 => transfer::movea::<u8>(core, word),
