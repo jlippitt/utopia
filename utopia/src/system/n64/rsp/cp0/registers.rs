@@ -28,7 +28,7 @@ pub struct Registers {
 }
 
 impl Registers {
-    pub const NAMES: [&str; 16] = [
+    pub const NAMES: [&'static str; 16] = [
         "SP_DMA_SPADDR",
         "SP_DMA_RAMADDR",
         "SP_DMA_RDLEN",
