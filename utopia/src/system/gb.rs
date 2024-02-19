@@ -340,8 +340,8 @@ impl<T: Mapped> Hardware<T> {
             0x80..=0xfe => self.hram[address as usize],
             0xff => self.interrupt.enable(),
             _ => {
-                panic!("Unmapped register read: {:02X}", address);
-                //0xff
+                warn!("Unmapped register read: {:02X}", address);
+                0xff
             }
         }
     }
@@ -382,7 +382,7 @@ impl<T: Mapped> Hardware<T> {
             0x70 if is_cgb => self.wram.set_bank(value),
             0x80..=0xfe => self.hram[address as usize] = value,
             0xff => self.interrupt.set_enable(value),
-            _ => panic!("Unmapped register write: {:02X} <= {:02X}", address, value),
+            _ => warn!("Unmapped register write: {:02X} <= {:02X}", address, value),
         }
     }
 
