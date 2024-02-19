@@ -1,4 +1,5 @@
 pub mod arm7tdmi;
+pub mod m68000;
 pub mod mips;
 pub mod mos6502;
 pub mod sm83;

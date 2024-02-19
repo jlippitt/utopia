@@ -6,6 +6,7 @@ use std::path::Path;
 
 pub mod gb;
 pub mod gba;
+pub mod md;
 pub mod n64;
 pub mod nes;
 pub mod sms;
@@ -23,9 +24,10 @@ pub type AudioQueue = VecDeque<(f32, f32)>;
 pub enum SystemType {
     GameBoy,
     GameBoyAdvance,
+    MasterSystem,
+    MegaDrive,
     Nes,
     Nintendo64,
-    SegaMasterSystem,
     Snes,
 }
 
@@ -41,10 +43,11 @@ impl TryFrom<&Path> for SystemType {
         match extension.as_str() {
             "gb" | "gbc" => Ok(Self::GameBoy),
             "gba" => Ok(Self::GameBoyAdvance),
+            "md" => Ok(Self::MegaDrive),
             "n64" | "z64" => Ok(Self::Nintendo64),
             "nes" => Ok(Self::Nes),
             "sfc" | "smc" => Ok(Self::Snes),
-            "sms" => Ok(Self::SegaMasterSystem),
+            "sms" => Ok(Self::MasterSystem),
             _ => Err(format!("No system found for file extension '.{}'", extension).into()),
         }
     }
@@ -92,9 +95,10 @@ pub fn create<'a, T: MemoryMapper + 'static>(
     Ok(match options.system_type {
         SystemType::GameBoy => Box::new(gb::System::new(options)),
         SystemType::GameBoyAdvance => Box::new(gba::System::new(options)),
+        SystemType::MasterSystem => Box::new(sms::System::new(options)),
+        SystemType::MegaDrive => Box::new(md::System::new(options)),
         SystemType::Nintendo64 => Box::new(n64::System::new(options)),
         SystemType::Nes => Box::new(nes::System::new(options)),
-        SystemType::SegaMasterSystem => Box::new(sms::System::new(options)),
         SystemType::Snes => Box::new(snes::System::new(options)),
     })
 }
