@@ -1,6 +1,6 @@
 use super::{InstanceOptions, JoypadState, MemoryMapper, Size, SystemOptions, WgpuContext};
 use crate::core::m68000::{self, Core};
-use crate::util::memory::{Memory, Value};
+use crate::util::memory::{Memory, Reader, Value};
 use std::marker::PhantomData;
 
 const RAM_SIZE: usize = 65536;
@@ -83,8 +83,25 @@ impl m68000::Bus for Bus {
     fn read<T: Value>(&self, address: u32) -> T {
         match (address >> 16) as u8 {
             0x00..=0x3f => self.rom.read_be(address as usize),
+            0xa1 => self.read_be(address),
             0xff => self.ram.read_be(address as usize & 0xffff),
             _ => panic!("Unmapped read: {:08X}", address),
+        }
+    }
+}
+
+impl Reader for Bus {
+    type Value = u16;
+
+    fn read_register(&self, address: u32) -> Self::Value {
+        match address as u16 {
+            // TODO: Port 1 control
+            0x0008 => 0,
+            // TODO: Port 2 control
+            0x000a => 0,
+            // TODO: EXT port control
+            0x000c => 0,
+            port => unimplemented!("Port read {:04X}", port),
         }
     }
 }
