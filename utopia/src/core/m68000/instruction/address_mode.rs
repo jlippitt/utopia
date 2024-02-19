@@ -22,6 +22,10 @@ impl AddressMode {
         match self.0 {
             0b000_000..=0b000_111 => core.dreg(self.reg()),
             0b001_000..=0b001_111 => core.areg(self.reg()),
+            0b010_000..=0b010_111 => {
+                let address = core.areg(self.reg());
+                core.read(address)
+            }
             0b101_000..=0b101_111 => {
                 let address = self.areg_displacement(core);
                 core.read(address)
@@ -47,6 +51,10 @@ impl AddressMode {
         match self.0 {
             0b000_000..=0b000_111 => core.set_dreg(self.reg(), value),
             0b001_000..=0b001_111 => core.set_areg(self.reg(), value),
+            0b010_000..=0b010_111 => {
+                let address = core.areg(self.reg());
+                core.write(address, value);
+            }
             0b101_000..=0b101_111 => {
                 let address = self.areg_displacement(core);
                 core.write(address, value);
@@ -79,6 +87,10 @@ impl AddressMode {
                 let index = self.reg();
                 let result = cb(core, core.areg(index));
                 core.set_areg(index, result);
+            }
+            0b010_000..=0b010_111 => {
+                let address = core.areg(self.reg());
+                core.modify(address, cb);
             }
             0b101_000..=0b101_111 => {
                 let address = self.areg_displacement(core);
