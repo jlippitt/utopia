@@ -5,6 +5,7 @@ use tracing::trace;
 mod address_mode;
 mod condition;
 mod control;
+mod transfer;
 
 pub fn reset(core: &mut Core<impl Bus>) {
     trace!("RESET");
@@ -46,7 +47,12 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
 
         // Special encodings
         0b0100_0001_11 | 0b0100_0010_11 | 0b0100_0101_11 | 0b0100_0111_11 | 0b0100_1001_11
-        | 0b0100_1011_11 | 0b0100_1101_11 | 0b0100_1111_11 => lea(core, word),
+        | 0b0100_1011_11 | 0b0100_1101_11 | 0b0100_1111_11 => transfer::lea(core, word),
+
+        //0b0100_1000_10 => transfer::movem_write::<u16>(core, word),
+        //0b0100_1000_11 => transfer::movem_write::<u32>(core, word),
+        0b0100_1100_10 => transfer::movem_read::<u16>(core, word),
+        0b0100_1100_11 => transfer::movem_read::<u32>(core, word),
 
         _ => unimplemented!(
             "M68000 Opcode: {:04b}_{:04b}_{:02b}",
@@ -66,12 +72,4 @@ fn tst<T: Size>(core: &mut Core<impl Bus>, word: u16) {
         flags.v = 0;
         flags.c = false;
     });
-}
-
-fn lea(core: &mut Core<impl Bus>, word: u16) {
-    let src = AddressMode::from(word);
-    let dst = (word >> 9) & 7;
-    trace!("LEA {}, A{}", src, dst);
-    let value = src.address(core);
-    core.set_areg(dst as usize, value);
 }

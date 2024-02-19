@@ -6,30 +6,47 @@ pub struct AddressMode(u8);
 
 impl AddressMode {
     pub fn address(self, core: &mut Core<impl Bus>) -> u32 {
+        #[allow(clippy::unusual_byte_groupings)]
         match self.0 {
-            0b111000 => self.absolute16(core),
-            0b111001 => self.absolute32(core),
-            0b111010 => self.pc_displacement(core),
+            0b010_000..=0b100_111 => core.areg(self.reg()),
+            0b111_000 => self.absolute16(core),
+            0b111_001 => self.absolute32(core),
+            0b111_010 => self.pc_displacement(core),
             _ => unimplemented!("Address mode lookup: {:06b}", self.0),
         }
     }
 
     pub fn read<T: Size>(self, core: &mut Core<impl Bus>) -> T {
+        #[allow(clippy::unusual_byte_groupings)]
         match self.0 {
-            0b111000 => {
+            0b111_000 => {
                 let address = self.absolute16(core);
                 core.read(address)
             }
-            0b111001 => {
+            0b111_001 => {
                 let address = self.absolute32(core);
                 core.read(address)
             }
-            0b111010 => {
+            0b111_010 => {
                 let address = self.pc_displacement(core);
                 core.read(address)
             }
             _ => unimplemented!("Address mode read: {:06b}", self.0),
         }
+    }
+
+    #[allow(clippy::unusual_byte_groupings)]
+    pub fn is_post_increment(self) -> bool {
+        (self.0 & 0b111_000) == 0b011_000
+    }
+
+    #[allow(clippy::unusual_byte_groupings)]
+    pub fn is_pre_decrement(self) -> bool {
+        (self.0 & 0b111_000) == 0b100_000
+    }
+
+    pub fn reg(self) -> usize {
+        self.0 as usize & 7
     }
 
     fn absolute16(self, core: &mut Core<impl Bus>) -> u32 {

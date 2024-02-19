@@ -81,6 +81,14 @@ impl<T: Bus> Core<T> {
         instr::dispatch(self);
     }
 
+    fn set_dreg<U: Size>(&mut self, index: usize, value: U) {
+        U::set_dreg(self, index, value);
+    }
+
+    fn areg<U: Size>(&self, index: usize) -> U {
+        U::areg(self, index)
+    }
+
     fn set_areg<U: Size>(&mut self, index: usize, value: U) {
         U::set_areg(self, index, value);
     }
