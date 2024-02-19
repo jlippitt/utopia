@@ -1,6 +1,7 @@
 use crate::util::memory::Value;
 use bitflags::bitflags;
 use size::Size;
+use std::mem;
 use tracing::trace;
 
 mod instruction;
@@ -18,9 +19,9 @@ pub trait Bus {
 
 pub struct Flags {
     x: bool,
-    n: u32,
+    n: u8,
     z: u32,
-    v: u32,
+    v: u8,
     c: bool,
 }
 
@@ -86,6 +87,18 @@ impl<T: Bus> Core<T> {
         trace!("  PC: {:08X}", self.pc);
     }
 
+    fn set_ccr(&mut self, cb: impl Fn(&mut Flags)) {
+        cb(&mut self.flags);
+        trace!(
+            "  CCR: ---{}{}{}{}{}",
+            if self.flags.x { 'X' } else { '-' },
+            if (self.flags.n & 0x80) != 0 { 'N' } else { '-' },
+            if self.flags.z == 0 { 'Z' } else { '-' },
+            if (self.flags.v & 0x80) != 0 { 'V' } else { '-' },
+            if self.flags.c { 'C' } else { '-' },
+        );
+    }
+
     fn set_mode(&mut self, mode: Mode) {
         self.mode = mode;
         trace!("  Mode: {:?}", self.mode);
@@ -102,7 +115,14 @@ impl<T: Bus> Core<T> {
 
     fn next<U: Size>(&mut self) -> U {
         let value = U::read(self, self.pc);
-        self.pc = self.pc.wrapping_add(std::mem::size_of::<U>() as u32);
+        self.pc = self.pc.wrapping_add(mem::size_of::<U>() as u32);
         value
+    }
+}
+
+impl Flags {
+    fn set_nz<T: Size>(&mut self, value: T) {
+        self.n = (value >> (mem::size_of::<T>() * 8 - 8)).as_();
+        self.z = value.as_();
     }
 }

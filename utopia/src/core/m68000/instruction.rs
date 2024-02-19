@@ -34,4 +34,9 @@ fn tst<T: Size>(core: &mut Core<impl Bus>, word: u16) {
     let operand = AddressMode::from(word);
     trace!("TST.{} {}", T::NAME, operand);
     let value: T = operand.read(core);
+    core.set_ccr(|flags| {
+        flags.set_nz(value);
+        flags.v = 0;
+        flags.c = false;
+    });
 }
