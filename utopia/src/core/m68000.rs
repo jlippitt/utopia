@@ -1,8 +1,10 @@
 use crate::util::memory::Value;
 use bitflags::bitflags;
+use size::Size;
 use tracing::trace;
 
 mod instruction;
+mod size;
 
 bitflags! {
     pub struct Interrupt: u32 {
@@ -75,10 +77,8 @@ impl<T: Bus> Core<T> {
         instr::dispatch(self);
     }
 
-    // TODO: Operation size
-    fn set_areg(&mut self, index: usize, value: u32) {
-        self.areg[index] = value;
-        trace!("  A{}: {:08X}", index, value);
+    fn set_areg<U: Size>(&mut self, index: usize, value: U) {
+        U::set_areg(self, index, value);
     }
 
     fn set_pc(&mut self, value: u32) {
@@ -96,10 +96,13 @@ impl<T: Bus> Core<T> {
         trace!("  Interrupt Level: {}", self.int_level);
     }
 
-    // TODO: Operation size
-    fn read(&self, address: u32) -> u32 {
-        let value = self.bus.read(address);
-        trace!("  {:08X} => {:08X}", address, value);
+    fn read<U: Size>(&self, address: u32) -> U {
+        U::read(self, address)
+    }
+
+    fn next<U: Size>(&mut self) -> U {
+        let value = U::read(self, self.pc);
+        self.pc = self.pc.wrapping_add(std::mem::size_of::<U>() as u32);
         value
     }
 }
