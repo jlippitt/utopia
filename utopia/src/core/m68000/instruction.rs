@@ -22,12 +22,25 @@ pub fn dispatch(core: &mut Core<impl Bus>) {
 
     #[allow(clippy::unusual_byte_groupings)]
     match word >> 6 {
+        // MOVEA
+        0b0001_0000_01 | 0b0001_0010_01 | 0b0001_0100_01 | 0b0001_0110_01 | 0b0001_1000_01
+        | 0b0001_1010_01 | 0b0001_1100_01 | 0b0001_1110_01 => transfer::movea::<u8>(core, word),
+        0b0010_0000_01 | 0b0010_0010_01 | 0b0010_0100_01 | 0b0010_0110_01 | 0b0010_1000_01
+        | 0b0010_1010_01 | 0b0010_1100_01 | 0b0010_1110_01 => transfer::movea::<u16>(core, word),
+        0b0011_0000_01 | 0b0011_0010_01 | 0b0011_0100_01 | 0b0011_0110_01 | 0b0011_1000_01
+        | 0b0011_1010_01 | 0b0011_1100_01 | 0b0011_1110_01 => transfer::movea::<u32>(core, word),
+
+        // MOVE
+        0b0001_0000_00..=0b0001_1111_11 => transfer::move_::<u8>(core, word),
+        0b0010_0000_00..=0b0010_1111_11 => transfer::move_::<u16>(core, word),
+        0b0011_0000_00..=0b0011_1111_11 => transfer::move_::<u32>(core, word),
+
         // 0b0100 (Unary/Misc)
         0b0100_1010_00 => tst::<u8>(core, word),
         0b0100_1010_01 => tst::<u16>(core, word),
         0b0100_1010_10 => tst::<u32>(core, word),
 
-        // 0b0110 (Branches)
+        // Branches
         0b0110_0000_00..=0b0110_0000_11 => control::bra(core, word),
         //0b0110_0001_00..=0b0110_0001_11 => control::bsr(core, word),
         0b0110_0010_00..=0b0110_0010_11 => control::bcc::<cond::HI>(core, word),

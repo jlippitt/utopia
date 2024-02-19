@@ -15,6 +15,7 @@ bitflags! {
 
 pub trait Bus {
     fn read<T: Value>(&self, address: u32) -> T;
+    fn write<T: Value>(&mut self, address: u32, value: T);
 }
 
 pub struct Flags {
@@ -81,6 +82,10 @@ impl<T: Bus> Core<T> {
         instr::dispatch(self);
     }
 
+    fn dreg<U: Size>(&self, index: usize) -> U {
+        U::dreg(self, index)
+    }
+
     fn set_dreg<U: Size>(&mut self, index: usize, value: U) {
         U::set_dreg(self, index, value);
     }
@@ -122,6 +127,10 @@ impl<T: Bus> Core<T> {
 
     fn read<U: Size>(&self, address: u32) -> U {
         U::read(self, address)
+    }
+
+    fn write<U: Size>(&mut self, address: u32, value: U) {
+        U::write(self, address, value);
     }
 
     fn next<U: Size>(&mut self) -> U {

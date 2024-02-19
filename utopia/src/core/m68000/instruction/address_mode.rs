@@ -9,9 +9,10 @@ impl AddressMode {
         #[allow(clippy::unusual_byte_groupings)]
         match self.0 {
             0b010_000..=0b100_111 => core.areg(self.reg()),
+            0b101_000..=0b101_111 => self.areg_displacement(core),
             0b111_000 => self.absolute16(core),
             0b111_001 => self.absolute32(core),
-            0b111_010 => self.pc_displacement(core),
+            0b111_010 => self.displacement(core, core.pc),
             _ => unimplemented!("Address mode lookup: {:06b}", self.0),
         }
     }
@@ -19,6 +20,12 @@ impl AddressMode {
     pub fn read<T: Size>(self, core: &mut Core<impl Bus>) -> T {
         #[allow(clippy::unusual_byte_groupings)]
         match self.0 {
+            0b000_000..=0b000_111 => core.dreg(self.reg()),
+            0b001_000..=0b001_111 => core.areg(self.reg()),
+            0b101_000..=0b101_111 => {
+                let address = self.areg_displacement(core);
+                core.read(address)
+            }
             0b111_000 => {
                 let address = self.absolute16(core);
                 core.read(address)
@@ -28,10 +35,35 @@ impl AddressMode {
                 core.read(address)
             }
             0b111_010 => {
-                let address = self.pc_displacement(core);
+                let address = self.displacement(core, core.pc);
                 core.read(address)
             }
             _ => unimplemented!("Address mode read: {:06b}", self.0),
+        }
+    }
+
+    pub fn write<T: Size>(self, core: &mut Core<impl Bus>, value: T) {
+        #[allow(clippy::unusual_byte_groupings)]
+        match self.0 {
+            0b000_000..=0b000_111 => core.set_dreg(self.reg(), value),
+            0b001_000..=0b001_111 => core.set_areg(self.reg(), value),
+            0b101_000..=0b101_111 => {
+                let address = self.areg_displacement(core);
+                core.write(address, value);
+            }
+            0b111_000 => {
+                let address = self.absolute16(core);
+                core.write(address, value);
+            }
+            0b111_001 => {
+                let address = self.absolute32(core);
+                core.write(address, value);
+            }
+            0b111_010 => {
+                let address = self.displacement(core, core.pc);
+                core.write(address, value);
+            }
+            _ => unimplemented!("Address mode write: {:06b}", self.0),
         }
     }
 
@@ -57,10 +89,14 @@ impl AddressMode {
         core.next()
     }
 
-    fn pc_displacement(self, core: &mut Core<impl Bus>) -> u32 {
-        let pc = core.pc;
+    fn areg_displacement(self, core: &mut Core<impl Bus>) -> u32 {
+        let base = core.areg(self.reg());
+        self.displacement(core, base)
+    }
+
+    fn displacement(self, core: &mut Core<impl Bus>, base: u32) -> u32 {
         let displacement: u16 = core.next();
-        pc.wrapping_add(displacement as u32)
+        base.wrapping_add(displacement as i16 as u32)
     }
 }
 

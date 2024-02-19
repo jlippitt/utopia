@@ -4,14 +4,20 @@ use tracing::trace;
 
 pub trait Size: Value {
     const NAME: char;
+    fn dreg(core: &Core<impl Bus>, index: usize) -> Self;
     fn set_dreg(core: &mut Core<impl Bus>, index: usize, value: Self);
     fn areg(core: &Core<impl Bus>, index: usize) -> Self;
     fn set_areg(core: &mut Core<impl Bus>, index: usize, value: Self);
     fn read(core: &Core<impl Bus>, address: u32) -> Self;
+    fn write(core: &mut Core<impl Bus>, address: u32, value: Self);
 }
 
 impl Size for u8 {
     const NAME: char = 'B';
+
+    fn dreg(core: &Core<impl Bus>, index: usize) -> Self {
+        core.dreg[index] as Self
+    }
 
     fn set_dreg(core: &mut Core<impl Bus>, index: usize, value: Self) {
         core.dreg[index] = value as u32;
@@ -33,10 +39,20 @@ impl Size for u8 {
         trace!("  {:06X} => {:02X}", address, value);
         value
     }
+
+    fn write(core: &mut Core<impl Bus>, address: u32, value: Self) {
+        let address = address & 0x00ff_ffff;
+        trace!("  {:06X} <= {:02X}", address, value);
+        core.bus.write(address, value);
+    }
 }
 
 impl Size for u16 {
     const NAME: char = 'W';
+
+    fn dreg(core: &Core<impl Bus>, index: usize) -> Self {
+        core.dreg[index] as Self
+    }
 
     fn set_dreg(core: &mut Core<impl Bus>, index: usize, value: Self) {
         core.dreg[index] = value as u32;
@@ -58,10 +74,20 @@ impl Size for u16 {
         trace!("  {:06X} => {:04X}", address, value);
         value
     }
+
+    fn write(core: &mut Core<impl Bus>, address: u32, value: Self) {
+        let address = address & 0x00ff_ffff;
+        trace!("  {:06X} <= {:04X}", address, value);
+        core.bus.write(address, value);
+    }
 }
 
 impl Size for u32 {
     const NAME: char = 'L';
+
+    fn dreg(core: &Core<impl Bus>, index: usize) -> Self {
+        core.dreg[index] as Self
+    }
 
     fn set_dreg(core: &mut Core<impl Bus>, index: usize, value: Self) {
         core.dreg[index] = value;
@@ -81,5 +107,12 @@ impl Size for u32 {
         let high = u16::read(core, address);
         let low = u16::read(core, address.wrapping_add(2));
         ((high as u32) << 16) | low as u32
+    }
+
+    fn write(core: &mut Core<impl Bus>, address: u32, value: Self) {
+        let high = (value >> 16) as u16;
+        let low = value as u16;
+        u16::write(core, address, high);
+        u16::write(core, address.wrapping_add(2), low);
     }
 }

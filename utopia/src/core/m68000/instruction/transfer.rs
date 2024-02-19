@@ -10,6 +10,27 @@ pub fn lea(core: &mut Core<impl Bus>, word: u16) {
     core.set_areg(dst as usize, value);
 }
 
+pub fn movea<T: Size>(core: &mut Core<impl Bus>, word: u16) {
+    let src = AddressMode::from(word);
+    let dst = (word >> 9) & 7;
+    trace!("MOVEA.{} {}, A{}", T::NAME, src, dst);
+    let value: T = src.read(core);
+    core.set_areg(dst as usize, value);
+}
+
+pub fn move_<T: Size>(core: &mut Core<impl Bus>, word: u16) {
+    let src = AddressMode::from(word);
+    let dst = AddressMode::from(((word >> 6) & 56) | ((word >> 9) & 7));
+    trace!("MOVE.{} {}, {}", T::NAME, src, dst);
+    let value: T = src.read(core);
+    dst.write(core, value);
+    core.set_ccr(|flags| {
+        flags.set_nz(value);
+        flags.v = 0;
+        flags.c = false;
+    })
+}
+
 pub fn movem_read<T: Size>(core: &mut Core<impl Bus>, word: u16) {
     let src = AddressMode::from(word);
     trace!("MOVEM.{} {}, regs", T::NAME, src);
