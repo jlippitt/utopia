@@ -140,9 +140,7 @@ impl<T: Bus> Core<T> {
     }
 
     fn next<U: Size>(&mut self) -> U {
-        let value = U::read(self, self.pc);
-        self.pc = self.pc.wrapping_add(mem::size_of::<U>() as u32);
-        value
+        U::next(self)
     }
 }
 

@@ -10,6 +10,7 @@ pub trait Size: Value {
     fn set_areg(core: &mut Core<impl Bus>, index: usize, value: Self);
     fn read(core: &Core<impl Bus>, address: u32) -> Self;
     fn write(core: &mut Core<impl Bus>, address: u32, value: Self);
+    fn next(core: &mut Core<impl Bus>) -> Self;
 }
 
 impl Size for u8 {
@@ -44,6 +45,10 @@ impl Size for u8 {
         let address = address & 0x00ff_ffff;
         trace!("  {:06X} <= {:02X}", address, value);
         core.bus.write(address, value);
+    }
+
+    fn next(core: &mut Core<impl Bus>) -> Self {
+        u16::next(core) as Self
     }
 }
 
@@ -80,6 +85,12 @@ impl Size for u16 {
         trace!("  {:06X} <= {:04X}", address, value);
         core.bus.write(address, value);
     }
+
+    fn next(core: &mut Core<impl Bus>) -> Self {
+        let value = Self::read(core, core.pc);
+        core.pc = core.pc.wrapping_add(2);
+        value
+    }
 }
 
 impl Size for u32 {
@@ -114,5 +125,11 @@ impl Size for u32 {
         let low = value as u16;
         u16::write(core, address, high);
         u16::write(core, address.wrapping_add(2), low);
+    }
+
+    fn next(core: &mut Core<impl Bus>) -> Self {
+        let high = u16::next(core);
+        let low = u16::next(core);
+        ((high as u32) << 16) | low as u32
     }
 }
