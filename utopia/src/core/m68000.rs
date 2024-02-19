@@ -73,6 +73,9 @@ impl<T: Bus> Core<T> {
             } else {
                 unimplemented!("Interrupt types other than reset");
             }
+
+            self.interrupt = Interrupt::empty();
+            return;
         }
 
         instr::dispatch(self);
