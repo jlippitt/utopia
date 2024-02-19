@@ -27,8 +27,8 @@ impl Size for u32 {
     }
 
     fn read(core: &Core<impl Bus>, address: u32) -> Self {
-        let value = core.bus.read(address);
-        trace!("  {:08X} => {:08X}", address, value);
-        value
+        let high = u16::read(core, address);
+        let low = u16::read(core, address.wrapping_add(2));
+        ((high as u32) << 16) | low as u32
     }
 }
