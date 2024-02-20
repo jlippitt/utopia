@@ -20,10 +20,10 @@ pub fn bcc<T: Condition>(core: &mut Core<impl Bus>, word: u16) {
 
 fn branch(core: &mut Core<impl Bus>, word: u16) {
     let pc = core.pc;
-    let mut displacement = word & 0xff;
+    let mut displacement = (word & 0xff) as i8 as i16;
 
     if displacement == 0 {
-        displacement = core.next();
+        displacement = core.next::<u16>() as i16;
     }
 
     core.pc = pc.wrapping_add(displacement as u32);
