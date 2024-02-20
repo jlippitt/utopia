@@ -12,7 +12,7 @@ pub fn lea(core: &mut Core<impl Bus>, word: u16) {
 
 pub fn move_<T: Size>(core: &mut Core<impl Bus>, word: u16) {
     let src = AddressMode::from(word);
-    let dst = AddressMode::from(((word >> 6) & 56) | ((word >> 9) & 7));
+    let dst = AddressMode::from(((word >> 3) & 56) | ((word >> 9) & 7));
     trace!("MOVE.{} {}, {}", T::NAME, src, dst);
     let value: T = src.read(core);
     core.set_ccr(|flags| {

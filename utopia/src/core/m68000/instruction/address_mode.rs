@@ -1,5 +1,6 @@
 use super::{Bus, Core, Size};
 use std::fmt;
+use std::mem;
 
 #[derive(Copy, Clone)]
 pub struct AddressMode(u8);
@@ -25,6 +26,13 @@ impl AddressMode {
             0b010_000..=0b010_111 => {
                 let address = core.areg(self.reg());
                 core.read(address)
+            }
+            0b011_000..=0b011_111 => {
+                let index = self.reg();
+                let address = core.areg(index);
+                let value = core.read(address);
+                core.set_areg(index, address.wrapping_add(mem::size_of::<T>() as u32));
+                value
             }
             0b101_000..=0b101_111 => {
                 let address = self.areg_displacement(core);
@@ -54,6 +62,12 @@ impl AddressMode {
             0b010_000..=0b010_111 => {
                 let address = core.areg(self.reg());
                 core.write(address, value);
+            }
+            0b011_000..=0b011_111 => {
+                let index = self.reg();
+                let address = core.areg(index);
+                core.write(address, value);
+                core.set_areg(index, address.wrapping_add(mem::size_of::<T>() as u32));
             }
             0b101_000..=0b101_111 => {
                 let address = self.areg_displacement(core);
