@@ -1,4 +1,4 @@
-use super::super::Flags;
+use super::Flags;
 
 pub trait Condition {
     const NAME: &'static str;

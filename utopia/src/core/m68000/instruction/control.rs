@@ -1,5 +1,4 @@
-use super::condition::Condition;
-use super::{Bus, Core};
+use super::{Bus, Condition, Core};
 use tracing::trace;
 
 pub fn bra(core: &mut Core<impl Bus>, word: u16) {

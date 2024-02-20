@@ -4,7 +4,9 @@ use size::Size;
 use std::mem;
 use tracing::trace;
 
+mod condition;
 mod instruction;
+mod operator;
 mod size;
 
 bitflags! {
@@ -66,7 +68,9 @@ impl<T: Bus> Core<T> {
     }
 
     pub fn step(&mut self) {
+        use condition as cond;
         use instruction as instr;
+        use operator as op;
 
         if !self.interrupt.is_empty() {
             if self.interrupt.contains(Interrupt::RESET) {
@@ -79,7 +83,79 @@ impl<T: Bus> Core<T> {
             return;
         }
 
-        instr::dispatch(self);
+        let word: u16 = self.next();
+
+        #[allow(clippy::unusual_byte_groupings)]
+        match word >> 6 {
+            // Immediate Value Operations
+            // 0b0000_0000_00 => instr::immediate::<op::Or, u8>(self, word),
+            // 0b0000_0000_01 => instr::immediate::<op::Or, u16>(self, word),
+            // 0b0000_0000_10 => instr::immediate::<op::Or, u32>(self, word),
+            0b0000_0010_00 => instr::immediate::<op::And, u8>(self, word),
+            0b0000_0010_01 => instr::immediate::<op::And, u16>(self, word),
+            0b0000_0010_10 => instr::immediate::<op::And, u32>(self, word),
+            // 0b0000_0100_00 => instr::immediate::<op::Add, u8>(self, word),
+            // 0b0000_0100_01 => instr::immediate::<op::Add, u16>(self, word),
+            // 0b0000_0100_10 => instr::immediate::<op::Add, u32>(self, word),
+            // 0b0000_0110_00 => instr::immediate::<op::Sub, u8>(self, word),
+            // 0b0000_0110_01 => instr::immediate::<op::Sub, u16>(self, word),
+            // 0b0000_0110_10 => instr::immediate::<op::Sub, u32>(self, word),
+            // 0b0000_1010_00 => instr::immediate::<op::Eor, u8>(self, word),
+            // 0b0000_1010_01 => instr::immediate::<op::Eor, u16>(self, word),
+            // 0b0000_1010_10 => instr::immediate::<op::Eor, u32>(self, word),
+
+            // MOVEA
+            0b0001_0000_01 | 0b0001_0010_01 | 0b0001_0100_01 | 0b0001_0110_01 | 0b0001_1000_01
+            | 0b0001_1010_01 | 0b0001_1100_01 | 0b0001_1110_01 => instr::movea::<u8>(self, word),
+            0b0010_0000_01 | 0b0010_0010_01 | 0b0010_0100_01 | 0b0010_0110_01 | 0b0010_1000_01
+            | 0b0010_1010_01 | 0b0010_1100_01 | 0b0010_1110_01 => instr::movea::<u16>(self, word),
+            0b0011_0000_01 | 0b0011_0010_01 | 0b0011_0100_01 | 0b0011_0110_01 | 0b0011_1000_01
+            | 0b0011_1010_01 | 0b0011_1100_01 | 0b0011_1110_01 => instr::movea::<u32>(self, word),
+
+            // MOVE
+            0b0001_0000_00..=0b0001_1111_11 => instr::move_::<u8>(self, word),
+            0b0010_0000_00..=0b0010_1111_11 => instr::move_::<u16>(self, word),
+            0b0011_0000_00..=0b0011_1111_11 => instr::move_::<u32>(self, word),
+
+            // 0b0100 (Unary/Misc)
+            0b0100_1010_00 => instr::tst::<u8>(self, word),
+            0b0100_1010_01 => instr::tst::<u16>(self, word),
+            0b0100_1010_10 => instr::tst::<u32>(self, word),
+
+            // Branches
+            0b0110_0000_00..=0b0110_0000_11 => instr::bra(self, word),
+            //0b0110_0001_00..=0b0110_0001_11 => instr::bsr(self, word),
+            0b0110_0010_00..=0b0110_0010_11 => instr::bcc::<cond::HI>(self, word),
+            0b0110_0011_00..=0b0110_0011_11 => instr::bcc::<cond::LS>(self, word),
+            0b0110_0100_00..=0b0110_0100_11 => instr::bcc::<cond::CC>(self, word),
+            0b0110_0101_00..=0b0110_0101_11 => instr::bcc::<cond::CS>(self, word),
+            0b0110_0110_00..=0b0110_0110_11 => instr::bcc::<cond::NE>(self, word),
+            0b0110_0111_00..=0b0110_0111_11 => instr::bcc::<cond::EQ>(self, word),
+            0b0110_1000_00..=0b0110_1000_11 => instr::bcc::<cond::VC>(self, word),
+            0b0110_1001_00..=0b0110_1001_11 => instr::bcc::<cond::VS>(self, word),
+            0b0110_1010_00..=0b0110_1010_11 => instr::bcc::<cond::PL>(self, word),
+            0b0110_1011_00..=0b0110_1011_11 => instr::bcc::<cond::MI>(self, word),
+            0b0110_1100_00..=0b0110_1100_11 => instr::bcc::<cond::GE>(self, word),
+            0b0110_1101_00..=0b0110_1101_11 => instr::bcc::<cond::LT>(self, word),
+            0b0110_1110_00..=0b0110_1110_11 => instr::bcc::<cond::GT>(self, word),
+            0b0110_1111_00..=0b0110_1111_11 => instr::bcc::<cond::LE>(self, word),
+
+            // Special encodings
+            0b0100_0001_11 | 0b0100_0010_11 | 0b0100_0101_11 | 0b0100_0111_11 | 0b0100_1001_11
+            | 0b0100_1011_11 | 0b0100_1101_11 | 0b0100_1111_11 => instr::lea(self, word),
+
+            //0b0100_1000_10 => instr::movem_write::<u16>(self, word),
+            //0b0100_1000_11 => instr::movem_write::<u32>(self, word),
+            0b0100_1100_10 => instr::movem_read::<u16>(self, word),
+            0b0100_1100_11 => instr::movem_read::<u32>(self, word),
+
+            _ => unimplemented!(
+                "M68000 Opcode: {:04b}_{:04b}_{:02b}",
+                (word >> 12) & 15,
+                (word >> 8) & 15,
+                (word >> 6) & 3
+            ),
+        }
     }
 
     fn dreg<U: Size>(&self, index: usize) -> U {
