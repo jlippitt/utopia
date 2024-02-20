@@ -31,6 +31,18 @@ pub fn move_<T: Size>(core: &mut Core<impl Bus>, word: u16) {
     dst.write(core, value);
 }
 
+pub fn moveq(core: &mut Core<impl Bus>, word: u16) {
+    let value = (word & 0xff) as i8 as u32;
+    let dst = (word >> 9) & 7;
+    trace!("MOVEQ #{}, D{}", value, dst);
+    core.set_ccr(|flags| {
+        flags.set_nz(value);
+        flags.v = 0;
+        flags.c = false;
+    });
+    core.set_dreg(dst as usize, value);
+}
+
 pub fn movem_read<T: Size>(core: &mut Core<impl Bus>, word: u16) {
     let src = AddressMode::from(word);
     trace!("MOVEM.{} {}, regs", T::NAME, src);
