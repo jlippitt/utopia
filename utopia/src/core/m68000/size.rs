@@ -1,9 +1,11 @@
 use super::{Bus, Core};
 use crate::util::memory::Value;
+use num_traits::{WrappingAdd, WrappingSub};
 use tracing::trace;
 
-pub trait Size: Value {
+pub trait Size: Value + WrappingAdd + WrappingSub {
     const NAME: char;
+    const SIGN_BIT: Self;
     fn dreg(core: &Core<impl Bus>, index: usize) -> Self;
     fn set_dreg(core: &mut Core<impl Bus>, index: usize, value: Self);
     fn areg(core: &Core<impl Bus>, index: usize) -> Self;
@@ -15,6 +17,7 @@ pub trait Size: Value {
 
 impl Size for u8 {
     const NAME: char = 'B';
+    const SIGN_BIT: Self = 0x80;
 
     fn dreg(core: &Core<impl Bus>, index: usize) -> Self {
         core.dreg[index] as Self
@@ -54,6 +57,7 @@ impl Size for u8 {
 
 impl Size for u16 {
     const NAME: char = 'W';
+    const SIGN_BIT: Self = 0x8000;
 
     fn dreg(core: &Core<impl Bus>, index: usize) -> Self {
         core.dreg[index] as Self
@@ -95,6 +99,7 @@ impl Size for u16 {
 
 impl Size for u32 {
     const NAME: char = 'L';
+    const SIGN_BIT: Self = 0x8000_0000;
 
     fn dreg(core: &Core<impl Bus>, index: usize) -> Self {
         core.dreg[index] as Self

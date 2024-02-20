@@ -17,7 +17,7 @@ pub fn move_<T: Size>(core: &mut Core<impl Bus>, word: u16) {
     let value: T = src.read(core);
     core.set_ccr(|flags| {
         flags.set_nz(value);
-        flags.v = 0;
+        flags.v = false;
         flags.c = false;
     });
     dst.write(core, value);
@@ -29,7 +29,7 @@ pub fn moveq(core: &mut Core<impl Bus>, word: u16) {
     trace!("MOVEQ #{}, D{}", value, dst);
     core.set_ccr(|flags| {
         flags.set_nz(value);
-        flags.v = 0;
+        flags.v = false;
         flags.c = false;
     });
     core.set_dreg(dst as usize, value);

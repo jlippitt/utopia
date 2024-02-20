@@ -1,7 +1,6 @@
 use crate::util::memory::Value;
 use bitflags::bitflags;
 use size::Size;
-use std::mem;
 use tracing::trace;
 
 mod condition;
@@ -22,9 +21,9 @@ pub trait Bus {
 
 pub struct Flags {
     x: bool,
-    n: u8,
-    z: u32,
-    v: u8,
+    n: bool,
+    z: bool,
+    v: bool,
     c: bool,
 }
 
@@ -55,9 +54,9 @@ impl<T: Bus> Core<T> {
             sp_shadow: 0,
             flags: Flags {
                 x: false,
-                n: 0,
-                z: u32::MAX,
-                v: 0,
+                n: false,
+                z: false,
+                v: false,
                 c: false,
             },
             mode: Mode::Supervisor,
@@ -160,6 +159,32 @@ impl<T: Bus> Core<T> {
             | 0b0111_1100_00..=0b0111_1100_11
             | 0b0111_1110_00..=0b0111_1110_11 => instr::moveq(self, word),
 
+            // ADD/ADDX/ADDA
+            0b1101_0000_00 | 0b1101_0010_00 | 0b1101_0100_00 | 0b1101_0110_00 | 0b1101_1000_00
+            | 0b1101_1010_00 | 0b1101_1100_00 | 0b1101_1110_00 => {
+                instr::read::<op::Add, u8>(self, word)
+            }
+            0b1101_0000_01 | 0b1101_0010_01 | 0b1101_0100_01 | 0b1101_0110_01 | 0b1101_1000_01
+            | 0b1101_1010_01 | 0b1101_1100_01 | 0b1101_1110_01 => {
+                instr::read::<op::Add, u16>(self, word)
+            }
+            0b1101_0000_10 | 0b1101_0010_10 | 0b1101_0100_10 | 0b1101_0110_10 | 0b1101_1000_10
+            | 0b1101_1010_10 | 0b1101_1100_10 | 0b1101_1110_10 => {
+                instr::read::<op::Add, u32>(self, word)
+            }
+
+            // 0b1101_0001_00 | 0b1101_0011_00 | 0b1101_0101_00 | 0b1101_0111_00 | 0b1101_1001_00
+            // | 0b1101_1011_00 | 0b1101_1101_00 | 0b1101_1111_00 => {
+            //     instr::write::<op::Add, u8>(self, word)
+            // }
+            // 0b1101_0001_01 | 0b1101_0011_01 | 0b1101_0101_01 | 0b1101_0111_01 | 0b1101_1001_01
+            // | 0b1101_1011_01 | 0b1101_1101_01 | 0b1101_1111_01 => {
+            //     instr::write::<op::Add, u16>(self, word)
+            // }
+            // 0b1101_0001_10 | 0b1101_0011_10 | 0b1101_0101_10 | 0b1101_0111_10 | 0b1101_1001_10
+            // | 0b1101_1011_10 | 0b1101_1101_10 | 0b1101_1111_10 => {
+            //     instr::write::<op::Add, u32>(self, word)
+            // }
             _ => unimplemented!(
                 "M68000 Opcode: {:04b}_{:04b}_{:02b}",
                 (word >> 12) & 15,
@@ -220,9 +245,9 @@ impl<T: Bus> Core<T> {
         trace!(
             "  CCR: {}{}{}{}{}",
             if self.flags.x { 'X' } else { '-' },
-            if (self.flags.n & 0x80) != 0 { 'N' } else { '-' },
-            if self.flags.z == 0 { 'Z' } else { '-' },
-            if (self.flags.v & 0x80) != 0 { 'V' } else { '-' },
+            if self.flags.n { 'N' } else { '-' },
+            if self.flags.z { 'Z' } else { '-' },
+            if self.flags.v { 'V' } else { '-' },
             if self.flags.c { 'C' } else { '-' },
         );
     }
@@ -258,7 +283,7 @@ impl<T: Bus> Core<T> {
 
 impl Flags {
     fn set_nz<T: Size>(&mut self, value: T) {
-        self.n = (value >> (mem::size_of::<T>() * 8 - 8)).as_();
-        self.z = value.as_();
+        self.n = (value & T::SIGN_BIT) != T::zero();
+        self.z = value == T::zero();
     }
 }

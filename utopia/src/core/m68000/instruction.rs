@@ -27,7 +27,7 @@ pub fn tst<T: Size>(core: &mut Core<impl Bus>, word: u16) {
     let value: T = operand.read(core);
     core.set_ccr(|flags| {
         flags.set_nz(value);
-        flags.v = 0;
+        flags.v = false;
         flags.c = false;
     });
 }

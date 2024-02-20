@@ -11,7 +11,7 @@ impl Condition for HI {
     const NAME: &'static str = "HI";
 
     fn apply(flags: &Flags) -> bool {
-        flags.z != 0 && !flags.c
+        !flags.z && !flags.c
     }
 }
 
@@ -21,7 +21,7 @@ impl Condition for LS {
     const NAME: &'static str = "LS";
 
     fn apply(flags: &Flags) -> bool {
-        flags.z == 0 || flags.c
+        flags.z || flags.c
     }
 }
 
@@ -51,7 +51,7 @@ impl Condition for NE {
     const NAME: &'static str = "NE";
 
     fn apply(flags: &Flags) -> bool {
-        flags.z != 0
+        !flags.z
     }
 }
 
@@ -61,7 +61,7 @@ impl Condition for EQ {
     const NAME: &'static str = "EQ";
 
     fn apply(flags: &Flags) -> bool {
-        flags.z == 0
+        flags.z
     }
 }
 
@@ -71,7 +71,7 @@ impl Condition for VC {
     const NAME: &'static str = "VC";
 
     fn apply(flags: &Flags) -> bool {
-        (flags.v & 0x80) == 0
+        !flags.v
     }
 }
 
@@ -81,7 +81,7 @@ impl Condition for VS {
     const NAME: &'static str = "VS";
 
     fn apply(flags: &Flags) -> bool {
-        (flags.v & 0x80) != 0
+        flags.v
     }
 }
 
@@ -91,7 +91,7 @@ impl Condition for PL {
     const NAME: &'static str = "PL";
 
     fn apply(flags: &Flags) -> bool {
-        (flags.n & 0x80) == 0
+        !flags.n
     }
 }
 
@@ -101,7 +101,7 @@ impl Condition for MI {
     const NAME: &'static str = "MI";
 
     fn apply(flags: &Flags) -> bool {
-        (flags.n & 0x80) != 0
+        flags.n
     }
 }
 
@@ -111,7 +111,7 @@ impl Condition for GE {
     const NAME: &'static str = "GE";
 
     fn apply(flags: &Flags) -> bool {
-        (flags.n & 0x80) == (flags.v & 0x80)
+        flags.n == flags.v
     }
 }
 
@@ -121,7 +121,7 @@ impl Condition for LT {
     const NAME: &'static str = "LT";
 
     fn apply(flags: &Flags) -> bool {
-        (flags.n & 0x80) != (flags.v & 0x80)
+        flags.n != flags.v
     }
 }
 
@@ -131,7 +131,7 @@ impl Condition for GT {
     const NAME: &'static str = "GT";
 
     fn apply(flags: &Flags) -> bool {
-        flags.z != 0 && (flags.n & 0x80) == (flags.v & 0x80)
+        !flags.z && flags.n == flags.v
     }
 }
 
@@ -141,6 +141,6 @@ impl Condition for LE {
     const NAME: &'static str = "LE";
 
     fn apply(flags: &Flags) -> bool {
-        flags.z == 0 || (flags.n & 0x80) != (flags.v & 0x80)
+        flags.z || flags.n != flags.v
     }
 }
