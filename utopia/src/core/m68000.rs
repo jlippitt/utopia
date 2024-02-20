@@ -122,6 +122,8 @@ impl<T: Bus> Core<T> {
             0b0100_1010_01 => instr::tst::<u16>(self, word),
             0b0100_1010_10 => instr::tst::<u32>(self, word),
 
+            0b0100_1110_01 => self.dispatch_special(word),
+
             // Branches
             0b0110_0000_00..=0b0110_0000_11 => instr::bra(self, word),
             //0b0110_0001_00..=0b0110_0001_11 => instr::bsr(self, word),
@@ -167,6 +169,21 @@ impl<T: Bus> Core<T> {
         }
     }
 
+    fn dispatch_special(&mut self, word: u16) {
+        use instruction as instr;
+
+        #[allow(clippy::unusual_byte_groupings)]
+        match word & 0b111_111 {
+            //0b100_000..=0b100_111 => instr::move_from_usp(self, word),
+            0b100_000..=0b100_111 => instr::move_to_usp(self, word),
+            _ => unimplemented!(
+                "M68000 Special Opcode: {:03b}_{:03b}",
+                (word >> 3) & 7,
+                word & 7
+            ),
+        }
+    }
+
     fn dreg<U: Size>(&self, index: usize) -> U {
         U::dreg(self, index)
     }
@@ -186,6 +203,16 @@ impl<T: Bus> Core<T> {
     fn set_pc(&mut self, value: u32) {
         self.pc = value;
         trace!("  PC: {:08X}", self.pc);
+    }
+
+    fn set_usp(&mut self, value: u32) {
+        match self.mode {
+            Mode::Supervisor => {
+                self.sp_shadow = value;
+                trace!("  USP: {:08X}", self.sp_shadow);
+            }
+            Mode::User => self.set_areg(7, value),
+        }
     }
 
     fn set_ccr(&mut self, cb: impl Fn(&mut Flags)) {
