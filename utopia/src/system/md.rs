@@ -85,7 +85,7 @@ impl m68000::Bus for Bus {
             0x00..=0x3f => self.rom.read_be(address as usize),
             0xa1 => self.read_be(address),
             0xff => self.ram.read_be(address as usize & 0xffff),
-            _ => panic!("Unmapped read: {:08X}", address),
+            _ => panic!("Unmapped read: {:06X}", address),
         }
     }
 
@@ -93,7 +93,7 @@ impl m68000::Bus for Bus {
         match (address >> 16) as u8 {
             0xa1 => self.write_be(address, value),
             0xff => self.ram.write_be(address as usize & 0xffff, value),
-            _ => panic!("Unmapped write: {:08X} <= {:04X}", address, value),
+            _ => panic!("Unmapped write: {:06X} <= {:04X}", address, value),
         }
     }
 }
