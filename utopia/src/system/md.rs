@@ -2,6 +2,9 @@ use super::{InstanceOptions, JoypadState, MemoryMapper, Size, SystemOptions, Wgp
 use crate::core::m68000::{self, Core};
 use crate::util::memory::{Masked, Memory, Reader, Value, Writer};
 use std::marker::PhantomData;
+use vdp::Vdp;
+
+mod vdp;
 
 const RAM_SIZE: usize = 65536;
 
@@ -68,6 +71,7 @@ impl crate::Instance for Instance {
 struct Bus {
     rom: Memory,
     ram: Memory,
+    vdp: Vdp,
 }
 
 impl Bus {
@@ -75,6 +79,7 @@ impl Bus {
         Self {
             rom: rom_data.into(),
             ram: Memory::new(RAM_SIZE),
+            vdp: Vdp::new(),
         }
     }
 }
@@ -84,6 +89,7 @@ impl m68000::Bus for Bus {
         match (address >> 16) as u8 {
             0x00..=0x3f => self.rom.read_be(address as usize),
             0xa1 => self.read_be(address),
+            0xc0 => self.vdp.read_be(address),
             0xff => self.ram.read_be(address as usize & 0xffff),
             _ => panic!("Unmapped read: {:06X}", address),
         }
@@ -92,6 +98,7 @@ impl m68000::Bus for Bus {
     fn write<T: Value>(&mut self, address: u32, value: T) {
         match (address >> 16) as u8 {
             0xa1 => self.write_be(address, value),
+            0xc0 => self.vdp.write_be(address, value),
             0xff => self.ram.write_be(address as usize & 0xffff, value),
             _ => panic!("Unmapped write: {:06X} <= {:04X}", address, value),
         }
@@ -101,7 +108,7 @@ impl m68000::Bus for Bus {
 impl Reader for Bus {
     type Value = u16;
 
-    fn read_register(&self, address: u32) -> Self::Value {
+    fn read_register(&self, address: u32) -> u16 {
         match address as u16 {
             // TODO: Hardware version?
             0x0000 => 0x80,
