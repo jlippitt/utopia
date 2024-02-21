@@ -104,6 +104,10 @@ impl<T: Bus> Core<T> {
             // 0b0000_1010_10 => instr::immediate::<op::Eor, u32>(self, word),
 
             // Bit operations
+            0b0000_1000_00 => instr::btst_static(self, word),
+            // 0b0000_1000_01 => instr::bchg_static(self, word),
+            // 0b0000_1000_10 => instr::bclr_static(self, word),
+            // 0b0000_1000_11 => instr::bset_static(self, word),
             0b0000_0001_00 | 0b0000_0011_00 | 0b0000_0101_00 | 0b0000_0111_00 | 0b0000_1001_00
             | 0b0000_1011_00 | 0b0000_1101_00 | 0b0000_1111_00 => instr::btst_dynamic(self, word),
             // 0b0000_0001_01 | 0b0000_0011_01 | 0b0000_0101_01 | 0b0000_0111_01 | 0b0000_1001_01
