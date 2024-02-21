@@ -73,6 +73,7 @@ struct Bus {
     rom: Memory,
     ram: Memory,
     vdp: Vdp,
+    z80_ram: Memory,
 }
 
 impl Bus {
@@ -81,6 +82,7 @@ impl Bus {
             rom: rom_data.into(),
             ram: Memory::new(RAM_SIZE),
             vdp: Vdp::new(),
+            z80_ram: Memory::new(RAM_SIZE),
         }
     }
 }
@@ -89,6 +91,7 @@ impl m68000::Bus for Bus {
     fn read<T: Value>(&self, address: u32) -> T {
         match (address >> 16) as u8 {
             0x00..=0x3f => self.rom.read_be(address as usize),
+            0xa0 => self.z80_ram.read_be(address as usize & 0xffff),
             0xa1 => self.read_be(address),
             0xc0 => self.vdp.read_be(address),
             0xff => self.ram.read_be(address as usize & 0xffff),
@@ -98,6 +101,7 @@ impl m68000::Bus for Bus {
 
     fn write<T: Value>(&mut self, address: u32, value: T) {
         match (address >> 16) as u8 {
+            0xa0 => self.z80_ram.write_be(address as usize & 0xffff, value),
             0xa1 => self.write_be(address, value),
             0xc0 => self.vdp.write_be(address, value),
             0xff => self.ram.write_be(address as usize & 0xffff, value),
