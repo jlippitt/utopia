@@ -54,6 +54,7 @@ impl AddressMode {
                 let address = self.displacement(core, core.pc);
                 core.read(address)
             }
+            0b111_100 => core.next(),
             _ => unimplemented!("Address mode read: {:06b}", self.0),
         }
     }

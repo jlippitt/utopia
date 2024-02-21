@@ -127,6 +127,8 @@ impl<T: Bus> Core<T> {
             0b0011_0000_00..=0b0011_1111_11 => instr::move_::<u32>(self, word),
 
             // 0b0100 (Unary/Misc)
+            0b0100_0110_11 => instr::move_to_sr(self, word),
+
             0b0100_1010_00 => instr::tst::<u8>(self, word),
             0b0100_1010_01 => instr::tst::<u16>(self, word),
             0b0100_1010_10 => instr::tst::<u32>(self, word),
@@ -258,13 +260,36 @@ impl<T: Bus> Core<T> {
     }
 
     fn set_usp(&mut self, value: u32) {
-        match self.mode {
-            Mode::Supervisor => {
-                self.sp_shadow = value;
-                trace!("  USP: {:08X}", self.sp_shadow);
-            }
-            Mode::User => self.set_areg(7, value),
+        if self.mode != Mode::Supervisor {
+            panic!("Attempted to set USP outside of Supervisor mode");
         }
+
+        self.sp_shadow = value;
+        trace!("  USP: {:08X}", self.sp_shadow);
+    }
+
+    fn set_sr(&mut self, value: u16) {
+        if self.mode != Mode::Supervisor {
+            panic!("Attempted to set SR outside of Supervisor mode");
+        }
+
+        // TODO: Trace mode
+
+        self.set_mode(if (value & 0x2000) != 0 {
+            Mode::Supervisor
+        } else {
+            Mode::User
+        });
+
+        self.set_int_level(((value & 0x0700) >> 8) as u8);
+
+        self.set_ccr(|flags| {
+            flags.x = (value & 0x0010) != 0;
+            flags.n = (value & 0x0008) != 0;
+            flags.z = (value & 0x0004) != 0;
+            flags.v = (value & 0x0002) != 0;
+            flags.c = (value & 0x0001) != 0;
+        });
     }
 
     fn set_ccr(&mut self, cb: impl Fn(&mut Flags)) {
@@ -281,6 +306,11 @@ impl<T: Bus> Core<T> {
 
     fn set_mode(&mut self, mode: Mode) {
         self.mode = mode;
+
+        if self.mode == Mode::User {
+            todo!("Switch to user mode");
+        }
+
         trace!("  Mode: {:?}", self.mode);
     }
 
