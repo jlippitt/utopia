@@ -165,7 +165,7 @@ impl AddressMode {
     }
 
     fn absolute16(self, core: &mut Core<impl Bus>) -> u32 {
-        core.next::<u16>() as u32
+        core.next::<u16>() as i16 as u32
     }
 
     fn absolute32(self, core: &mut Core<impl Bus>) -> u32 {
@@ -209,8 +209,8 @@ impl fmt::Display for AddressMode {
             0b101 => write!(f, "u16(A{})", self.0 & 7),
             0b110 => write!(f, "u8(A{}, Xn)", self.0 & 7),
             0b111 => match self.0 & 7 {
-                0b000 => write!(f, "u16"),
-                0b001 => write!(f, "u32"),
+                0b000 => write!(f, "(u16)"),
+                0b001 => write!(f, "(u32)"),
                 0b010 => write!(f, "u16(PC)"),
                 0b011 => write!(f, "u8(PC, Xn)"),
                 0b100 => write!(f, "#imm"),
