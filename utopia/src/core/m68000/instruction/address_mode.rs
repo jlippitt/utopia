@@ -131,6 +131,11 @@ impl AddressMode {
     }
 
     #[allow(clippy::unusual_byte_groupings)]
+    pub fn is_areg(self) -> bool {
+        (self.0 & 0b111_000) == 0b001_000
+    }
+
+    #[allow(clippy::unusual_byte_groupings)]
     pub fn is_post_increment(self) -> bool {
         (self.0 & 0b111_000) == 0b011_000
     }

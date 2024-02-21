@@ -123,6 +123,23 @@ impl<T: Bus> Core<T> {
 
             0b0100_1110_01 => self.dispatch_special(word),
 
+            0b0101_0000_11 => instr::scc_dbcc::<cond::T>(self, word),
+            0b0101_0001_11 => instr::scc_dbcc::<cond::F>(self, word),
+            0b0101_0010_11 => instr::scc_dbcc::<cond::HI>(self, word),
+            0b0101_0011_11 => instr::scc_dbcc::<cond::LS>(self, word),
+            0b0101_0100_11 => instr::scc_dbcc::<cond::CC>(self, word),
+            0b0101_0101_11 => instr::scc_dbcc::<cond::CS>(self, word),
+            0b0101_0110_11 => instr::scc_dbcc::<cond::NE>(self, word),
+            0b0101_0111_11 => instr::scc_dbcc::<cond::EQ>(self, word),
+            0b0101_1000_11 => instr::scc_dbcc::<cond::VC>(self, word),
+            0b0101_1001_11 => instr::scc_dbcc::<cond::VS>(self, word),
+            0b0101_1010_11 => instr::scc_dbcc::<cond::PL>(self, word),
+            0b0101_1011_11 => instr::scc_dbcc::<cond::MI>(self, word),
+            0b0101_1100_11 => instr::scc_dbcc::<cond::GE>(self, word),
+            0b0101_1101_11 => instr::scc_dbcc::<cond::LT>(self, word),
+            0b0101_1110_11 => instr::scc_dbcc::<cond::GT>(self, word),
+            0b0101_1111_11 => instr::scc_dbcc::<cond::LE>(self, word),
+
             // Branches
             0b0110_0000_00..=0b0110_0000_11 => instr::bra(self, word),
             //0b0110_0001_00..=0b0110_0001_11 => instr::bsr(self, word),

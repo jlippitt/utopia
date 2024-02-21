@@ -1,4 +1,4 @@
-use super::{Bus, Condition, Core};
+use super::{AddressMode, Bus, Condition, Core};
 use tracing::trace;
 
 pub fn bra(core: &mut Core<impl Bus>, word: u16) {
@@ -14,6 +14,34 @@ pub fn bcc<T: Condition>(core: &mut Core<impl Bus>, word: u16) {
         branch(core, word);
     } else {
         trace!("  Branch not taken");
+    }
+}
+
+pub fn scc_dbcc<T: Condition>(core: &mut Core<impl Bus>, word: u16) {
+    let operand = AddressMode::from(word);
+
+    if operand.is_areg() {
+        let index = operand.reg();
+        trace!("DB{} D{}, label", T::NAME, index);
+
+        if !T::apply(&core.flags) {
+            let value: u16 = core.dreg(index);
+            let result = value.wrapping_sub(1);
+            core.set_dreg(index, result);
+
+            if result != u16::MAX {
+                trace!("  Branch taken");
+                let pc = core.pc;
+                let displacement = core.next::<u16>() as i16;
+                core.pc = pc.wrapping_add(displacement as u32);
+                return;
+            }
+        }
+
+        trace!("  Branch not taken");
+        core.pc = core.pc.wrapping_add(2);
+    } else {
+        todo!("Scc");
     }
 }
 

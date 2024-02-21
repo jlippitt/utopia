@@ -5,6 +5,26 @@ pub trait Condition {
     fn apply(flags: &Flags) -> bool;
 }
 
+pub struct T;
+
+impl Condition for T {
+    const NAME: &'static str = "T";
+
+    fn apply(_flags: &Flags) -> bool {
+        true
+    }
+}
+
+pub struct F;
+
+impl Condition for F {
+    const NAME: &'static str = "F";
+
+    fn apply(_flags: &Flags) -> bool {
+        false
+    }
+}
+
 pub struct HI;
 
 impl Condition for HI {
