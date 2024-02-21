@@ -34,6 +34,10 @@ impl AddressMode {
                 core.set_areg(index, address.wrapping_add(mem::size_of::<T>() as u32));
                 value
             }
+            0b100_000..=0b100_111 => {
+                let address = self.areg_pre_decrement::<T>(core);
+                core.read(address)
+            }
             0b101_000..=0b101_111 => {
                 let address = self.areg_displacement(core);
                 core.read(address)
@@ -68,6 +72,10 @@ impl AddressMode {
                 let address = core.areg(index);
                 core.write(address, value);
                 core.set_areg(index, address.wrapping_add(mem::size_of::<T>() as u32));
+            }
+            0b100_000..=0b100_111 => {
+                let address = self.areg_pre_decrement::<T>(core);
+                core.write(address, value);
             }
             0b101_000..=0b101_111 => {
                 let address = self.areg_displacement(core);
@@ -161,6 +169,15 @@ impl AddressMode {
 
     fn absolute32(self, core: &mut Core<impl Bus>) -> u32 {
         core.next()
+    }
+
+    fn areg_pre_decrement<T: Size>(self, core: &mut Core<impl Bus>) -> u32 {
+        let index = self.reg();
+        let address = core
+            .areg::<u32>(index)
+            .wrapping_sub(mem::size_of::<T>() as u32);
+        core.set_areg(index, address);
+        address
     }
 
     fn areg_displacement(self, core: &mut Core<impl Bus>) -> u32 {
