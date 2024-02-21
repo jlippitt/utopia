@@ -14,6 +14,11 @@ pub fn bcc<T: Condition>(core: &mut Core<impl Bus>, word: u16) {
         branch(core, word);
     } else {
         trace!("  Branch not taken");
+
+        // Skip the 'displacement' word if present
+        if (word & 0xff) == 0 {
+            core.pc = core.pc.wrapping_add(2);
+        }
     }
 }
 
