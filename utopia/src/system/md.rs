@@ -2,6 +2,7 @@ use super::{InstanceOptions, JoypadState, MemoryMapper, Size, SystemOptions, Wgp
 use crate::core::m68000::{self, Core};
 use crate::util::memory::{Masked, Memory, Reader, Value, Writer};
 use std::marker::PhantomData;
+use tracing::warn;
 use vdp::Vdp;
 
 mod vdp;
@@ -118,6 +119,8 @@ impl Reader for Bus {
             0x000a => 0,
             // TODO: EXT port control
             0x000c => 0,
+            // TODO: Z80 status
+            0x1100 => 0,
             port => unimplemented!("Port read {:04X}", port),
         }
     }
@@ -126,7 +129,7 @@ impl Reader for Bus {
 impl Writer for Bus {
     fn write_register(&mut self, address: u32, value: Masked<u16>) {
         match address as u16 {
-            port => unimplemented!("Port write {:04X} <= {:04X}", port, value.get()),
+            port => warn!("Unmapped port write {:04X} <= {:04X}", port, value.get()),
         }
     }
 }

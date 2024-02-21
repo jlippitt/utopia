@@ -1,3 +1,4 @@
+pub use bit::*;
 pub use control::*;
 pub use meta::*;
 pub use transfer::*;
@@ -9,6 +10,7 @@ use address_mode::AddressMode;
 use tracing::trace;
 
 mod address_mode;
+mod bit;
 mod control;
 mod meta;
 mod transfer;
