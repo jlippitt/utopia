@@ -158,7 +158,7 @@ impl<T: Bus> Core<T> {
 
             // Branches
             0b0110_0000_00..=0b0110_0000_11 => instr::bra(self, word),
-            //0b0110_0001_00..=0b0110_0001_11 => instr::bsr(self, word),
+            0b0110_0001_00..=0b0110_0001_11 => instr::bsr(self, word),
             0b0110_0010_00..=0b0110_0010_11 => instr::bcc::<cond::HI>(self, word),
             0b0110_0011_00..=0b0110_0011_11 => instr::bcc::<cond::LS>(self, word),
             0b0110_0100_00..=0b0110_0100_11 => instr::bcc::<cond::CC>(self, word),
