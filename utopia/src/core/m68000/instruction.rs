@@ -24,3 +24,7 @@ pub fn reset(core: &mut Core<impl Bus>) {
     core.set_pc(core.read(0x0000_0004));
     core.set_int_level(7);
 }
+
+pub fn nop(_core: &mut Core<impl Bus>) {
+    trace!("NOP")
+}
