@@ -133,6 +133,10 @@ impl<T: Bus> Core<T> {
             // 0b0100 (Unary/Misc)
             0b0100_0110_11 => instr::move_to_sr(self, word),
 
+            0b0100_0010_00 => instr::unary::<op::Clr, u8>(self, word),
+            0b0100_0010_01 => instr::unary::<op::Clr, u16>(self, word),
+            0b0100_0010_10 => instr::unary::<op::Clr, u32>(self, word),
+
             0b0100_1010_00 => instr::tst::<u8>(self, word),
             0b0100_1010_01 => instr::tst::<u16>(self, word),
             0b0100_1010_10 => instr::tst::<u32>(self, word),

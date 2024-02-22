@@ -5,7 +5,7 @@ pub use meta::*;
 pub use transfer::*;
 
 use super::condition::Condition;
-use super::operator::Operator;
+use super::operator;
 use super::{Bus, Core, Mode, Size};
 use address_mode::AddressMode;
 use tracing::trace;
