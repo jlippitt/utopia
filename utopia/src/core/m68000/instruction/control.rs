@@ -59,6 +59,13 @@ pub fn scc_dbcc<T: Condition>(core: &mut Core<impl Bus>, word: u16) {
     }
 }
 
+pub fn rts(core: &mut Core<impl Bus>) {
+    trace!("RTS");
+    let sp: u32 = core.areg(7);
+    core.pc = core.read(sp);
+    core.set_areg(7, sp.wrapping_add(4));
+}
+
 fn calc_target(core: &mut Core<impl Bus>, word: u16) -> u32 {
     let pc = core.pc;
     let mut displacement = (word & 0xff) as i8 as i16;

@@ -246,6 +246,7 @@ impl<T: Bus> Core<T> {
         match word & 0b111_111 {
             //0b100_000..=0b100_111 => instr::move_from_usp(self, word),
             0b100_000..=0b100_111 => instr::move_to_usp(self, word),
+            0b110_101 => instr::rts(self),
             _ => unimplemented!(
                 "M68000 Special Opcode: {:03b}_{:03b}",
                 (word >> 3) & 7,
