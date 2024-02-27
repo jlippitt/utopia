@@ -56,6 +56,13 @@ pub fn move_from_sr(core: &mut Core<impl Bus>, word: u16) {
     dst.write(core, core.sr());
 }
 
+pub fn move_to_ccr(core: &mut Core<impl Bus>, word: u16) {
+    let src = AddressMode::from(word);
+    trace!("MOVE.W {}, CCR", src);
+    let value = src.read(core);
+    core.set_ccr_from_u16(value);
+}
+
 pub fn move_to_sr(core: &mut Core<impl Bus>, word: u16) {
     let src = AddressMode::from(word);
     trace!("MOVE.W {}, SR", src);

@@ -132,6 +132,7 @@ impl<T: Bus> Core<T> {
 
             // 0b0100 (Unary/Misc)
             0b0100_0000_11 => instr::move_from_sr(self, word),
+            0b0100_0100_11 => instr::move_to_ccr(self, word),
             0b0100_0110_11 => instr::move_to_sr(self, word),
 
             0b0100_0010_00 => instr::unary::<op::Clr, u8>(self, word),
@@ -359,14 +360,7 @@ impl<T: Bus> Core<T> {
         });
 
         self.set_int_level(((value & 0x0700) >> 8) as u8);
-
-        self.set_ccr(|flags| {
-            flags.x = (value & 0x10) != 0;
-            flags.n = (value & 0x08) != 0;
-            flags.z = (value & 0x04) != 0;
-            flags.v = (value & 0x02) != 0;
-            flags.c = (value & 0x01) != 0;
-        });
+        self.set_ccr_from_u16(value);
     }
 
     fn set_ccr(&mut self, cb: impl Fn(&mut Flags)) {
@@ -379,6 +373,16 @@ impl<T: Bus> Core<T> {
             if self.flags.v { 'V' } else { '-' },
             if self.flags.c { 'C' } else { '-' },
         );
+    }
+
+    fn set_ccr_from_u16(&mut self, value: u16) {
+        self.set_ccr(|flags| {
+            flags.x = (value & 0x10) != 0;
+            flags.n = (value & 0x08) != 0;
+            flags.z = (value & 0x04) != 0;
+            flags.v = (value & 0x02) != 0;
+            flags.c = (value & 0x01) != 0;
+        });
     }
 
     fn set_mode(&mut self, mode: Mode) {
