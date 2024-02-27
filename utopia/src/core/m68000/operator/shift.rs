@@ -5,26 +5,25 @@ pub trait ShiftOperator {
     fn apply<T: Size>(core: &mut Core<impl Bus>, amount: u32, value: T) -> T;
 }
 
-pub struct Roxl;
+pub struct Lsl;
 
-impl ShiftOperator for Roxl {
-    const NAME: &'static str = "ROXL";
+impl ShiftOperator for Lsl {
+    const NAME: &'static str = "LSL";
 
     fn apply<T: Size>(core: &mut Core<impl Bus>, amount: u32, value: T) -> T {
-        let extend = T::from(core.flags.x as u8).unwrap();
-        let mut result = value.wrapping_shl(amount);
+        let result = value.wrapping_shl(amount);
 
         core.set_ccr(|flags| {
             if amount != 0 {
-                result = result | extend.wrapping_shl(amount - 1) | value.wrapping_shr(amount + 1);
                 flags.c = (value & T::SIGN_BIT.wrapping_shr(amount - 1)) != T::zero();
+                flags.x = flags.c;
             } else {
                 flags.c = false;
+                // X flag is unaffected
             }
 
             flags.set_nz(result);
             flags.v = false;
-            flags.x = flags.c;
         });
 
         result
@@ -50,6 +49,32 @@ impl ShiftOperator for Lsr {
 
             flags.set_nz(result);
             flags.v = false;
+        });
+
+        result
+    }
+}
+
+pub struct Roxl;
+
+impl ShiftOperator for Roxl {
+    const NAME: &'static str = "ROXL";
+
+    fn apply<T: Size>(core: &mut Core<impl Bus>, amount: u32, value: T) -> T {
+        let extend = T::from(core.flags.x as u8).unwrap();
+        let mut result = value.wrapping_shl(amount);
+
+        core.set_ccr(|flags| {
+            if amount != 0 {
+                result = result | extend.wrapping_shl(amount - 1) | value.wrapping_shr(amount + 1);
+                flags.c = (value & T::SIGN_BIT.wrapping_shr(amount - 1)) != T::zero();
+            } else {
+                flags.c = false;
+            }
+
+            flags.set_nz(result);
+            flags.v = false;
+            flags.x = flags.c;
         });
 
         result
