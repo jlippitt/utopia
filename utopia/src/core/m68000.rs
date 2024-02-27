@@ -131,6 +131,7 @@ impl<T: Bus> Core<T> {
             0b0011_0000_00..=0b0011_1111_11 => instr::move_::<u16>(self, word),
 
             // 0b0100 (Unary/Misc)
+            0b0100_0000_11 => instr::move_from_sr(self, word),
             0b0100_0110_11 => instr::move_to_sr(self, word),
 
             0b0100_0010_00 => instr::unary::<op::Clr, u8>(self, word),
@@ -329,6 +330,21 @@ impl<T: Bus> Core<T> {
         trace!("  USP: {:08X}", self.sp_shadow);
     }
 
+    fn sr(&self) -> u16 {
+        // TODO: Trace mode
+        let mut value = match self.mode {
+            Mode::Supervisor => 0x2000,
+            _ => 0,
+        };
+        value |= (self.int_level as u16) << 8;
+        value |= if self.flags.x { 0x10 } else { 0 };
+        value |= if self.flags.n { 0x08 } else { 0 };
+        value |= if self.flags.z { 0x04 } else { 0 };
+        value |= if self.flags.v { 0x02 } else { 0 };
+        value |= if self.flags.c { 0x01 } else { 0 };
+        value
+    }
+
     fn set_sr(&mut self, value: u16) {
         if self.mode != Mode::Supervisor {
             panic!("Attempted to set SR outside of Supervisor mode");
@@ -345,11 +361,11 @@ impl<T: Bus> Core<T> {
         self.set_int_level(((value & 0x0700) >> 8) as u8);
 
         self.set_ccr(|flags| {
-            flags.x = (value & 0x0010) != 0;
-            flags.n = (value & 0x0008) != 0;
-            flags.z = (value & 0x0004) != 0;
-            flags.v = (value & 0x0002) != 0;
-            flags.c = (value & 0x0001) != 0;
+            flags.x = (value & 0x10) != 0;
+            flags.n = (value & 0x08) != 0;
+            flags.z = (value & 0x04) != 0;
+            flags.v = (value & 0x02) != 0;
+            flags.c = (value & 0x01) != 0;
         });
     }
 

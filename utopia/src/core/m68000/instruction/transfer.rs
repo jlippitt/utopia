@@ -50,6 +50,12 @@ pub fn move_to_usp(core: &mut Core<impl Bus>, word: u16) {
     core.set_usp(value);
 }
 
+pub fn move_from_sr(core: &mut Core<impl Bus>, word: u16) {
+    let dst = AddressMode::from(word);
+    trace!("MOVE.W SR, {}", dst);
+    dst.write(core, core.sr());
+}
+
 pub fn move_to_sr(core: &mut Core<impl Bus>, word: u16) {
     let src = AddressMode::from(word);
     trace!("MOVE.W {}, SR", src);
