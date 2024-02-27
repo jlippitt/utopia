@@ -1,9 +1,9 @@
 use super::{Bus, Core};
 use crate::util::memory::Value;
-use num_traits::{WrappingAdd, WrappingSub};
+use num_traits::{WrappingAdd, WrappingShl, WrappingShr, WrappingSub};
 use tracing::trace;
 
-pub trait Size: Value + WrappingAdd + WrappingSub {
+pub trait Size: Value + WrappingAdd + WrappingSub + WrappingShl + WrappingShr {
     const NAME: char;
     const SIGN_BIT: Self;
     fn dreg(core: &Core<impl Bus>, index: usize) -> Self;

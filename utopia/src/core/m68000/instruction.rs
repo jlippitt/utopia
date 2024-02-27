@@ -2,6 +2,7 @@ pub use bit::*;
 pub use compare::*;
 pub use control::*;
 pub use meta::*;
+pub use shift::*;
 pub use transfer::*;
 
 use super::condition::Condition;
@@ -15,6 +16,7 @@ mod bit;
 mod compare;
 mod control;
 mod meta;
+mod shift;
 mod transfer;
 
 pub fn reset(core: &mut Core<impl Bus>) {
