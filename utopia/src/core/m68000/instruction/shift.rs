@@ -2,6 +2,22 @@ use super::operator::ShiftOperator;
 use super::{Bus, Core, Size};
 use tracing::trace;
 
+pub fn shift_many_left<U: Size>(core: &mut Core<impl Bus>, word: u16) {
+    use super::operator as op;
+
+    match (word >> 3) & 7 {
+        // 0b000 => shift_immediate::<op::Asl, U>(core, word),
+        // 0b001 => shift_immediate::<op::Lsl, U>(core, word),
+        0b010 => shift_immediate::<op::Roxl, U>(core, word),
+        // 0b011 => shift_immediate::<op::Rol, U>(core, word),
+        // 0b100 => shift_register::<op::Asl, U>(core, word),
+        // 0b101 => shift_register::<op::Lsl, U>(core, word),
+        0b110 => shift_register::<op::Roxl, U>(core, word),
+        // 0b111 => shift_register::<op::Rol, U>(core, word),
+        _ => unreachable!(),
+    }
+}
+
 pub fn shift_many_right<U: Size>(core: &mut Core<impl Bus>, word: u16) {
     use super::operator as op;
 

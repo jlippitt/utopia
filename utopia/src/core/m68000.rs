@@ -275,6 +275,19 @@ impl<T: Bus> Core<T> {
                 instr::shift_many_right::<u32>(self, word)
             }
 
+            0b1110_0001_00 | 0b1110_0011_00 | 0b1110_0101_00 | 0b1110_0111_00 | 0b1110_1001_00
+            | 0b1110_1011_00 | 0b1110_1101_00 | 0b1110_1111_00 => {
+                instr::shift_many_left::<u8>(self, word)
+            }
+            0b1110_0001_01 | 0b1110_0011_01 | 0b1110_0101_01 | 0b1110_0111_01 | 0b1110_1001_01
+            | 0b1110_1011_01 | 0b1110_1101_01 | 0b1110_1111_01 => {
+                instr::shift_many_left::<u16>(self, word)
+            }
+            0b1110_0001_10 | 0b1110_0011_10 | 0b1110_0101_10 | 0b1110_0111_10 | 0b1110_1001_10
+            | 0b1110_1011_10 | 0b1110_1101_10 | 0b1110_1111_10 => {
+                instr::shift_many_left::<u32>(self, word)
+            }
+
             _ => unimplemented!(
                 "M68000 Opcode: {:04b}_{:04b}_{:02b}",
                 (word >> 12) & 15,
@@ -363,7 +376,7 @@ impl<T: Bus> Core<T> {
         self.set_ccr_from_u16(value);
     }
 
-    fn set_ccr(&mut self, cb: impl Fn(&mut Flags)) {
+    fn set_ccr(&mut self, mut cb: impl FnMut(&mut Flags)) {
         cb(&mut self.flags);
         trace!(
             "  CCR: {}{}{}{}{}",
