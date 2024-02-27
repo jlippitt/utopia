@@ -26,7 +26,7 @@ pub fn move_<T: Size>(core: &mut Core<impl Bus>, word: u16) {
 pub fn moveq(core: &mut Core<impl Bus>, word: u16) {
     let value = (word & 0xff) as i8 as u32;
     let dst = (word >> 9) & 7;
-    trace!("MOVEQ #{}, D{}", value, dst);
+    trace!("MOVEQ #{}, D{}", value as i32, dst);
     core.set_ccr(|flags| {
         flags.set_nz(value);
         flags.v = false;
