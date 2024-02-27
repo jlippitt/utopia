@@ -11,6 +11,7 @@ impl AddressMode {
         match self.0 {
             0b010_000..=0b100_111 => core.areg(self.reg()),
             0b101_000..=0b101_111 => self.areg_displacement(core),
+            0b110_000..=0b110_111 => self.areg_indexed(core),
             0b111_000 => self.absolute16(core),
             0b111_001 => self.absolute32(core),
             0b111_010 => self.displacement(core, core.pc),
@@ -42,6 +43,10 @@ impl AddressMode {
                 let address = self.areg_displacement(core);
                 core.read(address)
             }
+            0b110_000..=0b110_111 => {
+                let address = self.areg_indexed(core);
+                core.read(address)
+            }
             0b111_000 => {
                 let address = self.absolute16(core);
                 core.read(address)
@@ -52,6 +57,10 @@ impl AddressMode {
             }
             0b111_010 => {
                 let address = self.displacement(core, core.pc);
+                core.read(address)
+            }
+            0b111_011 => {
+                let address = self.indexed(core, core.pc);
                 core.read(address)
             }
             0b111_100 => core.next(),
@@ -82,6 +91,10 @@ impl AddressMode {
                 let address = self.areg_displacement(core);
                 core.write(address, value);
             }
+            0b110_000..=0b110_111 => {
+                let address = self.areg_indexed(core);
+                core.write(address, value);
+            }
             0b111_000 => {
                 let address = self.absolute16(core);
                 core.write(address, value);
@@ -92,6 +105,10 @@ impl AddressMode {
             }
             0b111_010 => {
                 let address = self.displacement(core, core.pc);
+                core.write(address, value);
+            }
+            0b111_011 => {
+                let address = self.indexed(core, core.pc);
                 core.write(address, value);
             }
             _ => unimplemented!("Address mode write: {:06b}", self.0),
@@ -119,6 +136,10 @@ impl AddressMode {
                 let address = self.areg_displacement(core);
                 core.modify(address, cb);
             }
+            0b110_000..=0b110_111 => {
+                let address = self.areg_indexed(core);
+                core.modify(address, cb);
+            }
             0b111_000 => {
                 let address = self.absolute16(core);
                 core.modify(address, cb);
@@ -129,6 +150,10 @@ impl AddressMode {
             }
             0b111_010 => {
                 let address = self.displacement(core, core.pc);
+                core.modify(address, cb);
+            }
+            0b111_011 => {
+                let address = self.indexed(core, core.pc);
                 core.modify(address, cb);
             }
             _ => unimplemented!("Address mode write: {:06b}", self.0),
@@ -186,9 +211,39 @@ impl AddressMode {
         self.displacement(core, base)
     }
 
+    fn areg_indexed(self, core: &mut Core<impl Bus>) -> u32 {
+        let base = core.areg(self.reg());
+        self.indexed(core, base)
+    }
+
     fn displacement(self, core: &mut Core<impl Bus>, base: u32) -> u32 {
         let displacement: u16 = core.next();
         base.wrapping_add(displacement as i16 as u32)
+    }
+
+    fn indexed(self, core: &mut Core<impl Bus>, base: u32) -> u32 {
+        let word: u16 = core.next();
+        let displacement = word & 0xff;
+        let index = ((word >> 12) & 7) as usize;
+        let pre_decrement = (word & 0x8000) != 0;
+        let long = (word & 0x0800) != 0;
+
+        let value = match (pre_decrement, long) {
+            (false, false) => core.dreg::<u16>(index) as u32,
+            (false, true) => core.dreg(index),
+            (true, false) => {
+                let value = core.areg::<u16>(index).wrapping_sub(1);
+                core.set_areg(index, value);
+                value as u32
+            }
+            (true, true) => {
+                let value = core.areg::<u32>(index).wrapping_sub(1);
+                core.set_areg(index, value);
+                value
+            }
+        };
+
+        base.wrapping_add(value).wrapping_add(displacement as u32)
     }
 }
 
