@@ -102,6 +102,9 @@ impl<T: Bus> Core<T> {
             // 0b0000_1010_00 => instr::immediate::<op::Eor, u8>(self, word),
             // 0b0000_1010_01 => instr::immediate::<op::Eor, u16>(self, word),
             // 0b0000_1010_10 => instr::immediate::<op::Eor, u32>(self, word),
+            0b0000_1100_00 => instr::cmpi::<u8>(self, word),
+            0b0000_1100_01 => instr::cmpi::<u16>(self, word),
+            0b0000_1100_10 => instr::cmpi::<u32>(self, word),
 
             // Bit operations
             0b0000_1000_00 => instr::btst_static(self, word),
