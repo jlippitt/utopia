@@ -133,6 +133,13 @@ impl AddressMode {
                 let address = core.areg(self.reg());
                 core.modify(address, cb);
             }
+
+            0b011_000..=0b011_111 => {
+                let index = self.reg();
+                let address = core.areg(index);
+                core.modify(address, cb);
+                core.set_areg(index, address.wrapping_add(mem::size_of::<U>() as u32));
+            }
             0b101_000..=0b101_111 => {
                 let address = self.areg_displacement(core);
                 core.modify(address, cb);
