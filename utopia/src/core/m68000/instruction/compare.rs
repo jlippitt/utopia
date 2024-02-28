@@ -22,10 +22,10 @@ pub fn cmp<T: Size>(core: &mut Core<impl Bus>, word: u16) {
 }
 
 pub fn cmpi<T: Size>(core: &mut Core<impl Bus>, word: u16) {
-    let dst = (word >> 9) & 7;
+    let dst = AddressMode::from(word);
     trace!("CMPI.{} #imm, {}", T::NAME, dst);
     let src_value: T = core.next();
-    let dst_value = core.dreg(dst as usize);
+    let dst_value = dst.read(core);
     compare(core, dst_value, src_value);
 }
 
