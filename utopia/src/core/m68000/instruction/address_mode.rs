@@ -133,7 +133,6 @@ impl AddressMode {
                 let address = core.areg(self.reg());
                 core.modify(address, cb);
             }
-
             0b011_000..=0b011_111 => {
                 let index = self.reg();
                 let address = core.areg(index);
@@ -164,7 +163,7 @@ impl AddressMode {
                 let address = self.indexed(core, core.pc);
                 core.modify(address, cb);
             }
-            _ => unimplemented!("Address mode write: {:06b}", self.0),
+            _ => unimplemented!("Address mode modify: {:06b}", self.0),
         }
     }
 
