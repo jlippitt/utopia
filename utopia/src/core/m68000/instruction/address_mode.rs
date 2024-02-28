@@ -15,6 +15,7 @@ impl AddressMode {
             0b111_000 => self.absolute16(core),
             0b111_001 => self.absolute32(core),
             0b111_010 => self.displacement(core, core.pc),
+            0b111_011 => self.indexed(core, core.pc),
             _ => unimplemented!("Address mode lookup: {:06b}", self.0),
         }
     }

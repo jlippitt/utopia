@@ -147,6 +147,8 @@ impl<T: Bus> Core<T> {
             0b0100_1010_10 => instr::tst::<u32>(self, word),
 
             0b0100_1110_01 => self.dispatch_special(word),
+            0b0100_1110_10 => instr::jsr(self, word),
+            0b0100_1110_11 => instr::jmp(self, word),
 
             // ADDQ/SUBQ
             0b0101_0000_00 | 0b0101_0010_00 | 0b0101_0100_00 | 0b0101_0110_00 | 0b0101_1000_00

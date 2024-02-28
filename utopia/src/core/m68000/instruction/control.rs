@@ -31,6 +31,22 @@ pub fn bcc<T: Condition>(core: &mut Core<impl Bus>, word: u16) {
     }
 }
 
+pub fn jmp(core: &mut Core<impl Bus>, word: u16) {
+    let src = AddressMode::from(word);
+    trace!("JMP {}", src);
+    core.pc = src.address(core);
+}
+
+pub fn jsr(core: &mut Core<impl Bus>, word: u16) {
+    let src = AddressMode::from(word);
+    trace!("JSR {}", src);
+    let target = src.address(core);
+    let sp = core.areg::<u32>(7).wrapping_sub(4);
+    core.set_areg(7, sp);
+    core.write(sp, core.pc);
+    core.pc = target;
+}
+
 pub fn scc_dbcc<T: Condition>(core: &mut Core<impl Bus>, word: u16) {
     let operand = AddressMode::from(word);
 
